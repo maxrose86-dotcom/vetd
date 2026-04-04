@@ -425,7 +425,7 @@
     <div class="landing-sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
     <div>
       <button class="btn-primary" onclick="startOnboarding()">Get started — it's free</button>
-      <button class="btn-secondary" onclick="goToApp()">View demo app</button>
+      <button class="btn-secondary" onclick="window.location.href='login.html'">Sign in</button>
     </div>
     <div class="landing-trust">
       <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label">avg annual earnings</div></div>
@@ -705,6 +705,7 @@
       <div class="topbar-right">
         <div class="notif-dot"></div>
         <div class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">SL</div>
+        <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s">Sign out</button>
       </div>
     </div>
 
@@ -915,8 +916,9 @@
 <script>
   // ─── SUPABASE INIT ───────────────────────────────────────
   // ⚠️  REPLACE these with your real Supabase project values
-  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I'
+  const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+  const SUPABASE_ANON = 'YOUR_ANON_KEY';
+
   let db = null;
   try {
     if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
@@ -1311,6 +1313,44 @@
   document.getElementById('apply-modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
+
+  // ─── AUTO-LOGIN CHECK ──────────────────────────────────
+  // If user is already signed in, skip landing and go to dashboard
+  (async function checkSession() {
+    if (!db) return;
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        // User is logged in — check if onboarding is complete
+        const { data: contrib } = await db.from('contributors')
+          .select('onboarding_complete, onboarding_step')
+          .eq('id', session.user.id)
+          .single();
+
+        if (contrib && contrib.onboarding_complete) {
+          goToApp();
+        } else if (contrib && contrib.onboarding_step > 1) {
+          // Resume onboarding where they left off
+          startOnboarding();
+          for (let i = 1; i < contrib.onboarding_step; i++) {
+            document.getElementById('step-' + i).classList.remove('active');
+            updateSidebar(contrib.onboarding_step);
+          }
+          document.getElementById('step-' + contrib.onboarding_step).classList.add('active');
+        }
+      }
+    } catch(e) {
+      console.warn('Session check failed:', e);
+    }
+  })();
+
+  // ─── SIGN OUT ──────────────────────────────────────────
+  async function signOut() {
+    if (db) {
+      await db.auth.signOut();
+    }
+    window.location.href = 'login.html';
+  }
 </script>
 </body>
 </html>
