@@ -794,7 +794,7 @@ async function init() {
 
   const { data: profile } = await db
     .from('profiles')
-    .select('role, full_name')
+    .select('role, first_name, last_name')
     .eq('id', session.user.id)
     .single();
 
@@ -803,7 +803,8 @@ async function init() {
     return;
   }
 
-  document.getElementById('admin-name').textContent = profile.full_name || session.user.email;
+  const adminDisplay = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || session.user.email;
+  document.getElementById('admin-name').textContent = adminDisplay;
   showApp();
   initUI();
   loadDashboardStats();
@@ -835,7 +836,7 @@ async function handleAdminLogin() {
 
     const { data: profile } = await db
       .from('profiles')
-      .select('role, full_name')
+      .select('role, first_name, last_name')
       .eq('id', data.user.id)
       .single();
 
@@ -844,7 +845,8 @@ async function handleAdminLogin() {
       throw new Error('Access denied — this account does not have admin privileges.');
     }
 
-    document.getElementById('admin-name').textContent = profile.full_name || email;
+    const adminDisplay = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || email;
+    document.getElementById('admin-name').textContent = adminDisplay;
     showApp();
     initUI();
     loadDashboardStats();
@@ -895,7 +897,7 @@ async function loadContributors() {
   try {
     const { data, error } = await db
       .from('contributors')
-      .select('*, profiles(full_name, city)')
+      .select('*, profiles(first_name, last_name)')
       .order('rating', { ascending: false })
       .limit(50);
 
@@ -911,8 +913,8 @@ async function loadContributors() {
     const tierLabels   = { elite: 'Elite', verified: 'Verified', standard: 'Standard', restricted: 'Restricted' };
 
     co.innerHTML = data.map((c, i) => {
-      const name     = c.profiles?.full_name || 'Unknown';
-      const city     = c.profiles?.city || '—';
+      const name     = [c.profiles?.first_name, c.profiles?.last_name].filter(Boolean).join(' ') || 'Unknown';
+      const city     = c.city || '—';
       const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
       const rating   = c.rating != null ? parseFloat(c.rating).toFixed(1) : '—';
       const studies  = c.total_studies ?? 0;
