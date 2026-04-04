@@ -230,20 +230,33 @@ textarea{resize:vertical;min-height:90px}
   .builder-wrap{grid-template-columns:1fr}
   .preview-card{position:static}
 }
+
+.lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(0,0,0,0.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,0.1);border-radius:100px;padding:3px;gap:2px}
+.lang-btn{background:none;border:none;cursor:pointer;color:rgba(0,0,0,0.35);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+.lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+/* Dark sections override */
+#landing .lang-toggle,.landing-lang{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.18)}
+#landing .lang-btn{color:rgba(255,255,255,0.5)}
+#landing .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
 </style>
 </head>
 <body>
+
+<div class="lang-toggle" id="lang-toggle">
+  <button class="lang-btn active" id="lb-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="lb-sv" onclick="setLang('sv')">SV</button>
+</div>
 
 <!-- LANDING -->
 <div id="landing" class="screen active">
   <div class="lnd-eyebrow">Client portal</div>
   <div class="lnd-logo">Vet<span style="color:var(--green-mid)">d</span></div>
   <div class="lnd-sub-logo">For companies For companies &amp; researchersamp; researchers</div>
-  <div class="lnd-h1">Find people worth <em>listening to.</em></div>
-  <div class="lnd-p">Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.</div>
+  <div class="lnd-h1"><span data-i18n="cl_landing_h1_plain">Find people worth</span> <em data-i18n="cl_landing_h1_em">listening to.</em></div>
+  <div class="lnd-p" data-i18n="cl_landing_sub">Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.</div>
   <div>
-    <button class="btn-cta" onclick="showAuthScreen('signup')">Post your first study</button>
-    <button class="btn-ghost" onclick="showAuthScreen('login')">Sign in</button>
+    <button class="btn-cta" onclick="showAuthScreen('signup')" data-i18n="cl_cta">Post your first study</button>
+    <button class="btn-ghost" onclick="showAuthScreen('login')" data-i18n="cl_signin">Sign in</button>
   </div>
   <div style="margin-top:3.5rem">
     <div class="lnd-logos">Trusted by teams at</div>
@@ -318,17 +331,17 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <div class="nav-section">
         <div class="nav-label">Overview</div>
-        <button class="nav-item active" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span>Dashboard</button>
-        <button class="nav-item" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span>Analytics</button>
+        <button class="nav-item active" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Dashboard</span></button>
+        <button class="nav-item" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       </div>
       <div class="nav-section">
         <div class="nav-label">Studies</div>
-        <button class="nav-item" onclick="showTab('studies',this)"><span class="nav-icon">📋</span>My studies</button>
-        <button class="nav-item" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span>Post a study</button>
+        <button class="nav-item" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">My studies</span></button>
+        <button class="nav-item" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
       </div>
       <div class="nav-section">
         <div class="nav-label">Panel</div>
-        <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span>Browse contributors<span class="nav-badge">3</span></button>
+        <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span><span class="nav-badge">3</span></button>
         <button class="nav-item" onclick="showTab('rate',this)"><span class="nav-icon">★</span>Rate participants</button>
       </div>
       <div class="sidebar-bottom">
@@ -337,7 +350,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="plan-detail">Unlimited studies · Priority panel</div>
           <div class="plan-upgrade">↑ Upgrade to Enterprise</div>
         </div>
-        <button onclick="signOut()" style="margin-top:10px;width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" onmouseover="this.style.borderColor='var(--gray-400)'" onmouseout="this.style.borderColor='var(--gray-200)'">Sign out</button>
+        <button onclick="signOut()" style="margin-top:10px;width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" onmouseover="this.style.borderColor='var(--gray-400)'" onmouseout="this.style.borderColor='var(--gray-200)'" data-i18n="sign_out">Sign out</button>
       </div>
     </div>
 
@@ -452,7 +465,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- POST STUDY -->
       <div class="tab-pane" id="tab-new-study">
         <div class="page-topbar">
-          <div class="page-title"><h1>Post a new study</h1><p>Fill in the details — we'll estimate your panel size as you go.</p></div>
+          <div class="page-title"><h1 data-i18n="cl_post_title">Post a new study</h1><p>Fill in the details — we'll estimate your panel size as you go.</p></div>
         </div>
         <div class="builder-wrap">
           <div class="builder-main">
@@ -553,7 +566,7 @@ textarea{resize:vertical;min-height:90px}
 
             <div style="display:flex;gap:12px">
               <button class="btn-outline" onclick="showToast('Draft saved!')">Save as draft</button>
-              <button class="btn-primary btn-green" onclick="publishStudy()">Publish study →</button>
+              <button class="btn-primary btn-green" onclick="publishStudy()" data-i18n="cl_publish_btn">Publish study →</button>
             </div>
           </div>
 
@@ -1201,6 +1214,56 @@ textarea{resize:vertical;min-height:90px}
     renderRateList();
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
   }
+
+  // ─── LANGUAGE TOGGLE ────────────────────────────────────
+  const LANG = {
+    en: {
+      cl_landing_h1_plain: 'Find people worth',
+      cl_landing_h1_em: 'listening to.',
+      cl_landing_sub: 'Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.',
+      cl_cta: 'Post your first study',
+      cl_signin: 'Sign in',
+      cl_nav_overview: 'Dashboard',
+      cl_nav_studies: 'My studies',
+      cl_nav_browse: 'Browse contributors',
+      cl_nav_analytics: 'Analytics',
+      cl_nav_post: 'Post a study',
+      cl_post_title: 'Post a new study',
+      cl_publish_btn: 'Publish study →',
+      sign_out: 'Sign out',
+    },
+    sv: {
+      cl_landing_h1_plain: 'Hitta människor värda att',
+      cl_landing_h1_em: 'lyssna på.',
+      cl_landing_sub: 'Publicera en studie, definiera dina kriterier och matchas med betygsatta, verifierade deltagare — vanligtvis inom 48 timmar.',
+      cl_cta: 'Publicera din första studie',
+      cl_signin: 'Logga in',
+      cl_nav_overview: 'Översikt',
+      cl_nav_studies: 'Mina studier',
+      cl_nav_browse: 'Bläddra bland deltagare',
+      cl_nav_analytics: 'Analys',
+      cl_nav_post: 'Publicera studie',
+      cl_post_title: 'Publicera en ny studie',
+      cl_publish_btn: 'Publicera studie',
+      sign_out: 'Logga ut',
+    }
+  };
+
+  function setLang(lang) {
+    localStorage.setItem('vetd_lang', lang);
+    document.getElementById('lb-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.dataset.i18nPh;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
+    });
+  }
+
+  setLang(localStorage.getItem('vetd_lang') || 'en');
 
   // ─── SESSION CHECK ──────────────────────────────────────
   (async function checkSession() {

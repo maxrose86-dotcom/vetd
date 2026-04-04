@@ -220,9 +220,21 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 
 input[type=text],select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:8px 12px;width:100%;outline:none}
 input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
+
+.lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
+.lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--mono,'DM Mono',monospace);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+.lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
+.lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
+.lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
+.lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
 </style>
 </head>
 <body>
+
+<div class="lang-toggle" id="lang-toggle">
+  <button class="lang-btn active" id="lb-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="lb-sv" onclick="setLang('sv')">SV</button>
+</div>
 
 <!-- LOGIN SCREEN -->
 <div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden">
@@ -234,8 +246,8 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
       <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-family:var(--mono)">Admin Portal</div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:2rem;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
-      <h2 style="font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)">Sign in</h2>
-      <p style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:1.5rem">Restricted to admin accounts</p>
+      <h2 style="font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)" data-i18n="adm_signin_title">Sign in</h2>
+      <p style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:1.5rem" data-i18n="adm_signin_sub">Restricted to admin accounts</p>
       <div id="login-error" style="background:var(--coral-dim);border:1px solid rgba(232,80,58,0.3);color:var(--coral);padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:1rem;font-family:var(--mono);display:none"></div>
       <div style="margin-bottom:1rem">
         <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:6px">Email</label>
@@ -245,7 +257,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
         <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:6px">Password</label>
         <input type="password" id="admin-password" placeholder="••••••••">
       </div>
-      <button id="login-btn" class="btn btn-green" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="handleAdminLogin()">Sign in →</button>
+      <button id="login-btn" class="btn btn-green" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="handleAdminLogin()" data-i18n="adm_signin_btn">Sign in →</button>
     </div>
   </div>
 </div>
@@ -271,30 +283,30 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
   <div class="sb-section">
     <div class="sb-label">Overview</div>
-    <button class="sb-item on" onclick="go('dashboard',this)"><span class="ico">⬛</span>Dashboard</button>
-    <button class="sb-item" onclick="go('feed',this)"><span class="ico">◉</span>Live feed</button>
+    <button class="sb-item on" onclick="go('dashboard',this)"><span class="ico">⬛</span><span data-i18n="adm_nav_dashboard">Dashboard</span></button>
+    <button class="sb-item" onclick="go('feed',this)"><span class="ico">◉</span><span data-i18n="adm_nav_feed">Live feed</span></button>
   </div>
   <div class="sb-section">
     <div class="sb-label">Matching Engine</div>
-    <button class="sb-item" onclick="go('engine',this)"><span class="ico">⚙</span>Match algorithm</button>
-    <button class="sb-item" onclick="go('studies-admin',this)"><span class="ico">📋</span>Study queue</button>
+    <button class="sb-item" onclick="go('engine',this)"><span class="ico">⚙</span><span data-i18n="adm_nav_engine">Match algorithm</span></button>
+    <button class="sb-item" onclick="go('studies-admin',this)"><span class="ico">📋</span><span data-i18n="adm_nav_queue">Study queue</span></button>
   </div>
   <div class="sb-section">
     <div class="sb-label">Quality & Safety</div>
-    <button class="sb-item" onclick="go('fraud',this)"><span class="ico">⚠</span>Fraud detection<span class="sb-badge">5</span></button>
-    <button class="sb-item" onclick="go('contributors',this)"><span class="ico">👥</span>Contributor oversight</button>
-    <button class="sb-item" onclick="go('disputes',this)"><span class="ico">⚖</span>Disputes<span class="sb-badge sb-badge-amber">2</span></button>
+    <button class="sb-item" onclick="go('fraud',this)"><span class="ico">⚠</span><span data-i18n="adm_nav_fraud">Fraud detection</span><span class="sb-badge">5</span></button>
+    <button class="sb-item" onclick="go('contributors',this)"><span class="ico">👥</span><span data-i18n="adm_nav_contributors">Contributor oversight</span></button>
+    <button class="sb-item" onclick="go('disputes',this)"><span class="ico">⚖</span><span data-i18n="adm_nav_disputes">Disputes</span><span class="sb-badge sb-badge-amber">2</span></button>
   </div>
   <div class="sb-section">
     <div class="sb-label">Platform</div>
-    <button class="sb-item" onclick="go('controls',this)"><span class="ico">🔧</span>Platform controls</button>
-    <button class="sb-item" onclick="go('payouts',this)"><span class="ico">💳</span>Payouts</button>
+    <button class="sb-item" onclick="go('controls',this)"><span class="ico">🔧</span><span data-i18n="adm_nav_controls">Platform controls</span></button>
+    <button class="sb-item" onclick="go('payouts',this)"><span class="ico">💳</span><span data-i18n="adm_nav_payouts">Payouts</span></button>
   </div>
   <div class="sb-bottom">
     <div class="sb-status"><div class="pulse"></div>All systems operational</div>
     <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px" id="admin-name"></div>
-      <button class="sb-item" onclick="handleSignOut()" style="color:var(--coral);padding:6px 10px"><span class="ico">↩</span>Sign out</button>
+      <button class="sb-item" onclick="handleSignOut()" style="color:var(--coral);padding:6px 10px"><span class="ico">↩</span><span data-i18n="adm_signout">Sign out</span></button>
     </div>
   </div>
 </div>
@@ -305,15 +317,15 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <!-- DASHBOARD -->
 <div class="tab on" id="t-dashboard">
   <div class="ph">
-    <div><h1>Admin Dashboard</h1><p>vetd.se · real-time overview · <span id="clock"></span></p></div>
-    <button class="btn btn-green" onclick="showToast('📊 Full report exported to admin@vetd.se')">Export report</button>
+    <div><h1 data-i18n="adm_dash_title">Admin Dashboard</h1><p>vetd.se · real-time overview · <span id="clock"></span></p></div>
+    <button class="btn btn-green" onclick="showToast('📊 Full report exported to admin@vetd.se')" data-i18n="adm_export">Export report</button>
   </div>
 
   <div class="stat-grid">
-    <div class="stat g"><div class="stat-label">Total contributors</div><div class="stat-num" id="stat-contributors">—</div><div class="stat-sub up" id="stat-contributors-sub"> </div></div>
-    <div class="stat b"><div class="stat-label">Active studies</div><div class="stat-num" id="stat-active-studies">—</div><div class="stat-sub" id="stat-studies-sub"> </div></div>
-    <div class="stat a"><div class="stat-label">Total companies</div><div class="stat-num" id="stat-companies">—</div><div class="stat-sub">registered clients</div></div>
-    <div class="stat r"><div class="stat-label">Flags for review</div><div class="stat-num">5</div><div class="stat-sub danger">3 high priority</div></div>
+    <div class="stat g"><div class="stat-label" data-i18n="adm_stat_contributors">Total contributors</div><div class="stat-num" id="stat-contributors">—</div><div class="stat-sub up" id="stat-contributors-sub"> </div></div>
+    <div class="stat b"><div class="stat-label" data-i18n="adm_stat_studies">Active studies</div><div class="stat-num" id="stat-active-studies">—</div><div class="stat-sub" id="stat-studies-sub"> </div></div>
+    <div class="stat a"><div class="stat-label" data-i18n="adm_stat_companies">Total companies</div><div class="stat-num" id="stat-companies">—</div><div class="stat-sub">registered clients</div></div>
+    <div class="stat r"><div class="stat-label" data-i18n="adm_stat_flags">Flags for review</div><div class="stat-num">5</div><div class="stat-sub danger">3 high priority</div></div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem">
@@ -1091,6 +1103,68 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ─── LANGUAGE TOGGLE ──────────────────────────────────────────
+const LANG = {
+  en: {
+    adm_signin_title: 'Sign in',
+    adm_signin_sub: 'Restricted to admin accounts',
+    adm_signin_btn: 'Sign in →',
+    adm_nav_dashboard: 'Dashboard',
+    adm_nav_feed: 'Live feed',
+    adm_nav_engine: 'Match algorithm',
+    adm_nav_queue: 'Study queue',
+    adm_nav_fraud: 'Fraud detection',
+    adm_nav_contributors: 'Contributor oversight',
+    adm_nav_disputes: 'Disputes',
+    adm_nav_controls: 'Platform controls',
+    adm_nav_payouts: 'Payouts',
+    adm_signout: 'Sign out',
+    adm_dash_title: 'Admin Dashboard',
+    adm_export: 'Export report',
+    adm_stat_contributors: 'Total contributors',
+    adm_stat_studies: 'Active studies',
+    adm_stat_companies: 'Total companies',
+    adm_stat_flags: 'Flags for review',
+  },
+  sv: {
+    adm_signin_title: 'Logga in',
+    adm_signin_sub: 'Endast för adminanvändare',
+    adm_signin_btn: 'Logga in →',
+    adm_nav_dashboard: 'Instrumentpanel',
+    adm_nav_feed: 'Direktflöde',
+    adm_nav_engine: 'Matchningsalgoritm',
+    adm_nav_queue: 'Studiekö',
+    adm_nav_fraud: 'Bedrägeridetektering',
+    adm_nav_contributors: 'Deltagartillsyn',
+    adm_nav_disputes: 'Tvister',
+    adm_nav_controls: 'Plattformsinställningar',
+    adm_nav_payouts: 'Utbetalningar',
+    adm_signout: 'Logga ut',
+    adm_dash_title: 'Adminpanel',
+    adm_export: 'Exportera rapport',
+    adm_stat_contributors: 'Totalt antal deltagare',
+    adm_stat_studies: 'Aktiva studier',
+    adm_stat_companies: 'Totalt antal företag',
+    adm_stat_flags: 'Flaggor för granskning',
+  }
+};
+
+function setLang(lang) {
+  localStorage.setItem('vetd_lang', lang);
+  document.getElementById('lb-en').classList.toggle('active', lang === 'en');
+  document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.dataset.i18nPh;
+    if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
+  });
+}
+
+setLang(localStorage.getItem('vetd_lang') || 'en');
 
 // ─── BOOT ─────────────────────────────────────────────────────
 init();

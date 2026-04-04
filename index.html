@@ -464,25 +464,37 @@
     .profile-grid { grid-template-columns: 1fr; }
     .rating-hero { flex-direction: column; gap: 1rem; }
   }
+
+  .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
+  .lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+  .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
+  .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
+  .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
+  .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
 </style>
 </head>
 <body>
+
+<div class="lang-toggle" id="lang-toggle">
+  <button class="lang-btn active" id="lb-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="lb-sv" onclick="setLang('sv')">SV</button>
+</div>
 
 <!-- LANDING -->
 <div id="landing" class="screen active">
   <div style="position:relative;z-index:1;width:100%">
     <div class="landing-logo">Vet<span style="color:var(--green-mid)">d</span></div>
-    <div class="landing-tag">Get paid. Get rated. Get better work.</div>
-    <div class="landing-headline">Get paid. Get rated. Get <em>better opportunities.</em></div>
-    <div class="landing-sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
+    <div class="landing-tag" data-i18n="landing_tag">Get paid. Get rated. Get better work.</div>
+    <div class="landing-headline"><span data-i18n="landing_headline_plain">Get paid. Get rated. Get</span> <em data-i18n="landing_headline_em">better opportunities.</em></div>
+    <div class="landing-sub" data-i18n="landing_sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
     <div>
-      <button class="btn-primary" onclick="startOnboarding()">Get started — it's free</button>
-      <button class="btn-secondary" onclick="window.location.href='login.html'">Sign in</button>
+      <button class="btn-primary" onclick="startOnboarding()" data-i18n="landing_cta">Get started — it's free</button>
+      <button class="btn-secondary" onclick="window.location.href='login.html'" data-i18n="landing_signin">Sign in</button>
     </div>
     <div class="landing-trust">
-      <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label">avg annual earnings</div></div>
+      <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label" data-i18n="trust_earned">avg annual earnings</div></div>
       <div class="trust-stat"><div class="trust-num">48h</div><div class="trust-label">to first assignment</div></div>
-      <div class="trust-stat"><div class="trust-num">4.8★</div><div class="trust-label">avg contributor score</div></div>
+      <div class="trust-stat"><div class="trust-num">4.8★</div><div class="trust-label" data-i18n="trust_contributors">avg contributor score</div></div>
     </div>
   </div>
 </div>
@@ -520,15 +532,15 @@
       <!-- Step 1: Account -->
       <div class="onboarding-step active" id="step-1">
         <div class="step-header">
-          <h2>Create your account</h2>
-          <p>Let's get the basics set up. Takes about 2 minutes.</p>
+          <h2 data-i18n="ob_step1_title">Create your account</h2>
+          <p data-i18n="ob_step1_sub">Let's get the basics set up. Takes about 2 minutes.</p>
         </div>
         <div class="field-row">
-          <div class="field"><label>First name</label><input type="text" id="fname" placeholder="Sarah" value=""></div>
-          <div class="field"><label>Last name</label><input type="text" id="lname" placeholder="Johnson" value=""></div>
+          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" placeholder="Sarah" value=""></div>
+          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" placeholder="Johnson" value=""></div>
         </div>
-        <div class="field"><label>Email address</label><input type="email" id="email" placeholder="sarah@example.com"></div>
-        <div class="field"><label>Password</label><input type="password" id="password" placeholder="At least 8 characters"></div>
+        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" placeholder="sarah@example.com"></div>
+        <div class="field"><label data-i18n="ob_pass_label">Password</label><input type="password" id="password" data-i18n-ph="ob_pass_ph" placeholder="At least 8 characters"></div>
         <div class="field">
           <label>How did you hear about us?</label>
           <select id="referral">
@@ -548,13 +560,13 @@
       <!-- Step 2: About you -->
       <div class="onboarding-step" id="step-2">
         <div class="step-header">
-          <h2>Tell us about yourself</h2>
+          <h2 data-i18n="ob_step2_title">Tell us about yourself</h2>
           <p>Companies use this to match you with relevant studies. Your data is never sold.</p>
         </div>
         <div class="field-row">
-          <div class="field"><label>Date of birth</label><input type="date" id="dob"></div>
+          <div class="field"><label data-i18n="ob_dob_label">Date of birth</label><input type="date" id="dob"></div>
           <div class="field">
-            <label>Gender</label>
+            <label data-i18n="ob_gender_label">Gender</label>
             <select id="gender">
               <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
               <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
@@ -564,9 +576,9 @@
         <div class="field-row">
           <div class="field">
             <label>Country</label>
-            <select id="country"><option>United Kingdom</option><option>Ireland</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+            <select id="country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
           </div>
-          <div class="field"><label>City / Town</label><input type="text" id="city" placeholder="e.g. Manchester"></div>
+          <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester"></div>
         </div>
         <div class="field">
           <label>Employment status</label>
@@ -604,7 +616,7 @@
       <!-- Step 3: Interests -->
       <div class="onboarding-step" id="step-3">
         <div class="step-header">
-          <h2>What are you into?</h2>
+          <h2 data-i18n="ob_step3_title">What are you into?</h2>
           <p>Select everything that applies — the more you share, the better the matches.</p>
         </div>
         <div class="field">
@@ -667,7 +679,7 @@
       <!-- Step 4: Availability -->
       <div class="onboarding-step" id="step-4">
         <div class="step-header">
-          <h2>When are you available?</h2>
+          <h2 data-i18n="ob_step4_title">When are you available?</h2>
           <p>This helps us surface studies that work around your life.</p>
         </div>
         <div class="field">
@@ -750,14 +762,14 @@
     <div class="app-topbar">
       <div class="topbar-logo">Vet<span style="color:var(--green)">d</span></div>
       <div class="topbar-nav">
-        <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
-        <button onclick="showTab('jobs', this)">Browse studies</button>
-        <button onclick="showTab('profile', this)">My profile</button>
+        <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
+        <button onclick="showTab('jobs', this)" data-i18n="nav_browse">Browse studies</button>
+        <button onclick="showTab('profile', this)" data-i18n="nav_profile">My profile</button>
       </div>
       <div class="topbar-right">
         <div class="notif-dot"></div>
         <div id="topbar-avatar" class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">?</div>
-        <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s">Sign out</button>
+        <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" data-i18n="sign_out">Sign out</button>
       </div>
     </div>
 
@@ -793,12 +805,12 @@
 
         <div class="stat-cards">
           <div class="stat-card">
-            <div class="stat-card-label">Total earned</div>
+            <div class="stat-card-label" data-i18n="dash_earned">Total earned</div>
             <div id="stat-earned" class="stat-card-num">£0</div>
             <div id="stat-earned-sub" class="stat-card-sub">Complete a study to start earning</div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">Studies done</div>
+            <div class="stat-card-label" data-i18n="dash_studies">Studies done</div>
             <div id="stat-studies" class="stat-card-num">0</div>
             <div id="stat-studies-sub" class="stat-card-sub">No studies yet</div>
           </div>
@@ -836,13 +848,13 @@
       <!-- JOBS TAB -->
       <div id="tab-jobs" style="display:none">
         <div style="margin-bottom:1.5rem">
-          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px">Browse studies</h1>
+          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Browse studies</h1>
           <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
         </div>
         <div class="filter-bar">
-          <button class="filter-chip active" onclick="filterJobs('all', this)">All studies</button>
+          <button class="filter-chip active" onclick="filterJobs('all', this)" data-i18n="filter_all">All studies</button>
           <button class="filter-chip" onclick="filterJobs('matched', this)">Best matches</button>
-          <button class="filter-chip" onclick="filterJobs('online', this)">Online only</button>
+          <button class="filter-chip" onclick="filterJobs('online', this)" data-i18n="filter_online">Online only</button>
           <button class="filter-chip" onclick="filterJobs('high-pay', this)">High pay</button>
           <select class="filter-select filter-right">
             <option>Sort: Best match</option>
@@ -856,6 +868,7 @@
 
       <!-- PROFILE TAB -->
       <div id="tab-profile" style="display:none">
+        <!-- profile_title handled via nav -->
         <div class="profile-header">
           <div id="profile-avatar-big" class="profile-avatar-big">?</div>
           <div style="flex:1">
@@ -1328,7 +1341,7 @@
             <div><div class="job-company-name">${job.company}</div><div class="job-title">${job.title}</div></div>
           </div>
           <div class="job-pay">
-            <div class="pay-amount">£${job.pay}</div>
+            <div class="pay-amount">${fmtPay(job.pay)}</div>
             <div class="pay-type">${job.payType}</div>
           </div>
         </div>
@@ -1369,7 +1382,7 @@
     document.getElementById('modal-company-badge').textContent = currentJob.company;
     document.getElementById('modal-title').textContent = currentJob.title;
     document.getElementById('modal-company-name').textContent = currentJob.company + ' · ' + currentJob.duration;
-    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">£${currentJob.pay}</div><div class="modal-pay-sub">${currentJob.payType}</div>`;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(currentJob.pay)}</div><div class="modal-pay-sub">${currentJob.payType}</div>`;
     document.getElementById('modal-tags').innerHTML = currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = currentJob.detail;
     document.getElementById('modal-match-reason').textContent = currentJob.matchReason;
@@ -1404,11 +1417,13 @@
   function startOnboarding() {
     document.getElementById('landing').classList.remove('active');
     document.getElementById('onboarding').classList.add('active');
+    document.getElementById('lang-toggle').classList.add('light');
   }
 
   async function goToApp() {
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
+    document.getElementById('lang-toggle').classList.add('light');
     await loadJobs();
     renderJobs('dashboard-jobs', jobs.slice(0,2));
     renderJobs('jobs-list', jobs);
@@ -1627,6 +1642,129 @@
     }
     window.location.href = 'login.html';
   }
+
+  // ─── LANGUAGE TOGGLE ───────────────────────────────────
+  const LANG = {
+    en: {
+      landing_tag: 'Get paid. Get rated. Get better work.',
+      landing_headline_plain: 'Get paid. Get rated. Get',
+      landing_headline_em: 'better opportunities.',
+      landing_sub: 'Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.',
+      landing_cta: "Get started — it's free",
+      landing_signin: 'Sign in',
+      trust_contributors: 'avg contributor score',
+      trust_earned: 'avg annual earnings',
+      trust_studies: 'active studies',
+      ob_step1_title: 'Create your account',
+      ob_step1_sub: "Let's get the basics set up. Takes about 2 minutes.",
+      ob_step2_title: 'Tell us about yourself',
+      ob_step3_title: 'What are you into?',
+      ob_step4_title: 'When are you available?',
+      ob_name_label: 'First name',
+      ob_lname_label: 'Last name',
+      ob_email_label: 'Email address',
+      ob_pass_label: 'Password',
+      ob_pass_ph: 'At least 8 characters',
+      ob_dob_label: 'Date of birth',
+      ob_city_label: 'City / Town',
+      ob_city_ph: 'e.g. Manchester',
+      ob_gender_label: 'Gender',
+      nav_dashboard: 'Dashboard',
+      nav_browse: 'Browse studies',
+      nav_profile: 'My profile',
+      nav_notifications: 'Notifications',
+      sign_out: 'Sign out',
+      dash_welcome: 'Welcome back',
+      dash_studies: 'Studies done',
+      dash_earned: 'Total earned',
+      dash_rating: 'Your rating',
+      browse_title: 'Browse studies',
+      apply_btn: 'Apply',
+      applied_badge: 'Applied ✓',
+      filter_all: 'All studies',
+      filter_online: 'Online only',
+      filter_video: 'Video',
+      filter_person: 'In-person',
+      profile_title: 'My profile',
+    },
+    sv: {
+      landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
+      landing_headline_plain: 'Tjäna pengar. Få betyg. Få',
+      landing_headline_em: 'bättre möjligheter.',
+      landing_sub: 'Gå med i verifierade studier från ledande varumärken. Tjäna pengar för din ärliga åsikt. Bygg ett rykte som öppnar dörrar.',
+      landing_cta: 'Kom igång — det är gratis',
+      landing_signin: 'Logga in',
+      trust_contributors: 'verifierade deltagare',
+      trust_earned: 'totalt utbetalat',
+      trust_studies: 'aktiva studier',
+      ob_step1_title: 'Välkommen till Vetd',
+      ob_step1_sub: 'Låt oss skapa din profil. Det tar mindre än 3 minuter.',
+      ob_step2_title: 'Berätta om dig',
+      ob_step3_title: 'Dina intressen',
+      ob_step4_title: 'Tillgänglighet',
+      ob_name_label: 'Förnamn',
+      ob_lname_label: 'Efternamn',
+      ob_email_label: 'E-postadress',
+      ob_pass_label: 'Lösenord',
+      ob_pass_ph: 'Minst 8 tecken',
+      ob_dob_label: 'Födelsedatum',
+      ob_city_label: 'Stad',
+      ob_city_ph: 't.ex. Stockholm',
+      ob_gender_label: 'Kön',
+      nav_dashboard: 'Översikt',
+      nav_browse: 'Bläddra',
+      nav_profile: 'Profil',
+      nav_notifications: 'Aviseringar',
+      sign_out: 'Logga ut',
+      dash_welcome: 'Välkommen tillbaka',
+      dash_studies: 'Studier gjorda',
+      dash_earned: 'Totalt tjänat',
+      dash_rating: 'Ditt betyg',
+      browse_title: 'Tillgängliga studier',
+      apply_btn: 'Ansök',
+      applied_badge: 'Ansökt ✓',
+      filter_all: 'Alla',
+      filter_online: 'Online',
+      filter_video: 'Video',
+      filter_person: 'På plats',
+      profile_title: 'Min profil',
+    }
+  };
+
+  function fmtPay(pay) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    return lang === 'sv' ? `${pay * 13} kr` : `£${pay}`;
+  }
+
+  function setLang(lang) {
+    localStorage.setItem('vetd_lang', lang);
+    document.getElementById('lb-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+    // Switch toggle style based on current screen
+    const toggle = document.getElementById('lang-toggle');
+    const appVisible = document.getElementById('app') && document.getElementById('app').classList.contains('active');
+    const onboardingVisible = document.getElementById('onboarding') && document.getElementById('onboarding').classList.contains('active');
+    if (appVisible || onboardingVisible) {
+      toggle.classList.add('light');
+    } else {
+      toggle.classList.remove('light');
+    }
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.dataset.i18nPh;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
+    });
+    // Re-render job cards if already loaded
+    if (typeof renderJobs === 'function' && jobs && jobs.length) {
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    }
+  }
+
+  setLang(localStorage.getItem('vetd_lang') || 'en');
 </script>
 </body>
 </html>

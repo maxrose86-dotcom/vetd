@@ -231,55 +231,67 @@
   @media (max-width: 480px) {
     .login-card { padding: 2rem 1.5rem; }
   }
+
+  .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
+  .lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+  .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
+  .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
+  .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
+  .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
 </style>
 </head>
 <body>
 
+<div class="lang-toggle" id="lang-toggle">
+  <button class="lang-btn active" id="lb-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="lb-sv" onclick="setLang('sv')">SV</button>
+</div>
+
 <div class="login-card">
   <div class="logo">Vet<span>d</span></div>
-  <div class="login-subtitle">Welcome back</div>
+  <div class="login-subtitle" data-i18n="login_welcome">Welcome back</div>
 
   <!-- LOGIN VIEW -->
   <div class="view active" id="view-login">
     <div class="error-msg" id="login-error"></div>
 
     <div class="field">
-      <label>Email address</label>
+      <label data-i18n="login_email_label">Email address</label>
       <input type="email" id="login-email" placeholder="you@example.com">
     </div>
     <div class="field">
-      <label>Password</label>
-      <input type="password" id="login-password" placeholder="Your password">
-      <a class="forgot-link" onclick="showView('forgot')">Forgot password?</a>
+      <label data-i18n="login_pass_label">Password</label>
+      <input type="password" id="login-password" data-i18n-ph="login_pass_ph" placeholder="Your password">
+      <a class="forgot-link" onclick="showView('forgot')" data-i18n="login_forgot">Forgot password?</a>
     </div>
 
-    <button class="btn-login" id="btn-login" onclick="handleLogin()">Sign in</button>
+    <button class="btn-login" id="btn-login" onclick="handleLogin()" data-i18n="login_btn">Sign in</button>
 
     <div class="divider">or</div>
 
     <div class="signup-link">
-      Don't have an account? <a href="index.html">Sign up free</a>
+      <span data-i18n="login_no_account">Don't have an account?</span> <a href="index.html" data-i18n="login_signup_link">Sign up free</a>
     </div>
   </div>
 
   <!-- FORGOT PASSWORD VIEW -->
   <div class="view" id="view-forgot">
-    <div class="back-link" onclick="showView('login')">← Back to sign in</div>
+    <div class="back-link" onclick="showView('login')" data-i18n="back_to_signin">← Back to sign in</div>
 
     <div style="margin-bottom:1.5rem">
-      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px">Reset your password</h2>
-      <p style="color:var(--gray-400);font-size:13px;font-weight:300">Enter your email and we'll send you a reset link.</p>
+      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px" data-i18n="reset_title">Reset your password</h2>
+      <p style="color:var(--gray-400);font-size:13px;font-weight:300" data-i18n="reset_sub">Enter your email and we'll send you a reset link.</p>
     </div>
 
     <div class="error-msg" id="forgot-error"></div>
     <div class="success-msg" id="forgot-success"></div>
 
     <div class="field">
-      <label>Email address</label>
+      <label data-i18n="login_email_label">Email address</label>
       <input type="email" id="forgot-email" placeholder="you@example.com">
     </div>
 
-    <button class="btn-login" id="btn-forgot" onclick="handleForgot()">Send reset link</button>
+    <button class="btn-login" id="btn-forgot" onclick="handleForgot()" data-i18n="reset_btn">Send reset link</button>
   </div>
 </div>
 
@@ -401,6 +413,58 @@
       btn.disabled = false;
     }
   }
+
+  // ─── LANGUAGE TOGGLE ───────────────────────────────────
+  const LANG = {
+    en: {
+      login_welcome: 'Welcome back',
+      login_subtitle: 'Sign in to your Vetd account',
+      login_email_label: 'Email address',
+      login_pass_label: 'Password',
+      login_pass_ph: 'Your password',
+      login_btn: 'Sign in',
+      login_forgot: 'Forgot password?',
+      login_no_account: "Don't have an account?",
+      login_signup_link: 'Sign up free',
+      reset_title: 'Reset your password',
+      reset_sub: "Enter your email and we'll send you a reset link.",
+      reset_btn: 'Send reset link',
+      reset_success: 'Check your inbox — we sent you a reset link.',
+      back_to_signin: '← Back to sign in',
+    },
+    sv: {
+      login_welcome: 'Välkommen tillbaka',
+      login_subtitle: 'Logga in på ditt Vetd-konto',
+      login_email_label: 'E-postadress',
+      login_pass_label: 'Lösenord',
+      login_pass_ph: 'Ditt lösenord',
+      login_btn: 'Logga in',
+      login_forgot: 'Glömt lösenordet?',
+      login_no_account: 'Har du inget konto?',
+      login_signup_link: 'Registrera dig gratis',
+      reset_title: 'Återställ lösenord',
+      reset_sub: 'Ange din e-post så skickar vi en återställningslänk.',
+      reset_btn: 'Skicka återställningslänk',
+      reset_success: 'Kolla din inkorg — vi har skickat en återställningslänk.',
+      back_to_signin: '← Tillbaka till inloggning',
+    }
+  };
+
+  function setLang(lang) {
+    localStorage.setItem('vetd_lang', lang);
+    document.getElementById('lb-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.dataset.i18nPh;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
+    });
+  }
+
+  setLang(localStorage.getItem('vetd_lang') || 'en');
 
   // ─── ENTER KEY SUPPORT ─────────────────────────────────
   document.getElementById('login-password').addEventListener('keydown', function(e) {
