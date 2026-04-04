@@ -1319,6 +1319,7 @@
   }
 
   let appliedJobs = new Set();
+  let currentUser  = null;
   let currentJob = null;
   let currentStep = 1;
 
@@ -1399,7 +1400,7 @@
 
   function confirmApply() {
     if (currentJob) {
-      appliedJobs.add(currentJob.id);
+      applyToStudy(currentJob.id);
       document.getElementById('modal-pre-apply').style.display = 'none';
       document.getElementById('modal-confirmed').style.display = 'block';
     }
@@ -1424,10 +1425,57 @@
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
-    await loadJobs();
+    await Promise.all([loadJobs(), loadAppliedJobs()]);
     renderJobs('dashboard-jobs', jobs.slice(0,2));
     renderJobs('jobs-list', jobs);
     loadUserProfile();
+  }
+
+  // ─── LOAD WHICH STUDIES THE USER HAS ALREADY APPLIED TO ──
+  async function loadAppliedJobs() {
+    if (!db) return;
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      currentUser = user;
+      const { data, error } = await db
+        .from('applications')
+        .select('study_id')
+        .eq('contributor_id', user.id);
+      if (error) throw error;
+      appliedJobs = new Set((data || []).map(a => a.study_id));
+    } catch(err) {
+      console.warn('Could not load applied studies:', err);
+    }
+  }
+
+  // ─── APPLY TO STUDY ───────────────────────────────────────
+  async function applyToStudy(studyId) {
+    // Optimistic UI update first
+    appliedJobs.add(studyId);
+    renderJobs('jobs-list', jobs);
+    renderJobs('dashboard-jobs', jobs.slice(0,2));
+
+    if (!db || !currentUser) return; // demo mode — local only
+
+    try {
+      const { error } = await db.from('applications').insert({
+        study_id:       studyId,
+        contributor_id: currentUser.id,
+        status:         'pending',
+        applied_at:     new Date().toISOString()
+      });
+      // 23505 = unique_violation (already applied) — treat as success
+      if (error && error.code !== '23505') throw error;
+      showToast('Application submitted! ✓');
+    } catch(err) {
+      console.error('Apply error:', err);
+      // Roll back optimistic update
+      appliedJobs.delete(studyId);
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0,2));
+      showToast('Could not submit application — try again', true);
+    }
   }
 
   // ─── STEP NAVIGATION (with Supabase saves) ─────────────

@@ -188,12 +188,30 @@ textarea{resize:vertical;min-height:90px}
 .fc.on{background:var(--gray-900);color:#fff;border-color:var(--gray-900)}
 .fc:hover:not(.on){border-color:var(--gray-400)}
 
-/* RATING MODAL */
+/* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:var(--r-xl);padding:2rem;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;animation:fadeUp 0.2s ease}
 .modal h2{font-family:var(--serif);font-size:26px;margin-bottom:6px}
 .modal-sub{font-size:13px;color:var(--gray-400);margin-bottom:1.5rem;font-weight:300}
+
+/* APPLICANTS MODAL */
+.applicants-modal{max-width:680px}
+.applicant-row{display:flex;align-items:center;gap:1rem;padding:12px 0;border-bottom:1px solid var(--gray-100)}
+.applicant-row:last-child{border-bottom:none}
+.applicant-av{width:42px;height:42px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--green-dark);flex-shrink:0}
+.applicant-info{flex:1;min-width:0}
+.applicant-name{font-size:14px;font-weight:600;color:var(--gray-900)}
+.applicant-meta{font-size:12px;color:var(--gray-400);margin-top:1px}
+.applicant-actions{display:flex;gap:6px;flex-shrink:0}
+.btn-accept{padding:7px 16px;background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.15s;box-shadow:0 2px 6px rgba(0,196,122,0.3)}
+.btn-accept:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,196,122,0.4)}
+.btn-reject{padding:7px 14px;background:transparent;color:var(--gray-400);border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.15s}
+.btn-reject:hover{border-color:var(--coral);color:var(--coral)}
+.status-pill{padding:4px 12px;border-radius:100px;font-size:11px;font-weight:600}
+.status-accepted{background:var(--green-light);color:var(--green-dark)}
+.status-rejected{background:var(--coral-light);color:var(--coral)}
+.status-pending{background:var(--gray-100);color:var(--gray-400)}
 
 .star-picker{display:flex;gap:8px;margin-bottom:1rem}
 .star-pick{font-size:28px;cursor:pointer;color:var(--gray-200);transition:color 0.1s;line-height:1}
@@ -692,6 +710,22 @@ textarea{resize:vertical;min-height:90px}
   </div><!-- end app-shell -->
 </div><!-- end app -->
 
+<!-- APPLICANTS MODAL -->
+<div class="modal-overlay" id="applicants-modal">
+  <div class="modal applicants-modal">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
+      <div>
+        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px">Applicants</h2>
+        <p class="modal-sub" id="applicants-count" style="margin-bottom:0"></p>
+      </div>
+      <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
+    </div>
+    <div id="applicants-list">
+      <div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading applicants…</div>
+    </div>
+  </div>
+</div>
+
 <!-- RATE MODAL -->
 <div class="modal-overlay" id="rate-modal">
   <div class="modal">
@@ -881,6 +915,21 @@ textarea{resize:vertical;min-height:90px}
         .order('created_at', { ascending: false });
       if (error) throw error;
 
+      // Fetch application counts for all studies in one query
+      let appCountMap = {};
+      if (studies && studies.length > 0) {
+        const { data: apps } = await db
+          .from('applications')
+          .select('study_id, status')
+          .in('study_id', studies.map(s => s.id));
+        (apps || []).forEach(a => {
+          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0 };
+          appCountMap[a.study_id].total++;
+          if (a.status === 'pending')  appCountMap[a.study_id].pending++;
+          if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
+        });
+      }
+
       if (!studies || studies.length === 0) {
         list.innerHTML = `
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
@@ -911,6 +960,11 @@ textarea{resize:vertical;min-height:90px}
           ? new Date(s.close_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
           : '—';
         const label = status.charAt(0).toUpperCase() + status.slice(1);
+        const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0 };
+        const payDisplay = s.pay_per_participant
+          ? `£${Math.round(s.pay_per_participant / 100)}/person`
+          : null;
+        const safeTitle = (s.title || 'Untitled study').replace(/'/g, "\\'");
         return `
           <div class="study-row">
             <div class="study-row-header">
@@ -922,13 +976,16 @@ textarea{resize:vertical;min-height:90px}
             </div>
             <div class="study-meta" style="margin-bottom:10px">
               <span>Spots: <strong>${filled} / ${spots}</strong></span>
-              ${s.pay_per_participant ? `<span>Pay: <strong>£${s.pay_per_participant}/person</strong></span>` : ''}
-              ${s.pay_per_participant ? `<span>Budget used: <strong>£${filled * s.pay_per_participant}</strong></span>` : ''}
+              ${payDisplay ? `<span>Pay: <strong>${payDisplay}</strong></span>` : ''}
+              ${payDisplay && filled ? `<span>Spent: <strong>£${Math.round(filled * s.pay_per_participant / 100)}</strong></span>` : ''}
               <span>Closes: <strong>${closes}</strong></span>
+              ${counts.total > 0 ? `<span>Applications: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} pending)</span>` : ''}</span>` : ''}
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
-            <div style="display:flex;gap:10px;margin-top:12px">
-              <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
+            <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+              <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${s.id}','${safeTitle}')">
+                👥 ${counts.total === 0 ? 'No applications yet' : `View ${counts.total} applicant${counts.total !== 1 ? 's' : ''}`}
+              </button>
               ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">Continue editing</button>` : ''}
             </div>
           </div>`;
@@ -938,6 +995,138 @@ textarea{resize:vertical;min-height:90px}
       list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
     }
   }
+
+  // ─── APPLICANTS MODAL ───────────────────────────────────
+  let currentApplicantsStudyId = null;
+
+  async function openApplicants(studyId, studyTitle) {
+    currentApplicantsStudyId = studyId;
+    document.getElementById('applicants-study-title').textContent = studyTitle;
+    document.getElementById('applicants-count').textContent = 'Loading…';
+    document.getElementById('applicants-list').innerHTML =
+      '<div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading applicants…</div>';
+    document.getElementById('applicants-modal').classList.add('open');
+    await loadApplicants(studyId);
+  }
+
+  function closeApplicants() {
+    document.getElementById('applicants-modal').classList.remove('open');
+    currentApplicantsStudyId = null;
+  }
+
+  async function loadApplicants(studyId) {
+    const list = document.getElementById('applicants-list');
+    const countEl = document.getElementById('applicants-count');
+
+    try {
+      const { data, error } = await db
+        .from('applications')
+        .select('id, status, applied_at, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
+        .eq('study_id', studyId)
+        .order('applied_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        countEl.textContent = 'No applications yet';
+        list.innerHTML = `
+          <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+            <div style="font-size:32px;margin-bottom:0.75rem">📭</div>
+            <p style="font-size:14px;font-weight:300">No one has applied yet. Check back once your study is live.</p>
+          </div>`;
+        return;
+      }
+
+      const pending  = data.filter(a => a.status === 'pending').length;
+      const accepted = data.filter(a => a.status === 'accepted').length;
+      countEl.textContent = `${data.length} applicant${data.length !== 1 ? 's' : ''} · ${accepted} accepted · ${pending} pending`;
+
+      const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
+      const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
+
+      list.innerHTML = data.map((a, i) => {
+        const c       = a.contributors || {};
+        const p       = c.profiles || {};
+        const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+        const rating  = c.rating != null ? parseFloat(c.rating).toFixed(1) : '—';
+        const tier    = c.tier ? (c.tier.charAt(0).toUpperCase() + c.tier.slice(1)) : '—';
+        const studies = c.total_studies ?? 0;
+        const city    = c.city || '—';
+        const ci = i % avColors.length;
+        const appliedDate = a.applied_at
+          ? new Date(a.applied_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+          : '';
+
+        let actions = '';
+        if (a.status === 'pending') {
+          actions = `
+            <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}')">Accept</button>
+            <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}')">Reject</button>`;
+        } else {
+          const cls = `status-${a.status}`;
+          const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
+          actions = `<span class="status-pill ${cls}">${lbl}</span>`;
+        }
+
+        return `
+          <div class="applicant-row" id="approw-${a.id}">
+            <div class="applicant-av" style="background:${avColors[ci]};color:${avText[ci]}">${initials}</div>
+            <div class="applicant-info">
+              <div class="applicant-name">${name}</div>
+              <div class="applicant-meta">${city} · ${rating}★ · ${tier} · ${studies} studies · Applied ${appliedDate}</div>
+            </div>
+            <div class="applicant-actions">${actions}</div>
+          </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('Load applicants error:', err);
+      countEl.textContent = '';
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load applicants.</div>';
+    }
+  }
+
+  async function updateApplication(appId, newStatus, studyId) {
+    const row = document.getElementById('approw-' + appId);
+    const actionsEl = row?.querySelector('.applicant-actions');
+    if (actionsEl) actionsEl.innerHTML = '<span style="font-size:12px;color:var(--gray-400)">Saving…</span>';
+
+    try {
+      const { error: updateErr } = await db
+        .from('applications')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', appId);
+      if (updateErr) throw updateErr;
+
+      // If accepting, increment filled_spots on the study
+      if (newStatus === 'accepted') {
+        const { data: study } = await db
+          .from('studies')
+          .select('filled_spots, spots')
+          .eq('id', studyId)
+          .single();
+        if (study) {
+          const newFilled = Math.min((study.filled_spots || 0) + 1, study.spots);
+          await db.from('studies').update({ filled_spots: newFilled }).eq('id', studyId);
+        }
+      }
+
+      showToast(newStatus === 'accepted' ? 'Applicant accepted ✓' : 'Applicant rejected');
+      // Refresh applicant list in-place
+      await loadApplicants(studyId);
+      // Refresh study list to update counts and progress bar
+      await loadStudies();
+    } catch(err) {
+      console.error('Update application error:', err);
+      showToast('Could not update — try again', true);
+      await loadApplicants(studyId); // restore buttons
+    }
+  }
+
+  // Close applicants modal on backdrop click
+  document.getElementById('applicants-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeApplicants();
+  });
 
   // ─── PUBLISH STUDY ──────────────────────────────────────
   function getChipValues(field) {
