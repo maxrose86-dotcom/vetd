@@ -860,7 +860,7 @@ textarea{resize:vertical;min-height:90px}
       if (!user) return;
 
       const { data: studies, error } = await db
-        .from('studies').select('*').eq('client_id', user.id)
+        .from('studies').select('*').eq('created_by', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -949,7 +949,7 @@ textarea{resize:vertical;min-height:90px}
       if (!user) throw new Error('Not logged in');
 
       const { error } = await db.from('studies').insert({
-        client_id:      user.id,
+        created_by:     user.id,
         title,
         description:    desc || null,
         format,
@@ -986,7 +986,7 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data: contribs, error } = await db
         .from('contributors')
-        .select('id, city, country, date_of_birth, rating, studies_done, tier, interests_lifestyle, interests_tech')
+        .select('id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech')
         .order('rating', { ascending: false, nullsLast: true })
         .limit(20);
       if (error) throw error;
@@ -1019,7 +1019,7 @@ textarea{resize:vertical;min-height:90px}
           ? new Date().getFullYear() - new Date(c.date_of_birth).getFullYear()
           : null;
         const loc       = c.city || c.country || '';
-        const studies   = c.studies_done || 0;
+        const studies   = c.total_studies || 0;
         const tags      = [
           ...(Array.isArray(c.interests_lifestyle) ? c.interests_lifestyle : []),
           ...(Array.isArray(c.interests_tech)      ? c.interests_tech      : [])
