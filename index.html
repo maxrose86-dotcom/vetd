@@ -1315,8 +1315,14 @@
   });
 
   // ─── AUTO-LOGIN CHECK ──────────────────────────────────
-  // If user is already signed in, skip landing and go to dashboard
+  // If user came from login page or has an active session, skip to dashboard
   (async function checkSession() {
+    // Check URL flag first (instant, no waiting)
+    if (new URLSearchParams(window.location.search).has('logged_in')) {
+      goToApp();
+      return;
+    }
+    // Then check Supabase session
     if (!db) return;
     try {
       const { data: { session } } = await db.auth.getSession();
