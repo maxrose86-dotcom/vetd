@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vetd — Admin &amp; Matching Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -222,7 +223,45 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 </style>
 </head>
 <body>
-<div class="shell">
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:28px 28px;pointer-events:none"></div>
+  <div style="position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,196,122,0.12) 0%,rgba(75,158,245,0.06) 50%,transparent 70%);top:-200px;left:50%;transform:translateX(-50%);pointer-events:none"></div>
+  <div style="width:100%;max-width:400px;position:relative;z-index:1;padding:1.5rem">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div style="font-family:var(--serif);font-size:28px;font-weight:700;color:var(--text)">Vet<span style="color:var(--green-mid)">d</span></div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-family:var(--mono)">Admin Portal</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:2rem;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
+      <h2 style="font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)">Sign in</h2>
+      <p style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:1.5rem">Restricted to admin accounts</p>
+      <div id="login-error" style="background:var(--coral-dim);border:1px solid rgba(232,80,58,0.3);color:var(--coral);padding:10px 14px;border-radius:var(--r);font-size:12px;margin-bottom:1rem;font-family:var(--mono);display:none"></div>
+      <div style="margin-bottom:1rem">
+        <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:6px">Email</label>
+        <input type="email" id="admin-email" placeholder="admin@vetd.se">
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:var(--mono);margin-bottom:6px">Password</label>
+        <input type="password" id="admin-password" placeholder="••••••••">
+      </div>
+      <button id="login-btn" class="btn btn-green" style="width:100%;justify-content:center;padding:12px;font-size:13px" onclick="handleAdminLogin()">Sign in →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCESS DENIED -->
+<div id="access-denied" style="min-height:100vh;display:none;align-items:center;justify-content:center;background:var(--bg)">
+  <div style="text-align:center;max-width:380px;padding:2rem">
+    <div style="font-size:40px;margin-bottom:1rem">🔒</div>
+    <h2 style="font-family:var(--serif);font-size:24px;color:var(--text);margin-bottom:8px">Access denied</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:4px">Signed in as <strong id="denied-email" style="color:var(--text)"></strong></p>
+    <p style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:1.5rem">This account does not have admin privileges.</p>
+    <button class="btn btn-red" onclick="handleSignOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="shell" id="shell-wrap" style="display:none">
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -253,6 +292,10 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
   <div class="sb-bottom">
     <div class="sb-status"><div class="pulse"></div>All systems operational</div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px" id="admin-name"></div>
+      <button class="sb-item" onclick="handleSignOut()" style="color:var(--coral);padding:6px 10px"><span class="ico">↩</span>Sign out</button>
+    </div>
   </div>
 </div>
 
@@ -267,9 +310,9 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
 
   <div class="stat-grid">
-    <div class="stat g"><div class="stat-label">Total contributors</div><div class="stat-num">8,421</div><div class="stat-sub up">↑ 124 this week</div></div>
-    <div class="stat b"><div class="stat-label">Active studies</div><div class="stat-num">34</div><div class="stat-sub">12 filling · 22 live</div></div>
-    <div class="stat a"><div class="stat-label">Pending matches</div><div class="stat-num">1,847</div><div class="stat-sub warn">↑ 23% vs yesterday</div></div>
+    <div class="stat g"><div class="stat-label">Total contributors</div><div class="stat-num" id="stat-contributors">—</div><div class="stat-sub up" id="stat-contributors-sub"> </div></div>
+    <div class="stat b"><div class="stat-label">Active studies</div><div class="stat-num" id="stat-active-studies">—</div><div class="stat-sub" id="stat-studies-sub"> </div></div>
+    <div class="stat a"><div class="stat-label">Total companies</div><div class="stat-num" id="stat-companies">—</div><div class="stat-sub">registered clients</div></div>
     <div class="stat r"><div class="stat-label">Flags for review</div><div class="stat-num">5</div><div class="stat-sub danger">3 high priority</div></div>
   </div>
 
@@ -334,7 +377,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   <div class="ph">
     <div><h1>Live Activity Feed</h1><p>Real-time platform events · auto-refreshing</p></div>
     <div style="display:flex;gap:8px">
-      <button class="btn" onclick="pauseFeed=!pauseFeed;this.textContent=pauseFeed?'▶ Resume':'⏸ Pause'">⏸ Pause</button>
+      <button class="btn" onclick="window._feedPauseSet&&window._feedPauseSet(!window._feedPauseRef());this.textContent=(window._feedPauseRef&&window._feedPauseRef())?'▶ Resume':'⏸ Pause'">⏸ Pause</button>
       <button class="btn" onclick="document.getElementById('live-feed').innerHTML='';showToast('Feed cleared')">Clear</button>
     </div>
   </div>
@@ -660,28 +703,24 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <button class="btn btn-green" onclick="showToast('💳 Batch payout of £3,240 initiated to 72 contributors')">Run batch payout</button>
   </div>
   <div class="stat-grid">
-    <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num">£14,680</div><div class="stat-sub up">↑ 28% vs last month</div></div>
-    <div class="stat b"><div class="stat-label">Pending release</div><div class="stat-num">£3,240</div><div class="stat-sub">72 contributors</div></div>
-    <div class="stat a"><div class="stat-label">On hold (disputes)</div><div class="stat-num">£125</div><div class="stat-sub warn">2 active disputes</div></div>
-    <div class="stat r"><div class="stat-label">Refunded (fraud)</div><div class="stat-num">£36</div><div class="stat-sub danger">3 cases this month</div></div>
+    <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num" id="stat-paid">—</div><div class="stat-sub up" id="stat-paid-sub"> </div></div>
+    <div class="stat b"><div class="stat-label">Pending release</div><div class="stat-num" id="stat-pending">—</div><div class="stat-sub" id="stat-pending-sub"> </div></div>
+    <div class="stat a"><div class="stat-label">On hold (disputes)</div><div class="stat-num" id="stat-hold">—</div><div class="stat-sub warn"> </div></div>
+    <div class="stat r"><div class="stat-label">Refunded (fraud)</div><div class="stat-num" id="stat-refunded">—</div><div class="stat-sub danger"> </div></div>
   </div>
   <div class="card">
     <div class="card-title">Pending payouts</div>
     <table class="tbl">
       <thead><tr><th>Contributor</th><th>Study</th><th>Amount</th><th>Completed</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody>
-        <tr><td><strong style="color:var(--text)">Sarah L.</strong></td><td style="color:var(--text2)">H&M shopping experience</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="font-family:var(--mono)">Mar 28</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£45 sent to Sarah L.')">Pay now</button></td></tr>
-        <tr><td><strong style="color:var(--text)">Priya R.</strong></td><td style="color:var(--text2)">Lloyds banking app</td><td style="font-family:var(--mono);color:var(--green)">£80</td><td style="font-family:var(--mono)">Mar 27</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£80 sent to Priya R.')">Pay now</button></td></tr>
-        <tr><td><strong style="color:var(--text)">Marcus K.</strong></td><td style="color:var(--text2)">Lloyds banking app</td><td style="font-family:var(--mono);color:var(--amber)">£80</td><td style="font-family:var(--mono)">Mar 27</td><td><span class="badge ba">On hold</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px;opacity:0.5;cursor:not-allowed">Dispute</button></td></tr>
-        <tr><td><strong style="color:var(--text)">Emma W.</strong></td><td style="color:var(--text2)">Boots loyalty research</td><td style="font-family:var(--mono);color:var(--green)">£65</td><td style="font-family:var(--mono)">Mar 29</td><td><span class="badge bc">Awaiting rating</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px;opacity:0.5;cursor:not-allowed">Pending</button></td></tr>
-        <tr><td><strong style="color:var(--text)">Aisha B.</strong></td><td style="color:var(--text2)">H&M shopping experience</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="font-family:var(--mono)">Mar 28</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£45 sent to Aisha B.')">Pay now</button></td></tr>
+      <tbody id="payouts-list">
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">Loading payment data…</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
 </div><!-- end main -->
-</div><!-- end shell -->
+</div><!-- end shell / shell-wrap -->
 
 <!-- ACTION MODAL -->
 <div class="modal-ov" id="action-modal">
@@ -718,85 +757,272 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <div class="toast" id="toast"></div>
 
 <script>
-// Clock
-function tick(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('en-GB')}
-tick();setInterval(tick,1000);
+// ─── SUPABASE ────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
 
-// Revenue chart
-const revData=[820,1040,680,1200,950,1380,1100,1450,1280,1600,1740,1820,1950,2100];
-const revChart=document.getElementById('rev-chart');
-const maxRev=Math.max(...revData);
-revData.forEach(v=>{
-  const col=document.createElement('div');col.className='bar-col';
-  const bar=document.createElement('div');bar.className='mc-bar';
-  bar.style.height=(v/maxRev*100)+'%';
-  bar.style.background=v===revData[revData.length-1]?'var(--green)':'var(--blue)';
-  bar.style.opacity=v===revData[revData.length-1]?'1':'0.4';
-  col.appendChild(bar);revChart.appendChild(col);
-});
-
-// Contributor oversight data
-const contribs=[
-  {init:'SL',av:'av-g',name:'Sarah L.',loc:'Manchester',rating:4.8,studies:23,tier:'Elite',risk:'ok',flags:0},
-  {init:'PR',av:'av-p',name:'Priya R.',loc:'London',rating:4.9,studies:31,tier:'Elite',risk:'ok',flags:0},
-  {init:'MK',av:'av-b',name:'Marcus K.',loc:'London',rating:4.4,studies:8,tier:'Verified',risk:'ok',flags:0},
-  {init:'AB',av:'av-a',name:'Aisha B.',loc:'Birmingham',rating:4.2,studies:14,tier:'Verified',risk:'ok',flags:1},
-  {init:'EW',av:'av-g',name:'Emma W.',loc:'Leeds',rating:4.7,studies:19,tier:'Elite',risk:'ok',flags:0},
-  {init:'JR',av:'av-r',name:'Jamie R.',loc:'Leeds',rating:2.1,studies:3,tier:'Restricted',risk:'high',flags:3},
-  {init:'U4',av:'av-a',name:'User #4821',loc:'Bristol',rating:3.4,studies:5,tier:'Standard',risk:'med',flags:2},
-  {init:'U6',av:'av-b',name:'User #6201',loc:'Glasgow',rating:4.6,studies:11,tier:'Verified',risk:'med',flags:1},
-];
-const co=document.getElementById('contrib-oversight');
-contribs.forEach(c=>{
-  const tierColors={Elite:'bg',Verified:'bb',Standard:'ba',Restricted:'br'};
-  co.innerHTML+=`
-  <div class="contrib-row">
-    <div class="av ${c.av}">${c.init}</div>
-    <div class="contrib-info">
-      <div class="contrib-name">${c.name}</div>
-      <div class="contrib-meta">${c.loc} · ${c.studies} studies · ${c.flags} flag${c.flags!==1?'s':''}</div>
-    </div>
-    <span class="badge ${tierColors[c.tier]}">${c.tier}</span>
-    <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:500;width:50px;text-align:center">${c.rating}★</span>
-    <div class="risk-pill risk-${c.risk}">${c.risk==='ok'?'Clean':c.risk==='med'?'Watch':'High risk'}</div>
-    <button class="btn" style="padding:5px 12px;font-size:11px" onclick="openAction('${c.name}','#${Math.floor(Math.random()*9000+1000)}','review')">View</button>
-  </div>`;
-});
-
-// Live feed
-let pauseFeed=false;
-let feedMatches=0,feedSignups=0,feedFlags=0,feedPayouts=0;
-const feedEvents=[
-  {dot:'fd-green',text:'<strong>Match made:</strong> Emma W. → Boots loyalty study (94% score)'},
-  {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8422 completed onboarding · London · Tech interests'},
-  {dot:'fd-green',text:'<strong>Study completed:</strong> Priya R. finished Lloyds banking session'},
-  {dot:'fd-green',text:'<strong>Payout processed:</strong> £30 → Aisha B. for Tesco study'},
-  {dot:'fd-amber',text:'<strong>Rating submitted:</strong> Nike rated User #5201 at 4.2★'},
-  {dot:'fd-red',text:'<strong>Flag raised:</strong> Response anomaly detected on User #5503'},
-  {dot:'fd-blue',text:'<strong>Study posted:</strong> ASOS — Gen Z fashion discovery · 12 spots'},
-  {dot:'fd-green',text:'<strong>Match made:</strong> Marcus K. → ASOS style study (91% score)'},
-  {dot:'fd-green',text:'<strong>Payout processed:</strong> £65 → Emma W. for Boots study'},
-  {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8423 from Edinburgh · Fashion &amp; beauty'},
-];
-let feedIdx=0;
-setInterval(()=>{
-  if(pauseFeed)return;
-  const feed=document.getElementById('live-feed');
-  if(!feed)return;
-  const e=feedEvents[feedIdx%feedEvents.length];feedIdx++;
-  const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  const item=document.createElement('div');item.className='feed-item';
-  item.innerHTML=`<div class="feed-dot ${e.dot}"></div><div class="feed-text">${e.text}</div><div class="feed-time">${now}</div>`;
-  feed.insertBefore(item,feed.firstChild);
-  if(feed.children.length>40)feed.removeChild(feed.lastChild);
-  if(e.dot==='fd-green'&&e.text.includes('Match')){feedMatches++;document.getElementById('feed-matches').textContent=feedMatches}
-  if(e.dot==='fd-blue'&&e.text.includes('sign-up')){feedSignups++;document.getElementById('feed-signups').textContent=feedSignups}
-  if(e.dot==='fd-red'){feedFlags++;document.getElementById('feed-flags').textContent=feedFlags}
-  if(e.text.includes('Payout')){
-    const m=e.text.match(/£(\d+)/);
-    if(m){feedPayouts+=parseInt(m[1]);document.getElementById('feed-payouts').textContent='£'+feedPayouts}
+let db = null;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
   }
-},2800);
+} catch(e) { console.warn('Supabase not loaded'); }
+
+// ─── SCREENS ─────────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('shell-wrap').style.display   = 'none';
+  document.getElementById('access-denied').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('shell-wrap').style.display   = 'flex';
+  document.getElementById('access-denied').style.display = 'none';
+}
+function showAccessDenied(email) {
+  document.getElementById('login-screen').style.display  = 'none';
+  document.getElementById('shell-wrap').style.display    = 'none';
+  document.getElementById('access-denied').style.display = 'flex';
+  document.getElementById('denied-email').textContent = email;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+async function init() {
+  if (!db) { showApp(); initUI(); return; }
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { showLogin(); return; }
+
+  const { data: profile } = await db
+    .from('profiles')
+    .select('role, full_name')
+    .eq('id', session.user.id)
+    .single();
+
+  if (profile?.role !== 'admin') {
+    showAccessDenied(session.user.email);
+    return;
+  }
+
+  document.getElementById('admin-name').textContent = profile.full_name || session.user.email;
+  showApp();
+  initUI();
+  loadDashboardStats();
+  loadContributors();
+  loadPayouts();
+}
+
+// ─── ADMIN LOGIN ──────────────────────────────────────────────
+async function handleAdminLogin() {
+  const email    = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+
+  errEl.style.display = 'none';
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    const { data: profile } = await db
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      await db.auth.signOut();
+      throw new Error('Access denied — this account does not have admin privileges.');
+    }
+
+    document.getElementById('admin-name').textContent = profile.full_name || email;
+    showApp();
+    initUI();
+    loadDashboardStats();
+    loadContributors();
+    loadPayouts();
+  } catch(err) {
+    errEl.textContent = err.message || 'Sign in failed — check your credentials';
+    errEl.style.display = 'block';
+    btn.textContent = 'Sign in →';
+    btn.disabled = false;
+  }
+}
+
+// ─── SIGN OUT ─────────────────────────────────────────────────
+async function handleSignOut() {
+  if (db) await db.auth.signOut();
+  showLogin();
+}
+
+// ─── DASHBOARD STATS ─────────────────────────────────────────
+async function loadDashboardStats() {
+  if (!db) return;
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      db.from('contributors').select('*', { count: 'exact', head: true }),
+      db.from('studies').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      db.from('companies').select('*', { count: 'exact', head: true }),
+    ]);
+
+    const totalContribs  = r1.count ?? 0;
+    const activeStudies  = r2.count ?? 0;
+    const totalCompanies = r3.count ?? 0;
+
+    document.getElementById('stat-contributors').textContent = totalContribs.toLocaleString();
+    document.getElementById('stat-active-studies').textContent = activeStudies;
+    document.getElementById('stat-companies').textContent = totalCompanies;
+  } catch(err) {
+    console.warn('Could not load dashboard stats:', err);
+  }
+}
+
+// ─── CONTRIBUTORS ─────────────────────────────────────────────
+async function loadContributors() {
+  if (!db) return;
+  const co = document.getElementById('contrib-oversight');
+  co.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">Loading contributors…</div>';
+
+  try {
+    const { data, error } = await db
+      .from('contributors')
+      .select('*, profiles(full_name, city)')
+      .order('rating', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      co.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text3);font-family:var(--mono)">No contributors found</div>';
+      return;
+    }
+
+    const avColors = ['av-g','av-b','av-a','av-p','av-r'];
+    const tierClasses  = { elite: 'bg', verified: 'bb', standard: 'ba', restricted: 'br' };
+    const tierLabels   = { elite: 'Elite', verified: 'Verified', standard: 'Standard', restricted: 'Restricted' };
+
+    co.innerHTML = data.map((c, i) => {
+      const name     = c.profiles?.full_name || 'Unknown';
+      const city     = c.profiles?.city || '—';
+      const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      const rating   = c.rating != null ? parseFloat(c.rating).toFixed(1) : '—';
+      const studies  = c.total_studies ?? 0;
+      const flags    = c.flags_count ?? 0;
+      const tier     = (c.tier || 'standard').toLowerCase();
+      const risk     = (c.risk_level || 'ok').toLowerCase();
+      const av       = avColors[i % avColors.length];
+      const tClass   = tierClasses[tier]   || 'bc';
+      const tLabel   = tierLabels[tier]    || tier;
+      const rLabel   = (risk === 'low' || risk === 'ok') ? 'Clean' : (risk === 'medium' || risk === 'med') ? 'Watch' : 'High risk';
+      const rClass   = (risk === 'low' || risk === 'ok') ? 'risk-ok' : (risk === 'medium' || risk === 'med') ? 'risk-med' : 'risk-high';
+      const safeName = name.replace(/'/g, "\\'");
+
+      return `<div class="contrib-row">
+        <div class="av ${av}">${initials}</div>
+        <div class="contrib-info">
+          <div class="contrib-name">${name}</div>
+          <div class="contrib-meta">${city} · ${studies} studies · ${flags} flag${flags !== 1 ? 's' : ''}</div>
+        </div>
+        <span class="badge ${tClass}">${tLabel}</span>
+        <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:500;width:50px;text-align:center">${rating}★</span>
+        <div class="risk-pill ${rClass}">${rLabel}</div>
+        <button class="btn" style="padding:5px 12px;font-size:11px" onclick="openAction('${safeName}','','review')">View</button>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    console.warn('Could not load contributors:', err);
+    co.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--coral);font-family:var(--mono)">Error loading contributors</div>';
+  }
+}
+
+// ─── PAYOUTS ──────────────────────────────────────────────────
+async function loadPayouts() {
+  // No payments table in current schema — show empty state
+  ['stat-paid','stat-pending','stat-hold','stat-refunded'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '£0';
+  });
+  const tbody = document.getElementById('payouts-list');
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text3);font-family:var(--mono)">No payment records yet — payouts will appear here once contributors complete studies</td></tr>';
+  }
+}
+
+// ─── CLOCK & REVENUE CHART ────────────────────────────────────
+function initUI() {
+  // Clock
+  function tick(){const n=new Date();const el=document.getElementById('clock');if(el)el.textContent=n.toLocaleTimeString('en-GB')}
+  tick();setInterval(tick,1000);
+
+  // Revenue chart
+  const revData=[820,1040,680,1200,950,1380,1100,1450,1280,1600,1740,1820,1950,2100];
+  const revChart=document.getElementById('rev-chart');
+  if(revChart){
+    const maxRev=Math.max(...revData);
+    revData.forEach(v=>{
+      const col=document.createElement('div');col.className='bar-col';
+      const bar=document.createElement('div');bar.className='mc-bar';
+      bar.style.height=(v/maxRev*100)+'%';
+      bar.style.background=v===revData[revData.length-1]?'var(--green)':'var(--blue)';
+      bar.style.opacity=v===revData[revData.length-1]?'1':'0.4';
+      col.appendChild(bar);revChart.appendChild(col);
+    });
+  }
+
+  // Live feed
+  let pauseFeed=false;
+  let feedMatches=0,feedSignups=0,feedFlags=0,feedPayouts=0;
+  const feedEvents=[
+    {dot:'fd-green',text:'<strong>Match made:</strong> Emma W. → Boots loyalty study (94% score)'},
+    {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8422 completed onboarding · London · Tech interests'},
+    {dot:'fd-green',text:'<strong>Study completed:</strong> Priya R. finished Lloyds banking session'},
+    {dot:'fd-green',text:'<strong>Payout processed:</strong> £30 → Aisha B. for Tesco study'},
+    {dot:'fd-amber',text:'<strong>Rating submitted:</strong> Nike rated User #5201 at 4.2★'},
+    {dot:'fd-red',text:'<strong>Flag raised:</strong> Response anomaly detected on User #5503'},
+    {dot:'fd-blue',text:'<strong>Study posted:</strong> ASOS — Gen Z fashion discovery · 12 spots'},
+    {dot:'fd-green',text:'<strong>Match made:</strong> Marcus K. → ASOS style study (91% score)'},
+    {dot:'fd-green',text:'<strong>Payout processed:</strong> £65 → Emma W. for Boots study'},
+    {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8423 from Edinburgh · Fashion &amp; beauty'},
+  ];
+  let feedIdx=0;
+  window._feedPauseRef = () => pauseFeed;
+  window._feedPauseSet = (v) => { pauseFeed = v; };
+  setInterval(()=>{
+    if(pauseFeed)return;
+    const feed=document.getElementById('live-feed');
+    if(!feed)return;
+    const e=feedEvents[feedIdx%feedEvents.length];feedIdx++;
+    const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const item=document.createElement('div');item.className='feed-item';
+    item.innerHTML=`<div class="feed-dot ${e.dot}"></div><div class="feed-text">${e.text}</div><div class="feed-time">${now}</div>`;
+    feed.insertBefore(item,feed.firstChild);
+    if(feed.children.length>40)feed.removeChild(feed.lastChild);
+    if(e.dot==='fd-green'&&e.text.includes('Match')){feedMatches++;const el=document.getElementById('feed-matches');if(el)el.textContent=feedMatches}
+    if(e.dot==='fd-blue'&&e.text.includes('sign-up')){feedSignups++;const el=document.getElementById('feed-signups');if(el)el.textContent=feedSignups}
+    if(e.dot==='fd-red'){feedFlags++;const el=document.getElementById('feed-flags');if(el)el.textContent=feedFlags}
+    if(e.text.includes('Payout')){
+      const m=e.text.match(/£(\d+)/);
+      if(m){feedPayouts+=parseInt(m[1]);const el=document.getElementById('feed-payouts');if(el)el.textContent='£'+feedPayouts}
+    }
+  },2800);
+}
+
+// Enter key on login
+document.addEventListener('DOMContentLoaded', () => {
+  ['admin-email','admin-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminLogin(); });
+  });
+});
 
 // Weight sliders
 function updateWeight(n,v){
@@ -863,6 +1089,9 @@ function showToast(msg){
   t.textContent=msg;t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3000);
 }
+
+// ─── BOOT ─────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>
