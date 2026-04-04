@@ -460,12 +460,12 @@ textarea{resize:vertical;min-height:90px}
               <div class="field-row">
                 <div class="field"><label>Study format</label>
                   <select id="b-format" onchange="updatePreview()">
-                    <option>Video call (1-on-1)</option>
-                    <option>Focus group (online)</option>
-                    <option>In-person interview</option>
-                    <option>Online survey</option>
-                    <option>Diary / journal study</option>
-                    <option>Product testing at home</option>
+                    <option value="video_call">Video call (1-on-1)</option>
+                    <option value="video_call">Focus group (online)</option>
+                    <option value="in_person">In-person interview</option>
+                    <option value="online_survey">Online survey</option>
+                    <option value="diary_study">Diary / journal study</option>
+                    <option value="product_testing">Product testing at home</option>
                   </select>
                 </div>
                 <div class="field"><label>Session length</label>
@@ -491,60 +491,60 @@ textarea{resize:vertical;min-height:90px}
             <div class="section-group">
               <h3>Who are you looking for?</h3>
               <div class="field"><label>Age range</label>
-                <div class="chip-group">
-                  <div class="chip" onclick="tc(this)">18–24</div>
-                  <div class="chip on" onclick="tc(this)">25–34</div>
-                  <div class="chip on" onclick="tc(this)">35–44</div>
-                  <div class="chip" onclick="tc(this)">45–54</div>
-                  <div class="chip" onclick="tc(this)">55–64</div>
-                  <div class="chip" onclick="tc(this)">65+</div>
-                  <div class="chip" onclick="tc(this)">Any age</div>
+                <div class="chip-group" data-field="age_ranges">
+                  <div class="chip" data-value="18_24" onclick="tc(this)">18–24</div>
+                  <div class="chip on" data-value="25_34" onclick="tc(this)">25–34</div>
+                  <div class="chip on" data-value="35_44" onclick="tc(this)">35–44</div>
+                  <div class="chip" data-value="45_54" onclick="tc(this)">45–54</div>
+                  <div class="chip" data-value="55_64" onclick="tc(this)">55–64</div>
+                  <div class="chip" data-value="65_plus" onclick="tc(this)">65+</div>
+                  <div class="chip" data-value="any" onclick="tc(this)">Any age</div>
                 </div>
               </div>
               <div class="field"><label>Gender</label>
-                <div class="chip-group">
-                  <div class="chip on" onclick="tc(this)">Women</div>
-                  <div class="chip" onclick="tc(this)">Men</div>
-                  <div class="chip" onclick="tc(this)">Non-binary</div>
-                  <div class="chip" onclick="tc(this)">Any gender</div>
+                <div class="chip-group" data-field="genders">
+                  <div class="chip on" data-value="woman" onclick="tc(this)">Women</div>
+                  <div class="chip" data-value="man" onclick="tc(this)">Men</div>
+                  <div class="chip" data-value="non_binary" onclick="tc(this)">Non-binary</div>
+                  <div class="chip" data-value="any" onclick="tc(this)">Any gender</div>
                 </div>
               </div>
               <div class="field"><label>Location</label>
-                <div class="chip-group">
-                  <div class="chip on" onclick="tc(this)">UK — any</div>
-                  <div class="chip" onclick="tc(this)">London</div>
-                  <div class="chip" onclick="tc(this)">Manchester</div>
-                  <div class="chip" onclick="tc(this)">Birmingham</div>
-                  <div class="chip" onclick="tc(this)">Remote only</div>
+                <div class="chip-group" data-field="locations">
+                  <div class="chip on" data-value="uk_any" onclick="tc(this)">UK — any</div>
+                  <div class="chip" data-value="london" onclick="tc(this)">London</div>
+                  <div class="chip" data-value="manchester" onclick="tc(this)">Manchester</div>
+                  <div class="chip" data-value="birmingham" onclick="tc(this)">Birmingham</div>
+                  <div class="chip" data-value="remote" onclick="tc(this)">Remote only</div>
                 </div>
               </div>
               <div class="field"><label>Interests &amp; behaviours (select all that apply)</label>
-                <div class="chip-group">
-                  <div class="chip on" onclick="tc(this)">Fashion &amp; clothing</div>
-                  <div class="chip on" onclick="tc(this)">Online shopper</div>
-                  <div class="chip" onclick="tc(this)">Beauty &amp; skincare</div>
-                  <div class="chip" onclick="tc(this)">H&amp;M customer</div>
-                  <div class="chip" onclick="tc(this)">Sustainability interest</div>
-                  <div class="chip" onclick="tc(this)">Social media user</div>
-                  <div class="chip" onclick="tc(this)">Parent</div>
-                  <div class="chip" onclick="tc(this)">Homeowner</div>
+                <div class="chip-group" data-field="interests">
+                  <div class="chip on" data-value="fashion" onclick="tc(this)">Fashion &amp; clothing</div>
+                  <div class="chip on" data-value="online_shopper" onclick="tc(this)">Online shopper</div>
+                  <div class="chip" data-value="beauty" onclick="tc(this)">Beauty &amp; skincare</div>
+                  <div class="chip" data-value="brand_customer" onclick="tc(this)">H&amp;M customer</div>
+                  <div class="chip" data-value="sustainability" onclick="tc(this)">Sustainability interest</div>
+                  <div class="chip" data-value="social_media" onclick="tc(this)">Social media user</div>
+                  <div class="chip" data-value="parent" onclick="tc(this)">Parent</div>
+                  <div class="chip" data-value="homeowner" onclick="tc(this)">Homeowner</div>
                 </div>
               </div>
               <div class="field"><label>Minimum contributor rating</label>
-                <div class="chip-group">
-                  <div class="chip" onclick="tc(this)">Any rating</div>
-                  <div class="chip on" onclick="tc(this)">3.0★ and above</div>
-                  <div class="chip" onclick="tc(this)">4.0★ and above</div>
-                  <div class="chip" onclick="tc(this)">4.5★ Elite only</div>
+                <div class="chip-group" data-field="min_rating" data-single="true">
+                  <div class="chip" data-value="0" onclick="tc(this)">Any rating</div>
+                  <div class="chip on" data-value="3.0" onclick="tc(this)">3.0★ and above</div>
+                  <div class="chip" data-value="4.0" onclick="tc(this)">4.0★ and above</div>
+                  <div class="chip" data-value="4.5" onclick="tc(this)">4.5★ Elite only</div>
                 </div>
               </div>
             </div>
 
             <div class="section-group">
               <h3>Additional screening</h3>
-              <div class="field"><label>Screening question 1 (optional)</label><input type="text" placeholder="e.g. Have you shopped with H&M online in the last 12 months?"></div>
-              <div class="field"><label>Screening question 2 (optional)</label><input type="text" placeholder="e.g. How often do you shop for clothes online?"></div>
-              <div class="field"><label>Any other requirements or notes for Vetd?</label><textarea placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly."></textarea></div>
+              <div class="field"><label>Screening question 1 (optional)</label><input type="text" id="b-sq1" placeholder="e.g. Have you shopped with H&M online in the last 12 months?"></div>
+              <div class="field"><label>Screening question 2 (optional)</label><input type="text" id="b-sq2" placeholder="e.g. How often do you shop for clothes online?"></div>
+              <div class="field"><label>Any other requirements or notes for Vetd?</label><textarea id="b-addreqs" placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly."></textarea></div>
             </div>
 
             <div style="display:flex;gap:12px">
@@ -923,6 +923,11 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ─── PUBLISH STUDY ──────────────────────────────────────
+  function getChipValues(field) {
+    return [...document.querySelectorAll(`[data-field="${field}"] .chip.on`)]
+      .map(c => c.dataset.value);
+  }
+
   async function publishStudy() {
     const title  = document.getElementById('b-title').value.trim();
     const desc   = document.getElementById('b-desc').value.trim();
@@ -932,6 +937,17 @@ textarea{resize:vertical;min-height:90px}
     const pay    = parseInt(document.getElementById('b-pay').value)   || 0;
     const start  = document.getElementById('b-start').value || null;
     const close  = document.getElementById('b-close').value || null;
+    const sq1    = document.getElementById('b-sq1').value.trim()      || null;
+    const sq2    = document.getElementById('b-sq2').value.trim()      || null;
+    const addReq = document.getElementById('b-addreqs').value.trim()  || null;
+
+    // Collect chip values
+    const targetAges      = getChipValues('age_ranges');
+    const targetGenders   = getChipValues('genders');
+    const targetLocations = getChipValues('locations');
+    const targetInterests = getChipValues('interests');
+    const minRatingVal    = getChipValues('min_rating')[0];
+    const minRating       = minRatingVal && minRatingVal !== '0' ? parseFloat(minRatingVal) : null;
 
     if (!title) { showToast('Please enter a study title', true); return; }
 
@@ -958,17 +974,25 @@ textarea{resize:vertical;min-height:90px}
         .from('clients').select('company_id').eq('id', user.id).single();
 
       const { error } = await db.from('studies').insert({
-        created_by:          user.id,
-        company_id:          clientRow?.company_id || null,
+        created_by:           user.id,
+        company_id:           clientRow?.company_id || null,
         title,
-        description:         desc || null,
+        description:          desc || null,
         format,
-        duration_minutes:    durationMins,
+        duration_minutes:     durationMins,
         spots,
-        pay_per_participant: pay,
-        start_date:          start,
-        close_date:          close,
-        status:              'live'
+        pay_per_participant:  pay,
+        start_date:           start,
+        close_date:           close,
+        status:               'live',
+        target_age_ranges:    targetAges.length    ? targetAges      : null,
+        target_genders:       targetGenders.length ? targetGenders   : null,
+        target_locations:     targetLocations.length ? targetLocations : null,
+        target_interests:     targetInterests.length ? targetInterests : null,
+        min_rating:           minRating,
+        screening_q1:         sq1,
+        screening_q2:         sq2,
+        additional_reqs:      addReq
       });
       if (error) throw error;
 
@@ -1148,7 +1172,15 @@ textarea{resize:vertical;min-height:90px}
     btn.classList.add('on');
   }
 
-  function tc(el) { el.classList.toggle('on'); }
+  function tc(el) {
+    const group = el.closest('[data-single="true"]');
+    if (group) {
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      el.classList.add('on');
+    } else {
+      el.classList.toggle('on');
+    }
+  }
 
   function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
