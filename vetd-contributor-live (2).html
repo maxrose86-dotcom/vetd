@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetd — Contributor Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1D9E75;
+    --green-light: #E1F5EE;
+    --green-mid: #5DCAA5;
+    --green-dark: #0F6E56;
+    --blue: #378ADD;
+    --blue-light: #E6F1FB;
+    --amber: #BA7517;
+    --amber-light: #FAEEDA;
+    --coral: #D85A30;
+    --coral-light: #FAECE7;
+    --gray-50: #F7F6F2;
+    --gray-100: #EDECEA;
+    --gray-200: #D3D1C7;
+    --gray-400: #888780;
+    --gray-700: #444441;
+    --gray-900: #1C1B19;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'Figtree', sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── LANDING ── */
+  #landing {
+    background: var(--gray-900);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  #landing::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(29,158,117,0.25) 0%, transparent 70%);
+    top: -200px; left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .landing-logo { font-family: var(--serif); font-size: 52px; letter-spacing: -1px; margin-bottom: 6px; }
+  .landing-logo span { color: var(--green-mid); }
+  .landing-tag { font-size: 14px; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2.5rem; font-weight: 300; }
+  .landing-headline { font-family: var(--serif); font-size: 38px; line-height: 1.15; max-width: 480px; margin: 0 auto 1rem; }
+  .landing-headline em { color: var(--green-mid); font-style: italic; }
+  .landing-sub { color: rgba(255,255,255,0.6); max-width: 380px; margin: 0 auto 2.5rem; font-size: 15px; line-height: 1.6; font-weight: 300; }
+  .btn-primary {
+    display: inline-block; padding: 14px 36px; background: var(--green); color: #fff;
+    border-radius: 100px; font-size: 15px; font-weight: 500; cursor: pointer;
+    border: none; font-family: var(--sans); transition: background 0.15s, transform 0.1s;
+  }
+  .btn-primary:hover { background: var(--green-dark); transform: translateY(-1px); }
+  .btn-secondary {
+    display: inline-block; padding: 14px 36px; background: transparent; color: rgba(255,255,255,0.7);
+    border-radius: 100px; font-size: 15px; font-weight: 400; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.2); font-family: var(--sans); margin-left: 12px;
+    transition: border-color 0.15s;
+  }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+  .landing-trust { margin-top: 3rem; display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; }
+  .trust-stat { text-align: center; }
+  .trust-num { font-family: var(--serif); font-size: 28px; color: var(--green-mid); }
+  .trust-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  /* ── ONBOARDING WRAPPER ── */
+  .onboarding-wrap {
+    flex: 1; display: flex; align-items: stretch;
+    background: #fff; min-height: 100vh;
+  }
+  .onboarding-sidebar {
+    width: 280px; background: var(--gray-900); color: #fff;
+    padding: 2.5rem 2rem; display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-logo { font-family: var(--serif); font-size: 24px; margin-bottom: 3rem; }
+  .sidebar-logo span { color: var(--green-mid); }
+  .sidebar-steps { flex: 1; }
+  .sidebar-step {
+    display: flex; align-items: flex-start; gap: 14px; margin-bottom: 2rem; opacity: 0.35;
+    transition: opacity 0.3s;
+  }
+  .sidebar-step.done, .sidebar-step.current { opacity: 1; }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5);
+    transition: all 0.3s;
+  }
+  .sidebar-step.current .step-dot { border-color: var(--green-mid); color: var(--green-mid); }
+  .sidebar-step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; font-size: 13px; }
+  .step-info { padding-top: 4px; }
+  .step-name { font-size: 13px; font-weight: 500; }
+  .step-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .sidebar-step.current .step-desc { color: rgba(255,255,255,0.6); }
+  .onboarding-main { flex: 1; padding: 3rem 3rem; overflow-y: auto; max-width: 640px; }
+  .onboarding-step { display: none; }
+  .onboarding-step.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step-header { margin-bottom: 2rem; }
+  .step-header h2 { font-family: var(--serif); font-size: 32px; margin-bottom: 6px; }
+  .step-header p { color: var(--gray-400); font-size: 14px; font-weight: 300; }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 6px; }
+  input[type=text], input[type=email], input[type=password], input[type=date], select, textarea {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-family: var(--sans); font-size: 14px; color: var(--gray-900); background: #fff;
+    transition: border-color 0.15s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green); }
+  textarea { resize: vertical; min-height: 80px; }
+  .field { margin-bottom: 1.25rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    padding: 7px 16px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; cursor: pointer; transition: all 0.15s; background: #fff; color: var(--gray-700);
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--green); color: var(--green); }
+  .chip.selected { background: var(--green-light); border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+
+  .range-field { margin-bottom: 1.5rem; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; height: 4px; background: var(--gray-200);
+    border-radius: 100px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--green); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  .nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-100); }
+  .btn-back {
+    padding: 11px 24px; background: transparent; border: 1px solid var(--gray-200);
+    border-radius: 100px; font-size: 14px; cursor: pointer; font-family: var(--sans);
+    color: var(--gray-700); transition: border-color 0.15s;
+  }
+  .btn-back:hover { border-color: var(--gray-400); }
+  .btn-next {
+    padding: 12px 32px; background: var(--green); color: #fff; border-radius: 100px;
+    font-size: 14px; font-weight: 500; cursor: pointer; border: none; font-family: var(--sans);
+    transition: background 0.15s; margin-left: auto;
+  }
+  .btn-next:hover { background: var(--green-dark); }
+
+  /* ── APP SHELL (post-onboarding) ── */
+  .app-shell { flex: 1; display: flex; flex-direction: column; }
+  .app-topbar {
+    background: #fff; border-bottom: 1px solid var(--gray-100); padding: 0 1.5rem;
+    height: 60px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-logo { font-family: var(--serif); font-size: 22px; }
+  .topbar-logo span { color: var(--green); }
+  .topbar-nav { display: flex; gap: 4px; }
+  .topbar-nav button {
+    padding: 7px 16px; border-radius: 100px; border: none; background: transparent;
+    font-size: 13px; cursor: pointer; font-family: var(--sans); color: var(--gray-400);
+    font-weight: 400; transition: all 0.15s;
+  }
+  .topbar-nav button.active { background: var(--gray-100); color: var(--gray-900); font-weight: 500; }
+  .topbar-nav button:hover:not(.active) { color: var(--gray-700); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    font-weight: 600; color: var(--green-dark); cursor: pointer; flex-shrink: 0;
+  }
+  .notif-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--coral);
+    position: relative; top: -2px;
+  }
+
+  .app-content { flex: 1; padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+  /* ── DASHBOARD ── */
+  .dash-welcome { margin-bottom: 2rem; }
+  .dash-welcome h1 { font-family: var(--serif); font-size: 30px; margin-bottom: 4px; }
+  .dash-welcome p { color: var(--gray-400); font-size: 14px; font-weight: 300; }
+
+  .rating-hero {
+    background: var(--gray-900); color: #fff; border-radius: var(--radius-xl);
+    padding: 2rem; display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; position: relative; overflow: hidden;
+  }
+  .rating-hero::before {
+    content: ''; position: absolute; right: -40px; top: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(29,158,117,0.3) 0%, transparent 70%);
+  }
+  .rating-hero-left h2 { font-family: var(--serif); font-size: 22px; margin-bottom: 4px; }
+  .rating-hero-left p { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 300; }
+  .rating-big { font-family: var(--serif); font-size: 56px; color: var(--green-mid); line-height: 1; }
+  .rating-stars-big { display: flex; gap: 4px; margin-top: 6px; justify-content: flex-end; }
+  .star-icon { font-size: 16px; }
+
+  .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .stat-card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 8px; font-weight: 500; }
+  .stat-card-num { font-family: var(--serif); font-size: 30px; color: var(--gray-900); }
+  .stat-card-sub { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+  .section-title {
+    font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--gray-400); margin-bottom: 1rem;
+  }
+
+  /* ── JOB CARDS ── */
+  .job-card {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem; margin-bottom: 14px; transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .job-card:hover { border-color: var(--green); box-shadow: 0 2px 12px rgba(29,158,117,0.08); }
+  .job-card.featured { border-color: var(--green); }
+  .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .job-company { display: flex; align-items: center; gap: 10px; }
+  .company-badge {
+    width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--gray-100);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;
+    color: var(--gray-400);
+  }
+  .job-company-name { font-size: 12px; color: var(--gray-400); }
+  .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .job-pay { text-align: right; }
+  .pay-amount { font-family: var(--serif); font-size: 24px; color: var(--green); }
+  .pay-type { font-size: 11px; color: var(--gray-400); }
+  .job-desc { font-size: 13px; color: var(--gray-400); line-height: 1.5; margin-bottom: 12px; font-weight: 300; }
+  .job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag {
+    padding: 4px 11px; border-radius: 100px; font-size: 11px; font-weight: 500;
+  }
+  .tag-green { background: var(--green-light); color: var(--green-dark); }
+  .tag-blue { background: var(--blue-light); color: #185FA5; }
+  .tag-amber { background: var(--amber-light); color: var(--amber); }
+  .tag-gray { background: var(--gray-100); color: var(--gray-400); }
+  .tag-coral { background: var(--coral-light); color: #993C1D; }
+  .job-footer { display: flex; justify-content: space-between; align-items: center; }
+  .job-meta { font-size: 12px; color: var(--gray-400); }
+  .job-match { display: flex; align-items: center; gap: 6px; }
+  .match-pct { font-size: 13px; font-weight: 600; color: var(--green); }
+  .match-bar { width: 60px; height: 5px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
+  .match-fill { height: 100%; background: var(--green); border-radius: 100px; }
+  .apply-btn {
+    padding: 8px 22px; background: var(--green); color: #fff; border-radius: 100px;
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: var(--sans);
+    transition: background 0.15s;
+  }
+  .apply-btn:hover { background: var(--green-dark); }
+  .applied-badge {
+    padding: 8px 22px; background: var(--green-light); color: var(--green-dark);
+    border-radius: 100px; font-size: 13px; font-weight: 500;
+  }
+  .progress-thin { height: 4px; background: var(--gray-100); border-radius: 100px; overflow: hidden; margin-top: 10px; }
+  .progress-fill-green { height: 100%; background: var(--green); border-radius: 100px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+  .filter-chip {
+    padding: 7px 16px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; cursor: pointer; background: #fff; color: var(--gray-700);
+    transition: all 0.15s; font-family: var(--sans);
+  }
+  .filter-chip.active { background: var(--gray-900); color: #fff; border-color: var(--gray-900); }
+  .filter-chip:hover:not(.active) { border-color: var(--gray-400); }
+  .filter-right { margin-left: auto; }
+  select.filter-select {
+    padding: 7px 14px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; background: #fff; color: var(--gray-700); font-family: var(--sans);
+    width: auto; cursor: pointer;
+  }
+
+  /* ── PROFILE PAGE ── */
+  .profile-header {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-xl);
+    padding: 2rem; display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 1.5rem;
+  }
+  .profile-avatar-big {
+    width: 72px; height: 72px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    font-weight: 600; color: var(--green-dark); flex-shrink: 0;
+  }
+  .profile-name { font-family: var(--serif); font-size: 26px; margin-bottom: 4px; }
+  .profile-subtitle { font-size: 13px; color: var(--gray-400); margin-bottom: 12px; font-weight: 300; }
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px;
+    border-radius: 100px; font-size: 12px; font-weight: 600;
+  }
+  .tier-elite { background: var(--green-light); color: var(--green-dark); }
+  .tier-verified { background: var(--blue-light); color: #185FA5; }
+  .tier-standard { background: var(--amber-light); color: var(--amber); }
+
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .profile-section {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .profile-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 1rem; }
+  .profile-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row-label { color: var(--gray-400); }
+  .profile-row-value { font-weight: 500; color: var(--gray-900); }
+
+  .rating-breakdown-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .rb-label { width: 110px; color: var(--gray-400); flex-shrink: 0; }
+  .rb-bar { flex: 1; height: 6px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
+  .rb-fill { height: 100%; background: var(--amber); border-radius: 100px; }
+  .rb-score { width: 30px; text-align: right; font-weight: 600; color: var(--gray-900); }
+
+  .history-item {
+    padding: 12px 0; border-bottom: 1px solid var(--gray-100); display: flex;
+    justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-title { font-weight: 500; color: var(--gray-900); margin-bottom: 2px; }
+  .history-meta { font-size: 11px; color: var(--gray-400); }
+  .history-pay { font-family: var(--serif); font-size: 18px; color: var(--green); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: var(--radius-xl); padding: 2rem; max-width: 520px; width: 100%;
+    max-height: 90vh; overflow-y: auto; animation: fadeUp 0.2s ease;
+  }
+  .modal h2 { font-family: var(--serif); font-size: 26px; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 1.5rem; font-weight: 300; }
+  .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+  .modal-detail { font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
+  .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
+  .modal-buttons { display: flex; gap: 12px; }
+  .modal-close {
+    padding: 11px 24px; background: transparent; border: 1px solid var(--gray-200);
+    border-radius: 100px; font-size: 14px; cursor: pointer; font-family: var(--sans); color: var(--gray-700);
+  }
+  .modal-apply {
+    flex: 1; padding: 12px; background: var(--green); color: #fff; border-radius: 100px;
+    font-size: 14px; font-weight: 500; cursor: pointer; border: none; font-family: var(--sans);
+    transition: background 0.15s;
+  }
+  .modal-apply:hover { background: var(--green-dark); }
+  .confirm-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: var(--gray-900); color: #fff; padding: 12px 24px; border-radius: 100px;
+    font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--gray-400); }
+  .empty-state-icon { font-size: 40px; margin-bottom: 1rem; }
+  .empty-state h3 { font-family: var(--serif); font-size: 22px; color: var(--gray-700); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; font-weight: 300; }
+
+  /* ── NOTIFICATIONS ── */
+  .notif-item { padding: 1rem; border-bottom: 1px solid var(--gray-100); display: flex; gap: 12px; cursor: pointer; transition: background 0.1s; }
+  .notif-item:hover { background: var(--gray-50); }
+  .notif-item.unread { background: var(--green-light); }
+  .notif-dot-item { width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-top: 5px; flex-shrink: 0; }
+  .notif-text { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
+  .notif-time { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+  @media (max-width: 700px) {
+    .onboarding-sidebar { display: none; }
+    .onboarding-main { padding: 2rem 1.25rem; }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .rating-hero { flex-direction: column; gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing" class="screen active">
+  <div style="position:relative;z-index:1;width:100%">
+    <div class="landing-logo">Vet<span style="color:var(--green-mid)">d</span></div>
+    <div class="landing-tag">Get paid. Get rated. Get better work.</div>
+    <div class="landing-headline">Get paid. Get rated. Get <em>better opportunities.</em></div>
+    <div class="landing-sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
+    <div>
+      <button class="btn-primary" onclick="startOnboarding()">Get started — it's free</button>
+      <button class="btn-secondary" onclick="goToApp()">View demo app</button>
+    </div>
+    <div class="landing-trust">
+      <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label">avg annual earnings</div></div>
+      <div class="trust-stat"><div class="trust-num">48h</div><div class="trust-label">to first assignment</div></div>
+      <div class="trust-stat"><div class="trust-num">4.8★</div><div class="trust-label">avg contributor score</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding" class="screen">
+  <div class="onboarding-wrap">
+    <div class="onboarding-sidebar">
+      <div class="sidebar-logo">Vet<span style="color:var(--green-mid)">d</span></div>
+      <div class="sidebar-steps">
+        <div class="sidebar-step current" id="sidebar-step-1">
+          <div class="step-dot" id="dot-1">1</div>
+          <div class="step-info"><div class="step-name">Your account</div><div class="step-desc">Name, email & password</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-2">
+          <div class="step-dot" id="dot-2">2</div>
+          <div class="step-info"><div class="step-name">About you</div><div class="step-desc">Age, location, lifestyle</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-3">
+          <div class="step-dot" id="dot-3">3</div>
+          <div class="step-info"><div class="step-name">Your interests</div><div class="step-desc">So we match you well</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-4">
+          <div class="step-dot" id="dot-4">4</div>
+          <div class="step-info"><div class="step-name">Availability</div><div class="step-desc">When & how you prefer</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-5">
+          <div class="step-dot" id="dot-5">5</div>
+          <div class="step-info"><div class="step-name">All done!</div><div class="step-desc">Start browsing</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboarding-main">
+      <!-- Step 1: Account -->
+      <div class="onboarding-step active" id="step-1">
+        <div class="step-header">
+          <h2>Create your account</h2>
+          <p>Let's get the basics set up. Takes about 2 minutes.</p>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>First name</label><input type="text" id="fname" placeholder="Sarah" value=""></div>
+          <div class="field"><label>Last name</label><input type="text" id="lname" placeholder="Johnson" value=""></div>
+        </div>
+        <div class="field"><label>Email address</label><input type="email" id="email" placeholder="sarah@example.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="password" placeholder="At least 8 characters"></div>
+        <div class="field">
+          <label>How did you hear about us?</label>
+          <select id="referral">
+            <option value="">Select an option</option>
+            <option value="social_media">Social media</option>
+            <option value="friend_family">Friend or family</option>
+            <option value="google_search">Google search</option>
+            <option value="online_forum">Online forum</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-next" onclick="nextStep(1)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: About you -->
+      <div class="onboarding-step" id="step-2">
+        <div class="step-header">
+          <h2>Tell us about yourself</h2>
+          <p>Companies use this to match you with relevant studies. Your data is never sold.</p>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Date of birth</label><input type="date" id="dob"></div>
+          <div class="field">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
+              <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Country</label>
+            <select id="country"><option>United Kingdom</option><option>Ireland</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+          </div>
+          <div class="field"><label>City / Town</label><input type="text" id="city" placeholder="e.g. Manchester"></div>
+        </div>
+        <div class="field">
+          <label>Employment status</label>
+          <select id="employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+        </div>
+        <div class="field">
+          <label>Household income (annual, approximate)</label>
+          <select id="income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+        </div>
+        <div class="field">
+          <label>Living situation</label>
+          <div class="chip-group" data-field="living_situation">
+            <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
+            <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
+            <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
+            <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you have children?</label>
+          <div class="chip-group" data-field="children">
+            <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
+            <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
+            <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
+            <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
+            <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(2)">← Back</button>
+          <button class="btn-next" onclick="nextStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Interests -->
+      <div class="onboarding-step" id="step-3">
+        <div class="step-header">
+          <h2>What are you into?</h2>
+          <p>Select everything that applies — the more you share, the better the matches.</p>
+        </div>
+        <div class="field">
+          <label>Shopping & lifestyle</label>
+          <div class="chip-group" data-field="interests_lifestyle">
+            <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
+            <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
+            <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
+            <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
+            <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
+            <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
+            <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
+            <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
+            <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Technology & media</label>
+          <div class="chip-group" data-field="interests_tech">
+            <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
+            <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
+            <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
+            <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
+            <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
+            <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Finance & banking</label>
+          <div class="chip-group" data-field="interests_finance">
+            <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
+            <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
+            <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
+            <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
+            <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
+            <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Which brands do you shop with regularly?</label>
+          <div class="chip-group" data-field="brands">
+            <div class="chip" data-value="hm" onclick="toggleChip(this)">H&M</div>
+            <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
+            <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
+            <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
+            <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks & Spencer</div>
+            <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
+            <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
+            <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
+            <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
+            <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(3)">← Back</button>
+          <button class="btn-next" onclick="nextStep(3)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Availability -->
+      <div class="onboarding-step" id="step-4">
+        <div class="step-header">
+          <h2>When are you available?</h2>
+          <p>This helps us surface studies that work around your life.</p>
+        </div>
+        <div class="field">
+          <label>Preferred study format</label>
+          <div class="chip-group" data-field="study_formats">
+            <div class="chip selected" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
+            <div class="chip selected" data-value="video_call" onclick="toggleChip(this)">Video call</div>
+            <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
+            <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
+            <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Available times</label>
+          <div class="chip-group" data-field="available_times">
+            <div class="chip selected" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
+            <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
+            <div class="chip selected" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
+            <div class="chip selected" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Maximum session length I'm comfortable with</label>
+          <div class="chip-group" data-field="max_session_length" data-single="true">
+            <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
+            <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
+            <div class="chip selected" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
+            <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
+            <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>How often would you like to participate?</label>
+          <select id="frequency">
+            <option value="once_a_month">Once a month</option>
+            <option value="2_3_per_month">2–3 times a month</option>
+            <option value="weekly">Weekly</option>
+            <option value="as_often_as_possible">As often as possible</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Minimum pay you'd accept (per hour equivalent)</label>
+          <div style="margin-top:8px">
+            <input type="range" min="5" max="100" value="25" id="minpay" oninput="document.getElementById('payval').textContent='£'+this.value">
+            <div class="range-labels"><span>£5</span><span id="payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Anything else you'd like us to know?</label>
+          <textarea id="additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..."></textarea>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(4)">← Back</button>
+          <button class="btn-next" onclick="nextStep(4)">Finish →</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Done -->
+      <div class="onboarding-step" id="step-5">
+        <div style="text-align:center;padding:2rem 0">
+          <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:32px">✓</div>
+          <h2 style="font-family:var(--serif);font-size:36px;margin-bottom:8px">You're all set!</h2>
+          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto">Your profile is live. We've already found <strong style="color:var(--green)">4 studies</strong> that match your interests.</p>
+          <div style="background:var(--gray-50);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:2rem;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:12px;font-weight:600">Your starting profile</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Tier</span><span style="font-weight:600">Standard (new member)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Rating</span><span style="color:var(--gray-400)">No ratings yet</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)">Studies matched</span><span style="color:var(--green);font-weight:600">4 waiting</span></div>
+          </div>
+          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()">Start browsing studies →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="screen">
+  <div class="app-shell">
+    <div class="app-topbar">
+      <div class="topbar-logo">Vet<span style="color:var(--green)">d</span></div>
+      <div class="topbar-nav">
+        <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
+        <button onclick="showTab('jobs', this)">Browse studies</button>
+        <button onclick="showTab('profile', this)">My profile</button>
+      </div>
+      <div class="topbar-right">
+        <div class="notif-dot"></div>
+        <div class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">SL</div>
+      </div>
+    </div>
+
+    <div class="app-content">
+
+      <!-- DASHBOARD TAB -->
+      <div id="tab-dashboard">
+        <div class="dash-welcome">
+          <h1>Good morning, Sarah 👋</h1>
+          <p>You have 2 new study matches and 1 pending invitation.</p>
+        </div>
+
+        <div class="rating-hero">
+          <div class="rating-hero-left">
+            <h2>Your Vetd rating</h2>
+            <p>Based on 23 completed studies</p>
+            <div style="margin-top:1rem">
+              <div class="tier-badge tier-elite">★ Elite contributor</div>
+            </div>
+          </div>
+          <div style="text-align:right;position:relative;z-index:1">
+            <div class="rating-big">4.8</div>
+            <div class="rating-stars-big">
+              <span class="star-icon" style="color:#5DCAA5">★</span>
+              <span class="star-icon" style="color:#5DCAA5">★</span>
+              <span class="star-icon" style="color:#5DCAA5">★</span>
+              <span class="star-icon" style="color:#5DCAA5">★</span>
+              <span class="star-icon" style="color:#5DCAA5">★</span>
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px">Top 5% of contributors</div>
+          </div>
+        </div>
+
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-card-label">Total earned</div>
+            <div class="stat-card-num">£640</div>
+            <div class="stat-card-sub">↑ £45 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Studies done</div>
+            <div class="stat-card-num">23</div>
+            <div class="stat-card-sub">3 in progress</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Completion rate</div>
+            <div class="stat-card-num">96%</div>
+            <div class="stat-card-sub">Excellent</div>
+          </div>
+        </div>
+
+        <div class="section-title">New matches for you</div>
+        <div id="dashboard-jobs"></div>
+
+        <div class="section-title" style="margin-top:1.5rem">Recent notifications</div>
+        <div style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden">
+          <div class="notif-item unread">
+            <div class="notif-dot-item"></div>
+            <div><div class="notif-text"><strong>Lloyds Bank</strong> has invited you to their banking usability study. You're a top match!</div><div class="notif-time">2 hours ago</div></div>
+          </div>
+          <div class="notif-item unread">
+            <div class="notif-dot-item"></div>
+            <div><div class="notif-text">Your rating went up to <strong>4.8★</strong> after completing the ASOS focus group. Well done!</div><div class="notif-time">Yesterday</div></div>
+          </div>
+          <div class="notif-item">
+            <div style="width:8px;flex-shrink:0"></div>
+            <div><div class="notif-text">Payment of <strong>£45</strong> has been processed for the Nike style survey.</div><div class="notif-time">3 days ago</div></div>
+          </div>
+          <div class="notif-item">
+            <div style="width:8px;flex-shrink:0"></div>
+            <div><div class="notif-text">New studies in your area: <strong>3 in-person studies</strong> available in Manchester this week.</div><div class="notif-time">4 days ago</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- JOBS TAB -->
+      <div id="tab-jobs" style="display:none">
+        <div style="margin-bottom:1.5rem">
+          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px">Browse studies</h1>
+          <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-chip active" onclick="filterJobs('all', this)">All studies</button>
+          <button class="filter-chip" onclick="filterJobs('matched', this)">Best matches</button>
+          <button class="filter-chip" onclick="filterJobs('online', this)">Online only</button>
+          <button class="filter-chip" onclick="filterJobs('high-pay', this)">High pay</button>
+          <select class="filter-select filter-right">
+            <option>Sort: Best match</option>
+            <option>Sort: Highest pay</option>
+            <option>Sort: Newest</option>
+            <option>Sort: Shortest</option>
+          </select>
+        </div>
+        <div id="jobs-list"></div>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div id="tab-profile" style="display:none">
+        <div class="profile-header">
+          <div class="profile-avatar-big">SL</div>
+          <div style="flex:1">
+            <div class="profile-name">Sarah Lewis</div>
+            <div class="profile-subtitle">Manchester, UK · Member since March 2026</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div class="tier-badge tier-elite">★ Elite contributor</div>
+              <div style="font-size:13px;color:var(--gray-400)">4.8★ · 23 studies · £640 earned</div>
+            </div>
+          </div>
+          <button class="apply-btn" style="white-space:nowrap" onclick="showToast('Profile editing coming soon!')">Edit profile</button>
+        </div>
+
+        <div class="profile-grid">
+          <div class="profile-section">
+            <h3>Personal details</h3>
+            <div class="profile-row"><span class="profile-row-label">Age</span><span class="profile-row-value">34</span></div>
+            <div class="profile-row"><span class="profile-row-label">Gender</span><span class="profile-row-value">Woman</span></div>
+            <div class="profile-row"><span class="profile-row-label">Location</span><span class="profile-row-value">Manchester</span></div>
+            <div class="profile-row"><span class="profile-row-label">Employment</span><span class="profile-row-value">Full-time</span></div>
+            <div class="profile-row"><span class="profile-row-label">Children</span><span class="profile-row-value">2 (under 12)</span></div>
+            <div class="profile-row"><span class="profile-row-label">Living situation</span><span class="profile-row-value">Own home</span></div>
+          </div>
+
+          <div class="profile-section">
+            <h3>Rating breakdown</h3>
+            <div class="rating-breakdown-row"><span class="rb-label">Punctuality</span><div class="rb-bar"><div class="rb-fill" style="width:90%"></div></div><span class="rb-score">4.5</span></div>
+            <div class="rating-breakdown-row"><span class="rb-label">Engagement</span><div class="rb-bar"><div class="rb-fill" style="width:96%"></div></div><span class="rb-score">4.8</span></div>
+            <div class="rating-breakdown-row"><span class="rb-label">Quality of input</span><div class="rb-bar"><div class="rb-fill" style="width:92%"></div></div><span class="rb-score">4.6</span></div>
+            <div class="rating-breakdown-row"><span class="rb-label">Honesty</span><div class="rb-bar"><div class="rb-fill" style="width:100%"></div></div><span class="rb-score">5.0</span></div>
+            <div class="rating-breakdown-row"><span class="rb-label">Profile fit</span><div class="rb-bar"><div class="rb-fill" style="width:88%"></div></div><span class="rb-score">4.4</span></div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1">
+            <h3>My interests & tags</h3>
+            <div class="job-tags" style="margin-top:4px">
+              <span class="tag tag-green">Fashion & clothing</span>
+              <span class="tag tag-green">Beauty & skincare</span>
+              <span class="tag tag-blue">Smartphones & apps</span>
+              <span class="tag tag-blue">Online banking</span>
+              <span class="tag tag-amber">Food & cooking</span>
+              <span class="tag tag-amber">Fitness & wellness</span>
+              <span class="tag tag-gray">Travel</span>
+              <span class="tag tag-gray">Streaming & TV</span>
+              <span class="tag tag-gray">Home & interiors</span>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1">
+            <h3>Study history</h3>
+            <div class="history-item">
+              <div><div class="history-title">ASOS — Fashion discovery focus group</div><div class="history-meta">Video call · 60 mins · Feb 2026 · Rated 5.0★</div></div>
+              <div class="history-pay">£45</div>
+            </div>
+            <div class="history-item">
+              <div><div class="history-title">Nike — Activewear style survey</div><div class="history-meta">Online survey · 20 mins · Feb 2026 · Rated 4.8★</div></div>
+              <div class="history-pay">£15</div>
+            </div>
+            <div class="history-item">
+              <div><div class="history-title">Tesco — Online grocery UX study</div><div class="history-meta">Video call · 45 mins · Jan 2026 · Rated 4.6★</div></div>
+              <div class="history-pay">£35</div>
+            </div>
+            <div class="history-item">
+              <div><div class="history-title">Barclays — Mobile app usability</div><div class="history-meta">In-person · 90 mins · Jan 2026 · Rated 5.0★</div></div>
+              <div class="history-pay">£80</div>
+            </div>
+            <div style="text-align:center;margin-top:1rem">
+              <button class="filter-chip" onclick="showToast('Full history coming soon!')">View all 23 studies</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="apply-modal">
+  <div class="modal">
+    <div id="modal-pre-apply">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+        <div class="company-badge" id="modal-company-badge" style="width:48px;height:48px;font-size:13px"></div>
+        <div id="modal-pay-display"></div>
+      </div>
+      <h2 id="modal-title"></h2>
+      <p class="modal-sub" id="modal-company-name"></p>
+      <div class="modal-tags" id="modal-tags"></div>
+      <p class="modal-detail" id="modal-detail"></p>
+      <div style="background:var(--green-light);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.5rem">
+        <div style="font-size:12px;font-weight:600;color:var(--green-dark);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Why you're a match</div>
+        <div id="modal-match-reason" style="font-size:13px;color:var(--green-dark);line-height:1.5"></div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-close" onclick="closeModal()">Not now</button>
+        <button class="modal-apply" onclick="confirmApply()">Apply for this study →</button>
+      </div>
+    </div>
+    <div id="modal-confirmed" style="display:none;text-align:center;padding:1rem 0">
+      <div class="confirm-icon">✓</div>
+      <h2>Application sent!</h2>
+      <p style="color:var(--gray-400);margin:8px 0 1.5rem;font-size:14px;font-weight:300">The research team will review your profile and get back to you within 48 hours.</p>
+      <button class="btn-primary" style="width:100%" onclick="closeModal()">Back to studies</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── SUPABASE INIT ───────────────────────────────────────
+  // ⚠️  REPLACE these with your real Supabase project values
+  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I'
+  let db = null;
+  try {
+    if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    }
+  } catch(e) {
+    console.warn('Supabase SDK not loaded — running in demo mode');
+  }
+
+  // ─── HELPERS ─────────────────────────────────────────────
+  function getChipValues(fieldName) {
+    const group = document.querySelector(`[data-field="${fieldName}"]`);
+    if (!group) return [];
+    return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? 'var(--coral)' : 'var(--gray-900)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = 'Saving…';
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+    } else {
+      btn.textContent = btn.dataset.originalText || 'Continue →';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+
+  // ─── STEP 1: SIGN UP ────────────────────────────────────
+  async function signUpUser() {
+    const fname    = document.getElementById('fname').value.trim();
+    const lname    = document.getElementById('lname').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const referral = document.getElementById('referral').value || null;
+
+    // Validation
+    if (!fname || !lname) { showToast('Please enter your name', true); return false; }
+    if (!email)           { showToast('Please enter your email', true); return false; }
+    if (password.length < 8) { showToast('Password must be at least 8 characters', true); return false; }
+
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+
+    const btn = document.querySelector('#step-1 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data, error } = await db.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: fname,
+            last_name: lname,
+            role: 'contributor',
+            referral_source: referral
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Update referral source on contributor row (trigger already created it)
+      if (referral) {
+        await db.from('contributors').update({ referral_source: referral }).eq('id', data.user.id);
+      }
+
+      showToast('Account created!');
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Sign-up error:', err);
+      showToast(err.message || 'Sign-up failed', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── STEP 2: ABOUT YOU → save to contributors table ─────
+  async function saveStep2() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-2 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const { error } = await db.from('contributors').update({
+        date_of_birth:    document.getElementById('dob').value || null,
+        gender:           document.getElementById('gender').value,
+        country:          document.getElementById('country').value,
+        city:             document.getElementById('city').value.trim() || null,
+        employment:       document.getElementById('employment').value,
+        income:           document.getElementById('income').value,
+        living_situation: getChipValues('living_situation'),
+        children:         getChipValues('children'),
+        onboarding_step:  3
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 2 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── STEP 3: INTERESTS ──────────────────────────────────
+  async function saveStep3() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-3 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const { error } = await db.from('contributors').update({
+        interests_lifestyle: getChipValues('interests_lifestyle'),
+        interests_tech:      getChipValues('interests_tech'),
+        interests_finance:   getChipValues('interests_finance'),
+        brands:              getChipValues('brands'),
+        onboarding_step:     4
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 3 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── STEP 4: AVAILABILITY ──────────────────────────────
+  async function saveStep4() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-4 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const sessionLengths = getChipValues('max_session_length');
+
+      const { error } = await db.from('contributors').update({
+        study_formats:      getChipValues('study_formats'),
+        available_times:    getChipValues('available_times'),
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        frequency:          document.getElementById('frequency').value,
+        min_pay_per_hour:   parseInt(document.getElementById('minpay').value, 10),
+        additional_notes:   document.getElementById('additional_notes').value.trim() || null,
+        onboarding_step:    5,
+        onboarding_complete: true
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 4 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── JOBS (static demo data for now) ────────────────────
+  const jobs = [
+    {
+      id: 1, company: 'H&M', title: 'Online shopping experience research',
+      desc: 'Share how you browse and buy fashion online. Walk through the H&M app with a researcher and share your honest thoughts.',
+      pay: 45, payType: 'per session', duration: '60-min video call',
+      tags: [{text:'Women 25–45',cls:'tag-green'},{text:'H&M shopper',cls:'tag-blue'},{text:'Online shopper',cls:'tag-amber'},{text:'UK only',cls:'tag-gray'}],
+      match: 97, spots: 8, filled: 5, format: 'online', featured: true,
+      matchReason: 'You\'re a woman in your 30s, based in the UK, who shops online — exactly the profile H&M is looking for.',
+      detail: 'Help H&M understand how real shoppers experience their digital products. You\'ll be on a 60-minute video call with a researcher where you browse the H&M website and app naturally, sharing your thoughts aloud. No preparation needed — just be yourself.'
+    },
+    {
+      id: 2, company: 'Lloyds', title: 'Digital banking app usability study',
+      desc: 'Evaluate new features in mobile banking with a researcher. £80 for 90 minutes.',
+      pay: 80, payType: 'per session', duration: '90-min in-person, London',
+      tags: [{text:'35–60',cls:'tag-green'},{text:'Lloyds customer',cls:'tag-blue'},{text:'4.5★+ required',cls:'tag-amber'},{text:'London/commutable',cls:'tag-gray'}],
+      match: 91, spots: 8, filled: 4, format: 'online', featured: false,
+      matchReason: 'Your 4.8★ Elite rating unlocks this premium study. Lloyds specifically requested top-rated contributors.',
+      detail: 'Lloyds Bank is testing a new version of their mobile banking app and needs real customers to help identify pain points. You\'ll sit with a researcher at their Canary Wharf office and complete a series of tasks in the app while thinking aloud.'
+    },
+    {
+      id: 3, company: 'ASOS', title: 'Gen Z vs Millennial fashion focus group',
+      desc: 'Join a 45-minute online group discussion about fashion discovery, trends and how you shop for clothes.',
+      pay: 35, payType: 'per session', duration: '45-min group video call',
+      tags: [{text:'25–40',cls:'tag-green'},{text:'Fashion shopper',cls:'tag-blue'},{text:'Social media user',cls:'tag-gray'}],
+      match: 94, spots: 12, filled: 9, format: 'online', featured: false,
+      matchReason: 'Your age, fashion interests and social media usage are a strong match for this group.',
+      detail: 'ASOS is exploring how different generations discover and buy fashion online. You\'ll join a small group of 6 people for an open, moderated conversation. No right or wrong answers — just your genuine perspective.'
+    },
+    {
+      id: 4, company: 'Nike', title: 'Activewear style & fit survey',
+      desc: 'Short 20-minute online survey about how you buy athletic clothing. No video required.',
+      pay: 12, payType: 'per survey', duration: '20-min online survey',
+      tags: [{text:'Any age',cls:'tag-green'},{text:'Fitness interest',cls:'tag-blue'},{text:'Online',cls:'tag-gray'}],
+      match: 88, spots: 100, filled: 67, format: 'online', featured: false,
+      matchReason: 'You listed fitness & wellness as an interest — Nike is looking for people who buy athletic gear.',
+      detail: 'Nike wants to understand how people shop for sportswear. Answer questions about your buying habits, style preferences and what matters most when choosing activewear. Quick, easy, and no video required.'
+    },
+    {
+      id: 5, company: 'Tesco', title: 'Online grocery delivery experience',
+      desc: 'Talk us through your experience using grocery delivery apps. Do you use Tesco, Ocado, or others?',
+      pay: 30, payType: 'per session', duration: '30-min video call',
+      tags: [{text:'Grocery shopper',cls:'tag-green'},{text:'Has children',cls:'tag-amber'},{text:'Online delivery user',cls:'tag-blue'}],
+      match: 85, spots: 15, filled: 11, format: 'online', featured: false,
+      matchReason: 'You have children and shop online — a key profile for Tesco\'s family grocery research.',
+      detail: 'Tesco Groceries is looking at how families use online grocery delivery. You\'ll have a 30-minute video call with a researcher and walk through a recent grocery order, talking about what worked, what frustrated you, and what you wish was different.'
+    },
+    {
+      id: 6, company: 'Boots', title: 'Beauty & skincare loyalty programme research',
+      desc: 'In-person 75-minute session at Boots HQ, Manchester. Discuss your experience with loyalty schemes and beauty buying.',
+      pay: 65, payType: 'per session', duration: '75-min in-person, Manchester',
+      tags: [{text:'Women 25–50',cls:'tag-green'},{text:'Beauty shopper',cls:'tag-blue'},{text:'Manchester area',cls:'tag-amber'},{text:'4.0★+',cls:'tag-gray'}],
+      match: 99, spots: 6, filled: 3, format: 'in-person', featured: true,
+      matchReason: 'Perfect match: you\'re a woman interested in beauty, based in Manchester, with a 4.8★ rating. This study was built for someone like you.',
+      detail: 'Boots wants to overhaul their Advantage Card loyalty scheme and needs real shoppers to help shape the new experience. You\'ll visit their Manchester office for a 75-minute in-depth interview with their UX team. Tea, coffee and biscuits provided!'
+    }
+  ];
+
+  let appliedJobs = new Set();
+  let currentJob = null;
+  let currentStep = 1;
+
+  // ─── RENDER JOBS ────────────────────────────────────────
+  function renderJobs(containerId, subset) {
+    const container = document.getElementById(containerId);
+    if (!subset.length) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No studies found</h3><p>Try changing your filters</p></div>';
+      return;
+    }
+    container.innerHTML = subset.map(job => `
+      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal(${job.id})">
+        ${job.featured ? '<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">★ Top match for you</div>' : ''}
+        <div class="job-header">
+          <div class="job-company">
+            <div class="company-badge">${job.company}</div>
+            <div><div class="job-company-name">${job.company}</div><div class="job-title">${job.title}</div></div>
+          </div>
+          <div class="job-pay">
+            <div class="pay-amount">£${job.pay}</div>
+            <div class="pay-type">${job.payType}</div>
+          </div>
+        </div>
+        <div class="job-desc">${job.desc}</div>
+        <div class="job-tags">${job.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('')}</div>
+        <div class="job-footer">
+          <div>
+            <div class="job-meta">${job.duration} · ${job.spots - job.filled} spots left</div>
+            <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="job-match">
+              <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
+              <div class="match-pct">${job.match}%</div>
+            </div>
+            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : '<button class="apply-btn" onclick="event.stopPropagation();openModal('+job.id+')">Apply</button>'}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterJobs(type, btn) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    let subset = jobs;
+    if (type === 'matched') subset = jobs.filter(j => j.match >= 90);
+    if (type === 'online') subset = jobs.filter(j => j.format === 'online');
+    if (type === 'high-pay') subset = jobs.filter(j => j.pay >= 40);
+    renderJobs('jobs-list', subset);
+  }
+
+  // ─── MODAL ──────────────────────────────────────────────
+  function openModal(id) {
+    currentJob = jobs.find(j => j.id === id);
+    document.getElementById('modal-pre-apply').style.display = 'block';
+    document.getElementById('modal-confirmed').style.display = 'none';
+    document.getElementById('modal-company-badge').textContent = currentJob.company;
+    document.getElementById('modal-title').textContent = currentJob.title;
+    document.getElementById('modal-company-name').textContent = currentJob.company + ' · ' + currentJob.duration;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">£${currentJob.pay}</div><div class="modal-pay-sub">${currentJob.payType}</div>`;
+    document.getElementById('modal-tags').innerHTML = currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
+    document.getElementById('modal-detail').textContent = currentJob.detail;
+    document.getElementById('modal-match-reason').textContent = currentJob.matchReason;
+    document.getElementById('apply-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('apply-modal').classList.remove('open');
+    if (currentJob) {
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    }
+  }
+
+  function confirmApply() {
+    if (currentJob) {
+      appliedJobs.add(currentJob.id);
+      document.getElementById('modal-pre-apply').style.display = 'none';
+      document.getElementById('modal-confirmed').style.display = 'block';
+    }
+  }
+
+  // ─── NAVIGATION ─────────────────────────────────────────
+  function showTab(tab, btn) {
+    ['dashboard','jobs','profile'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function startOnboarding() {
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('onboarding').classList.add('active');
+  }
+
+  function goToApp() {
+    ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
+    document.getElementById('app').classList.add('active');
+    renderJobs('dashboard-jobs', jobs.slice(0,2));
+    renderJobs('jobs-list', jobs);
+  }
+
+  // ─── STEP NAVIGATION (with Supabase saves) ─────────────
+  async function nextStep(step) {
+    let saveOk = true;
+
+    if (step === 1) saveOk = await signUpUser();
+    if (step === 2) saveOk = await saveStep2();
+    if (step === 3) saveOk = await saveStep3();
+    if (step === 4) saveOk = await saveStep4();
+
+    if (!saveOk) return; // stay on current step if save failed
+
+    if (step < 5) {
+      document.getElementById('step-' + step).classList.remove('active');
+      document.getElementById('step-' + (step + 1)).classList.add('active');
+      updateSidebar(step + 1);
+    }
+  }
+
+  function prevStep(step) {
+    document.getElementById('step-' + step).classList.remove('active');
+    document.getElementById('step-' + (step - 1)).classList.add('active');
+    updateSidebar(step - 1);
+  }
+
+  function updateSidebar(current) {
+    currentStep = current;
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('sidebar-step-' + i);
+      const dot = document.getElementById('dot-' + i);
+      el.classList.remove('current','done');
+      if (i < current) { el.classList.add('done'); dot.textContent = '✓'; }
+      else if (i === current) { el.classList.add('current'); dot.textContent = i; }
+      else { dot.textContent = i; }
+    }
+  }
+
+  function toggleChip(el) {
+    const group = el.closest('.chip-group');
+    // Single-select groups: deselect siblings first
+    if (group && group.dataset.single === 'true') {
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    }
+    el.classList.toggle('selected');
+  }
+
+  document.getElementById('apply-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>

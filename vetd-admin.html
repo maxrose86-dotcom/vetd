@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetd — Admin &amp; Matching Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D0F12;--bg2:#141720;--bg3:#1C2030;--bg4:#242840;
+  --border:#2A2E40;--border2:#363B55;
+  --green:#1D9E75;--green-dim:rgba(29,158,117,0.15);--green-mid:#5DCAA5;
+  --blue:#4B9EF5;--blue-dim:rgba(75,158,245,0.12);
+  --amber:#E8A020;--amber-dim:rgba(232,160,32,0.12);
+  --coral:#E8503A;--coral-dim:rgba(232,80,58,0.12);
+  --purple:#8B6EF5;--purple-dim:rgba(139,110,245,0.12);
+  --cyan:#22D3EE;--cyan-dim:rgba(34,211,238,0.1);
+  --text:#E8EAF0;--text2:#8892A4;--text3:#555E72;
+  --serif:'Syne',sans-serif;--mono:'DM Mono',monospace;--sans:'Figtree',sans-serif;
+  --r:8px;--r-md:12px;--r-lg:16px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0}
+.sb-logo{padding:1.25rem 1.25rem 0.75rem;border-bottom:1px solid var(--border)}
+.sb-logo-text{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--text)}
+.sb-logo-text span{color:var(--green-mid)}
+.sb-logo-sub{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px;font-family:var(--mono)}
+.sb-section{padding:0.75rem 0.75rem 0}
+.sb-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);padding:0 0.5rem;margin-bottom:4px;font-family:var(--mono)}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--text2);transition:all 0.15s;border:none;background:none;font-family:var(--sans);width:100%;text-align:left}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.on{background:var(--bg4);color:var(--text);font-weight:500}
+.sb-item .ico{width:16px;text-align:center;flex-shrink:0;font-size:13px;opacity:0.7}
+.sb-badge{margin-left:auto;background:var(--coral);color:#fff;border-radius:100px;font-size:9px;padding:1px 6px;font-weight:600;font-family:var(--mono)}
+.sb-badge-amber{background:var(--amber)}
+.sb-bottom{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+.sb-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(29,158,117,0.4)}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(29,158,117,0)}}
+
+.main{flex:1;overflow-y:auto}
+.tab{display:none;padding:1.75rem}
+.tab.on{display:block;animation:fadeUp 0.2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem}
+.ph h1{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--text)}
+.ph p{font-size:12px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--sans);transition:all 0.15s}
+.btn:hover{border-color:var(--border2);background:var(--bg4)}
+.btn-green{background:var(--green);border-color:var(--green);color:#fff}
+.btn-green:hover{background:var(--green-dark, #0F6E56);border-color:var(--green-dark, #0F6E56)}
+.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn-blue:hover{opacity:0.85}
+.btn-red{background:var(--coral);border-color:var(--coral);color:#fff}
+.btn-red:hover{opacity:0.85}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem 1.1rem;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat.g::before{background:var(--green)}
+.stat.b::before{background:var(--blue)}
+.stat.a::before{background:var(--amber)}
+.stat.r::before{background:var(--coral)}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;font-family:var(--mono)}
+.stat-num{font-family:var(--serif);font-size:28px;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.stat-sub.up{color:var(--green)}
+.stat-sub.warn{color:var(--amber)}
+.stat-sub.danger{color:var(--coral)}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:14px}
+.card-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:1rem;font-family:var(--mono);font-weight:500}
+
+/* TABLES */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-weight:400}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg3);cursor:pointer}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:100px;font-size:10px;font-weight:500;font-family:var(--mono)}
+.bg{background:var(--green-dim);color:var(--green-mid)}
+.bb{background:var(--blue-dim);color:var(--blue)}
+.ba{background:var(--amber-dim);color:var(--amber)}
+.br{background:var(--coral-dim);color:var(--coral)}
+.bp{background:var(--purple-dim);color:var(--purple)}
+.bc{background:rgba(100,100,100,0.15);color:var(--text3)}
+
+/* MATCHING ENGINE */
+.engine-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem}
+.match-vis{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem}
+.score-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
+.score-label{width:140px;color:var(--text2);flex-shrink:0;font-family:var(--mono);font-size:11px}
+.score-track{flex:1;height:6px;background:var(--bg4);border-radius:100px;overflow:hidden}
+.score-fill{height:100%;border-radius:100px;transition:width 0.5s ease}
+.score-val{width:36px;text-align:right;color:var(--text);font-weight:500;font-size:11px;font-family:var(--mono)}
+.weight-badge{font-size:10px;color:var(--text3);width:36px;text-align:center;flex-shrink:0;font-family:var(--mono)}
+
+.algo-formula{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:1rem;margin-bottom:1.25rem;font-family:var(--mono);font-size:11px;color:var(--cyan);line-height:1.8}
+.algo-formula .comment{color:var(--text3)}
+.algo-formula .var{color:var(--purple)}
+.algo-formula .num{color:var(--amber)}
+.algo-formula .fn{color:var(--green-mid)}
+
+.weight-slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.weight-slider-label{width:130px;font-size:11px;color:var(--text2);font-family:var(--mono);flex-shrink:0}
+input[type=range]{-webkit-appearance:none;height:3px;background:var(--bg4);border-radius:100px;outline:none;cursor:pointer;flex:1}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--bg2)}
+.weight-val{width:32px;text-align:right;font-size:11px;font-family:var(--mono);color:var(--blue)}
+
+/* FRAUD DETECTION */
+.flag-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.1rem 1.25rem;margin-bottom:10px;display:flex;align-items:flex-start;gap:1rem;transition:border-color 0.15s}
+.flag-card.high{border-left:3px solid var(--coral)}
+.flag-card.med{border-left:3px solid var(--amber)}
+.flag-card.low{border-left:3px solid var(--blue)}
+.flag-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.fi-red{background:var(--coral-dim)}
+.fi-amber{background:var(--amber-dim)}
+.fi-blue{background:var(--blue-dim)}
+.flag-body{flex:1}
+.flag-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.flag-desc{font-size:11px;color:var(--text2);line-height:1.5}
+.flag-meta{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)}
+.flag-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* CONTRIBUTOR OVERSIGHT */
+.contrib-row{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:8px;display:flex;align-items:center;gap:1rem}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.av-g{background:var(--green-dim);color:var(--green-mid)}
+.av-b{background:var(--blue-dim);color:var(--blue)}
+.av-a{background:var(--amber-dim);color:var(--amber)}
+.av-r{background:var(--coral-dim);color:var(--coral)}
+.av-p{background:var(--purple-dim);color:var(--purple)}
+.contrib-info{flex:1}
+.contrib-name{font-size:13px;font-weight:500;color:var(--text)}
+.contrib-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.risk-pill{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:500;font-family:var(--mono)}
+.risk-ok{background:var(--green-dim);color:var(--green-mid)}
+.risk-med{background:var(--amber-dim);color:var(--amber)}
+.risk-high{background:var(--coral-dim);color:var(--coral)}
+
+/* DISPUTE */
+.dispute-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;margin-bottom:12px}
+.dispute-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.dispute-id{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.dispute-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px}
+.dispute-parties{font-size:11px;color:var(--text2)}
+.dispute-body{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px;padding:10px;background:var(--bg3);border-radius:var(--r);border-left:2px solid var(--border2)}
+.dispute-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* REALTIME FEED */
+.feed{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:0;overflow:hidden;height:320px;overflow-y:auto}
+.feed-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:11px;animation:feedIn 0.3s ease}
+@keyframes feedIn{from{opacity:0;background:var(--bg3)}to{opacity:1;background:transparent}}
+.feed-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.fd-green{background:var(--green)}
+.fd-blue{background:var(--blue)}
+.fd-amber{background:var(--amber)}
+.fd-red{background:var(--coral)}
+.feed-text{color:var(--text2);flex:1;line-height:1.5}
+.feed-text strong{color:var(--text);font-weight:500}
+.feed-time{color:var(--text3);font-family:var(--mono);flex-shrink:0;font-size:10px;margin-top:1px}
+
+/* PLATFORM CONTROLS */
+.control-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+.control-row:last-child{border-bottom:none}
+.control-info h4{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.control-info p{font-size:11px;color:var(--text3);max-width:380px}
+.toggle{width:42px;height:24px;border-radius:100px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;border:none}
+.toggle.on{background:var(--green)}
+.toggle.off{background:var(--bg4)}
+.toggle::after{content:'';width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;transition:left 0.2s}
+.toggle.on::after{left:21px}
+.toggle.off::after{left:3px}
+
+/* MINI CHART */
+.mini-chart{display:flex;align-items:flex-end;gap:3px;height:48px}
+.mc-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;transition:height 0.4s}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(3px)}
+.modal-ov.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:1.75rem;max-width:520px;width:100%;animation:fadeUp 0.2s ease}
+.modal h2{font-family:var(--serif);font-size:22px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:1.25rem;font-family:var(--mono)}
+.modal-field{margin-bottom:1rem}
+.modal-field label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em}
+.modal-field select,.modal-field textarea,.modal-field input{width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;outline:none}
+.modal-field select:focus,.modal-field textarea:focus{border-color:var(--blue)}
+.modal-field textarea{min-height:80px;resize:vertical}
+.modal-btns{display:flex;gap:10px;margin-top:1.25rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:11px 20px;border-radius:var(--r-md);font-size:12px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;font-family:var(--mono)}
+.toast.show{opacity:1}
+
+/* FILTER BAR */
+.fbar{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.fc{padding:5px 14px;border-radius:100px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:transparent;color:var(--text2);transition:all 0.15s;font-family:var(--mono)}
+.fc.on{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+.fc:hover:not(.on){border-color:var(--border2);color:var(--text)}
+
+/* SCORE RING */
+.score-ring{position:relative;width:64px;height:64px;flex-shrink:0}
+.score-ring svg{transform:rotate(-90deg)}
+.score-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:16px;color:var(--text)}
+
+input[type=text],select,textarea{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-family:var(--sans);font-size:13px;padding:8px 12px;width:100%;outline:none}
+input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">Vet<span style="color:var(--green-mid)">d</span></div>
+    <div class="sb-logo-sub">Admin · Matching Engine</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Overview</div>
+    <button class="sb-item on" onclick="go('dashboard',this)"><span class="ico">⬛</span>Dashboard</button>
+    <button class="sb-item" onclick="go('feed',this)"><span class="ico">◉</span>Live feed</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Matching Engine</div>
+    <button class="sb-item" onclick="go('engine',this)"><span class="ico">⚙</span>Match algorithm</button>
+    <button class="sb-item" onclick="go('studies-admin',this)"><span class="ico">📋</span>Study queue</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Quality & Safety</div>
+    <button class="sb-item" onclick="go('fraud',this)"><span class="ico">⚠</span>Fraud detection<span class="sb-badge">5</span></button>
+    <button class="sb-item" onclick="go('contributors',this)"><span class="ico">👥</span>Contributor oversight</button>
+    <button class="sb-item" onclick="go('disputes',this)"><span class="ico">⚖</span>Disputes<span class="sb-badge sb-badge-amber">2</span></button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Platform</div>
+    <button class="sb-item" onclick="go('controls',this)"><span class="ico">🔧</span>Platform controls</button>
+    <button class="sb-item" onclick="go('payouts',this)"><span class="ico">💳</span>Payouts</button>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-status"><div class="pulse"></div>All systems operational</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="tab on" id="t-dashboard">
+  <div class="ph">
+    <div><h1>Admin Dashboard</h1><p>vetd.se · real-time overview · <span id="clock"></span></p></div>
+    <button class="btn btn-green" onclick="showToast('📊 Full report exported to admin@vetd.se')">Export report</button>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat g"><div class="stat-label">Total contributors</div><div class="stat-num">8,421</div><div class="stat-sub up">↑ 124 this week</div></div>
+    <div class="stat b"><div class="stat-label">Active studies</div><div class="stat-num">34</div><div class="stat-sub">12 filling · 22 live</div></div>
+    <div class="stat a"><div class="stat-label">Pending matches</div><div class="stat-num">1,847</div><div class="stat-sub warn">↑ 23% vs yesterday</div></div>
+    <div class="stat r"><div class="stat-label">Flags for review</div><div class="stat-num">5</div><div class="stat-sub danger">3 high priority</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Contributor tier breakdown</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="score-bar-row"><span class="score-label">Elite (4.7–5.0★)</span><div class="score-track"><div class="score-fill" style="width:31%;background:var(--green)"></div></div><span class="score-val">2,611</span></div>
+        <div class="score-bar-row"><span class="score-label">Verified (4.0–4.6★)</span><div class="score-track"><div class="score-fill" style="width:44%;background:var(--blue)"></div></div><span class="score-val">3,705</span></div>
+        <div class="score-bar-row"><span class="score-label">Standard (3.0–3.9★)</span><div class="score-track"><div class="score-fill" style="width:18%;background:var(--amber)"></div></div><span class="score-val">1,516</span></div>
+        <div class="score-bar-row"><span class="score-label">Restricted (&lt;3.0★)</span><div class="score-track"><div class="score-fill" style="width:7%;background:var(--coral)"></div></div><span class="score-val">589</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Platform health (7d)</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Completion rate</span><span style="color:var(--green);font-weight:500;font-family:var(--mono)">94.2%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">No-show rate</span><span style="color:var(--amber);font-weight:500;font-family:var(--mono)">2.1%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Avg fill time</span><span style="color:var(--text);font-weight:500;font-family:var(--mono)">31h</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Fraud flags raised</span><span style="color:var(--coral);font-weight:500;font-family:var(--mono)">5</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text2)">Disputes open</span><span style="color:var(--amber);font-weight:500;font-family:var(--mono)">2</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Revenue (this month)</div>
+      <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">£18,340</div>
+      <div style="font-size:11px;color:var(--green);font-family:var(--mono);margin-bottom:1rem">↑ 34% vs last month</div>
+      <div class="mini-chart" id="rev-chart"></div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Daily commission · last 14 days</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Recent flag alerts</div>
+      <div class="flag-card high" style="margin-bottom:8px">
+        <div class="flag-icon fi-red">🚨</div>
+        <div class="flag-body"><div class="flag-title">Profile inconsistency detected</div><div class="flag-desc">Jamie R. — claimed age 22 but survey responses suggest 40+. Demographic mismatch score: 87%.</div><div class="flag-meta">3 mins ago · auto-detected</div></div>
+      </div>
+      <div class="flag-card med">
+        <div class="flag-icon fi-amber">⚡</div>
+        <div class="flag-body"><div class="flag-title">Unusually fast survey completion</div><div class="flag-desc">User #4821 completed 15-min survey in 94 seconds. Suspected click-through.</div><div class="flag-meta">18 mins ago · auto-detected</div></div>
+      </div>
+      <button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="go('fraud', document.querySelectorAll('.sb-item')[5])">View all 5 flags →</button>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Studies needing attention</div>
+      <table class="tbl">
+        <thead><tr><th>Study</th><th>Status</th><th>Fill</th></tr></thead>
+        <tbody>
+          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Tesco grocery UX</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Closes in 6h</div></td><td><span class="badge ba">Urgent</span></td><td style="font-family:var(--mono)">3/15</td></tr>
+          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Nike activewear</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Stalled 48h</div></td><td><span class="badge ba">Stalled</span></td><td style="font-family:var(--mono)">12/50</td></tr>
+          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Boots loyalty</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filling well</div></td><td><span class="badge bg">On track</span></td><td style="font-family:var(--mono)">4/6</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- LIVE FEED -->
+<div class="tab" id="t-feed">
+  <div class="ph">
+    <div><h1>Live Activity Feed</h1><p>Real-time platform events · auto-refreshing</p></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="pauseFeed=!pauseFeed;this.textContent=pauseFeed?'▶ Resume':'⏸ Pause'">⏸ Pause</button>
+      <button class="btn" onclick="document.getElementById('live-feed').innerHTML='';showToast('Feed cleared')">Clear</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:0.75rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:20px;color:var(--green)" id="feed-matches">0</div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">matches made</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:0.75rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:20px;color:var(--blue)" id="feed-signups">0</div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">new sign-ups</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:0.75rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:20px;color:var(--amber)" id="feed-flags">0</div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">flags raised</div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:0.75rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:20px;color:var(--text)" id="feed-payouts">£0</div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">paid out</div>
+    </div>
+  </div>
+  <div class="feed" id="live-feed">
+    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Match made:</strong> Sarah L. → H&M online shopping study (99% score)</div><div class="feed-time">just now</div></div>
+    <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text"><strong>New sign-up:</strong> User #8421 completed onboarding · Manchester · Fashion interests</div><div class="feed-time">1m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Study completed:</strong> Tom W. finished Boots loyalty session · awaiting rating</div><div class="feed-time">3m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-red"></div><div class="feed-text"><strong>Flag raised:</strong> User #4821 — survey completed in 94s (expected 15min)</div><div class="feed-time">5m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Payout processed:</strong> £45 → Sarah L. for H&M study completion</div><div class="feed-time">8m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-amber"></div><div class="feed-text"><strong>Rating submitted:</strong> H&M rated Marcus K. 3.8★ (below threshold alert)</div><div class="feed-time">12m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text"><strong>Study posted:</strong> Tesco — Online grocery delivery experience · 15 spots · £30pp</div><div class="feed-time">19m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Match made:</strong> Priya R. → Lloyds banking usability (97% score)</div><div class="feed-time">22m ago</div></div>
+  </div>
+</div>
+
+<!-- MATCHING ENGINE -->
+<div class="tab" id="t-engine">
+  <div class="ph">
+    <div><h1>Match Algorithm</h1><p>Configure scoring weights · test matches · view logic</p></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="runTestMatch()">▶ Run test match</button>
+      <button class="btn btn-green" onclick="showToast('✅ Algorithm weights saved and deployed')">Save & deploy</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+    <div class="match-vis">
+      <div class="card-title">Scoring formula</div>
+      <div class="algo-formula">
+        <span class="comment">// Vetd Match Score (0–100)</span><br>
+        <span class="var">matchScore</span> = (<br>
+        &nbsp;&nbsp;<span class="fn">demographics</span>(<span class="var">age</span>, <span class="var">gender</span>, <span class="var">location</span>) × <span class="num" id="w1-disp">0.30</span><br>
+        &nbsp;+ <span class="fn">interests</span>(<span class="var">tags</span>, <span class="var">brands</span>) × <span class="num" id="w2-disp">0.25</span><br>
+        &nbsp;+ <span class="fn">quality</span>(<span class="var">rating</span>, <span class="var">completions</span>) × <span class="num" id="w3-disp">0.25</span><br>
+        &nbsp;+ <span class="fn">availability</span>(<span class="var">format</span>, <span class="var">time</span>) × <span class="num" id="w4-disp">0.12</span><br>
+        &nbsp;+ <span class="fn">freshness</span>(<span class="var">lastStudy</span>) × <span class="num" id="w5-disp">0.08</span><br>
+        ) × <span class="fn">fraudPenalty</span>(<span class="var">flags</span>)
+      </div>
+      <div class="card-title" style="margin-top:1rem">Adjust weights</div>
+      <div class="weight-slider-row"><span class="weight-slider-label">Demographics</span><input type="range" min="0" max="50" value="30" oninput="updateWeight(1,this.value)"><span class="weight-val" id="w1-val">30%</span></div>
+      <div class="weight-slider-row"><span class="weight-slider-label">Interests & tags</span><input type="range" min="0" max="50" value="25" oninput="updateWeight(2,this.value)"><span class="weight-val" id="w2-val">25%</span></div>
+      <div class="weight-slider-row"><span class="weight-slider-label">Quality rating</span><input type="range" min="0" max="50" value="25" oninput="updateWeight(3,this.value)"><span class="weight-val" id="w3-val">25%</span></div>
+      <div class="weight-slider-row"><span class="weight-slider-label">Availability</span><input type="range" min="0" max="30" value="12" oninput="updateWeight(4,this.value)"><span class="weight-val" id="w4-val">12%</span></div>
+      <div class="weight-slider-row"><span class="weight-slider-label">Recency (freshness)</span><input type="range" min="0" max="20" value="8" oninput="updateWeight(5,this.value)"><span class="weight-val" id="w5-val">8%</span></div>
+    </div>
+
+    <div class="match-vis">
+      <div class="card-title">Live match breakdown — Sarah L. vs H&M study</div>
+      <div id="match-breakdown">
+        <div class="score-bar-row"><span class="score-label">Demographics</span><div class="score-track"><div class="score-fill" style="width:98%;background:var(--green)"></div></div><span class="score-val">98</span><span class="weight-badge">×0.30</span></div>
+        <div class="score-bar-row"><span class="score-label">Interests & tags</span><div class="score-track"><div class="score-fill" style="width:95%;background:var(--green)"></div></div><span class="score-val">95</span><span class="weight-badge">×0.25</span></div>
+        <div class="score-bar-row"><span class="score-label">Quality rating</span><div class="score-track"><div class="score-fill" style="width:96%;background:var(--blue)"></div></div><span class="score-val">96</span><span class="weight-badge">×0.25</span></div>
+        <div class="score-bar-row"><span class="score-label">Availability</span><div class="score-track"><div class="score-fill" style="width:100%;background:var(--blue)"></div></div><span class="score-val">100</span><span class="weight-badge">×0.12</span></div>
+        <div class="score-bar-row"><span class="score-label">Freshness</span><div class="score-track"><div class="score-fill" style="width:90%;background:var(--purple)"></div></div><span class="score-val">90</span><span class="weight-badge">×0.08</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Fraud penalty multiplier</span>
+          <span style="font-family:var(--mono);color:var(--green);font-weight:500">×1.00 (clean)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+          <span style="font-size:13px;color:var(--text2)">Final match score</span>
+          <span style="font-family:var(--serif);font-size:28px;color:var(--green)" id="final-score">99</span>
+        </div>
+      </div>
+
+      <div class="card-title" style="margin-top:1.25rem">Exclusion rules (auto-applied)</div>
+      <div style="font-size:11px;font-family:var(--mono);line-height:2;color:var(--text2)">
+        <span style="color:var(--coral)">EXCLUDE</span> if contributor.rating &lt; clientMinRating<br>
+        <span style="color:var(--coral)">EXCLUDE</span> if contributor.flags.activeReview === true<br>
+        <span style="color:var(--coral)">EXCLUDE</span> if contributor.studiedFor.includes(client.id) [last 90d]<br>
+        <span style="color:var(--coral)">EXCLUDE</span> if contributor.noShows &gt; 2 [last 30d]<br>
+        <span style="color:var(--amber)">DEMOTE</span> if contributor.lastStudy &lt; 7d ago [freshness penalty]<br>
+        <span style="color:var(--green)">BOOST</span> if contributor.tier === 'Elite' &amp;&amp; study.premium
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Top matches — H&M online shopping study (live)</div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Contributor</th><th>Demographics</th><th>Interests</th><th>Quality</th><th>Availability</th><th>Freshness</th><th>Fraud ×</th><th>Final score</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--text3);font-family:var(--mono)">1</td><td><strong style="color:var(--text)">Sarah L.</strong></td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono);color:var(--green)">95</td><td style="font-family:var(--mono);color:var(--green)">96</td><td style="font-family:var(--mono)">100</td><td style="font-family:var(--mono)">90</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500;color:var(--green)">99</td><td><span class="badge bg">Invited</span></td></tr>
+        <tr><td style="color:var(--text3);font-family:var(--mono)">2</td><td><strong style="color:var(--text)">Priya R.</strong></td><td style="font-family:var(--mono);color:var(--green)">94</td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono)">85</td><td style="font-family:var(--mono)">88</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500;color:var(--green)">97</td><td><span class="badge bb">Matched</span></td></tr>
+        <tr><td style="color:var(--text3);font-family:var(--mono)">3</td><td><strong style="color:var(--text)">Emma W.</strong></td><td style="font-family:var(--mono)">91</td><td style="font-family:var(--mono)">89</td><td style="font-family:var(--mono)">94</td><td style="font-family:var(--mono)">90</td><td style="font-family:var(--mono)">82</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500">91</td><td><span class="badge bb">Matched</span></td></tr>
+        <tr><td style="color:var(--text3);font-family:var(--mono)">4</td><td><strong style="color:var(--text)">Aisha B.</strong></td><td style="font-family:var(--mono)">88</td><td style="font-family:var(--mono)">85</td><td style="font-family:var(--mono)">84</td><td style="font-family:var(--mono)">95</td><td style="font-family:var(--mono)">76</td><td style="font-family:var(--mono);color:var(--amber)">×0.95</td><td style="font-family:var(--mono);font-weight:500">82</td><td><span class="badge bc">Pending</span></td></tr>
+        <tr><td style="color:var(--text3);font-family:var(--mono)">5</td><td><strong style="color:var(--text)">Jamie R.</strong></td><td style="font-family:var(--mono)">72</td><td style="font-family:var(--mono)">70</td><td style="font-family:var(--mono)">42</td><td style="font-family:var(--mono)">80</td><td style="font-family:var(--mono)">60</td><td style="font-family:var(--mono);color:var(--coral)">×0.40</td><td style="font-family:var(--mono);font-weight:500;color:var(--coral)">29</td><td><span class="badge br">Suppressed</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- STUDY QUEUE -->
+<div class="tab" id="t-studies-admin">
+  <div class="ph"><div><h1>Study Queue</h1><p>34 active studies · sorted by urgency</p></div></div>
+  <div class="fbar">
+    <button class="fc on" onclick="fc(this)">All</button>
+    <button class="fc" onclick="fc(this)">Urgent</button>
+    <button class="fc" onclick="fc(this)">Stalled</button>
+    <button class="fc" onclick="fc(this)">Full</button>
+  </div>
+  <table class="tbl" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+    <thead><tr><th>Study</th><th>Client</th><th>Fill</th><th>Pay</th><th>Deadline</th><th>Matched pool</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><strong style="color:var(--text)">Online grocery UX</strong></td><td style="color:var(--text2)">Tesco</td><td style="font-family:var(--mono)">3 / 15</td><td style="font-family:var(--mono);color:var(--green)">£30</td><td style="color:var(--coral);font-family:var(--mono)">6h</td><td style="font-family:var(--mono)">847</td><td><span class="badge br">Urgent</span></td><td><button class="btn btn-red" style="padding:5px 12px;font-size:11px" onclick="showToast('🚀 Boost sent — top 50 contributors notified')">Boost</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Activewear survey</strong></td><td style="color:var(--text2)">Nike</td><td style="font-family:var(--mono)">12 / 50</td><td style="font-family:var(--mono);color:var(--green)">£12</td><td style="color:var(--amber);font-family:var(--mono)">3d</td><td style="font-family:var(--mono)">2,340</td><td><span class="badge ba">Stalled</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📧 Re-engagement emails sent to 500 matched contributors')">Re-engage</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Boots loyalty research</strong></td><td style="color:var(--text2)">Boots</td><td style="font-family:var(--mono)">4 / 6</td><td style="font-family:var(--mono);color:var(--green)">£65</td><td style="color:var(--text2);font-family:var(--mono)">5d</td><td style="font-family:var(--mono)">124</td><td><span class="badge bg">On track</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('No action needed')">Monitor</button></td></tr>
+      <tr><td><strong style="color:var(--text)">H&M shopping experience</strong></td><td style="color:var(--text2)">H&M</td><td style="font-family:var(--mono)">12 / 20</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="color:var(--text2);font-family:var(--mono)">7d</td><td style="font-family:var(--mono)">312</td><td><span class="badge bb">Filling</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('Study is on track')">Monitor</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Lloyds banking app</strong></td><td style="color:var(--text2)">Lloyds</td><td style="font-family:var(--mono)">8 / 8</td><td style="font-family:var(--mono);color:var(--green)">£80</td><td style="color:var(--text2);font-family:var(--mono)">2d</td><td style="font-family:var(--mono)">—</td><td><span class="badge bg">Full</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📅 Calendar invites sent to all 8 participants')">Send invites</button></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FRAUD DETECTION -->
+<div class="tab" id="t-fraud">
+  <div class="ph">
+    <div><h1>Fraud Detection</h1><p>5 active flags · AI-assisted review</p></div>
+    <button class="btn" onclick="showToast('🔄 Running full fraud scan on all active contributors...')">Run full scan</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem">
+    <div style="background:var(--coral-dim);border:1px solid rgba(232,80,58,0.3);border-radius:var(--r-md);padding:1rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--coral)">3</div>
+      <div style="font-size:10px;color:var(--coral);font-family:var(--mono);margin-top:2px;opacity:0.7">HIGH PRIORITY</div>
+    </div>
+    <div style="background:var(--amber-dim);border:1px solid rgba(232,160,32,0.3);border-radius:var(--r-md);padding:1rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--amber)">2</div>
+      <div style="font-size:10px;color:var(--amber);font-family:var(--mono);margin-top:2px;opacity:0.7">MEDIUM PRIORITY</div>
+    </div>
+    <div style="background:var(--blue-dim);border:1px solid rgba(75,158,245,0.3);border-radius:var(--r-md);padding:1rem;text-align:center">
+      <div style="font-family:var(--mono);font-size:24px;color:var(--blue)">0</div>
+      <div style="font-size:10px;color:var(--blue);font-family:var(--mono);margin-top:2px;opacity:0.7">LOW PRIORITY</div>
+    </div>
+  </div>
+
+  <div class="flag-card high">
+    <div class="flag-icon fi-red">🚨</div>
+    <div class="flag-body">
+      <div class="flag-title">Profile demographic inconsistency — Jamie R. (ID #3847)</div>
+      <div class="flag-desc">Contributor self-reported age 22 (F) from Leeds. AI analysis of 3 survey responses detected language patterns and life-stage references (mortgage, grown children) inconsistent with stated demographics. Mismatch confidence: 87%. This contributor has been paid for 2 completed studies that may have used fraudulent profile data.</div>
+      <div class="flag-meta">Detected 3 mins ago · AI pattern match · 2 affected studies · £28 at risk</div>
+    </div>
+    <div class="flag-actions">
+      <button class="btn btn-red" onclick="openAction('Jamie R.','#3847','demographic-fraud')">Review &amp; act</button>
+    </div>
+  </div>
+
+  <div class="flag-card high">
+    <div class="flag-icon fi-red">⚡</div>
+    <div class="flag-body">
+      <div class="flag-title">Impossibly fast survey completion — User #4821</div>
+      <div class="flag-desc">15-minute survey completed in 94 seconds. Minimum human reading time for question set estimated at 4m 20s. Pattern matches known click-farming behaviour. This is the contributor's 3rd fast-completion flag in 14 days.</div>
+      <div class="flag-meta">Detected 18 mins ago · timing analysis · 3rd offence · £8 paid out</div>
+    </div>
+    <div class="flag-actions">
+      <button class="btn btn-red" onclick="openAction('User #4821','#4821','click-fraud')">Review &amp; act</button>
+    </div>
+  </div>
+
+  <div class="flag-card high">
+    <div class="flag-icon fi-red">👤</div>
+    <div class="flag-body">
+      <div class="flag-title">Duplicate account suspected — User #7102 &amp; #7118</div>
+      <div class="flag-desc">Two accounts created 4 days apart with same device fingerprint, similar IP range (same subnet), and overlapping interest tags. Both completed the same Tesco study. Names: "Chris Taylor" and "Christine Taylor". Could be household members — requires manual verification.</div>
+      <div class="flag-meta">Detected 2h ago · device fingerprint match · requires human review</div>
+    </div>
+    <div class="flag-actions">
+      <button class="btn btn-red" onclick="openAction('User #7102 / #7118','#7102','duplicate-account')">Review &amp; act</button>
+    </div>
+  </div>
+
+  <div class="flag-card med">
+    <div class="flag-icon fi-amber">📊</div>
+    <div class="flag-body">
+      <div class="flag-title">Straight-line response pattern — User #5503</div>
+      <div class="flag-desc">Likert scale responses across 3 studies show statistically unlikely consistency (always selecting "4" on 1–5 scales). May indicate inattentive responding rather than deliberate fraud. Contribution quality is poor regardless.</div>
+      <div class="flag-meta">Detected 6h ago · response pattern analysis · low confidence fraud</div>
+    </div>
+    <div class="flag-actions">
+      <button class="btn" onclick="openAction('User #5503','#5503','response-pattern')">Review</button>
+    </div>
+  </div>
+
+  <div class="flag-card med">
+    <div class="flag-icon fi-amber">⭐</div>
+    <div class="flag-body">
+      <div class="flag-title">Possible rating manipulation — User #6201</div>
+      <div class="flag-desc">Contributor's rating jumped from 2.8★ to 4.6★ in 11 days after completing 8 studies with one specific client (MoodBoard Ltd). Pattern suggests possible coordinated rating inflation. MoodBoard has no other contributors rated above 3.5★.</div>
+      <div class="flag-meta">Detected yesterday · rating velocity anomaly · investigate client too</div>
+    </div>
+    <div class="flag-actions">
+      <button class="btn" onclick="openAction('User #6201','#6201','rating-manipulation')">Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRIBUTOR OVERSIGHT -->
+<div class="tab" id="t-contributors">
+  <div class="ph">
+    <div><h1>Contributor Oversight</h1><p>8,421 total · filter &amp; manage</p></div>
+    <button class="btn" onclick="showToast('📥 Contributor export downloaded')">Export CSV</button>
+  </div>
+  <div class="fbar">
+    <button class="fc on" onclick="fc(this)">All</button>
+    <button class="fc" onclick="fc(this)">Elite</button>
+    <button class="fc" onclick="fc(this)">At risk</button>
+    <button class="fc" onclick="fc(this)">Restricted</button>
+    <button class="fc" onclick="fc(this)">Flagged</button>
+  </div>
+  <div id="contrib-oversight"></div>
+</div>
+
+<!-- DISPUTES -->
+<div class="tab" id="t-disputes">
+  <div class="ph"><div><h1>Dispute Resolution</h1><p>2 open · 14 resolved this month</p></div></div>
+
+  <div class="dispute-card">
+    <div class="dispute-header">
+      <div>
+        <div class="dispute-id">DISPUTE #D-0082 · opened Mar 29 · HIGH</div>
+        <div class="dispute-title">Contributor disputes 1★ rating from H&M study</div>
+        <div class="dispute-parties" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)">Sarah L. (contributor) vs H&M Group (client)</div>
+      </div>
+      <span class="badge br">Open</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">CONTRIBUTOR SAYS</div>
+        <div class="dispute-body">I attended on time and gave thorough feedback for 65 minutes. The researcher ended the session early and seemed frustrated because I disagreed with their product direction. I shouldn't be penalised for honest feedback. I've never had a rating below 4.5★.</div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">CLIENT SAYS</div>
+        <div class="dispute-body">The contributor was uncooperative and dismissive throughout the session. They refused to complete key tasks and made inappropriate comments about our brand. We stand by our rating.</div>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border-radius:var(--r);padding:0.875rem;margin-bottom:12px;font-size:11px;color:var(--text2);font-family:var(--mono)">
+      <span style="color:var(--cyan)">AI ANALYSIS:</span> Sarah L. has 23 studies with avg 4.8★. This is her first rating below 4.0★. The rating pattern from H&M (3 ratings of 1★ in last month) is an outlier vs their own average of 4.6★. Probability this rating is unfair: <span style="color:var(--amber)">74%</span>.
+    </div>
+    <div class="dispute-actions">
+      <button class="btn btn-green" onclick="resolveDispute('D-0082','favour of contributor — rating removed')">Uphold contributor</button>
+      <button class="btn btn-red" onclick="resolveDispute('D-0082','favour of client — rating stands')">Uphold client</button>
+      <button class="btn" onclick="showToast('⚖️ Mediation session scheduled for Apr 2')">Schedule mediation</button>
+      <button class="btn" onclick="showToast('📧 More info requested from both parties')">Request more info</button>
+    </div>
+  </div>
+
+  <div class="dispute-card">
+    <div class="dispute-header">
+      <div>
+        <div class="dispute-id">DISPUTE #D-0081 · opened Mar 27 · MEDIUM</div>
+        <div class="dispute-title">Contributor claims session ran 40 mins over time without extra pay</div>
+        <div class="dispute-parties" style="font-size:11px;color:var(--text3);margin-top:2px;font-family:var(--mono)">Marcus K. (contributor) vs Lloyds Bank (client)</div>
+      </div>
+      <span class="badge ba">Under review</span>
+    </div>
+    <div class="dispute-body">Contributor states session was advertised as 60 minutes but ran to 100 minutes without additional compensation being offered. Client says the overrun was due to technical issues and the contributor agreed to continue voluntarily.</div>
+    <div class="dispute-actions">
+      <button class="btn btn-green" onclick="resolveDispute('D-0081','partial refund of £20 to contributor')">Pay partial top-up</button>
+      <button class="btn" onclick="showToast('📧 Requesting session recording from Lloyds')">Request evidence</button>
+      <button class="btn btn-red" onclick="resolveDispute('D-0081','no additional payment')">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<!-- PLATFORM CONTROLS -->
+<div class="tab" id="t-controls">
+  <div class="ph"><div><h1>Platform Controls</h1><p>Global settings &amp; feature flags</p></div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Matching engine</div>
+      <div class="control-row"><div class="control-info"><h4>Auto-matching enabled</h4><p>Automatically surface top contributors when a study is posted</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Elite-first ordering</h4><p>Always surface Elite contributors before lower tiers</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Freshness boost</h4><p>Prioritise contributors who haven't done a study recently</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Diversity balancing</h4><p>Ensure geographic &amp; demographic spread in matched panels</p></div><button class="toggle off" onclick="toggleBtn(this)"></button></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Quality & safety</div>
+      <div class="control-row"><div class="control-info"><h4>AI fraud scanning</h4><p>Continuously scan for anomalous response patterns</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Auto-restrict on 3 flags</h4><p>Automatically restrict contributors with 3+ unresolved flags</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>No-show penalty</h4><p>Auto-deduct 0.2★ per confirmed no-show</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Client rating fairness check</h4><p>Flag outlier client ratings for admin review before publishing</p></div><button class="toggle off" onclick="toggleBtn(this)"></button></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Payout settings</div>
+      <div class="control-row"><div class="control-info"><h4>Auto-payout on completion</h4><p>Release funds within 3 days of study completion + rating</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Hold funds on dispute</h4><p>Freeze payout if dispute is raised within 72h of completion</p></div><button class="toggle on" onclick="toggleBtn(this)"></button></div>
+      <div class="control-row"><div class="control-info"><h4>Bonus for Elite contributors</h4><p>Pay Elite contributors a 10% platform bonus on every study</p></div><button class="toggle off" onclick="toggleBtn(this)"></button></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title">Platform thresholds</div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Min studies before tier assigned</span><div style="display:flex;align-items:center;gap:8px"><input type="number" value="3" style="width:60px;text-align:center;padding:5px" onclick="showToast('Threshold saved')"><span style="color:var(--text3);font-family:var(--mono)">studies</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Elite tier threshold</span><div style="display:flex;align-items:center;gap:8px"><input type="number" value="4.7" step="0.1" style="width:60px;text-align:center;padding:5px"><span style="color:var(--text3);font-family:var(--mono)">★ and above</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Restrict threshold</span><div style="display:flex;align-items:center;gap:8px"><input type="number" value="3.0" step="0.1" style="width:60px;text-align:center;padding:5px"><span style="color:var(--text3);font-family:var(--mono)">★ and below</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0"><span style="color:var(--text2)">Platform commission</span><div style="display:flex;align-items:center;gap:8px"><input type="number" value="20" style="width:60px;text-align:center;padding:5px"><span style="color:var(--text3);font-family:var(--mono)">%</span></div></div>
+      </div>
+      <button class="btn btn-green" style="margin-top:1rem;width:100%;justify-content:center" onclick="showToast('✅ All thresholds saved')">Save all settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYOUTS -->
+<div class="tab" id="t-payouts">
+  <div class="ph">
+    <div><h1>Payouts</h1><p>Contributor payment management</p></div>
+    <button class="btn btn-green" onclick="showToast('💳 Batch payout of £3,240 initiated to 72 contributors')">Run batch payout</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num">£14,680</div><div class="stat-sub up">↑ 28% vs last month</div></div>
+    <div class="stat b"><div class="stat-label">Pending release</div><div class="stat-num">£3,240</div><div class="stat-sub">72 contributors</div></div>
+    <div class="stat a"><div class="stat-label">On hold (disputes)</div><div class="stat-num">£125</div><div class="stat-sub warn">2 active disputes</div></div>
+    <div class="stat r"><div class="stat-label">Refunded (fraud)</div><div class="stat-num">£36</div><div class="stat-sub danger">3 cases this month</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Pending payouts</div>
+    <table class="tbl">
+      <thead><tr><th>Contributor</th><th>Study</th><th>Amount</th><th>Completed</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><strong style="color:var(--text)">Sarah L.</strong></td><td style="color:var(--text2)">H&M shopping experience</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="font-family:var(--mono)">Mar 28</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£45 sent to Sarah L.')">Pay now</button></td></tr>
+        <tr><td><strong style="color:var(--text)">Priya R.</strong></td><td style="color:var(--text2)">Lloyds banking app</td><td style="font-family:var(--mono);color:var(--green)">£80</td><td style="font-family:var(--mono)">Mar 27</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£80 sent to Priya R.')">Pay now</button></td></tr>
+        <tr><td><strong style="color:var(--text)">Marcus K.</strong></td><td style="color:var(--text2)">Lloyds banking app</td><td style="font-family:var(--mono);color:var(--amber)">£80</td><td style="font-family:var(--mono)">Mar 27</td><td><span class="badge ba">On hold</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px;opacity:0.5;cursor:not-allowed">Dispute</button></td></tr>
+        <tr><td><strong style="color:var(--text)">Emma W.</strong></td><td style="color:var(--text2)">Boots loyalty research</td><td style="font-family:var(--mono);color:var(--green)">£65</td><td style="font-family:var(--mono)">Mar 29</td><td><span class="badge bc">Awaiting rating</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px;opacity:0.5;cursor:not-allowed">Pending</button></td></tr>
+        <tr><td><strong style="color:var(--text)">Aisha B.</strong></td><td style="color:var(--text2)">H&M shopping experience</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="font-family:var(--mono)">Mar 28</td><td><span class="badge bg">Ready</span></td><td><button class="btn" style="padding:4px 12px;font-size:11px" onclick="showToast('£45 sent to Aisha B.')">Pay now</button></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end shell -->
+
+<!-- ACTION MODAL -->
+<div class="modal-ov" id="action-modal">
+  <div class="modal">
+    <h2>Review flag: <span id="mod-name"></span></h2>
+    <p class="modal-sub" id="mod-id"></p>
+    <div class="modal-field">
+      <label>Action to take</label>
+      <select id="mod-action">
+        <option>Warn contributor (email notification)</option>
+        <option>Temporarily suspend (7 days)</option>
+        <option>Restrict to basic studies only</option>
+        <option>Permanently ban account</option>
+        <option>Dismiss flag — false positive</option>
+        <option>Require identity re-verification</option>
+        <option>Clawback payment and restrict</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Internal notes</label>
+      <textarea id="mod-notes" placeholder="Add context for the admin record..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>Notify contributor?</label>
+      <select><option>Yes — send automated email explaining action</option><option>No — action silently</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn" style="flex:1;justify-content:center" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-red" style="flex:2;justify-content:center" onclick="submitAction()">Apply action →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Clock
+function tick(){const n=new Date();document.getElementById('clock').textContent=n.toLocaleTimeString('en-GB')}
+tick();setInterval(tick,1000);
+
+// Revenue chart
+const revData=[820,1040,680,1200,950,1380,1100,1450,1280,1600,1740,1820,1950,2100];
+const revChart=document.getElementById('rev-chart');
+const maxRev=Math.max(...revData);
+revData.forEach(v=>{
+  const col=document.createElement('div');col.className='bar-col';
+  const bar=document.createElement('div');bar.className='mc-bar';
+  bar.style.height=(v/maxRev*100)+'%';
+  bar.style.background=v===revData[revData.length-1]?'var(--green)':'var(--blue)';
+  bar.style.opacity=v===revData[revData.length-1]?'1':'0.4';
+  col.appendChild(bar);revChart.appendChild(col);
+});
+
+// Contributor oversight data
+const contribs=[
+  {init:'SL',av:'av-g',name:'Sarah L.',loc:'Manchester',rating:4.8,studies:23,tier:'Elite',risk:'ok',flags:0},
+  {init:'PR',av:'av-p',name:'Priya R.',loc:'London',rating:4.9,studies:31,tier:'Elite',risk:'ok',flags:0},
+  {init:'MK',av:'av-b',name:'Marcus K.',loc:'London',rating:4.4,studies:8,tier:'Verified',risk:'ok',flags:0},
+  {init:'AB',av:'av-a',name:'Aisha B.',loc:'Birmingham',rating:4.2,studies:14,tier:'Verified',risk:'ok',flags:1},
+  {init:'EW',av:'av-g',name:'Emma W.',loc:'Leeds',rating:4.7,studies:19,tier:'Elite',risk:'ok',flags:0},
+  {init:'JR',av:'av-r',name:'Jamie R.',loc:'Leeds',rating:2.1,studies:3,tier:'Restricted',risk:'high',flags:3},
+  {init:'U4',av:'av-a',name:'User #4821',loc:'Bristol',rating:3.4,studies:5,tier:'Standard',risk:'med',flags:2},
+  {init:'U6',av:'av-b',name:'User #6201',loc:'Glasgow',rating:4.6,studies:11,tier:'Verified',risk:'med',flags:1},
+];
+const co=document.getElementById('contrib-oversight');
+contribs.forEach(c=>{
+  const tierColors={Elite:'bg',Verified:'bb',Standard:'ba',Restricted:'br'};
+  co.innerHTML+=`
+  <div class="contrib-row">
+    <div class="av ${c.av}">${c.init}</div>
+    <div class="contrib-info">
+      <div class="contrib-name">${c.name}</div>
+      <div class="contrib-meta">${c.loc} · ${c.studies} studies · ${c.flags} flag${c.flags!==1?'s':''}</div>
+    </div>
+    <span class="badge ${tierColors[c.tier]}">${c.tier}</span>
+    <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:500;width:50px;text-align:center">${c.rating}★</span>
+    <div class="risk-pill risk-${c.risk}">${c.risk==='ok'?'Clean':c.risk==='med'?'Watch':'High risk'}</div>
+    <button class="btn" style="padding:5px 12px;font-size:11px" onclick="openAction('${c.name}','#${Math.floor(Math.random()*9000+1000)}','review')">View</button>
+  </div>`;
+});
+
+// Live feed
+let pauseFeed=false;
+let feedMatches=0,feedSignups=0,feedFlags=0,feedPayouts=0;
+const feedEvents=[
+  {dot:'fd-green',text:'<strong>Match made:</strong> Emma W. → Boots loyalty study (94% score)'},
+  {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8422 completed onboarding · London · Tech interests'},
+  {dot:'fd-green',text:'<strong>Study completed:</strong> Priya R. finished Lloyds banking session'},
+  {dot:'fd-green',text:'<strong>Payout processed:</strong> £30 → Aisha B. for Tesco study'},
+  {dot:'fd-amber',text:'<strong>Rating submitted:</strong> Nike rated User #5201 at 4.2★'},
+  {dot:'fd-red',text:'<strong>Flag raised:</strong> Response anomaly detected on User #5503'},
+  {dot:'fd-blue',text:'<strong>Study posted:</strong> ASOS — Gen Z fashion discovery · 12 spots'},
+  {dot:'fd-green',text:'<strong>Match made:</strong> Marcus K. → ASOS style study (91% score)'},
+  {dot:'fd-green',text:'<strong>Payout processed:</strong> £65 → Emma W. for Boots study'},
+  {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8423 from Edinburgh · Fashion &amp; beauty'},
+];
+let feedIdx=0;
+setInterval(()=>{
+  if(pauseFeed)return;
+  const feed=document.getElementById('live-feed');
+  if(!feed)return;
+  const e=feedEvents[feedIdx%feedEvents.length];feedIdx++;
+  const now=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const item=document.createElement('div');item.className='feed-item';
+  item.innerHTML=`<div class="feed-dot ${e.dot}"></div><div class="feed-text">${e.text}</div><div class="feed-time">${now}</div>`;
+  feed.insertBefore(item,feed.firstChild);
+  if(feed.children.length>40)feed.removeChild(feed.lastChild);
+  if(e.dot==='fd-green'&&e.text.includes('Match')){feedMatches++;document.getElementById('feed-matches').textContent=feedMatches}
+  if(e.dot==='fd-blue'&&e.text.includes('sign-up')){feedSignups++;document.getElementById('feed-signups').textContent=feedSignups}
+  if(e.dot==='fd-red'){feedFlags++;document.getElementById('feed-flags').textContent=feedFlags}
+  if(e.text.includes('Payout')){
+    const m=e.text.match(/£(\d+)/);
+    if(m){feedPayouts+=parseInt(m[1]);document.getElementById('feed-payouts').textContent='£'+feedPayouts}
+  }
+},2800);
+
+// Weight sliders
+function updateWeight(n,v){
+  document.getElementById('w'+n+'-val').textContent=v+'%';
+  document.getElementById('w'+n+'-disp').textContent=(v/100).toFixed(2);
+  const score=Math.min(99,Math.round(94+Math.random()*5));
+  document.getElementById('final-score').textContent=score;
+}
+
+// Test match
+function runTestMatch(){
+  const rows=document.querySelectorAll('#t-engine .tbl tbody tr');
+  rows.forEach((r,i)=>{
+    setTimeout(()=>{r.style.background='rgba(75,158,245,0.05)';setTimeout(()=>r.style.background='',400)},i*150);
+  });
+  showToast('▶ Match algorithm re-run complete · 8,421 contributors scored');
+}
+
+// Nav
+function go(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('on');
+  if(btn)btn.classList.add('on');
+}
+
+// Filter chips
+function fc(btn){
+  btn.closest('.fbar').querySelectorAll('.fc').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// Toggle
+function toggleBtn(el){
+  el.classList.toggle('on');el.classList.toggle('off');
+  showToast(el.classList.contains('on')?'✅ Setting enabled':'Setting disabled');
+}
+
+// Modal
+let currentAction=null;
+function openAction(name,id,type){
+  currentAction={name,id,type};
+  document.getElementById('mod-name').textContent=name;
+  document.getElementById('mod-id').textContent=id+' · '+type.replace(/-/g,' ');
+  document.getElementById('mod-notes').value='';
+  document.getElementById('action-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('action-modal').classList.remove('open')}
+function submitAction(){
+  const action=document.getElementById('mod-action').value;
+  closeModal();
+  showToast('⚡ Action applied: '+action.split('(')[0].trim());
+}
+document.getElementById('action-modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+// Dispute
+function resolveDispute(id,outcome){
+  showToast('⚖️ Dispute #'+id+' resolved in '+outcome);
+}
+
+// Toast
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

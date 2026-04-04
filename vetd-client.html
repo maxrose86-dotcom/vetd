@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetd — Client Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1D9E75;--green-light:#E1F5EE;--green-mid:#5DCAA5;--green-dark:#0F6E56;
+  --blue:#378ADD;--blue-light:#E6F1FB;--blue-dark:#185FA5;
+  --amber:#BA7517;--amber-light:#FAEEDA;
+  --coral:#D85A30;--coral-light:#FAECE7;
+  --purple:#534AB7;--purple-light:#EEEDFE;
+  --gray-50:#F7F6F2;--gray-100:#EDECEA;--gray-200:#D3D1C7;
+  --gray-400:#888780;--gray-700:#444441;--gray-900:#1C1B19;
+  --serif:'DM Serif Display',serif;--sans:'Figtree',sans-serif;
+  --r-sm:8px;--r-md:12px;--r-lg:18px;--r-xl:24px;
+}
+body{font-family:var(--sans);background:var(--gray-50);color:var(--gray-900);min-height:100vh;font-size:15px;line-height:1.5}
+
+/* SCREENS */
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* LANDING */
+#landing{background:var(--gray-900);color:#fff;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden;flex-direction:column}
+#landing::before{content:'';position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(55,138,221,0.2) 0%,transparent 70%);top:-300px;right:-200px;pointer-events:none}
+#landing::after{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(29,158,117,0.15) 0%,transparent 70%);bottom:-200px;left:-100px;pointer-events:none}
+.lnd-eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:1.5rem;font-weight:500}
+.lnd-logo{font-family:var(--serif);font-size:48px;letter-spacing:-1px;margin-bottom:6px}
+.lnd-logo span{color:var(--green-mid)}
+.lnd-sub-logo{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:2.5rem;letter-spacing:0.06em;text-transform:uppercase}
+.lnd-h1{font-family:var(--serif);font-size:44px;line-height:1.1;max-width:560px;margin:0 auto 1rem}
+.lnd-h1 em{color:var(--blue);font-style:italic}
+.lnd-p{color:rgba(255,255,255,0.55);max-width:400px;margin:0 auto 2.5rem;font-size:15px;line-height:1.65;font-weight:300}
+.btn-cta{display:inline-block;padding:14px 38px;background:var(--blue);color:#fff;border-radius:100px;font-size:15px;font-weight:500;cursor:pointer;border:none;font-family:var(--sans);transition:all 0.15s}
+.btn-cta:hover{background:var(--blue-dark);transform:translateY(-1px)}
+.btn-ghost{display:inline-block;padding:14px 32px;background:transparent;color:rgba(255,255,255,0.6);border-radius:100px;font-size:15px;font-weight:400;cursor:pointer;border:1px solid rgba(255,255,255,0.15);font-family:var(--sans);margin-left:12px;transition:all 0.15s}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.4);color:#fff}
+.lnd-logos{margin-top:3.5rem;font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:1rem}
+.logo-strip{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;margin-top:0.5rem}
+.logo-pill{padding:7px 18px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);font-size:12px;color:rgba(255,255,255,0.4);font-weight:500}
+.lnd-stats{display:flex;justify-content:center;gap:3rem;margin-top:3rem;flex-wrap:wrap}
+.lnd-stat{text-align:center}
+.lnd-stat-n{font-family:var(--serif);font-size:30px;color:var(--blue)}
+.lnd-stat-l{font-size:11px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+
+/* APP SHELL */
+.app-shell{flex:1;display:flex}
+.sidebar{width:230px;background:#fff;border-right:1px solid var(--gray-100);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0}
+.sidebar-top{padding:1.5rem 1.25rem 1rem}
+.sidebar-logo{font-family:var(--serif);font-size:22px;margin-bottom:4px}
+.sidebar-logo span{color:var(--green)}
+.sidebar-company{font-size:12px;color:var(--gray-400);padding:6px 10px;background:var(--gray-50);border-radius:var(--r-sm);margin-top:8px}
+.sidebar-company strong{color:var(--gray-700);display:block;font-size:13px}
+.nav-section{padding:0 0.75rem;margin-bottom:0.25rem}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-200);padding:0 0.5rem;margin-bottom:4px;margin-top:1rem;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;font-size:13px;color:var(--gray-400);transition:all 0.15s;border:none;background:none;font-family:var(--sans);width:100%;text-align:left}
+.nav-item:hover{background:var(--gray-50);color:var(--gray-700)}
+.nav-item.active{background:var(--blue-light);color:var(--blue-dark);font-weight:500}
+.nav-item .nav-icon{width:18px;text-align:center;flex-shrink:0;font-size:14px}
+.nav-badge{margin-left:auto;background:var(--coral);color:#fff;border-radius:100px;font-size:10px;padding:1px 7px;font-weight:600}
+.sidebar-bottom{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)}
+.plan-card{background:var(--blue-light);border-radius:var(--r-md);padding:0.875rem}
+.plan-name{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue-dark);margin-bottom:2px}
+.plan-detail{font-size:12px;color:var(--blue-dark);opacity:0.7}
+.plan-upgrade{margin-top:8px;font-size:12px;color:var(--blue);font-weight:500;cursor:pointer}
+
+.main-content{flex:1;overflow-y:auto;padding:2rem}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:fadeUp 0.25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* TOPBAR */
+.page-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
+.page-title h1{font-family:var(--serif);font-size:28px;margin-bottom:2px}
+.page-title p{font-size:13px;color:var(--gray-400);font-weight:300}
+
+/* BUTTONS */
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:var(--blue);color:#fff;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--sans);transition:all 0.15s}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-green{background:var(--green) !important}
+.btn-green:hover{background:var(--green-dark) !important}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;padding:9px 20px;background:transparent;border:1px solid var(--gray-200);border-radius:100px;font-size:13px;font-weight:400;cursor:pointer;font-family:var(--sans);color:var(--gray-700);transition:all 0.15s}
+.btn-outline:hover{border-color:var(--gray-400)}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.75rem}
+.stat-card{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-md);padding:1.25rem}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:8px;font-weight:500}
+.stat-num{font-family:var(--serif);font-size:32px;color:var(--gray-900)}
+.stat-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
+.stat-sub.up{color:var(--green)}
+.stat-sub.warn{color:var(--amber)}
+
+/* TABLES */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);padding:10px 14px;border-bottom:1px solid var(--gray-100);font-weight:500}
+.data-table td{padding:14px 14px;border-bottom:1px solid var(--gray-100);color:var(--gray-700);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--gray-50)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:500}
+.badge-green{background:var(--green-light);color:var(--green-dark)}
+.badge-blue{background:var(--blue-light);color:var(--blue-dark)}
+.badge-amber{background:var(--amber-light);color:var(--amber)}
+.badge-coral{background:var(--coral-light);color:#993C1D}
+.badge-gray{background:var(--gray-100);color:var(--gray-400)}
+.badge-purple{background:var(--purple-light);color:var(--purple)}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);padding:1.5rem;margin-bottom:14px}
+.card-sm{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-md);padding:1.25rem}
+
+/* CONTRIBUTOR CARDS */
+.contrib-card{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);padding:1.25rem;display:flex;align-items:flex-start;gap:1rem;margin-bottom:12px;transition:border-color 0.15s,box-shadow 0.15s;cursor:pointer}
+.contrib-card:hover{border-color:var(--blue);box-shadow:0 2px 12px rgba(55,138,221,0.08)}
+.contrib-card.invited{border-color:var(--green);background:linear-gradient(135deg,#fff 0%,var(--green-light) 100%)}
+.avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0}
+.av-green{background:var(--green-light);color:var(--green-dark)}
+.av-blue{background:var(--blue-light);color:var(--blue-dark)}
+.av-amber{background:var(--amber-light);color:var(--amber)}
+.av-purple{background:var(--purple-light);color:var(--purple)}
+.av-coral{background:var(--coral-light);color:#993C1D}
+.contrib-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.contrib-meta{font-size:12px;color:var(--gray-400);margin-bottom:8px}
+.star-row{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--amber);font-weight:600}
+.tags-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tag{padding:3px 10px;border-radius:100px;font-size:11px;font-weight:500}
+.tag-green{background:var(--green-light);color:var(--green-dark)}
+.tag-blue{background:var(--blue-light);color:var(--blue-dark)}
+.tag-amber{background:var(--amber-light);color:var(--amber)}
+.tag-gray{background:var(--gray-100);color:var(--gray-400)}
+.tag-purple{background:var(--purple-light);color:var(--purple)}
+.match-score{text-align:right;flex-shrink:0}
+.match-pct{font-family:var(--serif);font-size:26px;color:var(--blue)}
+.match-label{font-size:10px;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.05em}
+
+/* STUDY BUILDER */
+.builder-wrap{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start}
+.builder-main .section-group{margin-bottom:1.75rem}
+.section-group h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--gray-100)}
+label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:5px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:10px 13px;border:1px solid var(--gray-200);border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;color:var(--gray-900);background:#fff;outline:none;transition:border-color 0.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+textarea{resize:vertical;min-height:90px}
+.field{margin-bottom:1.1rem}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chip-group{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.chip{padding:6px 15px;border-radius:100px;border:1px solid var(--gray-200);font-size:12px;cursor:pointer;transition:all 0.15s;background:#fff;color:var(--gray-700);user-select:none;font-family:var(--sans)}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{background:var(--blue-light);border-color:var(--blue);color:var(--blue-dark);font-weight:500}
+
+.preview-card{background:var(--gray-900);border-radius:var(--r-xl);padding:1.5rem;color:#fff;position:sticky;top:1.5rem}
+.preview-card h3{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);margin-bottom:1.25rem;font-weight:500}
+.preview-title{font-family:var(--serif);font-size:20px;margin-bottom:6px;min-height:28px}
+.preview-pay{font-family:var(--serif);font-size:36px;color:var(--green-mid);margin-bottom:2px}
+.preview-type{font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:1rem}
+.preview-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem}
+.preview-tag{padding:4px 11px;border-radius:100px;background:rgba(255,255,255,0.08);font-size:11px;color:rgba(255,255,255,0.5)}
+.preview-stat{display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.08)}
+.preview-stat-label{color:rgba(255,255,255,0.4)}
+.preview-stat-val{color:#fff;font-weight:500}
+.match-estimate{background:rgba(29,158,117,0.15);border-radius:var(--r-md);padding:0.875rem;margin-top:1rem}
+.match-est-n{font-family:var(--serif);font-size:28px;color:var(--green-mid)}
+.match-est-l{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px}
+
+/* STUDY LIST */
+.study-row{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);padding:1.25rem 1.5rem;margin-bottom:12px;cursor:pointer;transition:border-color 0.15s}
+.study-row:hover{border-color:var(--blue)}
+.study-row-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.study-title-group h3{font-size:15px;font-weight:600;margin-bottom:3px}
+.study-title-group p{font-size:12px;color:var(--gray-400);font-weight:300}
+.study-meta{display:flex;gap:1.5rem;font-size:12px;color:var(--gray-400);flex-wrap:wrap}
+.study-meta-item strong{color:var(--gray-900);font-weight:600}
+.prog-bar{height:5px;background:var(--gray-100);border-radius:100px;overflow:hidden;margin-top:10px}
+.prog-fill{height:100%;border-radius:100px}
+
+/* FILTER */
+.filter-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+.fc{padding:7px 16px;border-radius:100px;border:1px solid var(--gray-200);font-size:13px;cursor:pointer;background:#fff;color:var(--gray-700);transition:all 0.15s;font-family:var(--sans)}
+.fc.on{background:var(--gray-900);color:#fff;border-color:var(--gray-900)}
+.fc:hover:not(.on){border-color:var(--gray-400)}
+
+/* RATING MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--r-xl);padding:2rem;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;animation:fadeUp 0.2s ease}
+.modal h2{font-family:var(--serif);font-size:26px;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--gray-400);margin-bottom:1.5rem;font-weight:300}
+
+.star-picker{display:flex;gap:8px;margin-bottom:1rem}
+.star-pick{font-size:28px;cursor:pointer;color:var(--gray-200);transition:color 0.1s;line-height:1}
+.star-pick.lit{color:var(--amber)}
+
+.rating-dimension{margin-bottom:1.25rem}
+.dim-label{font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:6px;display:flex;justify-content:space-between}
+.dim-score{color:var(--amber);font-weight:600}
+.dim-stars{display:flex;gap:6px}
+.dim-star{font-size:20px;cursor:pointer;color:var(--gray-200);transition:color 0.1s}
+.dim-star.lit{color:var(--amber)}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--gray-900);color:#fff;padding:12px 24px;border-radius:100px;font-size:13px;font-weight:500;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* ANALYTICS */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:1rem}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;transition:height 0.4s ease;background:var(--blue);min-height:4px}
+.bar-label{font-size:10px;color:var(--gray-400);text-align:center}
+.bar-val{font-size:11px;font-weight:600;color:var(--gray-700)}
+
+/* SECTION TITLE */
+.sec-title{font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem;font-weight:600}
+
+/* PROGRESS RING */
+.ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:18px;color:var(--gray-900)}
+
+@media(max-width:900px){
+  .sidebar{display:none}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .builder-wrap{grid-template-columns:1fr}
+  .preview-card{position:static}
+}
+</style>
+</head>
+<body>
+
+<!-- LANDING -->
+<div id="landing" class="screen active">
+  <div class="lnd-eyebrow">Client portal</div>
+  <div class="lnd-logo">Vet<span style="color:var(--green-mid)">d</span></div>
+  <div class="lnd-sub-logo">For companies For companies &amp; researchersamp; researchers</div>
+  <div class="lnd-h1">Find people worth <em>listening to.</em></div>
+  <div class="lnd-p">Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.</div>
+  <div>
+    <button class="btn-cta" onclick="goApp()">Post your first study</button>
+    <button class="btn-ghost" onclick="goApp()">View demo dashboard</button>
+  </div>
+  <div style="margin-top:3.5rem">
+    <div class="lnd-logos">Trusted by teams at</div>
+    <div class="logo-strip">
+      <div class="logo-pill">H&amp;M</div>
+      <div class="logo-pill">Lloyds Bank</div>
+      <div class="logo-pill">ASOS</div>
+      <div class="logo-pill">Boots</div>
+      <div class="logo-pill">Tesco</div>
+      <div class="logo-pill">Nike</div>
+    </div>
+  </div>
+  <div class="lnd-stats">
+    <div class="lnd-stat"><div class="lnd-stat-n">8,400+</div><div class="lnd-stat-l">Verified contributors</div></div>
+    <div class="lnd-stat"><div class="lnd-stat-n">48h</div><div class="lnd-stat-l">Average panel fill time</div></div>
+    <div class="lnd-stat"><div class="lnd-stat-n">4.8★</div><div class="lnd-stat-l">Average contributor quality</div></div>
+    <div class="lnd-stat"><div class="lnd-stat-n">92%</div><div class="lnd-stat-l">Completion rate</div></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="screen">
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-logo">Vet<span style="color:var(--green)">d</span></div>
+        <div class="sidebar-company"><strong>H&amp;M Group</strong>Research &amp; Insights team</div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <button class="nav-item active" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span>Dashboard</button>
+        <button class="nav-item" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span>Analytics</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Studies</div>
+        <button class="nav-item" onclick="showTab('studies',this)"><span class="nav-icon">📋</span>My studies</button>
+        <button class="nav-item" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span>Post a study</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Panel</div>
+        <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span>Browse contributors<span class="nav-badge">3</span></button>
+        <button class="nav-item" onclick="showTab('rate',this)"><span class="nav-icon">★</span>Rate participants</button>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="plan-card">
+          <div class="plan-name">Pro plan</div>
+          <div class="plan-detail">Unlimited studies · Priority panel</div>
+          <div class="plan-upgrade">↑ Upgrade to Enterprise</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main-content">
+
+      <!-- DASHBOARD -->
+      <div class="tab-pane active" id="tab-dashboard">
+        <div class="page-topbar">
+          <div class="page-title"><h1>Good morning, Emma 👋</h1><p>H&amp;M Group · Research &amp; Insights</p></div>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item:nth-child(6)'))">＋ Post new study</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Active studies</div><div class="stat-num">3</div><div class="stat-sub up">↑ 1 launched this week</div></div>
+          <div class="stat-card"><div class="stat-label">Participants recruited</div><div class="stat-num">47</div><div class="stat-sub up">↑ 12 this week</div></div>
+          <div class="stat-card"><div class="stat-label">Avg contributor rating</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent quality</div></div>
+          <div class="stat-card"><div class="stat-label">Budget used this month</div><div class="stat-num">£2,340</div><div class="stat-sub warn">£660 remaining</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+          <div class="card" style="margin-bottom:0">
+            <div class="sec-title">Active studies</div>
+            <div class="study-row" style="margin-bottom:10px;cursor:default" onclick="showTab('studies', document.querySelector('.nav-item:nth-child(5)'))">
+              <div class="study-row-header">
+                <div class="study-title-group"><h3>Online shopping experience</h3><p>Video call · 60 mins</p></div>
+                <span class="badge badge-green">Live</span>
+              </div>
+              <div class="study-meta">
+                <span><strong>12</strong> / 20 filled</span>
+                <span><strong>4.8★</strong> avg rating</span>
+                <span>Closes <strong>Apr 7</strong></span>
+              </div>
+              <div class="prog-bar"><div class="prog-fill" style="width:60%;background:var(--green)"></div></div>
+            </div>
+            <div class="study-row" style="cursor:default">
+              <div class="study-row-header">
+                <div class="study-title-group"><h3>Sustainability perception survey</h3><p>Online survey · 15 mins</p></div>
+                <span class="badge badge-amber">Filling</span>
+              </div>
+              <div class="study-meta">
+                <span><strong>27</strong> / 100 filled</span>
+                <span><strong>4.6★</strong> avg rating</span>
+                <span>Closes <strong>Apr 14</strong></span>
+              </div>
+              <div class="prog-bar"><div class="prog-fill" style="width:27%;background:var(--amber)"></div></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="sec-title">Top contributor matches waiting</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
+                <div class="avatar av-green" style="width:38px;height:38px;font-size:12px">SL</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600">Sarah L.</div>
+                  <div style="font-size:11px;color:var(--amber);font-weight:600">4.8★ Elite</div>
+                </div>
+                <div style="font-size:13px;color:var(--blue);font-weight:600">99% match</div>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Sarah!')">Invite</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
+                <div class="avatar av-blue" style="width:38px;height:38px;font-size:12px">MK</div>
+                <div style="flex:1"><div style="font-size:13px;font-weight:600">Marcus K.</div><div style="font-size:11px;color:var(--blue);font-weight:600">4.4★ Verified</div></div>
+                <div style="font-size:13px;color:var(--blue);font-weight:600">94% match</div>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Marcus!')">Invite</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
+                <div class="avatar av-purple" style="width:38px;height:38px;font-size:12px">PR</div>
+                <div style="flex:1"><div style="font-size:13px;font-weight:600">Priya R.</div><div style="font-size:11px;color:var(--green);font-weight:600">4.9★ Elite</div></div>
+                <div style="font-size:13px;color:var(--blue);font-weight:600">91% match</div>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Priya!')">Invite</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sec-title">Recent activity</div>
+          <table class="data-table">
+            <thead><tr><th>Contributor</th><th>Study</th><th>Status</th><th>Rating given</th><th>Date</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Sarah L.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green">Completed</span></td><td><span style="color:var(--amber)">★★★★★ 5.0</span></td><td>Mar 28</td></tr>
+              <tr><td><strong>Tom W.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green">Completed</span></td><td><span style="color:var(--amber)">★★★★☆ 4.0</span></td><td>Mar 27</td></tr>
+              <tr><td><strong>Aisha B.</strong></td><td>Sustainability survey</td><td><span class="badge badge-blue">In progress</span></td><td>—</td><td>Mar 29</td></tr>
+              <tr><td><strong>Jamie R.</strong></td><td>Online shopping experience</td><td><span class="badge badge-coral">No-show</span></td><td><span style="color:var(--coral)">★☆☆☆☆ 1.0</span></td><td>Mar 26</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STUDIES -->
+      <div class="tab-pane" id="tab-studies">
+        <div class="page-topbar">
+          <div class="page-title"><h1>My studies</h1><p>3 active · 2 completed · 1 draft</p></div>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">＋ Post new study</button>
+        </div>
+        <div class="filter-bar">
+          <button class="fc on" onclick="fc(this)">All</button>
+          <button class="fc" onclick="fc(this)">Active</button>
+          <button class="fc" onclick="fc(this)">Completed</button>
+          <button class="fc" onclick="fc(this)">Draft</button>
+        </div>
+
+        <div class="study-row">
+          <div class="study-row-header">
+            <div class="study-title-group"><h3>Online shopping experience research</h3><p>Video call · 60 mins · Posted Mar 20</p></div>
+            <span class="badge badge-green">Live</span>
+          </div>
+          <div class="study-meta" style="margin-bottom:10px">
+            <span>Spots: <strong>12 / 20</strong></span>
+            <span>Avg rating: <strong>4.8★</strong></span>
+            <span>Pay: <strong>£45/person</strong></span>
+            <span>Budget used: <strong>£540</strong></span>
+            <span>Closes: <strong>Apr 7</strong></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+            <span class="badge badge-green">Women 25–45</span>
+            <span class="badge badge-blue">Online shopper</span>
+            <span class="badge badge-amber">H&M customer</span>
+            <span class="badge badge-gray">UK only</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:60%;background:var(--green)"></div></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
+            <button class="btn-outline" onclick="showTab('rate', document.querySelectorAll('.nav-item')[7])">Rate participants</button>
+            <button class="btn-outline" onclick="showToast('Study paused')">Pause</button>
+          </div>
+        </div>
+
+        <div class="study-row">
+          <div class="study-row-header">
+            <div class="study-title-group"><h3>Sustainability perception survey</h3><p>Online survey · 15 mins · Posted Mar 22</p></div>
+            <span class="badge badge-amber">Filling</span>
+          </div>
+          <div class="study-meta" style="margin-bottom:10px">
+            <span>Spots: <strong>27 / 100</strong></span>
+            <span>Avg rating: <strong>4.6★</strong></span>
+            <span>Pay: <strong>£8/person</strong></span>
+            <span>Budget used: <strong>£216</strong></span>
+            <span>Closes: <strong>Apr 14</strong></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+            <span class="badge badge-green">Any age</span>
+            <span class="badge badge-blue">UK shoppers</span>
+            <span class="badge badge-gray">4.0★+ preferred</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:27%;background:var(--amber)"></div></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
+            <button class="btn-outline" onclick="showToast('Boost sent — more contributors notified!')">Boost recruitment</button>
+          </div>
+        </div>
+
+        <div class="study-row">
+          <div class="study-row-header">
+            <div class="study-title-group"><h3>Gen Z style discovery focus group</h3><p>Video call · 60 mins · Posted Mar 24</p></div>
+            <span class="badge badge-blue">Full</span>
+          </div>
+          <div class="study-meta" style="margin-bottom:10px">
+            <span>Spots: <strong>8 / 8</strong></span>
+            <span>Avg rating: <strong>4.9★</strong></span>
+            <span>Pay: <strong>£50/person</strong></span>
+            <span>Scheduled: <strong>Apr 3</strong></span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:100%;background:var(--blue)"></div></div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn-outline" onclick="showToast('Calendar invites sent to all 8 participants!')">Send calendar invites</button>
+            <button class="btn-outline" onclick="showTab('rate', document.querySelectorAll('.nav-item')[7])">Rate after session</button>
+          </div>
+        </div>
+
+        <div class="study-row" style="opacity:0.6">
+          <div class="study-row-header">
+            <div class="study-title-group"><h3>Autumn/Winter campaign feedback</h3><p>Draft · Not yet posted</p></div>
+            <span class="badge badge-gray">Draft</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">Continue editing</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST STUDY -->
+      <div class="tab-pane" id="tab-new-study">
+        <div class="page-topbar">
+          <div class="page-title"><h1>Post a new study</h1><p>Fill in the details — we'll estimate your panel size as you go.</p></div>
+        </div>
+        <div class="builder-wrap">
+          <div class="builder-main">
+
+            <div class="section-group">
+              <h3>Study basics</h3>
+              <div class="field"><label>Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" oninput="updatePreview()"></div>
+              <div class="field"><label>Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." oninput="updatePreview()"></textarea></div>
+              <div class="field-row">
+                <div class="field"><label>Study format</label>
+                  <select id="b-format" onchange="updatePreview()">
+                    <option>Video call (1-on-1)</option>
+                    <option>Focus group (online)</option>
+                    <option>In-person interview</option>
+                    <option>Online survey</option>
+                    <option>Diary / journal study</option>
+                    <option>Product testing at home</option>
+                  </select>
+                </div>
+                <div class="field"><label>Session length</label>
+                  <select id="b-length" onchange="updatePreview()">
+                    <option>15 minutes</option>
+                    <option>30 minutes</option>
+                    <option selected>60 minutes</option>
+                    <option>90 minutes</option>
+                    <option>2 hours</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label>Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label>Pay per participant (£)</label><input type="number" id="b-pay" value="45" min="1" oninput="updatePreview()"></div>
+              </div>
+              <div class="field-row">
+                <div class="field"><label>Study start date</label><input type="date" id="b-start"></div>
+                <div class="field"><label>Closing date</label><input type="date" id="b-close"></div>
+              </div>
+            </div>
+
+            <div class="section-group">
+              <h3>Who are you looking for?</h3>
+              <div class="field"><label>Age range</label>
+                <div class="chip-group">
+                  <div class="chip" onclick="tc(this)">18–24</div>
+                  <div class="chip on" onclick="tc(this)">25–34</div>
+                  <div class="chip on" onclick="tc(this)">35–44</div>
+                  <div class="chip" onclick="tc(this)">45–54</div>
+                  <div class="chip" onclick="tc(this)">55–64</div>
+                  <div class="chip" onclick="tc(this)">65+</div>
+                  <div class="chip" onclick="tc(this)">Any age</div>
+                </div>
+              </div>
+              <div class="field"><label>Gender</label>
+                <div class="chip-group">
+                  <div class="chip on" onclick="tc(this)">Women</div>
+                  <div class="chip" onclick="tc(this)">Men</div>
+                  <div class="chip" onclick="tc(this)">Non-binary</div>
+                  <div class="chip" onclick="tc(this)">Any gender</div>
+                </div>
+              </div>
+              <div class="field"><label>Location</label>
+                <div class="chip-group">
+                  <div class="chip on" onclick="tc(this)">UK — any</div>
+                  <div class="chip" onclick="tc(this)">London</div>
+                  <div class="chip" onclick="tc(this)">Manchester</div>
+                  <div class="chip" onclick="tc(this)">Birmingham</div>
+                  <div class="chip" onclick="tc(this)">Remote only</div>
+                </div>
+              </div>
+              <div class="field"><label>Interests &amp; behaviours (select all that apply)</label>
+                <div class="chip-group">
+                  <div class="chip on" onclick="tc(this)">Fashion &amp; clothing</div>
+                  <div class="chip on" onclick="tc(this)">Online shopper</div>
+                  <div class="chip" onclick="tc(this)">Beauty &amp; skincare</div>
+                  <div class="chip" onclick="tc(this)">H&amp;M customer</div>
+                  <div class="chip" onclick="tc(this)">Sustainability interest</div>
+                  <div class="chip" onclick="tc(this)">Social media user</div>
+                  <div class="chip" onclick="tc(this)">Parent</div>
+                  <div class="chip" onclick="tc(this)">Homeowner</div>
+                </div>
+              </div>
+              <div class="field"><label>Minimum contributor rating</label>
+                <div class="chip-group">
+                  <div class="chip" onclick="tc(this)">Any rating</div>
+                  <div class="chip on" onclick="tc(this)">3.0★ and above</div>
+                  <div class="chip" onclick="tc(this)">4.0★ and above</div>
+                  <div class="chip" onclick="tc(this)">4.5★ Elite only</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-group">
+              <h3>Additional screening</h3>
+              <div class="field"><label>Screening question 1 (optional)</label><input type="text" placeholder="e.g. Have you shopped with H&M online in the last 12 months?"></div>
+              <div class="field"><label>Screening question 2 (optional)</label><input type="text" placeholder="e.g. How often do you shop for clothes online?"></div>
+              <div class="field"><label>Any other requirements or notes for Vetd?</label><textarea placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly."></textarea></div>
+            </div>
+
+            <div style="display:flex;gap:12px">
+              <button class="btn-outline" onclick="showToast('Draft saved!')">Save as draft</button>
+              <button class="btn-primary btn-green" onclick="publishStudy()">Publish study →</button>
+            </div>
+          </div>
+
+          <!-- LIVE PREVIEW -->
+          <div class="preview-card">
+            <h3>Live preview</h3>
+            <div class="preview-title" id="prev-title">Your study title</div>
+            <div class="preview-pay" id="prev-pay">£45</div>
+            <div class="preview-type" id="prev-type">Video call (1-on-1) · 60 minutes</div>
+            <div class="preview-tags" id="prev-tags">
+              <span class="preview-tag">Women 25–44</span>
+              <span class="preview-tag">Fashion &amp; clothing</span>
+              <span class="preview-tag">Online shopper</span>
+              <span class="preview-tag">3.0★ and above</span>
+            </div>
+            <div class="preview-stat"><span class="preview-stat-label">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">Total budget</span><span class="preview-stat-val" id="prev-budget">£450</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">£90</span></div>
+            <div class="match-estimate">
+              <div class="match-est-n" id="prev-match">~340</div>
+              <div class="match-est-l">contributors match your criteria right now</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL BROWSER -->
+      <div class="tab-pane" id="tab-panel">
+        <div class="page-topbar">
+          <div class="page-title"><h1>Browse contributors</h1><p>Filtered for: Online shopping experience research</p></div>
+          <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')">Invite top 10</button>
+        </div>
+        <div class="filter-bar">
+          <button class="fc on" onclick="fc(this)">All matches</button>
+          <button class="fc" onclick="fc(this)">Elite only</button>
+          <button class="fc" onclick="fc(this)">Not yet invited</button>
+          <button class="fc" onclick="fc(this)">Applied</button>
+        </div>
+
+        <div id="contrib-list"></div>
+      </div>
+
+      <!-- RATE PARTICIPANTS -->
+      <div class="tab-pane" id="tab-rate">
+        <div class="page-topbar">
+          <div class="page-title"><h1>Rate participants</h1><p>3 participants awaiting your rating from the Mar 28 session</p></div>
+        </div>
+        <div style="background:var(--amber-light);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:var(--amber);font-weight:500">
+          ⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.
+        </div>
+
+        <div id="rate-list"></div>
+      </div>
+
+      <!-- ANALYTICS -->
+      <div class="tab-pane" id="tab-analytics">
+        <div class="page-topbar">
+          <div class="page-title"><h1>Analytics</h1><p>H&amp;M Group · Last 90 days</p></div>
+          <button class="btn-outline" onclick="showToast('Report exported!')">Export report</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Total studies run</div><div class="stat-num">8</div><div class="stat-sub">Since Jan 2026</div></div>
+          <div class="stat-card"><div class="stat-label">Total participants</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
+          <div class="stat-card"><div class="stat-label">Total invested</div><div class="stat-num">£7,820</div><div class="stat-sub">incl. Vetd fees</div></div>
+          <div class="stat-card"><div class="stat-label">Avg participant quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
+          <div class="card" style="margin-bottom:0">
+            <div class="sec-title">Participants per month</div>
+            <div class="chart-bar-wrap">
+              <div class="bar-col"><div class="bar-val">18</div><div class="bar-fill" style="height:35%"></div><div class="bar-label">Oct</div></div>
+              <div class="bar-col"><div class="bar-val">22</div><div class="bar-fill" style="height:43%"></div><div class="bar-label">Nov</div></div>
+              <div class="bar-col"><div class="bar-val">15</div><div class="bar-fill" style="height:29%"></div><div class="bar-label">Dec</div></div>
+              <div class="bar-col"><div class="bar-val">28</div><div class="bar-fill" style="height:54%"></div><div class="bar-label">Jan</div></div>
+              <div class="bar-col"><div class="bar-val">34</div><div class="bar-fill" style="height:66%"></div><div class="bar-label">Feb</div></div>
+              <div class="bar-col"><div class="bar-val">47</div><div class="bar-fill" style="height:90%;background:var(--green)"></div><div class="bar-label">Mar</div></div>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0">
+            <div class="sec-title">Participant quality distribution</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                <span style="width:80px;color:var(--gray-400)">Elite 4.7–5.0</span>
+                <div style="flex:1;height:8px;background:var(--gray-100);border-radius:100px;overflow:hidden"><div style="width:62%;height:100%;background:var(--green);border-radius:100px"></div></div>
+                <span style="font-weight:600;width:32px;text-align:right">62%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                <span style="width:80px;color:var(--gray-400)">Verified 4–4.6</span>
+                <div style="flex:1;height:8px;background:var(--gray-100);border-radius:100px;overflow:hidden"><div style="width:28%;height:100%;background:var(--blue);border-radius:100px"></div></div>
+                <span style="font-weight:600;width:32px;text-align:right">28%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                <span style="width:80px;color:var(--gray-400)">Standard 3–3.9</span>
+                <div style="flex:1;height:8px;background:var(--gray-100);border-radius:100px;overflow:hidden"><div style="width:8%;height:100%;background:var(--amber);border-radius:100px"></div></div>
+                <span style="font-weight:600;width:32px;text-align:right">8%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+                <span style="width:80px;color:var(--gray-400)">No-shows</span>
+                <div style="flex:1;height:8px;background:var(--gray-100);border-radius:100px;overflow:hidden"><div style="width:2%;height:100%;background:var(--coral);border-radius:100px"></div></div>
+                <span style="font-weight:600;width:32px;text-align:right">2%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="sec-title">Study performance</div>
+          <table class="data-table">
+            <thead><tr><th>Study</th><th>Participants</th><th>Completion</th><th>Avg rating</th><th>Cost</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Online shopping experience</strong></td><td>12/20</td><td>100%</td><td><span style="color:var(--amber)">★ 4.8</span></td><td>£540</td></tr>
+              <tr><td><strong>Gen Z style focus group</strong></td><td>8/8</td><td>100%</td><td><span style="color:var(--amber)">★ 4.9</span></td><td>£400</td></tr>
+              <tr><td><strong>Sustainability perception</strong></td><td>27/100</td><td>98%</td><td><span style="color:var(--amber)">★ 4.6</span></td><td>£216</td></tr>
+              <tr><td><strong>Autumn campaign feedback</strong></td><td>20/20</td><td>95%</td><td><span style="color:var(--amber)">★ 4.5</span></td><td>£600</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- end main-content -->
+  </div><!-- end app-shell -->
+</div><!-- end app -->
+
+<!-- RATE MODAL -->
+<div class="modal-overlay" id="rate-modal">
+  <div class="modal">
+    <h2>Rate <span id="rate-name"></span></h2>
+    <p class="modal-sub" id="rate-study-name"></p>
+    <div style="margin-bottom:1.5rem">
+      <div class="rating-dimension">
+        <div class="dim-label">Punctuality <span class="dim-score" id="sc-1">—</span></div>
+        <div class="dim-stars" id="ds-1"></div>
+      </div>
+      <div class="rating-dimension">
+        <div class="dim-label">Engagement &amp; participation <span class="dim-score" id="sc-2">—</span></div>
+        <div class="dim-stars" id="ds-2"></div>
+      </div>
+      <div class="rating-dimension">
+        <div class="dim-label">Quality &amp; depth of input <span class="dim-score" id="sc-3">—</span></div>
+        <div class="dim-stars" id="ds-3"></div>
+      </div>
+      <div class="rating-dimension">
+        <div class="dim-label">Honesty &amp; authenticity <span class="dim-score" id="sc-4">—</span></div>
+        <div class="dim-stars" id="ds-4"></div>
+      </div>
+      <div class="rating-dimension">
+        <div class="dim-label">Profile accuracy (matched expectations?) <span class="dim-score" id="sc-5">—</span></div>
+        <div class="dim-stars" id="ds-5"></div>
+      </div>
+    </div>
+    <div class="field"><label>Optional written feedback (shared with contributor)</label><textarea placeholder="e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again."></textarea></div>
+    <div style="display:flex;gap:12px;margin-top:1rem">
+      <button class="btn-outline" style="flex:1" onclick="closeRateModal()">Cancel</button>
+      <button class="btn-primary btn-green" style="flex:2" onclick="submitRating()">Submit rating →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const contributors = [
+  {id:1,init:'SL',av:'av-green',name:'Sarah L.',age:34,loc:'Manchester',tier:'Elite',rating:4.8,studies:23,tags:['Fashion','Online shopper','Parent','UK'],match:99,invited:false},
+  {id:2,init:'PR',av:'av-purple',name:'Priya R.',age:29,loc:'London',tier:'Elite',rating:4.9,studies:31,tags:['Fashion','Beauty','Social media','UK'],match:97,invited:false},
+  {id:3,init:'MK',av:'av-blue',name:'Marcus K.',age:28,loc:'London',tier:'Verified',rating:4.4,studies:8,tags:['Online shopper','Streaming','UK'],match:94,invited:false},
+  {id:4,init:'AB',av:'av-amber',name:'Aisha B.',age:36,loc:'Birmingham',tier:'Verified',rating:4.2,studies:14,tags:['Fashion','Sustainability','Parent','UK'],match:91,invited:true},
+  {id:5,init:'EW',av:'av-coral',name:'Emma W.',age:41,loc:'Leeds',tier:'Elite',rating:4.7,studies:19,tags:['Fashion','Home','Online shopper','UK'],match:89,invited:false},
+  {id:6,init:'TW',av:'av-green',name:'Tom W.',age:32,loc:'Manchester',tier:'Verified',rating:4.1,studies:6,tags:['Online shopper','Tech','UK'],match:82,invited:true},
+];
+
+const rateParticipants = [
+  {id:1,init:'SL',av:'av-green',name:'Sarah L.',study:'Online shopping experience research · Mar 28',rated:false},
+  {id:2,init:'TW',av:'av-blue',name:'Tom W.',study:'Online shopping experience research · Mar 28',rated:false},
+  {id:3,init:'AB',av:'av-amber',name:'Aisha B.',study:'Online shopping experience research · Mar 28',rated:false},
+];
+
+const dimScores = {1:[0,0,0,0,0],2:[0,0,0,0,0],3:[0,0,0,0,0],4:[0,0,0,0,0],5:[0,0,0,0,0]};
+let currentRatee = null;
+
+function renderContribs() {
+  const list = document.getElementById('contrib-list');
+  list.innerHTML = contributors.map(c => `
+    <div class="contrib-card ${c.invited?'invited':''}">
+      <div class="avatar ${c.av}">${c.init}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="contrib-name">${c.name}</div>
+            <div class="contrib-meta">${c.age} · ${c.loc} · ${c.studies} studies completed</div>
+            <div class="star-row">★ ${c.rating} · <span class="badge ${c.tier==='Elite'?'badge-green':c.tier==='Verified'?'badge-blue':'badge-amber'}">${c.tier}</span></div>
+          </div>
+          <div class="match-score">
+            <div class="match-pct">${c.match}%</div>
+            <div class="match-label">match</div>
+          </div>
+        </div>
+        <div class="tags-row">${c.tags.map(t=>`<span class="tag tag-gray">${t}</span>`).join('')}</div>
+      </div>
+      <div style="margin-left:8px;flex-shrink:0">
+        ${c.invited
+          ? `<div class="badge badge-green" style="padding:8px 16px">Invited ✓</div>`
+          : `<button class="btn-primary" style="white-space:nowrap" onclick="inviteContrib(${c.id})">Invite</button>`
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function inviteContrib(id) {
+  const c = contributors.find(x=>x.id===id);
+  c.invited = true;
+  renderContribs();
+  showToast(`Invitation sent to ${c.name}!`);
+}
+
+function renderRateList() {
+  const list = document.getElementById('rate-list');
+  list.innerHTML = rateParticipants.map(p => `
+    <div class="card" style="display:flex;align-items:center;gap:1rem;${p.rated?'opacity:0.5':''}">
+      <div class="avatar ${p.av}">${p.init}</div>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:600;margin-bottom:2px">${p.name}</div>
+        <div style="font-size:12px;color:var(--gray-400)">${p.study}</div>
+      </div>
+      ${p.rated
+        ? `<div class="badge badge-green">Rated ✓</div>`
+        : `<button class="btn-primary btn-green" onclick="openRateModal(${p.id})">Rate now →</button>`
+      }
+    </div>
+  `).join('');
+}
+
+function openRateModal(id) {
+  currentRatee = rateParticipants.find(p=>p.id===id);
+  document.getElementById('rate-name').textContent = currentRatee.name;
+  document.getElementById('rate-study-name').textContent = currentRatee.study;
+  for (let d=1;d<=5;d++) {
+    dimScores[d] = [0,0,0,0,0];
+    renderDimStars(d,0);
+    document.getElementById('sc-'+d).textContent='—';
+  }
+  document.getElementById('rate-modal').classList.add('open');
+}
+
+function renderDimStars(dim, val) {
+  const cont = document.getElementById('ds-'+dim);
+  cont.innerHTML = [1,2,3,4,5].map(i=>
+    `<span class="dim-star ${i<=val?'lit':''}" onclick="setDimRating(${dim},${i})">★</span>`
+  ).join('');
+}
+
+function setDimRating(dim, val) {
+  renderDimStars(dim, val);
+  document.getElementById('sc-'+dim).textContent = val + '.0★';
+}
+
+function submitRating() {
+  if (currentRatee) {
+    currentRatee.rated = true;
+    renderRateList();
+    document.getElementById('rate-modal').classList.remove('open');
+    showToast(`Rating submitted for ${currentRatee.name}. Their score has been updated.`);
+  }
+}
+
+function closeRateModal() {
+  document.getElementById('rate-modal').classList.remove('open');
+}
+
+function updatePreview() {
+  const title = document.getElementById('b-title').value || 'Your study title';
+  const pay = parseInt(document.getElementById('b-pay').value)||45;
+  const spots = parseInt(document.getElementById('b-spots').value)||10;
+  const format = document.getElementById('b-format').value;
+  const length = document.getElementById('b-length').value;
+  document.getElementById('prev-title').textContent = title;
+  document.getElementById('prev-pay').textContent = '£'+pay;
+  document.getElementById('prev-type').textContent = format + ' · ' + length;
+  document.getElementById('prev-spots').textContent = spots + ' participants';
+  document.getElementById('prev-budget').textContent = '£'+(pay*spots);
+  document.getElementById('prev-fee').textContent = '£'+Math.round(pay*spots*0.2);
+  const match = Math.max(50, 500 - spots*4 - pay*0.5 + Math.random()*20|0);
+  document.getElementById('prev-match').textContent = '~'+Math.round(match);
+}
+
+function publishStudy() {
+  showToast('Study published! Contributors are being matched now.');
+  setTimeout(()=>showTab('studies', document.querySelectorAll('.nav-item')[4]), 1200);
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function fc(btn) {
+  btn.closest('.filter-bar').querySelectorAll('.fc').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function tc(el) { el.classList.toggle('on'); }
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function goApp() {
+  document.getElementById('landing').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+}
+
+document.getElementById('rate-modal').addEventListener('click',function(e){if(e.target===this)closeRateModal()});
+
+renderContribs();
+renderRateList();
+</script>
+</body>
+</html>
