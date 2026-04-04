@@ -256,6 +256,30 @@ textarea{resize:vertical;min-height:90px}
 #landing .lang-toggle,.landing-lang{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.18)}
 #landing .lang-btn{color:rgba(255,255,255,0.5)}
 #landing .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
+/* ── NOTIFICATION BELL & PANEL ── */
+.notif-wrap{position:relative}
+.notif-bell{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;font-size:15px;transition:background 0.15s;position:relative;flex-shrink:0}
+.notif-bell:hover{background:var(--gray-100)}
+.notif-count-badge{position:absolute;top:-1px;right:-1px;min-width:17px;height:17px;background:var(--coral);color:#fff;border-radius:100px;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff;font-family:monospace;line-height:1}
+.notif-panel{position:absolute;top:calc(100% + 10px);left:0;width:320px;background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);z-index:600;display:none;overflow:hidden}
+.notif-panel.open{display:block;animation:fadeUp 0.18s ease}
+.notif-panel-hd{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--gray-100)}
+.notif-panel-hd-title{font-size:13px;font-weight:600;color:var(--gray-900)}
+.notif-mark-all-btn{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--sans);padding:0}
+.notif-mark-all-btn:hover{text-decoration:underline}
+.notif-panel-body{max-height:360px;overflow-y:auto}
+.notif-row{display:flex;gap:10px;padding:11px 16px;border-bottom:1px solid var(--gray-100);cursor:pointer;transition:background 0.1s;align-items:flex-start}
+.notif-row:last-child{border-bottom:none}
+.notif-row:hover{background:var(--gray-50)}
+.notif-row.unread{background:var(--blue-light)}
+.notif-row.unread:hover{background:#dbeafe}
+.notif-row-dot{width:7px;height:7px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:5px}
+.notif-row-dot.read{background:var(--gray-200)}
+.notif-row-content{flex:1;min-width:0}
+.notif-row-title{font-size:12px;font-weight:600;color:var(--gray-900);margin-bottom:2px;line-height:1.3}
+.notif-row-body{font-size:12px;color:var(--gray-400);line-height:1.4}
+.notif-row-time{font-size:10px;color:var(--gray-400);margin-top:3px;font-family:monospace}
+.notif-empty{text-align:center;padding:2.5rem 1rem;color:var(--gray-400);font-size:13px}
 </style>
 </head>
 <body>
@@ -363,6 +387,22 @@ textarea{resize:vertical;min-height:90px}
         <button class="nav-item" onclick="showTab('rate',this)"><span class="nav-icon">★</span>Rate participants</button>
       </div>
       <div class="sidebar-bottom">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:12px;color:var(--gray-400)" id="sidebar-admin-name"></span>
+          <div class="notif-wrap" id="notif-wrap">
+            <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" aria-label="Notifications">🔔</button>
+            <div class="notif-count-badge" id="notif-count-badge"></div>
+            <div class="notif-panel" id="notif-panel">
+              <div class="notif-panel-hd">
+                <span class="notif-panel-hd-title">Notifications</span>
+                <button class="notif-mark-all-btn" onclick="markAllRead()">Mark all as read</button>
+              </div>
+              <div class="notif-panel-body" id="notif-panel-body">
+                <div class="notif-empty">No notifications yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="plan-card">
           <div class="plan-name">Pro plan</div>
           <div class="plan-detail">Unlimited studies · Priority panel</div>
@@ -769,6 +809,7 @@ textarea{resize:vertical;min-height:90px}
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
 
   let db = null;
+  let currentClientUser = null;
   try {
     if (window.supabase && window.supabase.createClient) {
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -879,11 +920,16 @@ textarea{resize:vertical;min-height:90px}
       ]);
 
       const firstName = profile?.first_name || user.user_metadata?.first_name || 'there';
+      const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
+      const fullName  = [firstName, lastName].filter(w => w && w !== 'there').join(' ') || firstName;
       const hour = new Date().getHours();
       const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
       const greetEl = document.getElementById('dash-greeting');
       if (greetEl) greetEl.textContent = `${greeting}, ${firstName} 👋`;
+
+      const adminNameEl = document.getElementById('sidebar-admin-name');
+      if (adminNameEl) adminNameEl.textContent = fullName;
 
       if (client?.company_id) {
         const { data: company } = await db.from('companies').select('name').eq('id', client.company_id).single();
@@ -1021,7 +1067,7 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data, error } = await db
         .from('applications')
-        .select('id, status, applied_at, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
+        .select('id, contributor_id, status, applied_at, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
         .eq('study_id', studyId)
         .order('applied_at', { ascending: false });
 
@@ -1061,8 +1107,8 @@ textarea{resize:vertical;min-height:90px}
         let actions = '';
         if (a.status === 'pending') {
           actions = `
-            <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}')">Accept</button>
-            <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}')">Reject</button>`;
+            <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}','${a.contributor_id}')">Accept</button>
+            <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}','${a.contributor_id}')">Reject</button>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1086,7 +1132,7 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  async function updateApplication(appId, newStatus, studyId) {
+  async function updateApplication(appId, newStatus, studyId, contributorId) {
     const row = document.getElementById('approw-' + appId);
     const actionsEl = row?.querySelector('.applicant-actions');
     if (actionsEl) actionsEl.innerHTML = '<span style="font-size:12px;color:var(--gray-400)">Saving…</span>';
@@ -1098,16 +1144,35 @@ textarea{resize:vertical;min-height:90px}
         .eq('id', appId);
       if (updateErr) throw updateErr;
 
+      // Fetch study title for notification
+      const { data: study } = await db
+        .from('studies')
+        .select('title, filled_spots, spots')
+        .eq('id', studyId)
+        .single();
+
       // If accepting, increment filled_spots on the study
-      if (newStatus === 'accepted') {
-        const { data: study } = await db
-          .from('studies')
-          .select('filled_spots, spots')
-          .eq('id', studyId)
-          .single();
-        if (study) {
-          const newFilled = Math.min((study.filled_spots || 0) + 1, study.spots);
-          await db.from('studies').update({ filled_spots: newFilled }).eq('id', studyId);
+      if (newStatus === 'accepted' && study) {
+        const newFilled = Math.min((study.filled_spots || 0) + 1, study.spots);
+        await db.from('studies').update({ filled_spots: newFilled }).eq('id', studyId);
+      }
+
+      // Notify the contributor
+      if (contributorId && study) {
+        if (newStatus === 'accepted') {
+          await sendNotification(
+            contributorId,
+            'Application accepted! 🎉',
+            `You've been accepted for the study "${study.title}". Get ready!`,
+            null
+          );
+        } else if (newStatus === 'rejected') {
+          await sendNotification(
+            contributorId,
+            'Application update',
+            `Your application for "${study.title}" was not selected this time. Keep applying!`,
+            null
+          );
         }
       }
 
@@ -1400,9 +1465,121 @@ textarea{resize:vertical;min-height:90px}
   async function goApp() {
     ['landing','auth'].forEach(id => document.getElementById(id)?.classList.remove('active'));
     document.getElementById('app').classList.add('active');
+    // Capture current user for notifications
+    if (db) {
+      try {
+        const { data: { user } } = await db.auth.getUser();
+        if (user) currentClientUser = user;
+      } catch(e) {}
+    }
     renderRateList();
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
+    loadNotifications();
   }
+
+  // ─── NOTIFICATIONS ────────────────────────────────────
+  async function loadNotifications() {
+    if (!db || !currentClientUser) return;
+    try {
+      const { data, error } = await db
+        .from('notifications')
+        .select('id, title, body, link, read, created_at')
+        .eq('user_id', currentClientUser.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      renderNotifications(data || []);
+    } catch(err) {
+      console.warn('Could not load notifications:', err);
+    }
+  }
+
+  function renderNotifications(notifs) {
+    const badge = document.getElementById('notif-count-badge');
+    const body  = document.getElementById('notif-panel-body');
+    const unreadCount = notifs.filter(n => !n.read).length;
+
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    if (!notifs.length) {
+      body.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+      return;
+    }
+
+    body.innerHTML = notifs.map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', ${JSON.stringify(n.link)})">
+        <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
+        <div class="notif-row-content">
+          <div class="notif-row-title">${n.title}</div>
+          <div class="notif-row-body">${n.body}</div>
+          <div class="notif-row-time">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleNotifPanel() {
+    document.getElementById('notif-panel').classList.toggle('open');
+  }
+
+  async function handleNotifClick(notifId, link) {
+    if (db && currentClientUser) {
+      await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', currentClientUser.id);
+      loadNotifications();
+    }
+    if (link) window.location.href = link;
+    else document.getElementById('notif-panel').classList.remove('open');
+  }
+
+  async function markAllRead() {
+    if (!db || !currentClientUser) return;
+    try {
+      await db.from('notifications').update({ read: true }).eq('user_id', currentClientUser.id).eq('read', false);
+      loadNotifications();
+    } catch(err) {
+      console.warn('markAllRead error:', err);
+    }
+  }
+
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7)  return `${days}d ago`;
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  async function sendNotification(userId, title, body, link) {
+    if (!db) return;
+    try {
+      await db.rpc('insert_notification', {
+        p_user_id: userId,
+        p_title:   title,
+        p_body:    body,
+        p_link:    link || null
+      });
+    } catch(err) {
+      console.warn('sendNotification error:', err);
+    }
+  }
+
+  // Close notification panel when clicking outside
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('notif-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      const panel = document.getElementById('notif-panel');
+      if (panel) panel.classList.remove('open');
+    }
+  });
 
   // ─── LANGUAGE TOGGLE ────────────────────────────────────
   const LANG = {
