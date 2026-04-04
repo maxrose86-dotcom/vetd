@@ -4,23 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vetd — Admin &amp; Matching Engine</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0D0F12;--bg2:#141720;--bg3:#1C2030;--bg4:#242840;
   --border:#2A2E40;--border2:#363B55;
-  --green:#1D9E75;--green-dim:rgba(29,158,117,0.15);--green-mid:#5DCAA5;
+  --green:#00C47A;--green-dark:#009960;--green-dim:rgba(0,196,122,0.15);--green-mid:#34D48E;
   --blue:#4B9EF5;--blue-dim:rgba(75,158,245,0.12);
   --amber:#E8A020;--amber-dim:rgba(232,160,32,0.12);
   --coral:#E8503A;--coral-dim:rgba(232,80,58,0.12);
   --purple:#8B6EF5;--purple-dim:rgba(139,110,245,0.12);
   --cyan:#22D3EE;--cyan-dim:rgba(34,211,238,0.1);
   --text:#E8EAF0;--text2:#8892A4;--text3:#555E72;
-  --serif:'Syne',sans-serif;--mono:'DM Mono',monospace;--sans:'Figtree',sans-serif;
+  --serif:'Syne',sans-serif;--mono:'DM Mono',monospace;--sans:'Inter',sans-serif;
   --r:8px;--r-md:12px;--r-lg:16px;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+@keyframes pageFadeIn{from{opacity:0}to{opacity:1}}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5;animation:pageFadeIn 0.3s ease}
 
 /* LAYOUT */
 .shell{display:flex;min-height:100vh}
@@ -40,7 +41,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .sb-bottom{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
 .sb-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2)}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(29,158,117,0.4)}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(29,158,117,0)}}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,196,122,0.4)}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(0,196,122,0)}}
 
 .main{flex:1;overflow-y:auto}
 .tab{display:none;padding:1.75rem}
@@ -53,14 +54,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .ph p{font-size:12px;color:var(--text2);margin-top:2px;font-family:var(--mono)}
 
 /* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--sans);transition:all 0.15s}
-.btn:hover{border-color:var(--border2);background:var(--bg4)}
-.btn-green{background:var(--green);border-color:var(--green);color:#fff}
-.btn-green:hover{background:var(--green-dark, #0F6E56);border-color:var(--green-dark, #0F6E56)}
-.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
-.btn-blue:hover{opacity:0.85}
-.btn-red{background:var(--coral);border-color:var(--coral);color:#fff}
-.btn-red:hover{opacity:0.85}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--sans);transition:all 0.15s;letter-spacing:-0.01em}
+.btn:hover{background:var(--bg4);transform:translateY(-1px)}
+.btn-green{background:linear-gradient(135deg,var(--green) 0%,#009960 100%);border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(0,196,122,0.35)}
+.btn-green:hover{box-shadow:0 4px 12px rgba(0,196,122,0.45)}
+.btn-blue{background:linear-gradient(135deg,var(--blue) 0%,#3a7de8 100%);border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(75,158,245,0.3)}
+.btn-blue:hover{opacity:0.9;box-shadow:0 4px 12px rgba(75,158,245,0.4)}
+.btn-red{background:linear-gradient(135deg,var(--coral) 0%,#c63226 100%);border-color:transparent;color:#fff;box-shadow:0 2px 8px rgba(232,80,58,0.3)}
+.btn-red:hover{opacity:0.9}
 
 /* STAT GRID */
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
