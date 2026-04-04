@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vetd — Client Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -239,8 +240,8 @@ textarea{resize:vertical;min-height:90px}
   <div class="lnd-h1">Find people worth <em>listening to.</em></div>
   <div class="lnd-p">Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.</div>
   <div>
-    <button class="btn-cta" onclick="goApp()">Post your first study</button>
-    <button class="btn-ghost" onclick="goApp()">View demo dashboard</button>
+    <button class="btn-cta" onclick="showAuthScreen('signup')">Post your first study</button>
+    <button class="btn-ghost" onclick="showAuthScreen('login')">Sign in</button>
   </div>
   <div style="margin-top:3.5rem">
     <div class="lnd-logos">Trusted by teams at</div>
@@ -261,6 +262,46 @@ textarea{resize:vertical;min-height:90px}
   </div>
 </div>
 
+<!-- AUTH -->
+<div id="auth" class="screen">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--gray-50);padding:2rem">
+    <div style="width:100%;max-width:460px">
+      <div style="text-align:center;margin-bottom:2rem">
+        <div style="font-family:var(--serif);font-size:30px;letter-spacing:-0.5px">Vet<span style="color:var(--green-mid)">d</span></div>
+        <div style="font-size:11px;color:var(--gray-400);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">Client Portal</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-xl);padding:2rem">
+        <div style="display:flex;border-bottom:1px solid var(--gray-100);margin-bottom:1.5rem">
+          <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid var(--blue);margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--blue)">Create account</button>
+          <button id="auth-tab-login"  onclick="switchAuthTab('login')"  style="flex:1;padding:10px;font-size:13px;font-weight:500;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign in</button>
+        </div>
+
+        <!-- SIGN UP FORM -->
+        <div id="auth-signup-form">
+          <div class="field"><label>Company name</label><input type="text" id="auth-company" placeholder="e.g. H&amp;M Group"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="field"><label>First name</label><input type="text" id="auth-fname" placeholder="Emma"></div>
+            <div class="field"><label>Last name</label><input type="text" id="auth-lname" placeholder="Johnson"></div>
+          </div>
+          <div class="field"><label>Work email</label><input type="email" id="auth-email-signup" placeholder="emma@company.com"></div>
+          <div class="field"><label>Password</label><input type="password" id="auth-pass-signup" placeholder="At least 8 characters"></div>
+          <button id="auth-signup-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signUpClient()">Create account →</button>
+        </div>
+
+        <!-- SIGN IN FORM -->
+        <div id="auth-login-form" style="display:none">
+          <div class="field"><label>Email</label><input type="email" id="auth-email-login" placeholder="emma@company.com"></div>
+          <div class="field"><label>Password</label><input type="password" id="auth-pass-login" placeholder="Your password"></div>
+          <button id="auth-login-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signInClient()">Sign in →</button>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1rem">
+        <a href="vetd-client.html" style="font-size:12px;color:var(--gray-400)">← Back to homepage</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app" class="screen">
   <div class="app-shell">
@@ -269,7 +310,7 @@ textarea{resize:vertical;min-height:90px}
     <div class="sidebar">
       <div class="sidebar-top">
         <div class="sidebar-logo">Vet<span style="color:var(--green)">d</span></div>
-        <div class="sidebar-company"><strong>H&amp;M Group</strong>Research &amp; Insights team</div>
+        <div class="sidebar-company"><strong id="sidebar-company-name">Your company</strong><span id="sidebar-company-sub">Research &amp; Insights</span></div>
       </div>
       <div class="nav-section">
         <div class="nav-label">Overview</div>
@@ -292,6 +333,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="plan-detail">Unlimited studies · Priority panel</div>
           <div class="plan-upgrade">↑ Upgrade to Enterprise</div>
         </div>
+        <button onclick="signOut()" style="margin-top:10px;width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" onmouseover="this.style.borderColor='var(--gray-400)'" onmouseout="this.style.borderColor='var(--gray-200)'">Sign out</button>
       </div>
     </div>
 
@@ -301,7 +343,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- DASHBOARD -->
       <div class="tab-pane active" id="tab-dashboard">
         <div class="page-topbar">
-          <div class="page-title"><h1>Good morning, Emma 👋</h1><p>H&amp;M Group · Research &amp; Insights</p></div>
+          <div class="page-title"><h1 id="dash-greeting">Welcome 👋</h1><p id="dash-subtitle">Research &amp; Insights</p></div>
           <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item:nth-child(6)'))">＋ Post new study</button>
         </div>
 
@@ -396,81 +438,9 @@ textarea{resize:vertical;min-height:90px}
           <button class="fc" onclick="fc(this)">Draft</button>
         </div>
 
-        <div class="study-row">
-          <div class="study-row-header">
-            <div class="study-title-group"><h3>Online shopping experience research</h3><p>Video call · 60 mins · Posted Mar 20</p></div>
-            <span class="badge badge-green">Live</span>
-          </div>
-          <div class="study-meta" style="margin-bottom:10px">
-            <span>Spots: <strong>12 / 20</strong></span>
-            <span>Avg rating: <strong>4.8★</strong></span>
-            <span>Pay: <strong>£45/person</strong></span>
-            <span>Budget used: <strong>£540</strong></span>
-            <span>Closes: <strong>Apr 7</strong></span>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-            <span class="badge badge-green">Women 25–45</span>
-            <span class="badge badge-blue">Online shopper</span>
-            <span class="badge badge-amber">H&M customer</span>
-            <span class="badge badge-gray">UK only</span>
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:60%;background:var(--green)"></div></div>
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
-            <button class="btn-outline" onclick="showTab('rate', document.querySelectorAll('.nav-item')[7])">Rate participants</button>
-            <button class="btn-outline" onclick="showToast('Study paused')">Pause</button>
-          </div>
-        </div>
-
-        <div class="study-row">
-          <div class="study-row-header">
-            <div class="study-title-group"><h3>Sustainability perception survey</h3><p>Online survey · 15 mins · Posted Mar 22</p></div>
-            <span class="badge badge-amber">Filling</span>
-          </div>
-          <div class="study-meta" style="margin-bottom:10px">
-            <span>Spots: <strong>27 / 100</strong></span>
-            <span>Avg rating: <strong>4.6★</strong></span>
-            <span>Pay: <strong>£8/person</strong></span>
-            <span>Budget used: <strong>£216</strong></span>
-            <span>Closes: <strong>Apr 14</strong></span>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-            <span class="badge badge-green">Any age</span>
-            <span class="badge badge-blue">UK shoppers</span>
-            <span class="badge badge-gray">4.0★+ preferred</span>
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:27%;background:var(--amber)"></div></div>
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
-            <button class="btn-outline" onclick="showToast('Boost sent — more contributors notified!')">Boost recruitment</button>
-          </div>
-        </div>
-
-        <div class="study-row">
-          <div class="study-row-header">
-            <div class="study-title-group"><h3>Gen Z style discovery focus group</h3><p>Video call · 60 mins · Posted Mar 24</p></div>
-            <span class="badge badge-blue">Full</span>
-          </div>
-          <div class="study-meta" style="margin-bottom:10px">
-            <span>Spots: <strong>8 / 8</strong></span>
-            <span>Avg rating: <strong>4.9★</strong></span>
-            <span>Pay: <strong>£50/person</strong></span>
-            <span>Scheduled: <strong>Apr 3</strong></span>
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:100%;background:var(--blue)"></div></div>
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-outline" onclick="showToast('Calendar invites sent to all 8 participants!')">Send calendar invites</button>
-            <button class="btn-outline" onclick="showTab('rate', document.querySelectorAll('.nav-item')[7])">Rate after session</button>
-          </div>
-        </div>
-
-        <div class="study-row" style="opacity:0.6">
-          <div class="study-row-header">
-            <div class="study-title-group"><h3>Autumn/Winter campaign feedback</h3><p>Draft · Not yet posted</p></div>
-            <span class="badge badge-gray">Draft</span>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:10px">
-            <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">Continue editing</button>
+        <div id="studies-list">
+          <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+            <div style="font-size:13px">Loading studies…</div>
           </div>
         </div>
       </div>
@@ -743,164 +713,461 @@ textarea{resize:vertical;min-height:90px}
 <div class="toast" id="toast"></div>
 
 <script>
-const contributors = [
-  {id:1,init:'SL',av:'av-green',name:'Sarah L.',age:34,loc:'Manchester',tier:'Elite',rating:4.8,studies:23,tags:['Fashion','Online shopper','Parent','UK'],match:99,invited:false},
-  {id:2,init:'PR',av:'av-purple',name:'Priya R.',age:29,loc:'London',tier:'Elite',rating:4.9,studies:31,tags:['Fashion','Beauty','Social media','UK'],match:97,invited:false},
-  {id:3,init:'MK',av:'av-blue',name:'Marcus K.',age:28,loc:'London',tier:'Verified',rating:4.4,studies:8,tags:['Online shopper','Streaming','UK'],match:94,invited:false},
-  {id:4,init:'AB',av:'av-amber',name:'Aisha B.',age:36,loc:'Birmingham',tier:'Verified',rating:4.2,studies:14,tags:['Fashion','Sustainability','Parent','UK'],match:91,invited:true},
-  {id:5,init:'EW',av:'av-coral',name:'Emma W.',age:41,loc:'Leeds',tier:'Elite',rating:4.7,studies:19,tags:['Fashion','Home','Online shopper','UK'],match:89,invited:false},
-  {id:6,init:'TW',av:'av-green',name:'Tom W.',age:32,loc:'Manchester',tier:'Verified',rating:4.1,studies:6,tags:['Online shopper','Tech','UK'],match:82,invited:true},
-];
+  // ─── SUPABASE INIT ──────────────────────────────────────
+  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
 
-const rateParticipants = [
-  {id:1,init:'SL',av:'av-green',name:'Sarah L.',study:'Online shopping experience research · Mar 28',rated:false},
-  {id:2,init:'TW',av:'av-blue',name:'Tom W.',study:'Online shopping experience research · Mar 28',rated:false},
-  {id:3,init:'AB',av:'av-amber',name:'Aisha B.',study:'Online shopping experience research · Mar 28',rated:false},
-];
+  let db = null;
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    }
+  } catch(e) { console.warn('Supabase not loaded'); }
 
-const dimScores = {1:[0,0,0,0,0],2:[0,0,0,0,0],3:[0,0,0,0,0],4:[0,0,0,0,0],5:[0,0,0,0,0]};
-let currentRatee = null;
+  // ─── AUTH SCREEN ────────────────────────────────────────
+  function showAuthScreen(tab = 'signup') {
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('auth').classList.add('active');
+    switchAuthTab(tab);
+  }
 
-function renderContribs() {
-  const list = document.getElementById('contrib-list');
-  list.innerHTML = contributors.map(c => `
-    <div class="contrib-card ${c.invited?'invited':''}">
-      <div class="avatar ${c.av}">${c.init}</div>
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div class="contrib-name">${c.name}</div>
-            <div class="contrib-meta">${c.age} · ${c.loc} · ${c.studies} studies completed</div>
-            <div class="star-row">★ ${c.rating} · <span class="badge ${c.tier==='Elite'?'badge-green':c.tier==='Verified'?'badge-blue':'badge-amber'}">${c.tier}</span></div>
-          </div>
-          <div class="match-score">
-            <div class="match-pct">${c.match}%</div>
-            <div class="match-label">match</div>
-          </div>
+  function switchAuthTab(tab) {
+    const isSignup = tab === 'signup';
+    document.getElementById('auth-signup-form').style.display = isSignup ? '' : 'none';
+    document.getElementById('auth-login-form').style.display  = isSignup ? 'none' : '';
+    document.getElementById('auth-tab-signup').style.cssText += `;color:${isSignup?'var(--blue)':'var(--gray-400)'};border-bottom-color:${isSignup?'var(--blue)':'transparent'}`;
+    document.getElementById('auth-tab-login').style.cssText  += `;color:${isSignup?'var(--gray-400)':'var(--blue)'};border-bottom-color:${isSignup?'transparent':'var(--blue)'}`;
+  }
+
+  // ─── SIGN UP ────────────────────────────────────────────
+  async function signUpClient() {
+    const company  = document.getElementById('auth-company').value.trim();
+    const fname    = document.getElementById('auth-fname').value.trim();
+    const lname    = document.getElementById('auth-lname').value.trim();
+    const email    = document.getElementById('auth-email-signup').value.trim();
+    const password = document.getElementById('auth-pass-signup').value;
+
+    if (!company)            { showToast('Please enter your company name', true); return; }
+    if (!fname || !lname)    { showToast('Please enter your full name', true); return; }
+    if (!email)              { showToast('Please enter your email', true); return; }
+    if (password.length < 8) { showToast('Password must be at least 8 characters', true); return; }
+    if (!db)                 { showToast('Demo mode — skipping save'); await goApp(); return; }
+
+    const btn = document.getElementById('auth-signup-btn');
+    btn.textContent = 'Creating account…'; btn.disabled = true;
+
+    try {
+      // 1. Create auth user
+      const { data: authData, error: authErr } = await db.auth.signUp({
+        email, password,
+        options: { data: { first_name: fname, last_name: lname, role: 'client' } }
+      });
+      if (authErr) throw authErr;
+      const userId = authData.user.id;
+
+      // 2. Create company
+      const { data: companyData, error: compErr } = await db
+        .from('companies').insert({ name: company }).select('id').single();
+      if (compErr) throw compErr;
+
+      // 3. Create client row
+      const { error: clientErr } = await db
+        .from('clients').insert({ id: userId, company_id: companyData.id });
+      if (clientErr) throw clientErr;
+
+      showToast('Account created! Welcome to Vetd.');
+      await goApp();
+    } catch(err) {
+      console.error('Sign-up error:', err);
+      showToast(err.message || 'Sign-up failed', true);
+    } finally {
+      btn.textContent = 'Create account →'; btn.disabled = false;
+    }
+  }
+
+  // ─── SIGN IN ────────────────────────────────────────────
+  async function signInClient() {
+    const email    = document.getElementById('auth-email-login').value.trim();
+    const password = document.getElementById('auth-pass-login').value;
+
+    if (!email || !password) { showToast('Please enter your email and password', true); return; }
+    if (!db) { showToast('Demo mode — skipping login'); await goApp(); return; }
+
+    const btn = document.getElementById('auth-login-btn');
+    btn.textContent = 'Signing in…'; btn.disabled = true;
+
+    try {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      await goApp();
+    } catch(err) {
+      showToast(err.message || 'Sign-in failed', true);
+    } finally {
+      btn.textContent = 'Sign in →'; btn.disabled = false;
+    }
+  }
+
+  // ─── SIGN OUT ───────────────────────────────────────────
+  async function signOut() {
+    if (db) await db.auth.signOut();
+    document.getElementById('app').classList.remove('active');
+    document.getElementById('auth').classList.remove('active');
+    document.getElementById('landing').classList.add('active');
+  }
+
+  // ─── LOAD CLIENT PROFILE ────────────────────────────────
+  async function loadClientProfile() {
+    if (!db) return;
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const [{ data: profile }, { data: client }] = await Promise.all([
+        db.from('profiles').select('first_name, last_name').eq('id', user.id).single(),
+        db.from('clients').select('company_id').eq('id', user.id).single()
+      ]);
+
+      const firstName = profile?.first_name || user.user_metadata?.first_name || 'there';
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
+      const greetEl = document.getElementById('dash-greeting');
+      if (greetEl) greetEl.textContent = `${greeting}, ${firstName} 👋`;
+
+      if (client?.company_id) {
+        const { data: company } = await db.from('companies').select('name').eq('id', client.company_id).single();
+        const name = company?.name || '';
+        const nameEl = document.getElementById('sidebar-company-name');
+        const subEl  = document.getElementById('sidebar-company-sub');
+        const subtitleEl = document.getElementById('dash-subtitle');
+        if (nameEl) nameEl.textContent = name;
+        if (subEl)  subEl.textContent  = 'Research & Insights';
+        if (subtitleEl) subtitleEl.textContent = name ? `${name} · Research & Insights` : 'Research & Insights';
+      }
+    } catch(err) {
+      console.error('Failed to load client profile:', err);
+    }
+  }
+
+  // ─── LOAD STUDIES ───────────────────────────────────────
+  async function loadStudies() {
+    const list = document.getElementById('studies-list');
+    if (!list) return;
+    if (!db) { list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Connect Supabase to see your studies.</p>'; return; }
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const { data: studies, error } = await db
+        .from('studies').select('*').eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      if (!studies || studies.length === 0) {
+        list.innerHTML = `
+          <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+            <div style="font-size:32px;margin-bottom:1rem">📋</div>
+            <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">No studies yet</h3>
+            <p style="font-size:14px;font-weight:300">Post your first study to start recruiting contributors.</p>
+            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">＋ Post a study</button>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = studies.map(s => {
+        const filled   = s.participants_filled || 0;
+        const spots    = s.spots || 1;
+        const pct      = Math.min(100, Math.round((filled / spots) * 100));
+        const status   = s.status || 'draft';
+        const badgeCls = status === 'live'      ? 'badge-green'
+                       : status === 'filling'   ? 'badge-amber'
+                       : status === 'full'      ? 'badge-blue'
+                       : status === 'completed' ? 'badge-gray'
+                       : 'badge-gray';
+        const barColor = status === 'full' || status === 'completed' ? 'var(--blue)'
+                       : status === 'live' ? 'var(--green)' : 'var(--amber)';
+        const posted = s.created_at
+          ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+          : '';
+        const closes = s.close_date
+          ? new Date(s.close_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+          : '—';
+        const label = status.charAt(0).toUpperCase() + status.slice(1);
+        return `
+          <div class="study-row">
+            <div class="study-row-header">
+              <div class="study-title-group">
+                <h3>${s.title || 'Untitled study'}</h3>
+                <p>${[s.format, s.duration, posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
+              </div>
+              <span class="badge ${badgeCls}">${label}</span>
+            </div>
+            <div class="study-meta" style="margin-bottom:10px">
+              <span>Spots: <strong>${filled} / ${spots}</strong></span>
+              ${s.pay_per_person ? `<span>Pay: <strong>£${s.pay_per_person}/person</strong></span>` : ''}
+              ${s.pay_per_person ? `<span>Budget used: <strong>£${filled * s.pay_per_person}</strong></span>` : ''}
+              <span>Closes: <strong>${closes}</strong></span>
+            </div>
+            <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button class="btn-outline" onclick="showTab('panel', document.querySelectorAll('.nav-item')[6])">View matched panel</button>
+              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">Continue editing</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('Failed to load studies:', err);
+      list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
+    }
+  }
+
+  // ─── PUBLISH STUDY ──────────────────────────────────────
+  async function publishStudy() {
+    const title  = document.getElementById('b-title').value.trim();
+    const desc   = document.getElementById('b-desc').value.trim();
+    const format = document.getElementById('b-format').value;
+    const length = document.getElementById('b-length').value;
+    const spots  = parseInt(document.getElementById('b-spots').value) || 10;
+    const pay    = parseInt(document.getElementById('b-pay').value)   || 0;
+    const start  = document.getElementById('b-start').value || null;
+    const close  = document.getElementById('b-close').value || null;
+
+    if (!title) { showToast('Please enter a study title', true); return; }
+
+    if (!db) {
+      showToast('Study published! Contributors are being matched now.');
+      setTimeout(() => showTab('studies', document.querySelectorAll('.nav-item')[4]), 1200);
+      return;
+    }
+
+    const btn = document.querySelector('#tab-new-study .btn-green');
+    btn.textContent = 'Publishing…'; btn.disabled = true;
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const { error } = await db.from('studies').insert({
+        client_id:      user.id,
+        title,
+        description:    desc || null,
+        format,
+        duration:       length,
+        spots,
+        pay_per_person: pay,
+        start_date:     start,
+        close_date:     close,
+        status:         'live'
+      });
+      if (error) throw error;
+
+      showToast('Study published! Contributors are being matched now.');
+      setTimeout(async () => {
+        await loadStudies();
+        showTab('studies', document.querySelectorAll('.nav-item')[4]);
+      }, 1200);
+    } catch(err) {
+      console.error('Publish error:', err);
+      showToast(err.message || 'Could not publish — try again', true);
+    } finally {
+      btn.textContent = 'Publish study →'; btn.disabled = false;
+    }
+  }
+
+  // ─── LOAD CONTRIBUTORS ──────────────────────────────────
+  const AV_COLORS = ['av-green','av-blue','av-amber','av-purple','av-coral'];
+
+  async function loadContributors() {
+    const list = document.getElementById('contrib-list');
+    if (!list) return;
+    if (!db) { list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Connect Supabase to browse contributors.</p>'; return; }
+
+    try {
+      const { data: contribs, error } = await db
+        .from('contributors')
+        .select('id, city, country, date_of_birth, rating, studies_done, tier, interests_lifestyle, interests_tech')
+        .order('rating', { ascending: false, nullsLast: true })
+        .limit(20);
+      if (error) throw error;
+
+      const ids = (contribs || []).map(c => c.id);
+      let profiles = [];
+      if (ids.length) {
+        const { data } = await db.from('profiles').select('id, first_name, last_name').in('id', ids);
+        profiles = data || [];
+      }
+      const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
+
+      if (!contribs || contribs.length === 0) {
+        list.innerHTML = '<p style="color:var(--gray-400);padding:1rem;text-align:center">No contributors found yet.</p>';
+        return;
+      }
+
+      list.innerHTML = contribs.map((c, i) => {
+        const p         = profileMap[c.id] || {};
+        const fname     = p.first_name || '';
+        const lname     = p.last_name  || '';
+        const initials  = ((fname[0]||'') + (lname[0]||'')).toUpperCase() || '?';
+        const dispName  = fname ? `${fname}${lname ? ' '+lname[0]+'.' : ''}`.trim() : 'Anonymous';
+        const avCls     = AV_COLORS[i % AV_COLORS.length];
+        const tier      = c.tier || 'standard';
+        const badgeCls  = tier === 'elite' ? 'badge-green' : tier === 'premium' ? 'badge-blue' : 'badge-gray';
+        const tierLabel = tier === 'elite' ? 'Elite' : tier === 'premium' ? 'Premium' : 'Standard';
+        const rating    = c.rating ? Number(c.rating).toFixed(1) : '—';
+        const age       = c.date_of_birth
+          ? new Date().getFullYear() - new Date(c.date_of_birth).getFullYear()
+          : null;
+        const loc       = c.city || c.country || '';
+        const studies   = c.studies_done || 0;
+        const tags      = [
+          ...(Array.isArray(c.interests_lifestyle) ? c.interests_lifestyle : []),
+          ...(Array.isArray(c.interests_tech)      ? c.interests_tech      : [])
+        ].slice(0,3).map(t => t.replace(/_/g,' '));
+
+        return `
+          <div class="contrib-card">
+            <div class="avatar ${avCls}">${initials}</div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <div>
+                  <div class="contrib-name">${dispName}</div>
+                  <div class="contrib-meta">${[age, loc, `${studies} studies`].filter(Boolean).join(' · ')}</div>
+                  <div class="star-row">★ ${rating} · <span class="badge ${badgeCls}">${tierLabel}</span></div>
+                </div>
+              </div>
+              ${tags.length ? `<div class="tags-row">${tags.map(t=>`<span class="tag tag-gray">${t}</span>`).join('')}</div>` : ''}
+            </div>
+            <div style="margin-left:8px;flex-shrink:0">
+              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${dispName}!')">Invite</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('Failed to load contributors:', err);
+      list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load contributors.</p>';
+    }
+  }
+
+  // ─── RATE LIST (local UI only) ───────────────────────────
+  const rateParticipants = [
+    {id:1,init:'?',av:'av-green',name:'Participant 1',study:'Your most recent study',rated:false},
+    {id:2,init:'?',av:'av-blue', name:'Participant 2',study:'Your most recent study',rated:false},
+  ];
+  const dimScores = {1:0,2:0,3:0,4:0,5:0};
+  let currentRatee = null;
+
+  function renderRateList() {
+    const list = document.getElementById('rate-list');
+    list.innerHTML = rateParticipants.map(p => `
+      <div class="card" style="display:flex;align-items:center;gap:1rem;${p.rated?'opacity:0.5':''}">
+        <div class="avatar ${p.av}">${p.init}</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:600;margin-bottom:2px">${p.name}</div>
+          <div style="font-size:12px;color:var(--gray-400)">${p.study}</div>
         </div>
-        <div class="tags-row">${c.tags.map(t=>`<span class="tag tag-gray">${t}</span>`).join('')}</div>
-      </div>
-      <div style="margin-left:8px;flex-shrink:0">
-        ${c.invited
-          ? `<div class="badge badge-green" style="padding:8px 16px">Invited ✓</div>`
-          : `<button class="btn-primary" style="white-space:nowrap" onclick="inviteContrib(${c.id})">Invite</button>`
+        ${p.rated
+          ? `<div class="badge badge-green">Rated ✓</div>`
+          : `<button class="btn-primary btn-green" onclick="openRateModal(${p.id})">Rate now →</button>`
         }
       </div>
-    </div>
-  `).join('');
-}
-
-function inviteContrib(id) {
-  const c = contributors.find(x=>x.id===id);
-  c.invited = true;
-  renderContribs();
-  showToast(`Invitation sent to ${c.name}!`);
-}
-
-function renderRateList() {
-  const list = document.getElementById('rate-list');
-  list.innerHTML = rateParticipants.map(p => `
-    <div class="card" style="display:flex;align-items:center;gap:1rem;${p.rated?'opacity:0.5':''}">
-      <div class="avatar ${p.av}">${p.init}</div>
-      <div style="flex:1">
-        <div style="font-size:15px;font-weight:600;margin-bottom:2px">${p.name}</div>
-        <div style="font-size:12px;color:var(--gray-400)">${p.study}</div>
-      </div>
-      ${p.rated
-        ? `<div class="badge badge-green">Rated ✓</div>`
-        : `<button class="btn-primary btn-green" onclick="openRateModal(${p.id})">Rate now →</button>`
-      }
-    </div>
-  `).join('');
-}
-
-function openRateModal(id) {
-  currentRatee = rateParticipants.find(p=>p.id===id);
-  document.getElementById('rate-name').textContent = currentRatee.name;
-  document.getElementById('rate-study-name').textContent = currentRatee.study;
-  for (let d=1;d<=5;d++) {
-    dimScores[d] = [0,0,0,0,0];
-    renderDimStars(d,0);
-    document.getElementById('sc-'+d).textContent='—';
+    `).join('');
   }
-  document.getElementById('rate-modal').classList.add('open');
-}
 
-function renderDimStars(dim, val) {
-  const cont = document.getElementById('ds-'+dim);
-  cont.innerHTML = [1,2,3,4,5].map(i=>
-    `<span class="dim-star ${i<=val?'lit':''}" onclick="setDimRating(${dim},${i})">★</span>`
-  ).join('');
-}
+  function openRateModal(id) {
+    currentRatee = rateParticipants.find(p=>p.id===id);
+    document.getElementById('rate-name').textContent = currentRatee.name;
+    document.getElementById('rate-study-name').textContent = currentRatee.study;
+    for (let d=1;d<=5;d++) {
+      renderDimStars(d,0);
+      document.getElementById('sc-'+d).textContent='—';
+    }
+    document.getElementById('rate-modal').classList.add('open');
+  }
 
-function setDimRating(dim, val) {
-  renderDimStars(dim, val);
-  document.getElementById('sc-'+dim).textContent = val + '.0★';
-}
+  function renderDimStars(dim, val) {
+    document.getElementById('ds-'+dim).innerHTML = [1,2,3,4,5].map(i=>
+      `<span class="dim-star ${i<=val?'lit':''}" onclick="setDimRating(${dim},${i})">★</span>`
+    ).join('');
+  }
 
-function submitRating() {
-  if (currentRatee) {
-    currentRatee.rated = true;
-    renderRateList();
+  function setDimRating(dim, val) {
+    renderDimStars(dim, val);
+    document.getElementById('sc-'+dim).textContent = val+'.0★';
+  }
+
+  function submitRating() {
+    if (currentRatee) {
+      currentRatee.rated = true;
+      renderRateList();
+      document.getElementById('rate-modal').classList.remove('open');
+      showToast(`Rating submitted for ${currentRatee.name}. Their score has been updated.`);
+    }
+  }
+
+  function closeRateModal() {
     document.getElementById('rate-modal').classList.remove('open');
-    showToast(`Rating submitted for ${currentRatee.name}. Their score has been updated.`);
   }
-}
 
-function closeRateModal() {
-  document.getElementById('rate-modal').classList.remove('open');
-}
+  // ─── PREVIEW ────────────────────────────────────────────
+  function updatePreview() {
+    const title  = document.getElementById('b-title').value || 'Your study title';
+    const pay    = parseInt(document.getElementById('b-pay').value)||45;
+    const spots  = parseInt(document.getElementById('b-spots').value)||10;
+    const format = document.getElementById('b-format').value;
+    const length = document.getElementById('b-length').value;
+    document.getElementById('prev-title').textContent  = title;
+    document.getElementById('prev-pay').textContent    = '£'+pay;
+    document.getElementById('prev-type').textContent   = format + ' · ' + length;
+    document.getElementById('prev-spots').textContent  = spots + ' participants';
+    document.getElementById('prev-budget').textContent = '£'+(pay*spots);
+    document.getElementById('prev-fee').textContent    = '£'+Math.round(pay*spots*0.2);
+    document.getElementById('prev-match').textContent  = '~'+Math.max(50, Math.round(500 - spots*4 - pay*0.5));
+  }
 
-function updatePreview() {
-  const title = document.getElementById('b-title').value || 'Your study title';
-  const pay = parseInt(document.getElementById('b-pay').value)||45;
-  const spots = parseInt(document.getElementById('b-spots').value)||10;
-  const format = document.getElementById('b-format').value;
-  const length = document.getElementById('b-length').value;
-  document.getElementById('prev-title').textContent = title;
-  document.getElementById('prev-pay').textContent = '£'+pay;
-  document.getElementById('prev-type').textContent = format + ' · ' + length;
-  document.getElementById('prev-spots').textContent = spots + ' participants';
-  document.getElementById('prev-budget').textContent = '£'+(pay*spots);
-  document.getElementById('prev-fee').textContent = '£'+Math.round(pay*spots*0.2);
-  const match = Math.max(50, 500 - spots*4 - pay*0.5 + Math.random()*20|0);
-  document.getElementById('prev-match').textContent = '~'+Math.round(match);
-}
+  // ─── NAVIGATION ─────────────────────────────────────────
+  function showTab(id, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
 
-function publishStudy() {
-  showToast('Study published! Contributors are being matched now.');
-  setTimeout(()=>showTab('studies', document.querySelectorAll('.nav-item')[4]), 1200);
-}
+  function fc(btn) {
+    btn.closest('.filter-bar').querySelectorAll('.fc').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
 
-function showTab(id, btn) {
-  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-}
+  function tc(el) { el.classList.toggle('on'); }
 
-function fc(btn) {
-  btn.closest('.filter-bar').querySelectorAll('.fc').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-}
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? '#D85A30' : 'var(--gray-900)';
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2800);
+  }
 
-function tc(el) { el.classList.toggle('on'); }
+  // ─── GO TO APP ──────────────────────────────────────────
+  async function goApp() {
+    ['landing','auth'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+    document.getElementById('app').classList.add('active');
+    renderRateList();
+    await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
+  }
 
-function showToast(msg) {
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
-}
+  // ─── SESSION CHECK ──────────────────────────────────────
+  (async function checkSession() {
+    if (!db) return;
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) await goApp();
+    } catch(e) { console.warn('Session check failed:', e); }
+  })();
 
-function goApp() {
-  document.getElementById('landing').classList.remove('active');
-  document.getElementById('app').classList.add('active');
-}
-
-document.getElementById('rate-modal').addEventListener('click',function(e){if(e.target===this)closeRateModal()});
-
-renderContribs();
-renderRateList();
+  document.getElementById('rate-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeRateModal();
+  });
 </script>
 </body>
 </html>
