@@ -876,7 +876,7 @@ textarea{resize:vertical;min-height:90px}
       }
 
       list.innerHTML = studies.map(s => {
-        const filled   = s.participants_filled || 0;
+        const filled   = s.filled_spots || 0;
         const spots    = s.spots || 1;
         const pct      = Math.min(100, Math.round((filled / spots) * 100));
         const status   = s.status || 'draft';
@@ -899,14 +899,14 @@ textarea{resize:vertical;min-height:90px}
             <div class="study-row-header">
               <div class="study-title-group">
                 <h3>${s.title || 'Untitled study'}</h3>
-                <p>${[s.format, s.duration, posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
+                <p>${[s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
               </div>
               <span class="badge ${badgeCls}">${label}</span>
             </div>
             <div class="study-meta" style="margin-bottom:10px">
               <span>Spots: <strong>${filled} / ${spots}</strong></span>
-              ${s.pay_per_person ? `<span>Pay: <strong>£${s.pay_per_person}/person</strong></span>` : ''}
-              ${s.pay_per_person ? `<span>Budget used: <strong>£${filled * s.pay_per_person}</strong></span>` : ''}
+              ${s.pay_per_participant ? `<span>Pay: <strong>£${s.pay_per_participant}/person</strong></span>` : ''}
+              ${s.pay_per_participant ? `<span>Budget used: <strong>£${filled * s.pay_per_participant}</strong></span>` : ''}
               <span>Closes: <strong>${closes}</strong></span>
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
@@ -948,17 +948,27 @@ textarea{resize:vertical;min-height:90px}
       const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error('Not logged in');
 
+      // Parse "60 minutes" / "2 hours" → integer minutes
+      const durationMins = length.includes('hour')
+        ? parseInt(length) * 60
+        : parseInt(length) || null;
+
+      // Fetch company_id for this client
+      const { data: clientRow } = await db
+        .from('clients').select('company_id').eq('id', user.id).single();
+
       const { error } = await db.from('studies').insert({
-        created_by:     user.id,
+        created_by:          user.id,
+        company_id:          clientRow?.company_id || null,
         title,
-        description:    desc || null,
+        description:         desc || null,
         format,
-        duration:       length,
+        duration_minutes:    durationMins,
         spots,
-        pay_per_person: pay,
-        start_date:     start,
-        close_date:     close,
-        status:         'live'
+        pay_per_participant: pay,
+        start_date:          start,
+        close_date:          close,
+        status:              'live'
       });
       if (error) throw error;
 
