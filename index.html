@@ -321,8 +321,10 @@
   .tier-badge {
     display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px;
     border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: var(--gray-100); color: var(--gray-400);
   }
   .tier-elite { background: var(--green-light); color: var(--green-dark); }
+  .tier-blue  { background: var(--blue-light);  color: #185FA5; }
   .tier-verified { background: var(--blue-light); color: #185FA5; }
   .tier-standard { background: var(--amber-light); color: var(--amber); }
 
@@ -704,7 +706,7 @@
       </div>
       <div class="topbar-right">
         <div class="notif-dot"></div>
-        <div class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">SL</div>
+        <div id="topbar-avatar" class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">?</div>
         <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s">Sign out</button>
       </div>
     </div>
@@ -714,46 +716,46 @@
       <!-- DASHBOARD TAB -->
       <div id="tab-dashboard">
         <div class="dash-welcome">
-          <h1>Good morning, Sarah 👋</h1>
-          <p>You have 2 new study matches and 1 pending invitation.</p>
+          <h1 id="dash-greeting">Welcome 👋</h1>
+          <p id="dash-subtext">Browse available studies and apply to start earning.</p>
         </div>
 
         <div class="rating-hero">
           <div class="rating-hero-left">
             <h2>Your Vetd rating</h2>
-            <p>Based on 23 completed studies</p>
+            <p id="dash-rating-desc">Complete your first study to earn a rating</p>
             <div style="margin-top:1rem">
-              <div class="tier-badge tier-elite">★ Elite contributor</div>
+              <div id="dash-tier-badge" class="tier-badge">New member</div>
             </div>
           </div>
           <div style="text-align:right;position:relative;z-index:1">
-            <div class="rating-big">4.8</div>
-            <div class="rating-stars-big">
-              <span class="star-icon" style="color:#5DCAA5">★</span>
-              <span class="star-icon" style="color:#5DCAA5">★</span>
-              <span class="star-icon" style="color:#5DCAA5">★</span>
-              <span class="star-icon" style="color:#5DCAA5">★</span>
-              <span class="star-icon" style="color:#5DCAA5">★</span>
+            <div id="dash-rating-num" class="rating-big">—</div>
+            <div id="dash-rating-stars" class="rating-stars-big">
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
             </div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px">Top 5% of contributors</div>
+            <div id="dash-rating-pct" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px">No ratings yet</div>
           </div>
         </div>
 
         <div class="stat-cards">
           <div class="stat-card">
             <div class="stat-card-label">Total earned</div>
-            <div class="stat-card-num">£640</div>
-            <div class="stat-card-sub">↑ £45 this month</div>
+            <div id="stat-earned" class="stat-card-num">£0</div>
+            <div id="stat-earned-sub" class="stat-card-sub">Complete a study to start earning</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">Studies done</div>
-            <div class="stat-card-num">23</div>
-            <div class="stat-card-sub">3 in progress</div>
+            <div id="stat-studies" class="stat-card-num">0</div>
+            <div id="stat-studies-sub" class="stat-card-sub">No studies yet</div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label">Completion rate</div>
-            <div class="stat-card-num">96%</div>
-            <div class="stat-card-sub">Excellent</div>
+            <div id="stat-completion" class="stat-card-num">—</div>
+            <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
           </div>
         </div>
 
@@ -805,13 +807,13 @@
       <!-- PROFILE TAB -->
       <div id="tab-profile" style="display:none">
         <div class="profile-header">
-          <div class="profile-avatar-big">SL</div>
+          <div id="profile-avatar-big" class="profile-avatar-big">?</div>
           <div style="flex:1">
-            <div class="profile-name">Sarah Lewis</div>
-            <div class="profile-subtitle">Manchester, UK · Member since March 2026</div>
+            <div id="profile-fullname" class="profile-name">Member</div>
+            <div id="profile-subtitle" class="profile-subtitle">New member</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-              <div class="tier-badge tier-elite">★ Elite contributor</div>
-              <div style="font-size:13px;color:var(--gray-400)">4.8★ · 23 studies · £640 earned</div>
+              <div id="profile-tier-badge" class="tier-badge">New member</div>
+              <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · £0 earned</div>
             </div>
           </div>
           <button class="apply-btn" style="white-space:nowrap" onclick="showToast('Profile editing coming soon!')">Edit profile</button>
@@ -820,12 +822,12 @@
         <div class="profile-grid">
           <div class="profile-section">
             <h3>Personal details</h3>
-            <div class="profile-row"><span class="profile-row-label">Age</span><span class="profile-row-value">34</span></div>
-            <div class="profile-row"><span class="profile-row-label">Gender</span><span class="profile-row-value">Woman</span></div>
-            <div class="profile-row"><span class="profile-row-label">Location</span><span class="profile-row-value">Manchester</span></div>
-            <div class="profile-row"><span class="profile-row-label">Employment</span><span class="profile-row-value">Full-time</span></div>
-            <div class="profile-row"><span class="profile-row-label">Children</span><span class="profile-row-value">2 (under 12)</span></div>
-            <div class="profile-row"><span class="profile-row-label">Living situation</span><span class="profile-row-value">Own home</span></div>
+            <div class="profile-row"><span class="profile-row-label">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Gender</span><span id="profile-detail-gender" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Location</span><span id="profile-detail-location" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Employment</span><span id="profile-detail-employment" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Children</span><span id="profile-detail-children" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Living situation</span><span id="profile-detail-living" class="profile-row-value">—</span></div>
           </div>
 
           <div class="profile-section">
@@ -916,8 +918,8 @@
 <script>
   // ─── SUPABASE INIT ───────────────────────────────────────
   // ⚠️  REPLACE these with your real Supabase project values
-  const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
-  const SUPABASE_ANON = 'YOUR_ANON_KEY';
+  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
 
   let db = null;
   try {
@@ -1263,6 +1265,7 @@
     document.getElementById('app').classList.add('active');
     renderJobs('dashboard-jobs', jobs.slice(0,2));
     renderJobs('jobs-list', jobs);
+    loadUserProfile();
   }
 
   // ─── STEP NAVIGATION (with Supabase saves) ─────────────
@@ -1313,6 +1316,142 @@
   document.getElementById('apply-modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
+
+  // ─── LOAD USER PROFILE ──────────────────────────────────
+  async function loadUserProfile() {
+    if (!db) return;
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const [{ data: profile }, { data: contrib }] = await Promise.all([
+        db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, living_situation, children, rating, studies_done, total_earned, completion_rate, tier').eq('id', user.id).single()
+      ]);
+
+      // ── Name & initials ──
+      const firstName = profile?.first_name || user.user_metadata?.first_name || '';
+      const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
+      const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Member';
+      const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
+
+      // ── Stats (safe defaults for new members) ──
+      const studiesDone    = contrib?.studies_done    ?? 0;
+      const totalEarned    = contrib?.total_earned    ?? 0;
+      const rating         = (studiesDone > 0 && contrib?.rating != null) ? Number(contrib.rating) : null;
+      const completionRate = (studiesDone > 0 && contrib?.completion_rate != null) ? Number(contrib.completion_rate) : null;
+      const tier           = contrib?.tier || 'standard';
+
+      // ── Location & member since ──
+      const city     = contrib?.city    || null;
+      const country  = contrib?.country || null;
+      const location = [city, country].filter(Boolean).join(', ');
+      const createdAt   = profile?.created_at || user.created_at;
+      const memberSince = createdAt
+        ? new Date(createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+        : null;
+
+      // ── Tier label & CSS class ──
+      const tierLabel = tier === 'elite'   ? '★ Elite contributor'
+                      : tier === 'premium' ? '⬡ Premium contributor'
+                      : studiesDone === 0  ? 'New member'
+                      : 'Standard member';
+      const tierClass = tier === 'elite'   ? 'tier-badge tier-elite'
+                      : tier === 'premium' ? 'tier-badge tier-blue'
+                      : 'tier-badge';
+
+      // ── Topbar avatar ──
+      document.getElementById('topbar-avatar').textContent = initials;
+
+      // ── Dashboard greeting ──
+      const hour = new Date().getHours();
+      const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
+
+      // ── Rating hero ──
+      document.getElementById('dash-rating-desc').textContent =
+        studiesDone > 0
+          ? `Based on ${studiesDone} completed ${studiesDone === 1 ? 'study' : 'studies'}`
+          : 'Complete your first study to earn a rating';
+
+      const dashTier = document.getElementById('dash-tier-badge');
+      dashTier.textContent = tierLabel;
+      dashTier.className   = tierClass;
+
+      document.getElementById('dash-rating-num').textContent = rating !== null ? rating.toFixed(1) : '—';
+
+      const starsFilled = rating !== null ? Math.round(rating) : 0;
+      document.getElementById('dash-rating-stars').innerHTML = [1,2,3,4,5]
+        .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
+        .join('');
+
+      document.getElementById('dash-rating-pct').textContent =
+        rating === null        ? 'No ratings yet'
+        : rating >= 4.7        ? 'Top 5% of contributors'
+        : rating >= 4.5        ? 'Top 15% of contributors'
+        : `${rating.toFixed(1)} overall rating`;
+
+      // ── Stat cards ──
+      document.getElementById('stat-earned').textContent     = `£${totalEarned}`;
+      document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
+
+      document.getElementById('stat-studies').textContent     = studiesDone;
+      document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? 'No studies yet' : `${studiesDone} completed`;
+
+      document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
+      document.getElementById('stat-completion-sub').textContent = completionRate === null ? 'No data yet'
+        : completionRate >= 90 ? 'Excellent' : completionRate >= 70 ? 'Good' : 'Keep it up';
+
+      // ── Profile tab ──
+      document.getElementById('profile-avatar-big').textContent = initials;
+      document.getElementById('profile-fullname').textContent   = fullName;
+
+      const subtitleParts = [];
+      if (location)    subtitleParts.push(location);
+      if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
+      document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || 'New member';
+
+      const profileTier = document.getElementById('profile-tier-badge');
+      profileTier.textContent = tierLabel;
+      profileTier.className   = tierClass;
+
+      const statsLineParts = [];
+      if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
+      statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
+      statsLineParts.push(`£${totalEarned} earned`);
+      document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
+
+      // ── Personal details ──
+      if (contrib?.date_of_birth) {
+        const dob   = new Date(contrib.date_of_birth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+        document.getElementById('profile-detail-age').textContent = age;
+      } else {
+        document.getElementById('profile-detail-age').textContent = '—';
+      }
+
+      const genderMap = { woman: 'Woman', man: 'Man', non_binary: 'Non-binary', self_describe: 'Self-described', prefer_not_to_say: 'Prefer not to say' };
+      document.getElementById('profile-detail-gender').textContent = genderMap[contrib?.gender] || '—';
+
+      document.getElementById('profile-detail-location').textContent = city || '—';
+
+      const employmentMap = { full_time: 'Full-time', part_time: 'Part-time', self_employed: 'Self-employed', student: 'Student', unemployed: 'Not employed', retired: 'Retired' };
+      document.getElementById('profile-detail-employment').textContent = employmentMap[contrib?.employment] || '—';
+
+      const childrenMap = { no_children: 'No children', under_5: 'Under 5', children_5_12: '5–12', teenagers: 'Teenagers', adult_children: 'Adult children' };
+      const childrenVals = Array.isArray(contrib?.children) ? contrib.children : [];
+      document.getElementById('profile-detail-children').textContent = childrenVals.length ? childrenVals.map(c => childrenMap[c] || c).join(', ') : '—';
+
+      const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
+      const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
+      document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
+
+    } catch(err) {
+      console.error('Failed to load user profile:', err);
+    }
+  }
 
   // ─── AUTO-LOGIN CHECK ──────────────────────────────────
   // If user came from login page or has an active session, skip to dashboard
