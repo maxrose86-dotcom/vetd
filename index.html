@@ -1104,8 +1104,8 @@
     }
   }
 
-  // ─── JOBS (static demo data for now) ────────────────────
-  const jobs = [
+  // ─── JOBS (demo fallback — replaced by loadJobs() on login) ─
+  let jobs = [
     {
       id: 1, company: 'H&M', title: 'Online shopping experience research',
       desc: 'Share how you browse and buy fashion online. Walk through the H&M app with a researcher and share your honest thoughts.',
@@ -1162,6 +1162,99 @@
     }
   ];
 
+  // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
+  const FORMAT_LABEL = {
+    video_call: 'Video call', in_person: 'In-person',
+    online_survey: 'Online survey', diary_study: 'Diary study',
+    product_testing: 'Product testing'
+  };
+  const FORMAT_FILTER = {
+    video_call: 'online', online_survey: 'online',
+    diary_study: 'online', product_testing: 'online', in_person: 'in-person'
+  };
+  const AGE_LABEL = {
+    '18_24':'18–24','25_34':'25–34','35_44':'35–44',
+    '45_54':'45–54','55_64':'55–64','65_plus':'65+','any':'Any age'
+  };
+  const GENDER_LABEL = { woman:'Women', man:'Men', non_binary:'Non-binary', any:'Any gender' };
+  const INTEREST_LABEL = {
+    fashion:'Fashion & clothing', online_shopper:'Online shopper', beauty:'Beauty & skincare',
+    sustainability:'Sustainability', social_media:'Social media',
+    parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
+  };
+
+  async function loadJobs() {
+    if (!db) return; // keep demo data
+    try {
+      const { data: studies, error } = await db
+        .from('studies')
+        .select('*, companies(name)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!studies || studies.length === 0) {
+        jobs = [];
+        return;
+      }
+
+      jobs = studies.map(s => {
+        const company    = s.companies?.name || 'Vetd client';
+        const pay        = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
+        const spots      = s.spots || 0;
+        const filled     = s.filled_spots || 0;
+        const fmtLabel   = FORMAT_LABEL[s.format] || s.format || '';
+        const duration   = s.duration_minutes
+          ? `${s.duration_minutes}-min ${fmtLabel.toLowerCase()}`
+          : fmtLabel;
+
+        // Build display tags from targeting criteria
+        const tags = [];
+        const ages      = Array.isArray(s.target_age_ranges) ? s.target_age_ranges : [];
+        const genders   = Array.isArray(s.target_genders)    ? s.target_genders    : [];
+        const interests = Array.isArray(s.target_interests)  ? s.target_interests  : [];
+        const locs      = Array.isArray(s.target_locations)  ? s.target_locations  : [];
+
+        if (ages.length && !ages.includes('any'))
+          tags.push({ text: ages.map(a => AGE_LABEL[a] || a).join(', '), cls: 'tag-green' });
+        if (genders.length && !genders.includes('any'))
+          tags.push({ text: genders.map(g => GENDER_LABEL[g] || g).join(' / '), cls: 'tag-green' });
+        interests.slice(0, 2).forEach(i =>
+          tags.push({ text: INTEREST_LABEL[i] || i, cls: 'tag-blue' }));
+        if (locs.includes('uk_any'))
+          tags.push({ text: 'UK only', cls: 'tag-gray' });
+        else if (locs.includes('remote'))
+          tags.push({ text: 'Remote only', cls: 'tag-gray' });
+        else if (locs.length)
+          tags.push({ text: locs[0].charAt(0).toUpperCase() + locs[0].slice(1), cls: 'tag-gray' });
+        if (s.min_rating)
+          tags.push({ text: `${s.min_rating}★+ rating`, cls: 'tag-amber' });
+
+        return {
+          id:          s.id,
+          company,
+          title:       s.title || 'Untitled study',
+          desc:        s.description || '',
+          pay,
+          payType:     s.format === 'online_survey' ? 'per survey' : 'per session',
+          duration,
+          tags,
+          match:       85,
+          spots,
+          filled,
+          format:      FORMAT_FILTER[s.format] || 'online',
+          featured:    false,
+          matchReason: 'This study is looking for participants that match your profile.',
+          detail:      s.description || 'No additional details provided.'
+        };
+      });
+    } catch(err) {
+      console.warn('Could not load studies — showing demo data:', err);
+      // jobs keeps its demo values as fallback
+    }
+  }
+
   let appliedJobs = new Set();
   let currentJob = null;
   let currentStep = 1;
@@ -1170,11 +1263,14 @@
   function renderJobs(containerId, subset) {
     const container = document.getElementById(containerId);
     if (!subset.length) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No studies found</h3><p>Try changing your filters</p></div>';
+      const isDashboard = containerId === 'dashboard-jobs';
+      container.innerHTML = isDashboard
+        ? '<p style="color:var(--gray-400);font-size:13px;font-weight:300">No active studies right now — check back soon.</p>'
+        : '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No studies available</h3><p>There are no active studies right now. Check back soon.</p></div>';
       return;
     }
     container.innerHTML = subset.map(job => `
-      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal(${job.id})">
+      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${job.id}')">
         ${job.featured ? '<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">★ Top match for you</div>' : ''}
         <div class="job-header">
           <div class="job-company">
@@ -1198,7 +1294,7 @@
               <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
               <div class="match-pct">${job.match}%</div>
             </div>
-            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : '<button class="apply-btn" onclick="event.stopPropagation();openModal('+job.id+')">Apply</button>'}
+            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${job.id}')">Apply</button>`}
           </div>
         </div>
       </div>
@@ -1217,7 +1313,7 @@
 
   // ─── MODAL ──────────────────────────────────────────────
   function openModal(id) {
-    currentJob = jobs.find(j => j.id === id);
+    currentJob = jobs.find(j => j.id == id);
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
     document.getElementById('modal-company-badge').textContent = currentJob.company;
@@ -1260,9 +1356,10 @@
     document.getElementById('onboarding').classList.add('active');
   }
 
-  function goToApp() {
+  async function goToApp() {
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
+    await loadJobs();
     renderJobs('dashboard-jobs', jobs.slice(0,2));
     renderJobs('jobs-list', jobs);
     loadUserProfile();
