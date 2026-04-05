@@ -388,18 +388,33 @@ textarea{resize:vertical;min-height:90px}
 
         <!-- SIGN UP FORM -->
         <div id="auth-signup-form">
-          <div class="field"><label>Company name</label><input type="text" id="auth-company" placeholder="e.g. H&amp;M Group"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div class="field"><label>First name</label><input type="text" id="auth-fname" placeholder="Emma"></div>
-            <div class="field"><label>Last name</label><input type="text" id="auth-lname" placeholder="Johnson"></div>
+          <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1rem">
+            <div style="font-size:32px;margin-bottom:8px">📧</div>
+            <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:6px;color:#111">Check your email</h3>
+            <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem">We sent a confirmation link to your email. Click it to activate your account, then come back here to sign in.</p>
+            <button onclick="switchAuthTab('login')" style="display:inline-block;padding:9px 22px;background:var(--blue);color:#fff;border-radius:100px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans)">Go to sign in →</button>
           </div>
-          <div class="field"><label>Work email</label><input type="email" id="auth-email-signup" placeholder="emma@company.com"></div>
-          <div class="field"><label>Password</label><input type="password" id="auth-pass-signup" placeholder="At least 8 characters"></div>
-          <button id="auth-signup-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signUpClient()">Create account →</button>
+          <div id="auth-signup-fields">
+            <div class="field"><label>Company name</label><input type="text" id="auth-company" placeholder="e.g. H&amp;M Group"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="field"><label>First name</label><input type="text" id="auth-fname" placeholder="Emma"></div>
+              <div class="field"><label>Last name</label><input type="text" id="auth-lname" placeholder="Johnson"></div>
+            </div>
+            <div class="field"><label>Work email</label><input type="email" id="auth-email-signup" placeholder="emma@company.com"></div>
+            <div class="field"><label>Password</label><input type="password" id="auth-pass-signup" placeholder="At least 8 characters"></div>
+            <button id="auth-signup-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signUpClient()">Create account →</button>
+          </div>
         </div>
 
         <!-- SIGN IN FORM -->
         <div id="auth-login-form" style="display:none">
+          <div id="email-confirmed-banner" style="display:none;background:#DCFFF0;border:1px solid #A7F3D0;border-radius:10px;padding:12px 16px;margin-bottom:1rem;align-items:center;gap:10px">
+            <span style="font-size:18px">✅</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#065F46">Email confirmed</div>
+              <div style="font-size:12px;color:#047857;font-weight:300">Your account is active — please sign in below.</div>
+            </div>
+          </div>
           <div class="field"><label>Email</label><input type="email" id="auth-email-login" placeholder="emma@company.com"></div>
           <div class="field"><label>Password</label><input type="password" id="auth-pass-login" placeholder="Your password"></div>
           <button id="auth-login-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signInClient()">Sign in →</button>
@@ -936,31 +951,57 @@ textarea{resize:vertical;min-height:90px}
     btn.textContent = 'Creating account…'; btn.disabled = true;
 
     try {
-      // 1. Create auth user
+      // Create auth user — store company name in metadata so we can create DB rows after confirmation
       const { data: authData, error: authErr } = await db.auth.signUp({
         email, password,
-        options: { data: { first_name: fname, last_name: lname, role: 'client' } }
+        options: { data: { first_name: fname, last_name: lname, company, role: 'client' } }
       });
       if (authErr) throw authErr;
-      const userId = authData.user.id;
 
-      // 2. Create company
-      const { data: companyData, error: compErr } = await db
-        .from('companies').insert({ name: company }).select('id').single();
-      if (compErr) throw compErr;
-
-      // 3. Create client row
-      const { error: clientErr } = await db
-        .from('clients').insert({ id: userId, company_id: companyData.id });
-      if (clientErr) throw clientErr;
-
-      showToast('Account created! Welcome to Vetd.');
-      await goApp();
+      if (authData.session) {
+        // Email confirmation is disabled — user is immediately authenticated.
+        // Create company + client rows now and go straight to the dashboard.
+        await ensureClientRecords(authData.user);
+        showToast('Account created! Welcome to Vetd.');
+        await goApp();
+      } else {
+        // Email confirmation is required — show the "check your email" message.
+        document.getElementById('email-confirm-msg').style.display = 'block';
+        document.getElementById('auth-signup-fields').style.display = 'none';
+      }
     } catch(err) {
       console.error('Sign-up error:', err);
       showToast(err.message || 'Sign-up failed', true);
-    } finally {
       btn.textContent = 'Create account →'; btn.disabled = false;
+    }
+  }
+
+  // ─── ENSURE CLIENT RECORDS ──────────────────────────────
+  // Called on first sign-in (or after immediate sign-up). Creates companies/clients
+  // rows if they don't exist yet. Safe to call multiple times — no-ops if rows exist.
+  async function ensureClientRecords(user) {
+    if (!db || !user) return;
+    try {
+      // Check if client row already exists
+      const { data: existing } = await db
+        .from('clients').select('id').eq('id', user.id).single();
+      if (existing) return; // already set up
+
+      // Read company name from metadata (stored during sign-up)
+      const companyName = user.user_metadata?.company || 'My Company';
+
+      // Create company row
+      const { data: companyData, error: compErr } = await db
+        .from('companies').insert({ name: companyName }).select('id').single();
+      if (compErr) throw compErr;
+
+      // Create client row
+      const { error: clientErr } = await db
+        .from('clients').insert({ id: user.id, company_id: companyData.id });
+      if (clientErr) throw clientErr;
+    } catch(err) {
+      // Non-fatal — user can still use the app; log for debugging
+      console.warn('ensureClientRecords error:', err);
     }
   }
 
@@ -976,12 +1017,13 @@ textarea{resize:vertical;min-height:90px}
     btn.textContent = 'Signing in…'; btn.disabled = true;
 
     try {
-      const { error } = await db.auth.signInWithPassword({ email, password });
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      // Ensure companies/clients rows exist — creates them on first sign-in after email confirmation
+      await ensureClientRecords(data.user);
       await goApp();
     } catch(err) {
       showToast(err.message || 'Sign-in failed', true);
-    } finally {
       btn.textContent = 'Sign in →'; btn.disabled = false;
     }
   }
@@ -2004,6 +2046,27 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── SESSION CHECK ──────────────────────────────────────
   (async function checkSession() {
+    // Detect email confirmation redirect from Supabase
+    // Implicit flow: hash contains access_token + type=signup
+    // PKCE flow: ?code= query param
+    const hashParams   = new URLSearchParams(window.location.hash.slice(1));
+    const searchParams = new URLSearchParams(window.location.search);
+    const isEmailConfirm = hashParams.get('type') === 'signup'
+                        || hashParams.get('type') === 'email_change'
+                        || (hashParams.has('access_token') && hashParams.has('type'));
+    const isPkceConfirm  = searchParams.has('code');
+
+    if (isEmailConfirm || isPkceConfirm) {
+      // Clean the URL, show auth screen on the sign-in tab with a confirmed banner
+      window.history.replaceState({}, '', window.location.pathname);
+      document.getElementById('landing').classList.remove('active');
+      document.getElementById('auth').classList.add('active');
+      switchAuthTab('login');
+      const banner = document.getElementById('email-confirmed-banner');
+      if (banner) banner.style.display = 'flex';
+      return;
+    }
+
     if (!db) return;
     try {
       const { data: { session } } = await db.auth.getSession();
