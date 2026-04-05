@@ -502,6 +502,92 @@
     .rating-hero { flex-direction: column; gap: 1rem; }
   }
 
+  /* ── MOBILE RESPONSIVENESS ── */
+  /* Hamburger button */
+  #hamburger-btn {
+    display: none;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 20px; padding: 4px 8px; color: var(--gray-700);
+    line-height: 1;
+  }
+  /* Mobile nav dropdown */
+  #mobile-nav {
+    display: none;
+    position: absolute;
+    top: 64px; left: 0; right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--gray-100);
+    z-index: 99;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  #mobile-nav.open { display: block; }
+  #mobile-nav button {
+    display: block; width: 100%; text-align: left;
+    padding: 12px 8px; border: none; background: transparent;
+    font-size: 14px; font-family: var(--sans); color: var(--gray-700);
+    cursor: pointer; border-bottom: 1px solid var(--gray-100);
+    font-weight: 400;
+  }
+  #mobile-nav button:last-child { border-bottom: none; }
+  #mobile-nav button.active { color: var(--gray-900); font-weight: 500; }
+
+  @media (max-width: 768px) {
+    body { overflow-x: hidden; }
+    .app-content { max-width: 100%; padding: 1.25rem 1rem; }
+    .lang-toggle { top: 10px; right: 10px; }
+
+    /* Topbar: hide nav, show hamburger */
+    .topbar-nav { display: none; }
+    #hamburger-btn { display: block; }
+
+    /* Landing */
+    .landing-headline { font-size: 28px; }
+    .landing-tag { font-size: 12px; }
+    .landing-sub { font-size: 13px; }
+    #landing .btn-primary,
+    #landing .btn-secondary {
+      display: block; width: 100%; text-align: center;
+      margin-left: 0; margin-top: 12px;
+      padding: 13px 20px;
+    }
+    #landing > div { padding: 0 1rem; padding-top: 60px; }
+    .landing-logo { font-size: 40px; }
+    .landing-trust { gap: 1.5rem; margin-top: 2rem; }
+
+    /* Stat cards: 2 col at 768 */
+    .stat-cards { grid-template-columns: repeat(2, 1fr); }
+
+    /* Job cards: stack header */
+    .job-header { flex-direction: column; gap: 8px; }
+    .job-pay { text-align: left; }
+
+    /* Notification panel: full width fixed */
+    .notif-panel {
+      position: fixed !important;
+      top: 64px !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100vw !important;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    /* Rating hero */
+    .rating-hero { flex-direction: column; gap: 1rem; }
+    .rating-hero > div:last-child { text-align: left; }
+    .rating-stars-big { justify-content: flex-start; }
+  }
+
+  @media (max-width: 375px) {
+    .stat-cards { grid-template-columns: 1fr; }
+    .landing-headline { font-size: 24px; }
+    .app-content { padding: 1rem 0.75rem; }
+  }
+
   .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
   .lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
   .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
@@ -804,6 +890,7 @@
         <button onclick="showTab('profile', this)" data-i18n="nav_profile">My profile</button>
       </div>
       <div class="topbar-right">
+        <button id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Open menu">☰</button>
         <div class="notif-wrap" id="notif-wrap">
           <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" aria-label="Notifications">🔔</button>
           <div class="notif-count-badge" id="notif-count-badge"></div>
@@ -820,6 +907,12 @@
         <div id="topbar-avatar" class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">?</div>
         <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" data-i18n="sign_out">Sign out</button>
       </div>
+    </div>
+    <!-- MOBILE NAV DROPDOWN -->
+    <div id="mobile-nav">
+      <button onclick="showTab('dashboard', document.querySelector('.topbar-nav button:nth-child(1)')); toggleMobileNav();" data-i18n="nav_dashboard">Dashboard</button>
+      <button onclick="showTab('jobs', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
+      <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
     </div>
 
     <div class="app-content">
@@ -2101,6 +2194,19 @@
   }
 
   setLang(localStorage.getItem('vetd_lang') || 'en');
+
+  // ── MOBILE HAMBURGER NAV ────────────────────────────────
+  function toggleMobileNav() {
+    var nav = document.getElementById('mobile-nav');
+    if (nav) nav.classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    var nav = document.getElementById('mobile-nav');
+    var btn = document.getElementById('hamburger-btn');
+    if (nav && nav.classList.contains('open') && !nav.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
 </script>
 </body>
 </html>

@@ -227,6 +227,45 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
 .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
 .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+
+/* ── MOBILE RESPONSIVENESS ── */
+#adm-hamburger{
+  display:none;position:fixed;top:12px;left:12px;z-index:1001;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:8px 10px;cursor:pointer;font-size:18px;line-height:1;color:var(--text);
+  box-shadow:0 2px 8px rgba(0,0,0,0.3);
+}
+#adm-mobile-nav{
+  display:none;position:fixed;top:0;left:0;bottom:0;width:240px;
+  background:var(--bg2);border-right:1px solid var(--border);z-index:1000;
+  overflow-y:auto;
+  transform:translateX(-100%);
+  transition:transform 0.25s ease;
+}
+#adm-mobile-nav.open{display:block;transform:translateX(0)}
+#adm-mobile-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;
+}
+#adm-mobile-overlay.open{display:block}
+
+@media(max-width:768px){
+  body{overflow-x:hidden}
+  .sidebar{display:none}
+  #adm-hamburger{display:block}
+  .main{padding:1.25rem 1rem;padding-top:56px}
+  .tab{padding:1.25rem 1rem;padding-top:56px}
+  .lang-toggle{top:10px;right:10px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .engine-grid{grid-template-columns:1fr}
+  .ph{flex-direction:column;align-items:flex-start;gap:8px}
+  .shell{flex-direction:column}
+  .main{width:100%}
+}
+
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr}
+  .tab{padding:1rem 0.75rem;padding-top:56px}
+}
 </style>
 </head>
 <body>
@@ -274,6 +313,40 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 </div>
 
 <div class="shell" id="shell-wrap" style="display:none">
+
+<!-- MOBILE ADMIN NAV -->
+<button id="adm-hamburger" onclick="toggleAdminNav()" aria-label="Open menu">☰</button>
+<div id="adm-mobile-overlay" onclick="toggleAdminNav()"></div>
+<div id="adm-mobile-nav">
+  <div class="sb-logo">
+    <div class="sb-logo-text">Vet<span style="color:var(--green-mid)">d</span></div>
+    <div class="sb-logo-sub">Admin · Matching Engine</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Overview</div>
+    <button class="sb-item on" onclick="go('dashboard',this);toggleAdminNav()"><span class="ico">⬛</span>Dashboard</button>
+    <button class="sb-item" onclick="go('feed',this);toggleAdminNav()"><span class="ico">◉</span>Live feed</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Matching Engine</div>
+    <button class="sb-item" onclick="go('engine',this);toggleAdminNav()"><span class="ico">⚙</span>Match algorithm</button>
+    <button class="sb-item" onclick="go('studies-admin',this);toggleAdminNav()"><span class="ico">📋</span>Study queue</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Quality & Safety</div>
+    <button class="sb-item" onclick="go('fraud',this);toggleAdminNav()"><span class="ico">⚠</span>Fraud detection</button>
+    <button class="sb-item" onclick="go('contributors',this);toggleAdminNav()"><span class="ico">👥</span>Contributor oversight</button>
+    <button class="sb-item" onclick="go('disputes',this);toggleAdminNav()"><span class="ico">⚖</span>Disputes</button>
+  </div>
+  <div class="sb-section">
+    <div class="sb-label">Platform</div>
+    <button class="sb-item" onclick="go('controls',this);toggleAdminNav()"><span class="ico">🔧</span>Platform controls</button>
+    <button class="sb-item" onclick="go('payouts',this);toggleAdminNav()"><span class="ico">💳</span>Payouts</button>
+  </div>
+  <div class="sb-bottom">
+    <button class="sb-item" onclick="handleSignOut()" style="color:var(--coral)"><span class="ico">↩</span>Sign out</button>
+  </div>
+</div>
 
 <!-- SIDEBAR -->
 <div class="sidebar">
@@ -1251,6 +1324,14 @@ setLang(localStorage.getItem('vetd_lang') || 'en');
 
 // ─── BOOT ─────────────────────────────────────────────────────
 init();
+
+// ── MOBILE ADMIN NAV ───────────────────────────────────────
+function toggleAdminNav() {
+  var nav = document.getElementById('adm-mobile-nav');
+  var overlay = document.getElementById('adm-mobile-overlay');
+  if (nav) nav.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('open');
+}
 </script>
 </body>
 </html>

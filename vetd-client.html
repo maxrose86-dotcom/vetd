@@ -252,6 +252,49 @@ textarea{resize:vertical;min-height:90px}
   .preview-card{position:static}
 }
 
+/* ── MOBILE RESPONSIVENESS ── */
+#cl-hamburger{
+  display:none;position:fixed;top:12px;left:12px;z-index:1000;
+  background:#fff;border:1px solid var(--gray-200);border-radius:var(--r-sm);
+  padding:8px 10px;cursor:pointer;font-size:18px;line-height:1;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+#cl-mobile-nav{
+  display:none;position:fixed;top:0;left:0;bottom:0;width:260px;
+  background:#fff;border-right:1px solid var(--gray-100);z-index:999;
+  overflow-y:auto;
+  box-shadow:4px 0 20px rgba(0,0,0,0.12);
+  transform:translateX(-100%);
+  transition:transform 0.25s ease;
+}
+#cl-mobile-nav.open{display:block;transform:translateX(0)}
+#cl-mobile-nav-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:998;
+}
+#cl-mobile-nav-overlay.open{display:block}
+
+@media(max-width:768px){
+  body{overflow-x:hidden}
+  .sidebar{display:none}
+  #cl-hamburger{display:block}
+  .main-content{padding:1.25rem 1rem;padding-top:60px}
+  .lang-toggle{top:10px;right:10px}
+  .page-topbar{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:1.25rem}
+  .stat-row{grid-template-columns:repeat(2,1fr)}
+  .builder-wrap{grid-template-columns:1fr}
+  .preview-card{position:static}
+  .field-row{grid-template-columns:1fr}
+  .btn-primary,.btn-outline{width:100%;justify-content:center}
+  .lnd-h1{font-size:30px}
+  .lnd-p{font-size:13px}
+  .btn-cta,.btn-ghost{display:block;width:100%;text-align:center;margin-left:0;margin-top:10px}
+  #landing>*{max-width:100%}
+}
+
+@media(max-width:480px){
+  .stat-row{grid-template-columns:1fr}
+}
+
 .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(0,0,0,0.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,0.1);border-radius:100px;padding:3px;gap:2px}
 .lang-btn{background:none;border:none;cursor:pointer;color:rgba(0,0,0,0.35);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
 .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
@@ -366,6 +409,29 @@ textarea{resize:vertical;min-height:90px}
 
 <!-- APP -->
 <div id="app" class="screen">
+  <!-- MOBILE HAMBURGER -->
+  <button id="cl-hamburger" onclick="toggleClientNav()" aria-label="Open menu">☰</button>
+  <!-- MOBILE NAV OVERLAY -->
+  <div id="cl-mobile-nav-overlay" onclick="toggleClientNav()"></div>
+  <!-- MOBILE NAV PANEL -->
+  <div id="cl-mobile-nav">
+    <div style="padding:1.25rem 1.25rem 0.75rem;border-bottom:1px solid var(--gray-100)">
+      <div style="font-family:var(--serif);font-size:22px;margin-bottom:4px">Vet<span style="color:var(--green)">d</span></div>
+      <div style="font-size:12px;color:var(--gray-400)" id="cl-mob-company">Your company</div>
+    </div>
+    <div style="padding:0.5rem 0.75rem">
+      <button class="nav-item active" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span>Dashboard</button>
+      <button class="nav-item" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span>Analytics</button>
+      <button class="nav-item" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span>My studies</button>
+      <button class="nav-item" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span>Post a study</button>
+      <button class="nav-item" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span>Browse contributors</button>
+      <button class="nav-item" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span>Rate participants</button>
+    </div>
+    <div style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)">
+      <button onclick="signOut()" style="width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign out</button>
+    </div>
+  </div>
+
   <div class="app-shell">
 
     <!-- SIDEBAR -->
@@ -1902,6 +1968,14 @@ textarea{resize:vertical;min-height:90px}
   document.getElementById('rate-modal').addEventListener('click', function(e) {
     if (e.target === this) closeRateModal();
   });
+
+  // ── MOBILE CLIENT NAV ───────────────────────────────────
+  function toggleClientNav() {
+    var nav = document.getElementById('cl-mobile-nav');
+    var overlay = document.getElementById('cl-mobile-nav-overlay');
+    if (nav) nav.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('open');
+  }
 </script>
 </body>
 </html>
