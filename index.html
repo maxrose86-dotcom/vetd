@@ -375,6 +375,11 @@
   .tier-verified { background: var(--blue-light); color: #185FA5; }
   .tier-standard { background: var(--amber-light); color: var(--amber); }
 
+  .bankid-logo { width:44px;height:44px;border-radius:10px;background:#1B4A8A;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .bankid-logo span { color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:1.25; }
+  .bankid-verified-badge { display:inline-flex;align-items:center;gap:5px;background:#1B4A8A;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;letter-spacing:0.02em; }
+  .bankid-verified-badge-sm { display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;vertical-align:middle; }
+
   .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .profile-section {
     background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
@@ -932,7 +937,10 @@
       <!-- DASHBOARD TAB -->
       <div id="tab-dashboard">
         <div class="dash-welcome">
-          <h1 id="dash-greeting">Welcome 👋</h1>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h1 id="dash-greeting">Welcome 👋</h1>
+            <span id="dash-bankid-badge" class="bankid-verified-badge" style="display:none">🔒 BankID Verified</span>
+          </div>
           <p id="dash-subtext">Browse available studies and apply to start earning.</p>
         </div>
 
@@ -1036,6 +1044,22 @@
             <h3>Rating breakdown</h3>
             <div id="rating-breakdown-content">
               <p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1" id="bankid-section">
+            <h3>Identity verification</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div class="bankid-logo"><span>Bank<br>ID</span></div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:var(--gray-900)">Verify your identity</div>
+                  <div style="font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px">Verified contributors get priority access to premium studies</div>
+                </div>
+              </div>
+              <div id="bankid-status">
+                <button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>
+              </div>
             </div>
           </div>
 
@@ -1286,6 +1310,15 @@
       <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px">Cancel</button>
       <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600">Delete account</button>
     </div>
+  </div>
+</div>
+
+<div id="bankid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:calc(100% - 32px);text-align:center">
+    <div class="bankid-logo" style="width:64px;height:64px;border-radius:14px;margin:0 auto 1.25rem"><span style="font-size:13px;font-weight:700">Bank<br>ID</span></div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">BankID verification</h2>
+    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.6;font-weight:300">BankID integration coming soon — we'll notify you when it's available.</p>
+    <button onclick="closeBankIDModal()" class="btn-primary" style="width:100%">Got it</button>
   </div>
 </div>
 
@@ -1946,7 +1979,7 @@
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified').eq('id', user.id).single()
       ]);
       _profileData = profile;
       _contribData = contrib;
@@ -2074,9 +2107,30 @@
       // ── Rating breakdown (async, non-blocking) ──
       loadRatingBreakdown();
 
+      // ── BankID verification status ──
+      const verified = contrib?.bankid_verified === true;
+      const dashBadge = document.getElementById('dash-bankid-badge');
+      if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
+
+      const bankidStatus = document.getElementById('bankid-status');
+      if (bankidStatus) {
+        bankidStatus.innerHTML = verified
+          ? '<span class="bankid-verified-badge">✓ Verified</span>'
+          : '<button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>';
+      }
+
     } catch(err) {
       console.error('Failed to load user profile:', err);
     }
+  }
+
+  // ─── BANKID MODAL ───────────────────────────────────────
+  function openBankIDModal() {
+    const m = document.getElementById('bankid-modal');
+    m.style.display = 'flex';
+  }
+  function closeBankIDModal() {
+    document.getElementById('bankid-modal').style.display = 'none';
   }
 
   // ─── PROFILE EDITING ────────────────────────────────────

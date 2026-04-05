@@ -1408,7 +1408,7 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data: contribs, error } = await db
         .from('contributors')
-        .select('id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech')
+        .select('id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified')
         .order('rating', { ascending: false, nullsLast: true })
         .limit(20);
       if (error) throw error;
@@ -1446,6 +1446,9 @@ textarea{resize:vertical;min-height:90px}
           ...(Array.isArray(c.interests_lifestyle) ? c.interests_lifestyle : []),
           ...(Array.isArray(c.interests_tech)      ? c.interests_tech      : [])
         ].slice(0,3).map(t => t.replace(/_/g,' '));
+        const bankidBadge = c.bankid_verified
+          ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;margin-left:6px;vertical-align:middle">🔒 BankID</span>'
+          : '';
 
         return `
           <div class="contrib-card">
@@ -1453,7 +1456,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="flex:1">
               <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div>
-                  <div class="contrib-name">${esc(dispName)}</div>
+                  <div class="contrib-name">${esc(dispName)}${bankidBadge}</div>
                   <div class="contrib-meta">${esc([age, loc, `${studies} studies`].filter(Boolean).join(' · '))}</div>
                   <div class="star-row">★ ${esc(rating)} · <span class="badge ${esc(badgeCls)}">${esc(tierLabel)}</span></div>
                 </div>
