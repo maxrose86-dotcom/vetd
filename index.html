@@ -1018,10 +1018,10 @@
               <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · £0 earned</div>
             </div>
           </div>
-          <button class="apply-btn" style="white-space:nowrap" onclick="showToast('Profile editing coming soon!')">Edit profile</button>
+          <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()">Edit profile</button>
         </div>
 
-        <div class="profile-grid">
+        <div class="profile-grid" id="profile-grid">
           <div class="profile-section">
             <h3>Personal details</h3>
             <div class="profile-row"><span class="profile-row-label">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
@@ -1065,6 +1065,178 @@
             <h3 style="color:var(--coral)">Danger zone</h3>
             <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300">Permanently delete your account and all associated data. This cannot be undone.</p>
             <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Delete my account</button>
+          </div>
+        </div>
+
+        <!-- PROFILE EDIT FORM -->
+        <div id="profile-edit-form" style="display:none">
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Name</h3>
+            <div class="field-row" style="margin-top:0.75rem">
+              <div class="field"><label>First name</label><input type="text" id="edit-fname" maxlength="100" placeholder="First name"></div>
+              <div class="field"><label>Last name</label><input type="text" id="edit-lname" maxlength="100" placeholder="Last name"></div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Personal details</h3>
+            <div class="field-row" style="margin-top:0.75rem">
+              <div class="field"><label>Date of birth</label><input type="date" id="edit-dob"></div>
+              <div class="field">
+                <label>Gender</label>
+                <select id="edit-gender">
+                  <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
+                  <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Country</label>
+                <select id="edit-country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+              </div>
+              <div class="field"><label>City / Town</label><input type="text" id="edit-city" placeholder="e.g. Manchester" maxlength="100"></div>
+            </div>
+            <div class="field">
+              <label>Employment status</label>
+              <select id="edit-employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+            </div>
+            <div class="field">
+              <label>Household income (annual, approximate)</label>
+              <select id="edit-income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+            </div>
+            <div class="field">
+              <label>Living situation</label>
+              <div class="chip-group" data-field="living_situation" id="edit-chips-living">
+                <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
+                <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
+                <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
+                <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Do you have children?</label>
+              <div class="chip-group" data-field="children" id="edit-chips-children">
+                <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
+                <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
+                <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
+                <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
+                <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Interests</h3>
+            <div class="field" style="margin-top:0.75rem">
+              <label>Shopping & lifestyle</label>
+              <div class="chip-group" data-field="interests_lifestyle" id="edit-chips-lifestyle">
+                <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
+                <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
+                <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
+                <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
+                <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
+                <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
+                <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
+                <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
+                <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Technology & media</label>
+              <div class="chip-group" data-field="interests_tech" id="edit-chips-tech">
+                <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
+                <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
+                <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
+                <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
+                <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
+                <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Finance & banking</label>
+              <div class="chip-group" data-field="interests_finance" id="edit-chips-finance">
+                <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
+                <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
+                <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
+                <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
+                <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
+                <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Brands you shop with regularly</label>
+              <div class="chip-group" data-field="brands" id="edit-chips-brands">
+                <div class="chip" data-value="hm" onclick="toggleChip(this)">H&amp;M</div>
+                <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
+                <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
+                <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
+                <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks &amp; Spencer</div>
+                <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
+                <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
+                <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
+                <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
+                <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Availability preferences</h3>
+            <div class="field" style="margin-top:0.75rem">
+              <label>Preferred study format</label>
+              <div class="chip-group" data-field="study_formats" id="edit-chips-formats">
+                <div class="chip" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
+                <div class="chip" data-value="video_call" onclick="toggleChip(this)">Video call</div>
+                <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
+                <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
+                <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Available times</label>
+              <div class="chip-group" data-field="available_times" id="edit-chips-times">
+                <div class="chip" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
+                <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
+                <div class="chip" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
+                <div class="chip" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Maximum session length I'm comfortable with</label>
+              <div class="chip-group" data-field="max_session_length" data-single="true" id="edit-chips-maxlen">
+                <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
+                <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
+                <div class="chip" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
+                <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
+                <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>How often would you like to participate?</label>
+              <select id="edit-frequency">
+                <option value="once_a_month">Once a month</option>
+                <option value="2_3_per_month">2–3 times a month</option>
+                <option value="weekly">Weekly</option>
+                <option value="as_often_as_possible">As often as possible</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Minimum pay you'd accept (per hour equivalent)</label>
+              <div style="margin-top:8px">
+                <input type="range" min="5" max="100" value="25" id="edit-minpay" oninput="document.getElementById('edit-payval').textContent='£'+this.value">
+                <div class="range-labels"><span>£5</span><span id="edit-payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Anything else you'd like us to know?</label>
+              <textarea id="edit-additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:0.5rem">
+            <button onclick="cancelEdit()" style="padding:10px 24px;border-radius:8px;border:1.5px solid var(--gray-200);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">Cancel</button>
+            <button id="edit-save-btn" onclick="saveProfile()" class="apply-btn" style="padding:10px 28px">Save changes</button>
           </div>
         </div>
       </div>
@@ -1541,6 +1713,8 @@
   let currentUserName = '';
   let currentJob = null;
   let currentStep = 1;
+  let _profileData = null;
+  let _contribData = null;
 
   // ─── RENDER JOBS ────────────────────────────────────────
   function renderJobs(containerId, subset) {
@@ -1772,8 +1946,10 @@
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, living_situation, children, rating, total_studies, total_earned, completion_rate, tier').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier').eq('id', user.id).single()
       ]);
+      _profileData = profile;
+      _contribData = contrib;
 
       // ── Name & initials ──
       const firstName = profile?.first_name || user.user_metadata?.first_name || '';
@@ -1900,6 +2076,112 @@
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
+    }
+  }
+
+  // ─── PROFILE EDITING ────────────────────────────────────
+  function getEditChipValues(fieldName) {
+    const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
+    if (!group) return [];
+    return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
+  }
+
+  function setEditChips(fieldName, values) {
+    const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
+    if (!group) return;
+    const arr = Array.isArray(values) ? values : (values ? [values] : []);
+    group.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('selected', arr.includes(c.dataset.value));
+    });
+  }
+
+  function enterEditMode() {
+    document.getElementById('profile-grid').style.display = 'none';
+    document.getElementById('profile-edit-form').style.display = 'block';
+    document.getElementById('edit-profile-btn').style.display = 'none';
+
+    document.getElementById('edit-fname').value = _profileData?.first_name || '';
+    document.getElementById('edit-lname').value = _profileData?.last_name  || '';
+
+    document.getElementById('edit-dob').value        = _contribData?.date_of_birth || '';
+    document.getElementById('edit-gender').value     = _contribData?.gender        || 'woman';
+    document.getElementById('edit-country').value    = _contribData?.country       || 'United Kingdom';
+    document.getElementById('edit-city').value       = _contribData?.city          || '';
+    document.getElementById('edit-employment').value = _contribData?.employment    || 'full_time';
+    document.getElementById('edit-income').value     = _contribData?.income        || '';
+
+    setEditChips('living_situation',    _contribData?.living_situation);
+    setEditChips('children',            _contribData?.children);
+    setEditChips('interests_lifestyle', _contribData?.interests_lifestyle);
+    setEditChips('interests_tech',      _contribData?.interests_tech);
+    setEditChips('interests_finance',   _contribData?.interests_finance);
+    setEditChips('brands',              _contribData?.brands);
+    setEditChips('study_formats',       _contribData?.study_formats);
+    setEditChips('available_times',     _contribData?.available_times);
+    setEditChips('max_session_length',  _contribData?.max_session_length ? [_contribData.max_session_length] : []);
+
+    document.getElementById('edit-frequency').value = _contribData?.frequency || 'once_a_month';
+
+    const minpay = _contribData?.min_pay_per_hour || 25;
+    document.getElementById('edit-minpay').value = minpay;
+    document.getElementById('edit-payval').textContent = '£' + minpay;
+
+    document.getElementById('edit-additional_notes').value = _contribData?.additional_notes || '';
+  }
+
+  function cancelEdit() {
+    document.getElementById('profile-edit-form').style.display = 'none';
+    document.getElementById('profile-grid').style.display = '';
+    document.getElementById('edit-profile-btn').style.display = '';
+  }
+
+  async function saveProfile() {
+    if (!db || !currentUser) { showToast('Not connected', true); return; }
+
+    const fname = document.getElementById('edit-fname').value.trim();
+    const lname = document.getElementById('edit-lname').value.trim();
+    if (!fname) { showToast('First name is required', true); return; }
+
+    const btn = document.getElementById('edit-save-btn');
+    setLoading(btn, true);
+
+    try {
+      const sessionLengths = getEditChipValues('max_session_length');
+
+      const [{ error: pErr }, { error: cErr }] = await Promise.all([
+        db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', currentUser.id),
+        db.from('contributors').update({
+          date_of_birth:       document.getElementById('edit-dob').value || null,
+          gender:              document.getElementById('edit-gender').value,
+          country:             document.getElementById('edit-country').value,
+          city:                document.getElementById('edit-city').value.trim() || null,
+          employment:          document.getElementById('edit-employment').value,
+          income:              document.getElementById('edit-income').value || null,
+          living_situation:    getEditChipValues('living_situation'),
+          children:            getEditChipValues('children'),
+          interests_lifestyle: getEditChipValues('interests_lifestyle'),
+          interests_tech:      getEditChipValues('interests_tech'),
+          interests_finance:   getEditChipValues('interests_finance'),
+          brands:              getEditChipValues('brands'),
+          study_formats:       getEditChipValues('study_formats'),
+          available_times:     getEditChipValues('available_times'),
+          max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
+          frequency:           document.getElementById('edit-frequency').value,
+          min_pay_per_hour:    parseInt(document.getElementById('edit-minpay').value, 10),
+          additional_notes:    document.getElementById('edit-additional_notes').value.trim() || null
+        }).eq('id', currentUser.id)
+      ]);
+
+      if (pErr) throw pErr;
+      if (cErr) throw cErr;
+
+      cancelEdit();
+      await loadUserProfile();
+      showToast('Profile updated ✓');
+    } catch(err) {
+      console.error('Save profile error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
     }
   }
 
