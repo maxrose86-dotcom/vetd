@@ -929,11 +929,9 @@
 
           <div class="profile-section">
             <h3>Rating breakdown</h3>
-            <div class="rating-breakdown-row"><span class="rb-label">Punctuality</span><div class="rb-bar"><div class="rb-fill" style="width:90%"></div></div><span class="rb-score">4.5</span></div>
-            <div class="rating-breakdown-row"><span class="rb-label">Engagement</span><div class="rb-bar"><div class="rb-fill" style="width:96%"></div></div><span class="rb-score">4.8</span></div>
-            <div class="rating-breakdown-row"><span class="rb-label">Quality of input</span><div class="rb-bar"><div class="rb-fill" style="width:92%"></div></div><span class="rb-score">4.6</span></div>
-            <div class="rating-breakdown-row"><span class="rb-label">Honesty</span><div class="rb-bar"><div class="rb-fill" style="width:100%"></div></div><span class="rb-score">5.0</span></div>
-            <div class="rating-breakdown-row"><span class="rb-label">Profile fit</span><div class="rb-bar"><div class="rb-fill" style="width:88%"></div></div><span class="rb-score">4.4</span></div>
+            <div id="rating-breakdown-content">
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>
+            </div>
           </div>
 
           <div class="profile-section" style="grid-column:1/-1">
@@ -1710,8 +1708,55 @@
       const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
       document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
 
+      // ── Rating breakdown (async, non-blocking) ──
+      loadRatingBreakdown();
+
     } catch(err) {
       console.error('Failed to load user profile:', err);
+    }
+  }
+
+  // ─── RATING BREAKDOWN ─────────────────────────────────
+  async function loadRatingBreakdown() {
+    if (!db || !currentUser) return;
+    const container = document.getElementById('rating-breakdown-content');
+    if (!container) return;
+
+    try {
+      const { data, error } = await db
+        .from('ratings')
+        .select('punctuality, engagement, quality, honesty, profile_fit')
+        .eq('contributor_id', currentUser.id);
+      if (error) throw error;
+
+      if (!data || !data.length) {
+        container.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>';
+        return;
+      }
+
+      const count = data.length;
+      const avg = key => +(data.reduce((s, r) => s + (r[key] || 0), 0) / count).toFixed(1);
+
+      const dims = [
+        { label: 'Punctuality',    key: 'punctuality'  },
+        { label: 'Engagement',     key: 'engagement'   },
+        { label: 'Quality of input', key: 'quality'    },
+        { label: 'Honesty',        key: 'honesty'      },
+        { label: 'Profile fit',    key: 'profile_fit'  },
+      ];
+
+      container.innerHTML = dims.map(d => {
+        const score = avg(d.key);
+        const pct   = Math.round(score / 5 * 100);
+        return `
+          <div class="rating-breakdown-row">
+            <span class="rb-label">${d.label}</span>
+            <div class="rb-bar"><div class="rb-fill" style="width:${pct}%"></div></div>
+            <span class="rb-score">${score}</span>
+          </div>`;
+      }).join('') + `<p style="font-size:11px;color:var(--gray-400);margin-top:10px;font-weight:300">Based on ${count} ${count === 1 ? 'rating' : 'ratings'}</p>`;
+    } catch(err) {
+      console.warn('loadRatingBreakdown error:', err);
     }
   }
 

@@ -212,6 +212,9 @@ textarea{resize:vertical;min-height:90px}
 .status-accepted{background:var(--green-light);color:var(--green-dark)}
 .status-rejected{background:var(--coral-light);color:var(--coral)}
 .status-pending{background:var(--gray-100);color:var(--gray-400)}
+.status-completed{background:var(--blue-light);color:var(--blue-dark)}
+.btn-complete{padding:5px 12px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;background:var(--blue-light);color:var(--blue-dark);border:1.5px solid var(--blue);transition:all 0.15s}
+.btn-complete:hover{background:var(--blue);color:#fff}
 
 .star-picker{display:flex;gap:8px;margin-bottom:1rem}
 .star-pick{font-size:28px;cursor:pointer;color:var(--gray-200);transition:color 0.1s;line-height:1}
@@ -384,7 +387,7 @@ textarea{resize:vertical;min-height:90px}
       <div class="nav-section">
         <div class="nav-label">Panel</div>
         <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span><span class="nav-badge">3</span></button>
-        <button class="nav-item" onclick="showTab('rate',this)"><span class="nav-icon">★</span>Rate participants</button>
+        <button class="nav-item" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span>Rate participants</button>
       </div>
       <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -670,7 +673,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- RATE PARTICIPANTS -->
       <div class="tab-pane" id="tab-rate">
         <div class="page-topbar">
-          <div class="page-title"><h1>Rate participants</h1><p>3 participants awaiting your rating from the Mar 28 session</p></div>
+          <div class="page-title"><h1>Rate participants</h1><p id="rate-page-sub">Loading…</p></div>
         </div>
         <div style="background:var(--amber-light);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:var(--amber);font-weight:500">
           ⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.
@@ -793,7 +796,7 @@ textarea{resize:vertical;min-height:90px}
         <div class="dim-stars" id="ds-5"></div>
       </div>
     </div>
-    <div class="field"><label>Optional written feedback (shared with contributor)</label><textarea placeholder="e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again."></textarea></div>
+    <div class="field"><label>Optional written feedback (shared with contributor)</label><textarea id="rate-comment" placeholder="e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again."></textarea></div>
     <div style="display:flex;gap:12px;margin-top:1rem">
       <button class="btn-outline" style="flex:1" onclick="closeRateModal()">Cancel</button>
       <button class="btn-primary btn-green" style="flex:2" onclick="submitRating()">Submit rating →</button>
@@ -1109,6 +1112,12 @@ textarea{resize:vertical;min-height:90px}
           actions = `
             <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}','${a.contributor_id}')">Accept</button>
             <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}','${a.contributor_id}')">Reject</button>`;
+        } else if (a.status === 'accepted') {
+          actions = `
+            <span class="status-pill status-accepted">Accepted</span>
+            <button class="btn-complete" onclick="markCompleted('${a.id}','${studyId}')">Mark completed</button>`;
+        } else if (a.status === 'completed') {
+          actions = `<span class="status-pill status-completed">Completed ✓</span>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1354,39 +1363,102 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  // ─── RATE LIST (local UI only) ───────────────────────────
-  const rateParticipants = [
-    {id:1,init:'?',av:'av-green',name:'Participant 1',study:'Your most recent study',rated:false},
-    {id:2,init:'?',av:'av-blue', name:'Participant 2',study:'Your most recent study',rated:false},
-  ];
-  const dimScores = {1:0,2:0,3:0,4:0,5:0};
-  let currentRatee = null;
+  // ─── RATE LIST ───────────────────────────────────────────
+  const dimScores = { punctuality: 0, engagement: 0, quality: 0, honesty: 0, profile_fit: 0 };
+  const dimKeys   = ['punctuality','engagement','quality','honesty','profile_fit'];
+  let currentRatee = null; // { appId, contributorId, studyId, studyTitle, name }
 
-  function renderRateList() {
-    const list = document.getElementById('rate-list');
-    list.innerHTML = rateParticipants.map(p => `
-      <div class="card" style="display:flex;align-items:center;gap:1rem;${p.rated?'opacity:0.5':''}">
-        <div class="avatar ${p.av}">${p.init}</div>
-        <div style="flex:1">
-          <div style="font-size:15px;font-weight:600;margin-bottom:2px">${p.name}</div>
-          <div style="font-size:12px;color:var(--gray-400)">${p.study}</div>
-        </div>
-        ${p.rated
-          ? `<div class="badge badge-green">Rated ✓</div>`
-          : `<button class="btn-primary btn-green" onclick="openRateModal(${p.id})">Rate now →</button>`
-        }
-      </div>
-    `).join('');
+  async function loadRateList() {
+    const list   = document.getElementById('rate-list');
+    const subEl  = document.getElementById('rate-page-sub');
+    if (!db || !currentClientUser) {
+      list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">No data — sign in to view.</p>';
+      if (subEl) subEl.textContent = '';
+      return;
+    }
+
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading…</div>';
+
+    try {
+      // Get all studies owned by this client
+      const { data: studies } = await db.from('studies').select('id, title').eq('created_by', currentClientUser.id);
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) {
+        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">No completed participants to rate yet.</p></div>';
+        if (subEl) subEl.textContent = 'No participants to rate';
+        return;
+      }
+
+      const studyMap = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
+
+      // Fetch completed applications that don't have a rating yet
+      const { data: apps, error } = await db
+        .from('applications')
+        .select('id, contributor_id, study_id, contributors(rating, tier, profiles(first_name, last_name))')
+        .in('study_id', studyIds)
+        .eq('status', 'completed');
+      if (error) throw error;
+
+      if (!apps || !apps.length) {
+        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">No completed participants to rate yet. Mark accepted participants as completed first.</p></div>';
+        if (subEl) subEl.textContent = 'No participants to rate';
+        return;
+      }
+
+      // Check which ones already have ratings
+      const appIds = apps.map(a => a.id);
+      const { data: existingRatings } = await db.from('ratings').select('application_id').in('application_id', appIds);
+      const ratedSet = new Set((existingRatings || []).map(r => r.application_id));
+
+      const unrated = apps.filter(a => !ratedSet.has(a.id));
+      const rated   = apps.filter(a =>  ratedSet.has(a.id));
+
+      const pendingCount = unrated.length;
+      if (subEl) subEl.textContent = pendingCount > 0
+        ? `${pendingCount} participant${pendingCount !== 1 ? 's' : ''} awaiting your rating`
+        : 'All participants have been rated';
+
+      const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
+      const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
+
+      const allApps = [...unrated, ...rated];
+      list.innerHTML = allApps.map((a, i) => {
+        const c = a.contributors || {};
+        const p = c.profiles || {};
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+        const studyTitle = studyMap[a.study_id] || 'Study';
+        const isRated = ratedSet.has(a.id);
+        const ci = i % avColors.length;
+        return `
+          <div class="card" style="display:flex;align-items:center;gap:1rem;${isRated ? 'opacity:0.55' : ''}">
+            <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;background:${avColors[ci]};color:${avText[ci]}">${initials}</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:600;margin-bottom:2px">${name}</div>
+              <div style="font-size:12px;color:var(--gray-400)">${studyTitle}</div>
+            </div>
+            ${isRated
+              ? `<div style="font-size:12px;font-weight:600;color:var(--green)">Rated ✓</div>`
+              : `<button class="btn-primary btn-green" onclick="openRateModal('${a.id}','${a.contributor_id}','${a.study_id}',${JSON.stringify(studyTitle)},${JSON.stringify(name)})">Rate now →</button>`
+            }
+          </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('loadRateList error:', err);
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load participants.</div>';
+    }
   }
 
-  function openRateModal(id) {
-    currentRatee = rateParticipants.find(p=>p.id===id);
-    document.getElementById('rate-name').textContent = currentRatee.name;
-    document.getElementById('rate-study-name').textContent = currentRatee.study;
-    for (let d=1;d<=5;d++) {
-      renderDimStars(d,0);
-      document.getElementById('sc-'+d).textContent='—';
-    }
+  function openRateModal(appId, contributorId, studyId, studyTitle, name) {
+    currentRatee = { appId, contributorId, studyId, studyTitle, name };
+    document.getElementById('rate-name').textContent = name;
+    document.getElementById('rate-study-name').textContent = studyTitle;
+    document.getElementById('rate-comment').value = '';
+    dimKeys.forEach((k, i) => {
+      dimScores[k] = 0;
+      renderDimStars(i + 1, 0);
+      document.getElementById('sc-' + (i + 1)).textContent = '—';
+    });
     document.getElementById('rate-modal').classList.add('open');
   }
 
@@ -1397,21 +1469,86 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function setDimRating(dim, val) {
+    dimScores[dimKeys[dim - 1]] = val;
     renderDimStars(dim, val);
     document.getElementById('sc-'+dim).textContent = val+'.0★';
   }
 
-  function submitRating() {
-    if (currentRatee) {
-      currentRatee.rated = true;
-      renderRateList();
+  async function submitRating() {
+    if (!currentRatee) return;
+
+    // Validate all 5 dimensions are rated
+    const missing = dimKeys.filter(k => !dimScores[k]);
+    if (missing.length) {
+      showToast('Please rate all 5 dimensions before submitting', true);
+      return;
+    }
+
+    const btn = document.querySelector('#rate-modal .btn-green');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+    try {
+      const scores = {
+        punctuality:  dimScores.punctuality,
+        engagement:   dimScores.engagement,
+        quality:      dimScores.quality,
+        honesty:      dimScores.honesty,
+        profile_fit:  dimScores.profile_fit,
+      };
+      const overall = +(Object.values(scores).reduce((a,b)=>a+b,0) / 5).toFixed(2);
+      const comment = document.getElementById('rate-comment').value.trim() || null;
+
+      const { error: insertErr } = await db.from('ratings').insert({
+        application_id: currentRatee.appId,
+        rated_by:       currentClientUser.id,
+        contributor_id: currentRatee.contributorId,
+        ...scores,
+        overall,
+        comment,
+        created_at: new Date().toISOString()
+      });
+      if (insertErr) throw insertErr;
+
+      // Recalculate contributor's overall rating & tier
+      await db.rpc('recalc_contributor_rating', { p_contributor_id: currentRatee.contributorId });
+
+      // Notify the contributor
+      await sendNotification(
+        currentRatee.contributorId,
+        `You received a new rating for "${currentRatee.studyTitle}"`,
+        `Your overall score for this study was ${overall}★. Keep up the great work!`,
+        null
+      );
+
       document.getElementById('rate-modal').classList.remove('open');
       showToast(`Rating submitted for ${currentRatee.name}. Their score has been updated.`);
+      await loadRateList();
+    } catch(err) {
+      console.error('submitRating error:', err);
+      showToast('Could not submit rating — try again', true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Submit rating →'; }
     }
   }
 
   function closeRateModal() {
     document.getElementById('rate-modal').classList.remove('open');
+  }
+
+  // ─── MARK APPLICATION AS COMPLETED ──────────────────────
+  async function markCompleted(appId, studyId) {
+    try {
+      const { error } = await db.from('applications')
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', appId);
+      if (error) throw error;
+      showToast('Marked as completed ✓');
+      await loadApplicants(studyId);
+      await loadRateList();
+    } catch(err) {
+      console.error('markCompleted error:', err);
+      showToast('Could not update — try again', true);
+    }
   }
 
   // ─── PREVIEW ────────────────────────────────────────────
@@ -1472,7 +1609,6 @@ textarea{resize:vertical;min-height:90px}
         if (user) currentClientUser = user;
       } catch(e) {}
     }
-    renderRateList();
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
     loadNotifications();
   }
