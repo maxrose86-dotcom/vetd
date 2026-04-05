@@ -596,9 +596,13 @@
   .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
   .lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
   .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
-  .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
-  .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
-  .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+  /* Hide floating toggle in app/onboarding — replaced by inline topbar toggle */
+  .lang-toggle.light{display:none}
+  /* Inline topbar lang toggle */
+  .lang-toggle-topbar{display:inline-flex;align-items:center;background:var(--gray-100);border-radius:100px;padding:3px;gap:2px}
+  .lang-btn-t{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+  .lang-btn-t.active{background:#fff;color:var(--gray-900);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+  @media(max-width:768px){.lang-toggle-topbar{display:none}}
   .field-error{font-size:12px;color:var(--coral);margin-top:4px;display:none}
   .field-error.show{display:block}
   #cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
@@ -679,7 +683,8 @@
         <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-top:1rem">
           <div style="font-size:32px;margin-bottom:8px">📧</div>
           <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px">Check your email</h3>
-          <p style="font-size:13px;color:#374151;line-height:1.5">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
+          <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
+          <a href="login.html" style="display:inline-block;padding:9px 22px;background:#00C47A;color:#fff;border-radius:100px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif">Go to sign in →</a>
         </div>
         <div class="field">
           <label>How did you hear about us?</label>
@@ -922,6 +927,10 @@
           </div>
         </div>
         <div id="topbar-avatar" class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">?</div>
+        <div class="lang-toggle-topbar">
+          <button class="lang-btn-t active" id="lb-en-t" onclick="setLang('en')">EN</button>
+          <button class="lang-btn-t" id="lb-sv-t" onclick="setLang('sv')">SV</button>
+        </div>
         <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" data-i18n="sign_out">Sign out</button>
       </div>
     </div>
@@ -930,6 +939,11 @@
       <button onclick="showTab('dashboard', document.querySelector('.topbar-nav button:nth-child(1)')); toggleMobileNav();" data-i18n="nav_dashboard">Dashboard</button>
       <button onclick="showTab('jobs', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
       <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-top:1px solid var(--gray-100)">
+        <span style="font-size:12px;color:var(--gray-400);font-weight:400">Language:</span>
+        <button id="lb-en-m" onclick="setLang('en');toggleMobileNav()" style="padding:4px 12px;border-radius:100px;border:1.5px solid var(--gray-200);background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">EN</button>
+        <button id="lb-sv-m" onclick="setLang('sv');toggleMobileNav()" style="padding:4px 12px;border-radius:100px;border:1.5px solid var(--gray-200);background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">SV</button>
+      </div>
     </div>
 
     <div class="app-content">
@@ -2492,8 +2506,23 @@
   // ─── AUTO-LOGIN CHECK ──────────────────────────────────
   // If user came from login page or has an active session, skip to dashboard
   (async function checkSession() {
+    // ── Detect email confirmation from Supabase ──
+    // Implicit flow: hash contains access_token + type=signup
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const searchParams = new URLSearchParams(window.location.search);
+    const isEmailConfirm = hashParams.get('type') === 'signup'
+                        || hashParams.get('type') === 'email_change'
+                        || (hashParams.has('access_token') && hashParams.has('type'));
+    // PKCE flow: ?code= query param (Supabase v2 default)
+    const isPkceConfirm = searchParams.has('code');
+
+    if (isEmailConfirm || isPkceConfirm) {
+      window.location.replace('login.html?confirmed=true');
+      return;
+    }
+
     // Check URL flag first (instant, no waiting)
-    if (new URLSearchParams(window.location.search).has('logged_in')) {
+    if (searchParams.has('logged_in')) {
       goToApp();
       return;
     }
@@ -2612,14 +2641,25 @@
 
   function setLang(lang) {
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
+    // Sync floating toggle (landing/onboarding)
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
-    // Switch toggle style based on current screen
+    // Sync inline topbar toggle (app — desktop)
+    const lbEnT = document.getElementById('lb-en-t');
+    const lbSvT = document.getElementById('lb-sv-t');
+    if (lbEnT) lbEnT.classList.toggle('active', lang === 'en');
+    if (lbSvT) lbSvT.classList.toggle('active', lang === 'sv');
+    // Sync mobile nav toggle
+    const lbEnM = document.getElementById('lb-en-m');
+    const lbSvM = document.getElementById('lb-sv-m');
+    if (lbEnM) lbEnM.style.background = lang === 'en' ? 'var(--gray-100)' : 'transparent';
+    if (lbSvM) lbSvM.style.background = lang === 'sv' ? 'var(--gray-100)' : 'transparent';
+    // Hide/show floating toggle based on screen (in app/onboarding the topbar toggle is used)
     const toggle = document.getElementById('lang-toggle');
     const appVisible = document.getElementById('app') && document.getElementById('app').classList.contains('active');
     const onboardingVisible = document.getElementById('onboarding') && document.getElementById('onboarding').classList.contains('active');
     if (appVisible || onboardingVisible) {
-      toggle.classList.add('light');
+      toggle.classList.add('light'); // CSS hides floating toggle when .light
     } else {
       toggle.classList.remove('light');
     }
