@@ -1379,8 +1379,11 @@ textarea{resize:vertical;min-height:90px}
     const addReq = document.getElementById('b-addreqs').value.trim()  || null;
 
     // Collect chip values
-    const targetAges      = getChipValues('age_ranges');
-    const targetGenders   = getChipValues('genders');
+    // 'any' chips mean "no filter" — strip them and leave the field null if nothing specific remains
+    const rawAges       = getChipValues('age_ranges').filter(v => v !== 'any');
+    const rawGenders    = getChipValues('genders').filter(v => v !== 'any');
+    const targetAges      = rawAges.length    ? rawAges    : null;
+    const targetGenders   = rawGenders.length ? rawGenders : null;
     const targetLocations = getChipValues('locations');
     const targetInterests = getChipValues('interests');
     const minRatingVal    = getChipValues('min_rating')[0];
@@ -1422,8 +1425,8 @@ textarea{resize:vertical;min-height:90px}
         start_date:           start,
         close_date:           close,
         status:               'active',
-        target_age_ranges:    targetAges.length    ? targetAges      : null,
-        target_genders:       targetGenders.length ? targetGenders   : null,
+        target_age_ranges:    targetAges,
+        target_genders:       targetGenders,
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
         min_rating:           minRating,
@@ -1844,13 +1847,36 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function tc(el) {
-    const group = el.closest('[data-single="true"]');
-    if (group) {
+    const isSingle   = !!el.closest('[data-single="true"]');
+    const group      = el.closest('.chip-group');
+    const val        = el.dataset.value;
+    const becomingOn = !el.classList.contains('on');
+
+    if (isSingle) {
       group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
       el.classList.add('on');
-    } else {
-      el.classList.toggle('on');
+      return;
     }
+
+    if (becomingOn) {
+      if (val === 'any') {
+        // "Any X" selected → deselect all specific chips in this group
+        group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      } else {
+        // Specific chip selected → deselect "any" chip in this group
+        group.querySelector('[data-value="any"]')?.classList.remove('on');
+
+        // Locations: "Remote only" and specific cities are mutually exclusive
+        if (val === 'remote') {
+          ['london', 'manchester', 'birmingham'].forEach(city =>
+            group.querySelector(`[data-value="${city}"]`)?.classList.remove('on'));
+        } else if (['london', 'manchester', 'birmingham'].includes(val)) {
+          group.querySelector('[data-value="remote"]')?.classList.remove('on');
+        }
+      }
+    }
+
+    el.classList.toggle('on');
   }
 
   function showToast(msg, isError = false) {
