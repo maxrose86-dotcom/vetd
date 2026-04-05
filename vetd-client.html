@@ -1391,10 +1391,10 @@ textarea{resize:vertical;min-height:90px}
 
       const studyMap = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
 
-      // Fetch completed applications, joining contributors → profiles for names
+      // Fetch completed applications
       const { data: apps, error } = await db
         .from('applications')
-        .select('id, contributor_id, study_id, contributors(profiles(first_name, last_name))')
+        .select('id, contributor_id, study_id')
         .in('study_id', studyIds)
         .eq('status', 'completed');
       if (error) throw error;
@@ -1404,6 +1404,14 @@ textarea{resize:vertical;min-height:90px}
         if (subEl) subEl.textContent = 'No participants to rate';
         return;
       }
+
+      // Fetch profiles by contributor IDs (same pattern used by loadContributors which works)
+      const contributorIds = [...new Set(apps.map(a => a.contributor_id).filter(Boolean))];
+      const { data: profileRows } = await db
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', contributorIds);
+      const profileMap = Object.fromEntries((profileRows || []).map(p => [p.id, p]));
 
       // Check which ones already have ratings
       const appIds = apps.map(a => a.id);
@@ -1423,7 +1431,7 @@ textarea{resize:vertical;min-height:90px}
 
       const allApps = [...unrated, ...rated];
       list.innerHTML = allApps.map((a, i) => {
-        const p = a.contributors?.profiles || {};
+        const p = profileMap[a.contributor_id] || {};
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
         const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
         const studyTitle = studyMap[a.study_id] || 'Study';
