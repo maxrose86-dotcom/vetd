@@ -428,7 +428,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     </div>
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Revenue (this month)</div>
-      <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">£18,340</div>
+      <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">183 400 kr</div>
       <div style="font-size:11px;color:var(--green);font-family:var(--mono);margin-bottom:1rem">↑ 34% vs last month</div>
       <div class="mini-chart" id="rev-chart"></div>
       <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Daily commission · last 14 days</div>
@@ -485,7 +485,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
       <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">flags raised</div>
     </div>
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-md);padding:0.75rem;text-align:center">
-      <div style="font-family:var(--mono);font-size:20px;color:var(--text)" id="feed-payouts">£0</div>
+      <div style="font-family:var(--mono);font-size:20px;color:var(--text)" id="feed-payouts">0 kr</div>
       <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">paid out</div>
     </div>
   </div>
@@ -494,9 +494,9 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text"><strong>New sign-up:</strong> User #8421 completed onboarding · Manchester · Fashion interests</div><div class="feed-time">1m ago</div></div>
     <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Study completed:</strong> Tom W. finished Boots loyalty session · awaiting rating</div><div class="feed-time">3m ago</div></div>
     <div class="feed-item"><div class="feed-dot fd-red"></div><div class="feed-text"><strong>Flag raised:</strong> User #4821 — survey completed in 94s (expected 15min)</div><div class="feed-time">5m ago</div></div>
-    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Payout processed:</strong> £45 → Sarah L. for H&M study completion</div><div class="feed-time">8m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Payout processed:</strong> 450 kr → Sarah L. for H&M study completion</div><div class="feed-time">8m ago</div></div>
     <div class="feed-item"><div class="feed-dot fd-amber"></div><div class="feed-text"><strong>Rating submitted:</strong> H&M rated Marcus K. 3.8★ (below threshold alert)</div><div class="feed-time">12m ago</div></div>
-    <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text"><strong>Study posted:</strong> Tesco — Online grocery delivery experience · 15 spots · £30pp</div><div class="feed-time">19m ago</div></div>
+    <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text"><strong>Study posted:</strong> Tesco — Online grocery delivery experience · 15 spots · 300 kr/pp</div><div class="feed-time">19m ago</div></div>
     <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text"><strong>Match made:</strong> Priya R. → Lloyds banking usability (97% score)</div><div class="feed-time">22m ago</div></div>
   </div>
 </div>
@@ -589,11 +589,11 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   <table class="tbl" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
     <thead><tr><th>Study</th><th>Client</th><th>Fill</th><th>Pay</th><th>Deadline</th><th>Matched pool</th><th>Status</th><th>Action</th></tr></thead>
     <tbody>
-      <tr><td><strong style="color:var(--text)">Online grocery UX</strong></td><td style="color:var(--text2)">Tesco</td><td style="font-family:var(--mono)">3 / 15</td><td style="font-family:var(--mono);color:var(--green)">£30</td><td style="color:var(--coral);font-family:var(--mono)">6h</td><td style="font-family:var(--mono)">847</td><td><span class="badge br">Urgent</span></td><td><button class="btn btn-red" style="padding:5px 12px;font-size:11px" onclick="showToast('🚀 Boost sent — top 50 contributors notified')">Boost</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Activewear survey</strong></td><td style="color:var(--text2)">Nike</td><td style="font-family:var(--mono)">12 / 50</td><td style="font-family:var(--mono);color:var(--green)">£12</td><td style="color:var(--amber);font-family:var(--mono)">3d</td><td style="font-family:var(--mono)">2,340</td><td><span class="badge ba">Stalled</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📧 Re-engagement emails sent to 500 matched contributors')">Re-engage</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Boots loyalty research</strong></td><td style="color:var(--text2)">Boots</td><td style="font-family:var(--mono)">4 / 6</td><td style="font-family:var(--mono);color:var(--green)">£65</td><td style="color:var(--text2);font-family:var(--mono)">5d</td><td style="font-family:var(--mono)">124</td><td><span class="badge bg">On track</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('No action needed')">Monitor</button></td></tr>
-      <tr><td><strong style="color:var(--text)">H&M shopping experience</strong></td><td style="color:var(--text2)">H&M</td><td style="font-family:var(--mono)">12 / 20</td><td style="font-family:var(--mono);color:var(--green)">£45</td><td style="color:var(--text2);font-family:var(--mono)">7d</td><td style="font-family:var(--mono)">312</td><td><span class="badge bb">Filling</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('Study is on track')">Monitor</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Lloyds banking app</strong></td><td style="color:var(--text2)">Lloyds</td><td style="font-family:var(--mono)">8 / 8</td><td style="font-family:var(--mono);color:var(--green)">£80</td><td style="color:var(--text2);font-family:var(--mono)">2d</td><td style="font-family:var(--mono)">—</td><td><span class="badge bg">Full</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📅 Calendar invites sent to all 8 participants')">Send invites</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Online grocery UX</strong></td><td style="color:var(--text2)">Tesco</td><td style="font-family:var(--mono)">3 / 15</td><td style="font-family:var(--mono);color:var(--green)">300 kr</td><td style="color:var(--coral);font-family:var(--mono)">6h</td><td style="font-family:var(--mono)">847</td><td><span class="badge br">Urgent</span></td><td><button class="btn btn-red" style="padding:5px 12px;font-size:11px" onclick="showToast('🚀 Boost sent — top 50 contributors notified')">Boost</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Activewear survey</strong></td><td style="color:var(--text2)">Nike</td><td style="font-family:var(--mono)">12 / 50</td><td style="font-family:var(--mono);color:var(--green)">120 kr</td><td style="color:var(--amber);font-family:var(--mono)">3d</td><td style="font-family:var(--mono)">2,340</td><td><span class="badge ba">Stalled</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📧 Re-engagement emails sent to 500 matched contributors')">Re-engage</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Boots loyalty research</strong></td><td style="color:var(--text2)">Boots</td><td style="font-family:var(--mono)">4 / 6</td><td style="font-family:var(--mono);color:var(--green)">650 kr</td><td style="color:var(--text2);font-family:var(--mono)">5d</td><td style="font-family:var(--mono)">124</td><td><span class="badge bg">On track</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('No action needed')">Monitor</button></td></tr>
+      <tr><td><strong style="color:var(--text)">H&M shopping experience</strong></td><td style="color:var(--text2)">H&M</td><td style="font-family:var(--mono)">12 / 20</td><td style="font-family:var(--mono);color:var(--green)">450 kr</td><td style="color:var(--text2);font-family:var(--mono)">7d</td><td style="font-family:var(--mono)">312</td><td><span class="badge bb">Filling</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('Study is on track')">Monitor</button></td></tr>
+      <tr><td><strong style="color:var(--text)">Lloyds banking app</strong></td><td style="color:var(--text2)">Lloyds</td><td style="font-family:var(--mono)">8 / 8</td><td style="font-family:var(--mono);color:var(--green)">800 kr</td><td style="color:var(--text2);font-family:var(--mono)">2d</td><td style="font-family:var(--mono)">—</td><td><span class="badge bg">Full</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📅 Calendar invites sent to all 8 participants')">Send invites</button></td></tr>
     </tbody>
   </table>
 </div>
@@ -625,7 +625,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <div class="flag-body">
       <div class="flag-title">Profile demographic inconsistency — Jamie R. (ID #3847)</div>
       <div class="flag-desc">Contributor self-reported age 22 (F) from Leeds. AI analysis of 3 survey responses detected language patterns and life-stage references (mortgage, grown children) inconsistent with stated demographics. Mismatch confidence: 87%. This contributor has been paid for 2 completed studies that may have used fraudulent profile data.</div>
-      <div class="flag-meta">Detected 3 mins ago · AI pattern match · 2 affected studies · £28 at risk</div>
+      <div class="flag-meta">Detected 3 mins ago · AI pattern match · 2 affected studies · 280 kr at risk</div>
     </div>
     <div class="flag-actions">
       <button class="btn btn-red" onclick="openAction('Jamie R.','#3847','demographic-fraud')">Review &amp; act</button>
@@ -637,7 +637,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <div class="flag-body">
       <div class="flag-title">Impossibly fast survey completion — User #4821</div>
       <div class="flag-desc">15-minute survey completed in 94 seconds. Minimum human reading time for question set estimated at 4m 20s. Pattern matches known click-farming behaviour. This is the contributor's 3rd fast-completion flag in 14 days.</div>
-      <div class="flag-meta">Detected 18 mins ago · timing analysis · 3rd offence · £8 paid out</div>
+      <div class="flag-meta">Detected 18 mins ago · timing analysis · 3rd offence · 80 kr paid out</div>
     </div>
     <div class="flag-actions">
       <button class="btn btn-red" onclick="openAction('User #4821','#4821','click-fraud')">Review &amp; act</button>
@@ -742,7 +742,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     </div>
     <div class="dispute-body">Contributor states session was advertised as 60 minutes but ran to 100 minutes without additional compensation being offered. Client says the overrun was due to technical issues and the contributor agreed to continue voluntarily.</div>
     <div class="dispute-actions">
-      <button class="btn btn-green" onclick="resolveDispute('D-0081','partial refund of £20 to contributor')">Pay partial top-up</button>
+      <button class="btn btn-green" onclick="resolveDispute('D-0081','partial refund of 200 kr to contributor')">Pay partial top-up</button>
       <button class="btn" onclick="showToast('📧 Requesting session recording from Lloyds')">Request evidence</button>
       <button class="btn btn-red" onclick="resolveDispute('D-0081','no additional payment')">Dismiss</button>
     </div>
@@ -790,7 +790,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <div class="tab" id="t-payouts">
   <div class="ph">
     <div><h1>Payouts</h1><p>Contributor payment management</p></div>
-    <button class="btn btn-green" onclick="showToast('💳 Batch payout of £3,240 initiated to 72 contributors')">Run batch payout</button>
+    <button class="btn btn-green" onclick="showToast('💳 Batch payout of 32 400 kr initiated to 72 contributors')">Run batch payout</button>
   </div>
   <div class="stat-grid">
     <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num" id="stat-paid">—</div><div class="stat-sub up" id="stat-paid-sub"> </div></div>
@@ -847,6 +847,13 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <div class="toast" id="toast"></div>
 
 <script>
+// FUTURE: currency should be determined by user country from their profile.
+// When launching in multiple countries, add a currencies config and convert between them.
+// For now, hardcoded to SEK.
+function formatCurrency(oere) {
+  return `${Math.round(oere / 100)} kr`;
+}
+
 // ─── XSS HELPER ──────────────────────────────────────────────
 function esc(str) {
   if (str == null) return '';
@@ -1044,7 +1051,7 @@ async function loadContributors() {
 async function loadPayouts() {
   if (!db) return;
   const tbody = document.getElementById('payouts-list');
-  const fmt = p => `£${(p / 100).toFixed(2)}`;
+  const fmt = p => formatCurrency(p);
 
   try {
     const { data: payments, error } = await db
@@ -1164,12 +1171,12 @@ function initUI() {
     {dot:'fd-green',text:'<strong>Match made:</strong> Emma W. → Boots loyalty study (94% score)'},
     {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8422 completed onboarding · London · Tech interests'},
     {dot:'fd-green',text:'<strong>Study completed:</strong> Priya R. finished Lloyds banking session'},
-    {dot:'fd-green',text:'<strong>Payout processed:</strong> £30 → Aisha B. for Tesco study'},
+    {dot:'fd-green',text:'<strong>Payout processed:</strong> 300 kr → Aisha B. for Tesco study'},
     {dot:'fd-amber',text:'<strong>Rating submitted:</strong> Nike rated User #5201 at 4.2★'},
     {dot:'fd-red',text:'<strong>Flag raised:</strong> Response anomaly detected on User #5503'},
     {dot:'fd-blue',text:'<strong>Study posted:</strong> ASOS — Gen Z fashion discovery · 12 spots'},
     {dot:'fd-green',text:'<strong>Match made:</strong> Marcus K. → ASOS style study (91% score)'},
-    {dot:'fd-green',text:'<strong>Payout processed:</strong> £65 → Emma W. for Boots study'},
+    {dot:'fd-green',text:'<strong>Payout processed:</strong> 650 kr → Emma W. for Boots study'},
     {dot:'fd-blue',text:'<strong>New sign-up:</strong> User #8423 from Edinburgh · Fashion &amp; beauty'},
   ];
   let feedIdx=0;
@@ -1189,8 +1196,8 @@ function initUI() {
     if(e.dot==='fd-blue'&&e.text.includes('sign-up')){feedSignups++;const el=document.getElementById('feed-signups');if(el)el.textContent=feedSignups}
     if(e.dot==='fd-red'){feedFlags++;const el=document.getElementById('feed-flags');if(el)el.textContent=feedFlags}
     if(e.text.includes('Payout')){
-      const m=e.text.match(/£(\d+)/);
-      if(m){feedPayouts+=parseInt(m[1]);const el=document.getElementById('feed-payouts');if(el)el.textContent='£'+feedPayouts}
+      const m=e.text.match(/(\d+) kr/);
+      if(m){feedPayouts+=parseInt(m[1]);const el=document.getElementById('feed-payouts');if(el)el.textContent=feedPayouts+' kr'}
     }
   },2800);
 }

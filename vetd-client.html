@@ -629,7 +629,7 @@ textarea{resize:vertical;min-height:90px}
               </div>
               <div class="field-row">
                 <div class="field"><label>Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
-                <div class="field"><label>Pay per participant (£)</label><input type="number" id="b-pay" value="45" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label>Pay per participant (kr)</label><input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()"></div>
               </div>
               <div class="field-row">
                 <div class="field"><label>Study start date</label><input type="date" id="b-start"></div>
@@ -706,7 +706,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="preview-card">
             <h3>Live preview</h3>
             <div class="preview-title" id="prev-title">Your study title</div>
-            <div class="preview-pay" id="prev-pay">£45</div>
+            <div class="preview-pay" id="prev-pay">450 kr</div>
             <div class="preview-type" id="prev-type">Video call (1-on-1) · 60 minutes</div>
             <div class="preview-tags" id="prev-tags">
               <span class="preview-tag">Women 25–44</span>
@@ -715,8 +715,8 @@ textarea{resize:vertical;min-height:90px}
               <span class="preview-tag">3.0★ and above</span>
             </div>
             <div class="preview-stat"><span class="preview-stat-label">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
-            <div class="preview-stat"><span class="preview-stat-label">Total budget</span><span class="preview-stat-val" id="prev-budget">£450</span></div>
-            <div class="preview-stat"><span class="preview-stat-label">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">£90</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
             <div class="match-estimate">
               <div class="match-est-n" id="prev-match">~340</div>
               <div class="match-est-l">contributors match your criteria right now</div>
@@ -763,7 +763,7 @@ textarea{resize:vertical;min-height:90px}
         <div class="stat-row">
           <div class="stat-card"><div class="stat-label">Total studies run</div><div class="stat-num">8</div><div class="stat-sub">Since Jan 2026</div></div>
           <div class="stat-card"><div class="stat-label">Total participants</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
-          <div class="stat-card"><div class="stat-label">Total invested</div><div class="stat-num">£7,820</div><div class="stat-sub">incl. Vetd fees</div></div>
+          <div class="stat-card"><div class="stat-label">Total invested</div><div class="stat-num">78 200 kr</div><div class="stat-sub">incl. Vetd fees</div></div>
           <div class="stat-card"><div class="stat-label">Avg participant quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
         </div>
 
@@ -811,10 +811,10 @@ textarea{resize:vertical;min-height:90px}
           <table class="data-table">
             <thead><tr><th>Study</th><th>Participants</th><th>Completion</th><th>Avg rating</th><th>Cost</th></tr></thead>
             <tbody>
-              <tr><td><strong>Online shopping experience</strong></td><td>12/20</td><td>100%</td><td><span style="color:var(--amber)">★ 4.8</span></td><td>£540</td></tr>
-              <tr><td><strong>Gen Z style focus group</strong></td><td>8/8</td><td>100%</td><td><span style="color:var(--amber)">★ 4.9</span></td><td>£400</td></tr>
-              <tr><td><strong>Sustainability perception</strong></td><td>27/100</td><td>98%</td><td><span style="color:var(--amber)">★ 4.6</span></td><td>£216</td></tr>
-              <tr><td><strong>Autumn campaign feedback</strong></td><td>20/20</td><td>95%</td><td><span style="color:var(--amber)">★ 4.5</span></td><td>£600</td></tr>
+              <tr><td><strong>Online shopping experience</strong></td><td>12/20</td><td>100%</td><td><span style="color:var(--amber)">★ 4.8</span></td><td>5 400 kr</td></tr>
+              <tr><td><strong>Gen Z style focus group</strong></td><td>8/8</td><td>100%</td><td><span style="color:var(--amber)">★ 4.9</span></td><td>4 000 kr</td></tr>
+              <tr><td><strong>Sustainability perception</strong></td><td>27/100</td><td>98%</td><td><span style="color:var(--amber)">★ 4.6</span></td><td>2 160 kr</td></tr>
+              <tr><td><strong>Autumn campaign feedback</strong></td><td>20/20</td><td>95%</td><td><span style="color:var(--amber)">★ 4.5</span></td><td>6 000 kr</td></tr>
             </tbody>
           </table>
         </div>
@@ -889,6 +889,13 @@ textarea{resize:vertical;min-height:90px}
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     }
   } catch(e) { console.warn('Supabase not loaded'); }
+
+  // FUTURE: currency should be determined by user country from their profile.
+  // When launching in multiple countries, add a currencies config and convert between them.
+  // For now, hardcoded to SEK.
+  function formatCurrency(oere) {
+    return `${Math.round(oere / 100)} kr`;
+  }
 
   // ─── XSS HELPER ─────────────────────────────────────────
   function esc(str) {
@@ -1107,7 +1114,7 @@ textarea{resize:vertical;min-height:90px}
         const label = status.charAt(0).toUpperCase() + status.slice(1);
         const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0 };
         const payDisplay = s.pay_per_participant
-          ? `£${Math.round(s.pay_per_participant / 100)}/person`
+          ? `${formatCurrency(s.pay_per_participant)}/person`
           : null;
         const safeTitle = esc(s.title || 'Untitled study');
         return `
@@ -1122,7 +1129,7 @@ textarea{resize:vertical;min-height:90px}
             <div class="study-meta" style="margin-bottom:10px">
               <span>Spots: <strong>${filled} / ${spots}</strong></span>
               ${payDisplay ? `<span>Pay: <strong>${payDisplay}</strong></span>` : ''}
-              ${paymentSpendMap[s.id] ? `<span>Spent: <strong>£${Math.round(paymentSpendMap[s.id] / 100)}</strong></span>` : (payDisplay && filled ? `<span>Est. spend: <strong>£${Math.round(filled * s.pay_per_participant / 100)}</strong></span>` : '')}
+              ${paymentSpendMap[s.id] ? `<span>Spent: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>Est. spend: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
               <span>Closes: <strong>${closes}</strong></span>
               ${counts.total > 0 ? `<span>Applications: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} pending)</span>` : ''}</span>` : ''}
             </div>
@@ -1739,21 +1746,21 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data: studies } = await db.from('studies').select('id').eq('created_by', currentClientUser.id);
       const studyIds = (studies || []).map(s => s.id);
-      if (!studyIds.length) { numEl.textContent = '£0'; if (subEl) { subEl.textContent = 'No studies yet'; subEl.className = 'stat-sub'; } return; }
+      if (!studyIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = 'No studies yet'; subEl.className = 'stat-sub'; } return; }
 
       const { data: apps } = await db.from('applications').select('id').in('study_id', studyIds);
       const appIds = (apps || []).map(a => a.id);
-      if (!appIds.length) { numEl.textContent = '£0'; if (subEl) { subEl.textContent = 'No payments yet'; subEl.className = 'stat-sub'; } return; }
+      if (!appIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = 'No payments yet'; subEl.className = 'stat-sub'; } return; }
 
       const { data: payments } = await db.from('payments').select('amount, status').in('application_id', appIds);
       const all     = payments || [];
       const total   = all.reduce((s, p) => s + (p.amount || 0), 0);
       const pending = all.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + (p.amount || 0), 0);
 
-      numEl.textContent = `£${Math.round(total / 100)}`;
+      numEl.textContent = formatCurrency(total);
       if (subEl) {
         if (pending > 0) {
-          subEl.textContent = `£${Math.round(pending / 100)} pending release`;
+          subEl.textContent = `${formatCurrency(pending)} pending release`;
           subEl.className = 'stat-sub warn';
         } else {
           subEl.textContent = `${all.filter(p=>p.status==='paid').length} payments processed`;
@@ -1768,16 +1775,16 @@ textarea{resize:vertical;min-height:90px}
   // ─── PREVIEW ────────────────────────────────────────────
   function updatePreview() {
     const title  = document.getElementById('b-title').value || 'Your study title';
-    const pay    = parseInt(document.getElementById('b-pay').value)||45;
+    const pay    = parseInt(document.getElementById('b-pay').value)||450;
     const spots  = parseInt(document.getElementById('b-spots').value)||10;
     const format = document.getElementById('b-format').value;
     const length = document.getElementById('b-length').value;
     document.getElementById('prev-title').textContent  = title;
-    document.getElementById('prev-pay').textContent    = '£'+pay;
+    document.getElementById('prev-pay').textContent    = pay + ' kr';
     document.getElementById('prev-type').textContent   = format + ' · ' + length;
     document.getElementById('prev-spots').textContent  = spots + ' participants';
-    document.getElementById('prev-budget').textContent = '£'+(pay*spots);
-    document.getElementById('prev-fee').textContent    = '£'+Math.round(pay*spots*0.2);
+    document.getElementById('prev-budget').textContent = (pay*spots) + ' kr';
+    document.getElementById('prev-fee').textContent    = Math.round(pay*spots*0.2) + ' kr';
     document.getElementById('prev-match').textContent  = '~'+Math.max(50, Math.round(500 - spots*4 - pay*0.5));
   }
 

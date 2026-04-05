@@ -631,7 +631,7 @@
       <button class="btn-secondary" onclick="window.location.href='login.html'" data-i18n="landing_signin">Sign in</button>
     </div>
     <div class="landing-trust">
-      <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label" data-i18n="trust_earned">avg annual earnings</div></div>
+      <div class="trust-stat"><div class="trust-num">6 400 kr</div><div class="trust-label" data-i18n="trust_earned">avg annual earnings</div></div>
       <div class="trust-stat"><div class="trust-num">48h</div><div class="trust-label">to first assignment</div></div>
       <div class="trust-stat"><div class="trust-num">4.8★</div><div class="trust-label" data-i18n="trust_contributors">avg contributor score</div></div>
     </div>
@@ -731,7 +731,7 @@
         </div>
         <div class="field">
           <label>Household income (annual, approximate)</label>
-          <select id="income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+          <select id="income"><option value="under_20k">Under 200 000 kr</option><option value="20k_35k">200 000–349 999 kr</option><option value="35k_60k">350 000–599 999 kr</option><option value="60k_100k">600 000–999 999 kr</option><option value="100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
         </div>
         <div class="field">
           <label>Living situation</label>
@@ -868,8 +868,8 @@
         <div class="field">
           <label>Minimum pay you'd accept (per hour equivalent)</label>
           <div style="margin-top:8px">
-            <input type="range" min="5" max="100" value="25" id="minpay" oninput="document.getElementById('payval').textContent='£'+this.value">
-            <div class="range-labels"><span>£5</span><span id="payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+            <input type="range" min="50" max="1500" value="250" id="minpay" oninput="document.getElementById('payval').textContent=this.value+' kr'">
+            <div class="range-labels"><span>50 kr</span><span id="payval" style="color:var(--green);font-weight:600">250 kr</span><span>1 500 kr</span></div>
           </div>
         </div>
         <div class="field">
@@ -982,7 +982,7 @@
         <div class="stat-cards">
           <div class="stat-card">
             <div class="stat-card-label" data-i18n="dash_earned">Total earned</div>
-            <div id="stat-earned" class="stat-card-num">£0</div>
+            <div id="stat-earned" class="stat-card-num">0 kr</div>
             <div id="stat-earned-sub" class="stat-card-sub">Complete a study to start earning</div>
           </div>
           <div class="stat-card">
@@ -1037,7 +1037,7 @@
             <div id="profile-subtitle" class="profile-subtitle">New member</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
               <div id="profile-tier-badge" class="tier-badge">New member</div>
-              <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · £0 earned</div>
+              <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · 0 kr earned</div>
             </div>
           </div>
           <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()">Edit profile</button>
@@ -1141,7 +1141,7 @@
             </div>
             <div class="field">
               <label>Household income (annual, approximate)</label>
-              <select id="edit-income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+              <select id="edit-income"><option value="under_20k">Under 200 000 kr</option><option value="20k_35k">200 000–349 999 kr</option><option value="35k_60k">350 000–599 999 kr</option><option value="60k_100k">600 000–999 999 kr</option><option value="100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
             </div>
             <div class="field">
               <label>Living situation</label>
@@ -1262,8 +1262,8 @@
             <div class="field">
               <label>Minimum pay you'd accept (per hour equivalent)</label>
               <div style="margin-top:8px">
-                <input type="range" min="5" max="100" value="25" id="edit-minpay" oninput="document.getElementById('edit-payval').textContent='£'+this.value">
-                <div class="range-labels"><span>£5</span><span id="edit-payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+                <input type="range" min="50" max="1500" value="250" id="edit-minpay" oninput="document.getElementById('edit-payval').textContent=this.value+' kr'">
+                <div class="range-labels"><span>50 kr</span><span id="edit-payval" style="color:var(--green);font-weight:600">250 kr</span><span>1 500 kr</span></div>
               </div>
             </div>
             <div class="field">
@@ -1609,7 +1609,7 @@
     {
       id: 1, company: 'H&M', title: 'Online shopping experience research',
       desc: 'Share how you browse and buy fashion online. Walk through the H&M app with a researcher and share your honest thoughts.',
-      pay: 45, payType: 'per session', duration: '60-min video call',
+      pay: 450, payType: 'per session', duration: '60-min video call',
       tags: [{text:'Women 25–45',cls:'tag-green'},{text:'H&M shopper',cls:'tag-blue'},{text:'Online shopper',cls:'tag-amber'},{text:'UK only',cls:'tag-gray'}],
       match: 97, spots: 8, filled: 5, format: 'online', featured: true,
       matchReason: 'You\'re a woman in your 30s, based in the UK, who shops online — exactly the profile H&M is looking for.',
@@ -1617,8 +1617,8 @@
     },
     {
       id: 2, company: 'Lloyds', title: 'Digital banking app usability study',
-      desc: 'Evaluate new features in mobile banking with a researcher. £80 for 90 minutes.',
-      pay: 80, payType: 'per session', duration: '90-min in-person, London',
+      desc: 'Evaluate new features in mobile banking with a researcher. 800 kr for 90 minutes.',
+      pay: 800, payType: 'per session', duration: '90-min in-person, London',
       tags: [{text:'35–60',cls:'tag-green'},{text:'Lloyds customer',cls:'tag-blue'},{text:'4.5★+ required',cls:'tag-amber'},{text:'London/commutable',cls:'tag-gray'}],
       match: 91, spots: 8, filled: 4, format: 'online', featured: false,
       matchReason: 'Your 4.8★ Elite rating unlocks this premium study. Lloyds specifically requested top-rated contributors.',
@@ -1627,7 +1627,7 @@
     {
       id: 3, company: 'ASOS', title: 'Gen Z vs Millennial fashion focus group',
       desc: 'Join a 45-minute online group discussion about fashion discovery, trends and how you shop for clothes.',
-      pay: 35, payType: 'per session', duration: '45-min group video call',
+      pay: 350, payType: 'per session', duration: '45-min group video call',
       tags: [{text:'25–40',cls:'tag-green'},{text:'Fashion shopper',cls:'tag-blue'},{text:'Social media user',cls:'tag-gray'}],
       match: 94, spots: 12, filled: 9, format: 'online', featured: false,
       matchReason: 'Your age, fashion interests and social media usage are a strong match for this group.',
@@ -1636,7 +1636,7 @@
     {
       id: 4, company: 'Nike', title: 'Activewear style & fit survey',
       desc: 'Short 20-minute online survey about how you buy athletic clothing. No video required.',
-      pay: 12, payType: 'per survey', duration: '20-min online survey',
+      pay: 120, payType: 'per survey', duration: '20-min online survey',
       tags: [{text:'Any age',cls:'tag-green'},{text:'Fitness interest',cls:'tag-blue'},{text:'Online',cls:'tag-gray'}],
       match: 88, spots: 100, filled: 67, format: 'online', featured: false,
       matchReason: 'You listed fitness & wellness as an interest — Nike is looking for people who buy athletic gear.',
@@ -1645,7 +1645,7 @@
     {
       id: 5, company: 'Tesco', title: 'Online grocery delivery experience',
       desc: 'Talk us through your experience using grocery delivery apps. Do you use Tesco, Ocado, or others?',
-      pay: 30, payType: 'per session', duration: '30-min video call',
+      pay: 300, payType: 'per session', duration: '30-min video call',
       tags: [{text:'Grocery shopper',cls:'tag-green'},{text:'Has children',cls:'tag-amber'},{text:'Online delivery user',cls:'tag-blue'}],
       match: 85, spots: 15, filled: 11, format: 'online', featured: false,
       matchReason: 'You have children and shop online — a key profile for Tesco\'s family grocery research.',
@@ -1654,7 +1654,7 @@
     {
       id: 6, company: 'Boots', title: 'Beauty & skincare loyalty programme research',
       desc: 'In-person 75-minute session at Boots HQ, Manchester. Discuss your experience with loyalty schemes and beauty buying.',
-      pay: 65, payType: 'per session', duration: '75-min in-person, Manchester',
+      pay: 650, payType: 'per session', duration: '75-min in-person, Stockholm',
       tags: [{text:'Women 25–50',cls:'tag-green'},{text:'Beauty shopper',cls:'tag-blue'},{text:'Manchester area',cls:'tag-amber'},{text:'4.0★+',cls:'tag-gray'}],
       match: 99, spots: 6, filled: 3, format: 'in-person', featured: true,
       matchReason: 'Perfect match: you\'re a woman interested in beauty, based in Manchester, with a 4.8★ rating. This study was built for someone like you.',
@@ -2062,7 +2062,7 @@
         : `${rating.toFixed(1)} overall rating`;
 
       // ── Stat cards ──
-      document.getElementById('stat-earned').textContent     = `£${totalEarned}`;
+      document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
       document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
 
       document.getElementById('stat-studies').textContent     = studiesDone;
@@ -2088,7 +2088,7 @@
       const statsLineParts = [];
       if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
       statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
-      statsLineParts.push(`£${totalEarned} earned`);
+      statsLineParts.push(`${totalEarned} kr earned`);
       document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
 
       // ── Personal details ──
@@ -2196,9 +2196,9 @@
 
     document.getElementById('edit-frequency').value = _contribData?.frequency || 'once_a_month';
 
-    const minpay = _contribData?.min_pay_per_hour || 25;
+    const minpay = _contribData?.min_pay_per_hour || 250;
     document.getElementById('edit-minpay').value = minpay;
-    document.getElementById('edit-payval').textContent = '£' + minpay;
+    document.getElementById('edit-payval').textContent = minpay + ' kr';
 
     document.getElementById('edit-additional_notes').value = _contribData?.additional_notes || '';
   }
@@ -2276,11 +2276,7 @@
       const totalPaid = paid.reduce((s, p) => s + (p.amount || 0), 0);
 
       // Update dashboard earnings stat from real payment data
-      const lang = localStorage.getItem('vetd_lang') || 'en';
-      const fmtEarned = lang === 'sv'
-        ? `${Math.round(totalPaid / 100 * 13)} kr`
-        : `£${Math.round(totalPaid / 100)}`;
-      document.getElementById('stat-earned').textContent = fmtEarned;
+      document.getElementById('stat-earned').textContent = formatCurrency(totalPaid);
       document.getElementById('stat-earned-sub').textContent = totalPaid === 0
         ? 'Complete a study to start earning'
         : `${paid.length} paid ${paid.length === 1 ? 'study' : 'studies'}`;
@@ -2312,8 +2308,7 @@
       return;
     }
 
-    const lang = localStorage.getItem('vetd_lang') || 'en';
-    const fmt = amt => lang === 'sv' ? `${Math.round(amt / 100 * 13)} kr` : `£${Math.round(amt / 100)}`;
+    const fmt = amt => formatCurrency(amt);
 
     const pending = payments.filter(p => p.status !== 'paid');
     const paid    = payments.filter(p => p.status === 'paid');
@@ -2641,9 +2636,15 @@
     }
   };
 
-  function fmtPay(pay) {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
-    return lang === 'sv' ? `${pay * 13} kr` : `£${pay}`;
+  // FUTURE: currency should be determined by user country from their profile.
+  // When launching in multiple countries, add a currencies config and convert between them.
+  // For now, hardcoded to SEK.
+  function formatCurrency(oere) {
+    return `${Math.round(oere / 100)} kr`;
+  }
+
+  function fmtPay(sek) {
+    return `${sek} kr`;
   }
 
   function setLang(lang) {
