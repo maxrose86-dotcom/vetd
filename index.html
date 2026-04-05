@@ -594,6 +594,13 @@
   .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
   .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
   .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+  .field-error{font-size:12px;color:var(--coral);margin-top:4px;display:none}
+  .field-error.show{display:block}
+  #cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+  #cookie-banner a{color:var(--green,#00C47A);text-decoration:underline}
+  .cookie-btns{display:flex;gap:8px;flex-shrink:0}
+  .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+  .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 </style>
 </head>
 <body>
@@ -659,11 +666,16 @@
           <p data-i18n="ob_step1_sub">Let's get the basics set up. Takes about 2 minutes.</p>
         </div>
         <div class="field-row">
-          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" placeholder="Sarah" value=""></div>
-          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" placeholder="Johnson" value=""></div>
+          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" placeholder="Sarah" value="" maxlength="50"><div class="field-error" id="err-fname"></div></div>
+          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" placeholder="Johnson" value="" maxlength="50"></div>
         </div>
-        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" placeholder="sarah@example.com"></div>
-        <div class="field"><label data-i18n="ob_pass_label">Password</label><input type="password" id="password" data-i18n-ph="ob_pass_ph" placeholder="At least 8 characters"></div>
+        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" placeholder="sarah@example.com" maxlength="254"><div class="field-error" id="err-email"></div></div>
+        <div class="field"><label data-i18n="ob_pass_label">Password</label><input type="password" id="password" data-i18n-ph="ob_pass_ph" placeholder="At least 8 characters" maxlength="128" oninput="checkPasswordStrength(this.value)"><div id="pw-strength-bar" style="height:3px;border-radius:2px;background:#E5E7EB;margin-top:6px;overflow:hidden;display:none"><div id="pw-strength-fill" style="height:100%;width:0;border-radius:2px;transition:width 0.2s,background 0.2s"></div></div><div id="pw-strength-label" style="font-size:11px;margin-top:3px;display:none"></div><div class="field-error" id="err-password"></div></div>
+        <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-top:1rem">
+          <div style="font-size:32px;margin-bottom:8px">📧</div>
+          <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px">Check your email</h3>
+          <p style="font-size:13px;color:#374151;line-height:1.5">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
+        </div>
         <div class="field">
           <label>How did you hear about us?</label>
           <select id="referral">
@@ -701,7 +713,7 @@
             <label>Country</label>
             <select id="country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
           </div>
-          <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester"></div>
+          <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester" maxlength="100"></div>
         </div>
         <div class="field">
           <label>Employment status</label>
@@ -852,7 +864,7 @@
         </div>
         <div class="field">
           <label>Anything else you'd like us to know?</label>
-          <textarea id="additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..."></textarea>
+          <textarea id="additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(4)">← Back</button>
@@ -1048,6 +1060,12 @@
               <p style="font-size:13px;color:var(--gray-400);font-weight:300">Loading…</p>
             </div>
           </div>
+
+          <div class="profile-section" style="grid-column:1/-1;border-top:1px solid var(--gray-100);padding-top:1.5rem;margin-top:0.5rem">
+            <h3 style="color:var(--coral)">Danger zone</h3>
+            <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Delete my account</button>
+          </div>
         </div>
       </div>
 
@@ -1085,6 +1103,20 @@
   </div>
 </div>
 
+<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:400px;width:calc(100% - 32px);text-align:center">
+    <div style="font-size:32px;margin-bottom:1rem">⚠️</div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">Delete your account?</h2>
+    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.5">This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.</p>
+    <p style="font-size:13px;margin-bottom:1.5rem">Type <strong>DELETE</strong> to confirm:</p>
+    <input id="delete-confirm-input" type="text" placeholder="Type DELETE" style="width:100%;padding:10px;border:1.5px solid #E5E7EB;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;text-align:center;margin-bottom:1rem">
+    <div style="display:flex;gap:10px">
+      <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px">Cancel</button>
+      <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600">Delete account</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1100,6 +1132,12 @@
     }
   } catch(e) {
     console.warn('Supabase SDK not loaded — running in demo mode');
+  }
+
+  // ─── XSS HELPER ──────────────────────────────────────────
+  function esc(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
   }
 
   // ─── HELPERS ─────────────────────────────────────────────
@@ -1130,23 +1168,95 @@
     }
   }
 
+  // ─── SIGN-UP RATE LIMITING ──────────────────────────────
+  let signupRateLimited = false;
+
+  // ─── PASSWORD STRENGTH ──────────────────────────────────
+  function checkPasswordStrength(val) {
+    const bar   = document.getElementById('pw-strength-bar');
+    const fill  = document.getElementById('pw-strength-fill');
+    const label = document.getElementById('pw-strength-label');
+    if (!val) { bar.style.display='none'; label.style.display='none'; return; }
+    bar.style.display='block'; label.style.display='block';
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const levels = [
+      { label:'Too short', color:'#DC2626', width:'20%' },
+      { label:'Weak',      color:'#DC2626', width:'30%' },
+      { label:'Fair',      color:'#B45309', width:'55%' },
+      { label:'Good',      color:'#2563EB', width:'75%' },
+      { label:'Strong',    color:'#00C47A', width:'100%'},
+      { label:'Very strong',color:'#00C47A',width:'100%'},
+    ];
+    const l = levels[Math.min(score, 5)];
+    fill.style.width = l.width;
+    fill.style.background = l.color;
+    label.textContent = l.label;
+    label.style.color = l.color;
+  }
+
   // ─── STEP 1: SIGN UP ────────────────────────────────────
   async function signUpUser() {
+    if (signupRateLimited) return false;
+
     const fname    = document.getElementById('fname').value.trim();
     const lname    = document.getElementById('lname').value.trim();
     const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const referral = document.getElementById('referral').value || null;
 
-    // Validation
-    if (!fname || !lname) { showToast('Please enter your name', true); return false; }
-    if (!email)           { showToast('Please enter your email', true); return false; }
-    if (password.length < 8) { showToast('Password must be at least 8 characters', true); return false; }
+    // Clear previous inline errors
+    ['err-fname','err-email','err-password'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = ''; el.classList.remove('show'); }
+    });
 
-    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    // Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let valid = true;
+
+    if (!fname) {
+      const el = document.getElementById('err-fname');
+      if (el) { el.textContent = 'Please enter your first name'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (!email) {
+      const el = document.getElementById('err-email');
+      if (el) { el.textContent = 'Please enter your email address'; el.classList.add('show'); }
+      valid = false;
+    } else if (!emailRegex.test(email)) {
+      const el = document.getElementById('err-email');
+      if (el) { el.textContent = 'Please enter a valid email address'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (password.length < 8) {
+      const el = document.getElementById('err-password');
+      if (el) { el.textContent = 'Password must be at least 8 characters'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (!valid) return false;
+
+    if (!db) {
+      // Demo mode — show confirmation message
+      document.getElementById('email-confirm-msg').style.display = 'block';
+      const formEls = document.querySelectorAll('#step-1 .field-row, #step-1 .field, #step-1 .nav-buttons');
+      formEls.forEach(el => el.style.display = 'none');
+      return false;
+    }
 
     const btn = document.querySelector('#step-1 .btn-next');
     setLoading(btn, true);
+
+    // Rate limit
+    signupRateLimited = true;
+    setTimeout(() => { signupRateLimited = false; }, 3000);
 
     try {
       const { data, error } = await db.auth.signUp({
@@ -1164,18 +1274,17 @@
 
       if (error) throw error;
 
-      // Update referral source on contributor row (trigger already created it)
-      if (referral) {
-        await db.from('contributors').update({ referral_source: referral }).eq('id', data.user.id);
-      }
-
-      showToast('Account created!');
+      // Show email confirmation message instead of advancing
+      document.getElementById('email-confirm-msg').style.display = 'block';
+      const formEls = document.querySelectorAll('#step-1 .field-row, #step-1 .field, #step-1 .nav-buttons');
+      formEls.forEach(el => el.style.display = 'none');
       setLoading(btn, false);
-      return true;
+      return false;
     } catch (err) {
       console.error('Sign-up error:', err);
       showToast(err.message || 'Sign-up failed', true);
       setLoading(btn, false);
+      signupRateLimited = false;
       return false;
     }
   }
@@ -1444,23 +1553,23 @@
       return;
     }
     container.innerHTML = subset.map(job => `
-      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${job.id}')">
+      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
         ${job.featured ? '<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">★ Top match for you</div>' : ''}
         <div class="job-header">
           <div class="job-company">
-            <div class="company-badge">${job.company}</div>
-            <div><div class="job-company-name">${job.company}</div><div class="job-title">${job.title}</div></div>
+            <div class="company-badge">${esc(job.company)}</div>
+            <div><div class="job-company-name">${esc(job.company)}</div><div class="job-title">${esc(job.title)}</div></div>
           </div>
           <div class="job-pay">
             <div class="pay-amount">${fmtPay(job.pay)}</div>
-            <div class="pay-type">${job.payType}</div>
+            <div class="pay-type">${esc(job.payType)}</div>
           </div>
         </div>
-        <div class="job-desc">${job.desc}</div>
-        <div class="job-tags">${job.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('')}</div>
+        <div class="job-desc">${esc(job.desc)}</div>
+        <div class="job-tags">${job.tags.map(t => `<span class="tag ${esc(t.cls)}">${esc(t.text)}</span>`).join('')}</div>
         <div class="job-footer">
           <div>
-            <div class="job-meta">${job.duration} · ${job.spots - job.filled} spots left</div>
+            <div class="job-meta">${esc(job.duration)} · ${job.spots - job.filled} spots left</div>
             <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
@@ -1468,7 +1577,7 @@
               <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
               <div class="match-pct">${job.match}%</div>
             </div>
-            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${job.id}')">Apply</button>`}
+            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">Apply</button>`}
           </div>
         </div>
       </div>
@@ -2166,7 +2275,7 @@
   }
 
   function setLang(lang) {
-    localStorage.setItem('vetd_lang', lang);
+    if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
     // Switch toggle style based on current screen
@@ -2207,6 +2316,56 @@
       nav.classList.remove('open');
     }
   });
+
+  // ─── COOKIE BANNER ─────────────────────────────────────
+  (function initCookieBanner() {
+    const consent = localStorage.getItem('vetd_cookie_consent');
+    if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+  })();
+  function cookieChoice(accepted) {
+    localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
+    document.getElementById('cookie-banner').style.display = 'none';
+    if (!accepted) {
+      localStorage.removeItem('vetd_lang');
+    }
+  }
+
+  // ─── GDPR DELETE ACCOUNT ───────────────────────────────
+  function openDeleteModal() {
+    document.getElementById('delete-confirm-input').value = '';
+    document.getElementById('delete-modal').style.display = 'flex';
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').style.display = 'none';
+  }
+  async function confirmDeleteAccount() {
+    if (document.getElementById('delete-confirm-input').value !== 'DELETE') {
+      showToast('Please type DELETE to confirm', true);
+      return;
+    }
+    const btn = document.querySelector('#delete-modal button:last-child');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+      const { error } = await db.rpc('delete_contributor_data', { p_user_id: user.id });
+      if (error) throw error;
+      await db.auth.signOut();
+      window.location.href = 'login.html';
+    } catch(err) {
+      console.error('Delete account error:', err);
+      showToast('Could not delete account — contact support', true);
+      btn.disabled = false; btn.textContent = 'Delete account';
+    }
+  }
 </script>
+
+<div id="cookie-banner" style="display:none">
+  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <div class="cookie-btns">
+    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+  </div>
+</div>
 </body>
 </html>

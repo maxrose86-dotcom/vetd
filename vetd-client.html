@@ -298,6 +298,11 @@ textarea{resize:vertical;min-height:90px}
 .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(0,0,0,0.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(0,0,0,0.1);border-radius:100px;padding:3px;gap:2px}
 .lang-btn{background:none;border:none;cursor:pointer;color:rgba(0,0,0,0.35);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
 .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+#cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+#cookie-banner a{color:var(--green,#00C47A);text-decoration:underline}
+.cookie-btns{display:flex;gap:8px;flex-shrink:0}
+.cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+.cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 /* Dark sections override */
 #landing .lang-toggle,.landing-lang{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.18)}
 #landing .lang-btn{color:rgba(255,255,255,0.5)}
@@ -599,8 +604,8 @@ textarea{resize:vertical;min-height:90px}
 
             <div class="section-group">
               <h3>Study basics</h3>
-              <div class="field"><label>Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" oninput="updatePreview()"></div>
-              <div class="field"><label>Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." oninput="updatePreview()"></textarea></div>
+              <div class="field"><label>Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" oninput="updatePreview()" maxlength="200"></div>
+              <div class="field"><label>Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." oninput="updatePreview()" maxlength="2000"></textarea></div>
               <div class="field-row">
                 <div class="field"><label>Study format</label>
                   <select id="b-format" onchange="updatePreview()">
@@ -885,6 +890,12 @@ textarea{resize:vertical;min-height:90px}
     }
   } catch(e) { console.warn('Supabase not loaded'); }
 
+  // ─── XSS HELPER ─────────────────────────────────────────
+  function esc(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+
   // ─── AUTH SCREEN ────────────────────────────────────────
   function showAuthScreen(tab = 'signup') {
     document.getElementById('landing').classList.remove('active');
@@ -1098,12 +1109,12 @@ textarea{resize:vertical;min-height:90px}
         const payDisplay = s.pay_per_participant
           ? `£${Math.round(s.pay_per_participant / 100)}/person`
           : null;
-        const safeTitle = (s.title || 'Untitled study').replace(/'/g, "\\'");
+        const safeTitle = esc(s.title || 'Untitled study');
         return `
           <div class="study-row">
             <div class="study-row-header">
               <div class="study-title-group">
-                <h3>${s.title || 'Untitled study'}</h3>
+                <h3>${esc(s.title || 'Untitled study')}</h3>
                 <p>${[s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
               </div>
               <span class="badge ${badgeCls}">${label}</span>
@@ -1210,11 +1221,11 @@ textarea{resize:vertical;min-height:90px}
         }
 
         return `
-          <div class="applicant-row" id="approw-${a.id}">
-            <div class="applicant-av" style="background:${avColors[ci]};color:${avText[ci]}">${initials}</div>
+          <div class="applicant-row" id="approw-${esc(a.id)}">
+            <div class="applicant-av" style="background:${esc(avColors[ci])};color:${esc(avText[ci])}">${esc(initials)}</div>
             <div class="applicant-info">
-              <div class="applicant-name">${name}</div>
-              <div class="applicant-meta">${city} · ${rating}★ · ${tier} · ${studies} studies · Applied ${appliedDate}</div>
+              <div class="applicant-name">${esc(name)}</div>
+              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · Applied ${esc(appliedDate)}</div>
             </div>
             <div class="applicant-actions">${actions}</div>
           </div>`;
@@ -1296,10 +1307,22 @@ textarea{resize:vertical;min-height:90px}
   async function publishStudy() {
     const title  = document.getElementById('b-title').value.trim();
     const desc   = document.getElementById('b-desc').value.trim();
+    const spotsRaw = document.getElementById('b-spots').value;
+    const payRaw   = document.getElementById('b-pay').value;
     const format = document.getElementById('b-format').value;
+
+    // Validation before DB insert
+    if (!title) { showToast('Please enter a study title', true); return; }
+    if (title.length > 200) { showToast('Study title must be 200 characters or fewer', true); return; }
+    if (!desc) { showToast('Please enter a study description', true); return; }
+    if (desc.length > 2000) { showToast('Description must be 2000 characters or fewer', true); return; }
+    const payNum = parseFloat(payRaw);
+    if (!payRaw || isNaN(payNum) || payNum <= 0) { showToast('Pay per person must be a positive number', true); return; }
+    const spotsNum = parseInt(spotsRaw, 10);
+    if (!spotsRaw || isNaN(spotsNum) || spotsNum < 1 || !Number.isInteger(spotsNum)) { showToast('Spots must be a positive whole number (at least 1)', true); return; }
     const length = document.getElementById('b-length').value;
-    const spots  = parseInt(document.getElementById('b-spots').value) || 10;
-    const pay    = parseInt(document.getElementById('b-pay').value)   || 0;
+    const spots  = spotsNum;
+    const pay    = Math.round(payNum);
     const start  = document.getElementById('b-start').value || null;
     const close  = document.getElementById('b-close').value || null;
     const sq1    = document.getElementById('b-sq1').value.trim()      || null;
@@ -1426,19 +1449,19 @@ textarea{resize:vertical;min-height:90px}
 
         return `
           <div class="contrib-card">
-            <div class="avatar ${avCls}">${initials}</div>
+            <div class="avatar ${esc(avCls)}">${esc(initials)}</div>
             <div style="flex:1">
               <div style="display:flex;justify-content:space-between;align-items:flex-start">
                 <div>
-                  <div class="contrib-name">${dispName}</div>
-                  <div class="contrib-meta">${[age, loc, `${studies} studies`].filter(Boolean).join(' · ')}</div>
-                  <div class="star-row">★ ${rating} · <span class="badge ${badgeCls}">${tierLabel}</span></div>
+                  <div class="contrib-name">${esc(dispName)}</div>
+                  <div class="contrib-meta">${esc([age, loc, `${studies} studies`].filter(Boolean).join(' · '))}</div>
+                  <div class="star-row">★ ${esc(rating)} · <span class="badge ${esc(badgeCls)}">${esc(tierLabel)}</span></div>
                 </div>
               </div>
-              ${tags.length ? `<div class="tags-row">${tags.map(t=>`<span class="tag tag-gray">${t}</span>`).join('')}</div>` : ''}
+              ${tags.length ? `<div class="tags-row">${tags.map(t=>`<span class="tag tag-gray">${esc(t)}</span>`).join('')}</div>` : ''}
             </div>
             <div style="margin-left:8px;flex-shrink:0">
-              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${dispName}!')">Invite</button>
+              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${esc(dispName)}!')">Invite</button>
             </div>
           </div>`;
       }).join('');
@@ -1941,7 +1964,7 @@ textarea{resize:vertical;min-height:90px}
   };
 
   function setLang(lang) {
-    localStorage.setItem('vetd_lang', lang);
+    if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -1955,6 +1978,19 @@ textarea{resize:vertical;min-height:90px}
   }
 
   setLang(localStorage.getItem('vetd_lang') || 'en');
+
+  // ─── COOKIE BANNER ─────────────────────────────────────
+  (function initCookieBanner() {
+    const consent = localStorage.getItem('vetd_cookie_consent');
+    if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+  })();
+  function cookieChoice(accepted) {
+    localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
+    document.getElementById('cookie-banner').style.display = 'none';
+    if (!accepted) {
+      localStorage.removeItem('vetd_lang');
+    }
+  }
 
   // ─── SESSION CHECK ──────────────────────────────────────
   (async function checkSession() {
@@ -1977,5 +2013,13 @@ textarea{resize:vertical;min-height:90px}
     if (overlay) overlay.classList.toggle('open');
   }
 </script>
+
+<div id="cookie-banner" style="display:none">
+  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <div class="cookie-btns">
+    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+  </div>
+</div>
 </body>
 </html>

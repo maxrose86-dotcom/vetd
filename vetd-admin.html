@@ -227,6 +227,11 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
 .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
 .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+#cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+#cookie-banner a{color:var(--green,#00C47A);text-decoration:underline}
+.cookie-btns{display:flex;gap:8px;flex-shrink:0}
+.cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+.cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 
 /* ── MOBILE RESPONSIVENESS ── */
 #adm-hamburger{
@@ -842,6 +847,12 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <div class="toast" id="toast"></div>
 
 <script>
+// ─── XSS HELPER ──────────────────────────────────────────────
+function esc(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
 // ─── SUPABASE ────────────────────────────────────────────────
 const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
@@ -1011,18 +1022,16 @@ async function loadContributors() {
       const tLabel   = tierLabels[tier]    || tier;
       const rLabel   = (risk === 'low' || risk === 'ok') ? 'Clean' : (risk === 'medium' || risk === 'med') ? 'Watch' : 'High risk';
       const rClass   = (risk === 'low' || risk === 'ok') ? 'risk-ok' : (risk === 'medium' || risk === 'med') ? 'risk-med' : 'risk-high';
-      const safeName = name.replace(/'/g, "\\'");
-
       return `<div class="contrib-row">
-        <div class="av ${av}">${initials}</div>
+        <div class="av ${esc(av)}">${esc(initials)}</div>
         <div class="contrib-info">
-          <div class="contrib-name">${name}</div>
-          <div class="contrib-meta">${city} · ${studies} studies · ${flags} flag${flags !== 1 ? 's' : ''}</div>
+          <div class="contrib-name">${esc(name)}</div>
+          <div class="contrib-meta">${esc(city)} · ${studies} studies · ${flags} flag${flags !== 1 ? 's' : ''}</div>
         </div>
-        <span class="badge ${tClass}">${tLabel}</span>
-        <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:500;width:50px;text-align:center">${rating}★</span>
-        <div class="risk-pill ${rClass}">${rLabel}</div>
-        <button class="btn" style="padding:5px 12px;font-size:11px" onclick="openAction('${safeName}','','review')">View</button>
+        <span class="badge ${esc(tClass)}">${esc(tLabel)}</span>
+        <span style="font-family:var(--mono);font-size:13px;color:var(--amber);font-weight:500;width:50px;text-align:center">${esc(rating)}★</span>
+        <div class="risk-pill ${esc(rClass)}">${esc(rLabel)}</div>
+        <button class="btn" style="padding:5px 12px;font-size:11px" onclick="openAction('${esc(name)}','','review')">View</button>
       </div>`;
     }).join('');
   } catch(err) {
@@ -1092,8 +1101,8 @@ async function loadPayouts() {
 
     tbody.innerHTML = pending.map(p => {
       const prof  = profileMap[p.contributor_id] || {};
-      const name  = [prof.first_name, prof.last_name].filter(Boolean).join(' ') || 'Unknown';
-      const study = studyTitleMap[p.application_id] || '—';
+      const name  = esc([prof.first_name, prof.last_name].filter(Boolean).join(' ') || 'Unknown');
+      const study = esc(studyTitleMap[p.application_id] || '—');
       const date  = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '—';
       const statusColor = p.status === 'processing' ? 'color:var(--blue)' : 'color:var(--amber)';
       return `<tr>
@@ -1307,7 +1316,7 @@ const LANG = {
 };
 
 function setLang(lang) {
-  localStorage.setItem('vetd_lang', lang);
+  if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
   document.getElementById('lb-en').classList.toggle('active', lang === 'en');
   document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -1322,6 +1331,19 @@ function setLang(lang) {
 
 setLang(localStorage.getItem('vetd_lang') || 'en');
 
+// ─── COOKIE BANNER ──────────────────────────────────────────
+(function initCookieBanner() {
+  const consent = localStorage.getItem('vetd_cookie_consent');
+  if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+})();
+function cookieChoice(accepted) {
+  localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
+  document.getElementById('cookie-banner').style.display = 'none';
+  if (!accepted) {
+    localStorage.removeItem('vetd_lang');
+  }
+}
+
 // ─── BOOT ─────────────────────────────────────────────────────
 init();
 
@@ -1333,5 +1355,13 @@ function toggleAdminNav() {
   if (overlay) overlay.classList.toggle('open');
 }
 </script>
+
+<div id="cookie-banner" style="display:none">
+  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <div class="cookie-btns">
+    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+  </div>
+</div>
 </body>
 </html>

@@ -253,6 +253,13 @@
   .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
   .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
   .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+  .field-error{font-size:12px;color:var(--coral);margin-top:4px;display:none}
+  .field-error.show{display:block}
+  #cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+  #cookie-banner a{color:var(--green,#00C47A);text-decoration:underline}
+  .cookie-btns{display:flex;gap:8px;flex-shrink:0}
+  .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+  .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 </style>
 </head>
 <body>
@@ -272,11 +279,13 @@
 
     <div class="field">
       <label data-i18n="login_email_label">Email address</label>
-      <input type="email" id="login-email" placeholder="you@example.com">
+      <input type="email" id="login-email" placeholder="you@example.com" maxlength="254">
+      <div class="field-error" id="err-login-email"></div>
     </div>
     <div class="field">
       <label data-i18n="login_pass_label">Password</label>
-      <input type="password" id="login-password" data-i18n-ph="login_pass_ph" placeholder="Your password">
+      <input type="password" id="login-password" data-i18n-ph="login_pass_ph" placeholder="Your password" maxlength="128">
+      <div class="field-error" id="err-login-password"></div>
       <a class="forgot-link" onclick="showView('forgot')" data-i18n="login_forgot">Forgot password?</a>
     </div>
 
@@ -337,20 +346,56 @@
     });
   }
 
+  // ─── XSS HELPER ────────────────────────────────────────────
+  function esc(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+
+  // ─── LOGIN RATE LIMITING ────────────────────────────────────
+  let loginRateLimited = false;
+
   // ─── LOGIN ──────────────────────────────────────────────
   async function handleLogin() {
+    if (loginRateLimited) return;
+
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errorEl  = document.getElementById('login-error');
     const btn      = document.getElementById('btn-login');
+    const emailErr = document.getElementById('err-login-email');
+    const passErr  = document.getElementById('err-login-password');
 
+    // Clear previous errors
     errorEl.classList.remove('show');
+    emailErr.classList.remove('show');
+    passErr.classList.remove('show');
 
-    if (!email || !password) {
-      errorEl.textContent = 'Please enter your email and password';
-      errorEl.classList.add('show');
-      return;
+    // Client-side validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let valid = true;
+
+    if (!email) {
+      emailErr.textContent = 'Please enter your email address';
+      emailErr.classList.add('show');
+      valid = false;
+    } else if (!emailRegex.test(email)) {
+      emailErr.textContent = 'Please enter a valid email address';
+      emailErr.classList.add('show');
+      valid = false;
     }
+
+    if (!password) {
+      passErr.textContent = 'Please enter your password';
+      passErr.classList.add('show');
+      valid = false;
+    } else if (password.length < 8) {
+      passErr.textContent = 'Password must be at least 8 characters';
+      passErr.classList.add('show');
+      valid = false;
+    }
+
+    if (!valid) return;
 
     if (!db) {
       // Demo mode — just redirect
@@ -358,8 +403,19 @@
       return;
     }
 
+    const originalText = btn.textContent;
     btn.textContent = 'Signing in…';
     btn.disabled = true;
+
+    // Apply rate limiting
+    loginRateLimited = true;
+    setTimeout(() => {
+      loginRateLimited = false;
+      if (btn.disabled) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }, 3000);
 
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
@@ -380,7 +436,7 @@
     } catch (err) {
       errorEl.textContent = err.message || 'Sign in failed — check your email and password';
       errorEl.classList.add('show');
-      btn.textContent = 'Sign in';
+      btn.textContent = originalText;
       btn.disabled = false;
     }
   }
@@ -466,7 +522,7 @@
   };
 
   function setLang(lang) {
-    localStorage.setItem('vetd_lang', lang);
+    if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -481,6 +537,19 @@
 
   setLang(localStorage.getItem('vetd_lang') || 'en');
 
+  // ─── COOKIE BANNER ─────────────────────────────────────────
+  (function initCookieBanner() {
+    const consent = localStorage.getItem('vetd_cookie_consent');
+    if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+  })();
+  function cookieChoice(accepted) {
+    localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
+    document.getElementById('cookie-banner').style.display = 'none';
+    if (!accepted) {
+      localStorage.removeItem('vetd_lang');
+    }
+  }
+
   // ─── ENTER KEY SUPPORT ─────────────────────────────────
   document.getElementById('login-password').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') handleLogin();
@@ -492,5 +561,13 @@
     if (e.key === 'Enter') handleForgot();
   });
 </script>
+
+<div id="cookie-banner" style="display:none">
+  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <div class="cookie-btns">
+    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+  </div>
+</div>
 </body>
 </html>
