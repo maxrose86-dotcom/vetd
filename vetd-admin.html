@@ -403,33 +403,33 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <div class="stat g"><div class="stat-label" data-i18n="adm_stat_contributors">Total contributors</div><div class="stat-num" id="stat-contributors">—</div><div class="stat-sub up" id="stat-contributors-sub"> </div></div>
     <div class="stat b"><div class="stat-label" data-i18n="adm_stat_studies">Active studies</div><div class="stat-num" id="stat-active-studies">—</div><div class="stat-sub" id="stat-studies-sub"> </div></div>
     <div class="stat a"><div class="stat-label" data-i18n="adm_stat_companies">Total companies</div><div class="stat-num" id="stat-companies">—</div><div class="stat-sub">registered clients</div></div>
-    <div class="stat r"><div class="stat-label" data-i18n="adm_stat_flags">Flags for review</div><div class="stat-num">5</div><div class="stat-sub danger">3 high priority</div></div>
+    <div class="stat r"><div class="stat-label" data-i18n="adm_stat_flags">Flags for review</div><div class="stat-num" id="stat-flags-count">—</div><div class="stat-sub danger" id="stat-flags-sub"> </div></div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem">
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Contributor tier breakdown</div>
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="score-bar-row"><span class="score-label">Elite (4.7–5.0★)</span><div class="score-track"><div class="score-fill" style="width:31%;background:var(--green)"></div></div><span class="score-val">2,611</span></div>
-        <div class="score-bar-row"><span class="score-label">Verified (4.0–4.6★)</span><div class="score-track"><div class="score-fill" style="width:44%;background:var(--blue)"></div></div><span class="score-val">3,705</span></div>
-        <div class="score-bar-row"><span class="score-label">Standard (3.0–3.9★)</span><div class="score-track"><div class="score-fill" style="width:18%;background:var(--amber)"></div></div><span class="score-val">1,516</span></div>
-        <div class="score-bar-row"><span class="score-label">Restricted (&lt;3.0★)</span><div class="score-track"><div class="score-fill" style="width:7%;background:var(--coral)"></div></div><span class="score-val">589</span></div>
+        <div class="score-bar-row"><span class="score-label">Elite (4.7–5.0★)</span><div class="score-track"><div id="tier-bar-elite" class="score-fill" style="width:0%;background:var(--green)"></div></div><span class="score-val" id="tier-count-elite">—</span></div>
+        <div class="score-bar-row"><span class="score-label">Verified (4.0–4.6★)</span><div class="score-track"><div id="tier-bar-verified" class="score-fill" style="width:0%;background:var(--blue)"></div></div><span class="score-val" id="tier-count-verified">—</span></div>
+        <div class="score-bar-row"><span class="score-label">Standard (3.0–3.9★)</span><div class="score-track"><div id="tier-bar-standard" class="score-fill" style="width:0%;background:var(--amber)"></div></div><span class="score-val" id="tier-count-standard">—</span></div>
+        <div class="score-bar-row"><span class="score-label">Restricted (&lt;3.0★)</span><div class="score-track"><div id="tier-bar-restricted" class="score-fill" style="width:0%;background:var(--coral)"></div></div><span class="score-val" id="tier-count-restricted">—</span></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Platform health (7d)</div>
       <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Completion rate</span><span style="color:var(--green);font-weight:500;font-family:var(--mono)">94.2%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">No-show rate</span><span style="color:var(--amber);font-weight:500;font-family:var(--mono)">2.1%</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Avg fill time</span><span style="color:var(--text);font-weight:500;font-family:var(--mono)">31h</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Fraud flags raised</span><span style="color:var(--coral);font-weight:500;font-family:var(--mono)">5</span></div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text2)">Disputes open</span><span style="color:var(--amber);font-weight:500;font-family:var(--mono)">2</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Completion rate</span><span style="color:var(--text3);font-weight:500;font-family:var(--mono)" id="health-completion">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">No-show rate</span><span style="color:var(--text3);font-weight:500;font-family:var(--mono)" id="health-noshow">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Avg fill time</span><span style="color:var(--text3);font-weight:500;font-family:var(--mono)" id="health-filltime">—</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text2)">Fraud flags raised</span><span style="color:var(--text3);font-weight:500;font-family:var(--mono)" id="health-flags">0</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--text2)">Disputes open</span><span style="color:var(--text3);font-weight:500;font-family:var(--mono)" id="health-disputes">0</span></div>
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Revenue (this month)</div>
-      <div style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">183 400 kr</div>
-      <div style="font-size:11px;color:var(--green);font-family:var(--mono);margin-bottom:1rem">↑ 34% vs last month</div>
+      <div id="dash-revenue" style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">—</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:1rem" id="dash-revenue-sub">Platform fees · this month</div>
       <div class="mini-chart" id="rev-chart"></div>
       <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Daily commission · last 14 days</div>
     </div>
@@ -438,24 +438,15 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Recent flag alerts</div>
-      <div class="flag-card high" style="margin-bottom:8px">
-        <div class="flag-icon fi-red">🚨</div>
-        <div class="flag-body"><div class="flag-title">Profile inconsistency detected</div><div class="flag-desc">Jamie R. — claimed age 22 but survey responses suggest 40+. Demographic mismatch score: 87%.</div><div class="flag-meta">3 mins ago · auto-detected</div></div>
-      </div>
-      <div class="flag-card med">
-        <div class="flag-icon fi-amber">⚡</div>
-        <div class="flag-body"><div class="flag-title">Unusually fast survey completion</div><div class="flag-desc">User #4821 completed 15-min survey in 94 seconds. Suspected click-through.</div><div class="flag-meta">18 mins ago · auto-detected</div></div>
-      </div>
-      <button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="go('fraud', document.querySelectorAll('.sb-item')[5])">View all 5 flags →</button>
+      <div id="dash-flag-alerts" style="color:var(--text3);font-size:13px;font-family:var(--mono);padding:1rem 0;text-align:center">Loading…</div>
+      <button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="go('fraud', document.querySelectorAll('.sb-item')[5])">Go to fraud detection →</button>
     </div>
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Studies needing attention</div>
       <table class="tbl">
         <thead><tr><th>Study</th><th>Status</th><th>Fill</th></tr></thead>
-        <tbody>
-          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Tesco grocery UX</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Closes in 6h</div></td><td><span class="badge ba">Urgent</span></td><td style="font-family:var(--mono)">3/15</td></tr>
-          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Nike activewear</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Stalled 48h</div></td><td><span class="badge ba">Stalled</span></td><td style="font-family:var(--mono)">12/50</td></tr>
-          <tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])"><td><strong style="color:var(--text)">Boots loyalty</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filling well</div></td><td><span class="badge bg">On track</span></td><td style="font-family:var(--mono)">4/6</td></tr>
+        <tbody id="studies-attention-body">
+          <tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -973,19 +964,100 @@ async function handleSignOut() {
 async function loadDashboardStats() {
   if (!db) return;
   try {
-    const [r1, r2, r3] = await Promise.all([
+    // ── Top-row counts ──────────────────────────────────────
+    const [r1, r2, r3, rElite, rVerified, rStandard, rRestricted] = await Promise.all([
       db.from('contributors').select('*', { count: 'exact', head: true }),
       db.from('studies').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       db.from('companies').select('*', { count: 'exact', head: true }),
+      db.from('contributors').select('*', { count: 'exact', head: true }).eq('tier', 'elite'),
+      db.from('contributors').select('*', { count: 'exact', head: true }).eq('tier', 'verified'),
+      db.from('contributors').select('*', { count: 'exact', head: true }).eq('tier', 'standard'),
+      db.from('contributors').select('*', { count: 'exact', head: true }).eq('tier', 'restricted'),
     ]);
 
     const totalContribs  = r1.count ?? 0;
     const activeStudies  = r2.count ?? 0;
     const totalCompanies = r3.count ?? 0;
 
-    document.getElementById('stat-contributors').textContent = totalContribs.toLocaleString();
-    document.getElementById('stat-active-studies').textContent = activeStudies;
-    document.getElementById('stat-companies').textContent = totalCompanies;
+    document.getElementById('stat-contributors').textContent    = totalContribs.toLocaleString();
+    document.getElementById('stat-active-studies').textContent  = activeStudies;
+    document.getElementById('stat-companies').textContent       = totalCompanies;
+    document.getElementById('stat-flags-count').textContent     = '0';
+    document.getElementById('stat-flags-sub').textContent       = 'no active flags';
+
+    // ── Tier breakdown ──────────────────────────────────────
+    const tiers = {
+      elite:      rElite.count      ?? 0,
+      verified:   rVerified.count   ?? 0,
+      standard:   rStandard.count   ?? 0,
+      restricted: rRestricted.count ?? 0,
+    };
+    const tierTotal = Object.values(tiers).reduce((s, n) => s + n, 0) || 1; // avoid /0
+    for (const [key, count] of Object.entries(tiers)) {
+      const pct = Math.round(count / tierTotal * 100);
+      const bar = document.getElementById(`tier-bar-${key}`);
+      const val = document.getElementById(`tier-count-${key}`);
+      if (bar) bar.style.width = pct + '%';
+      if (val) val.textContent = count.toLocaleString();
+    }
+
+    // ── Revenue (platform fees paid this calendar month) ────
+    const now        = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { data: feeRows } = await db
+      .from('payments')
+      .select('platform_fee')
+      .eq('status', 'paid')
+      .gte('paid_at', monthStart);
+    const revenueOere = (feeRows || []).reduce((s, p) => s + (p.platform_fee || 0), 0);
+    const revenueEl = document.getElementById('dash-revenue');
+    if (revenueEl) revenueEl.textContent = formatCurrency(revenueOere);
+
+    // ── Studies needing attention ───────────────────────────
+    const { data: activeStudyRows } = await db
+      .from('studies')
+      .select('id, title, spots, filled_spots, close_date, created_at')
+      .eq('status', 'active')
+      .order('close_date', { ascending: true, nullsFirst: false });
+
+    const tbody = document.getElementById('studies-attention-body');
+    if (tbody) {
+      const rows = (activeStudyRows || [])
+        .map(s => {
+          const spots  = s.spots || 0;
+          const filled = s.filled_spots || 0;
+          const pct    = spots > 0 ? filled / spots : 0;
+          const hoursLeft = s.close_date
+            ? (new Date(s.close_date) - now) / 36e5
+            : null;
+          const isUrgent  = hoursLeft !== null && hoursLeft < 24 && pct < 0.9;
+          const isStalled = !isUrgent && pct < 0.3;
+          return { s, spots, filled, pct, hoursLeft, isUrgent, isStalled };
+        })
+        .filter(r => r.isUrgent || r.isStalled)
+        .slice(0, 5);
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">All studies are on track</td></tr>';
+      } else {
+        tbody.innerHTML = rows.map(({ s, spots, filled, hoursLeft, isUrgent }) => {
+          const badge  = isUrgent ? '<span class="badge br">Urgent</span>' : '<span class="badge ba">Stalled</span>';
+          const subTxt = isUrgent && hoursLeft !== null
+            ? `Closes in ${Math.round(hoursLeft)}h`
+            : 'Low fill rate';
+          return `<tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])">
+            <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${subTxt}</div></td>
+            <td>${badge}</td>
+            <td style="font-family:var(--mono)">${filled}/${spots}</td>
+          </tr>`;
+        }).join('');
+      }
+    }
+
+    // ── Flag alerts (no flags table yet — show placeholder) ─
+    const flagEl = document.getElementById('dash-flag-alerts');
+    if (flagEl) flagEl.textContent = 'No active flags';
+
   } catch(err) {
     console.warn('Could not load dashboard stats:', err);
   }

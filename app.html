@@ -1701,7 +1701,9 @@
 
       jobs = studies.map(s => {
         const company    = s.companies?.name || 'Vetd client';
-        const pay        = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
+        const payRaw     = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
+        // Legacy studies stored in GBP pence round to 0 after /100 — show TBD instead
+        const pay        = payRaw > 0 ? payRaw : null;
         const spots      = s.spots || 0;
         const filled     = s.filled_spots || 0;
         const fmtLabel   = FORMAT_LABEL[s.format] || s.format || '';
@@ -2648,7 +2650,7 @@
   }
 
   function fmtPay(sek) {
-    return `${sek} kr`;
+    return sek != null ? `${sek} kr` : 'TBD';
   }
 
   function setLang(lang) {

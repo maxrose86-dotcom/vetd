@@ -982,9 +982,9 @@ textarea{resize:vertical;min-height:90px}
   async function ensureClientRecords(user) {
     if (!db || !user) return;
     try {
-      // Check if client row already exists
+      // Check if client row already exists (.maybeSingle returns null without error when no row found)
       const { data: existing } = await db
-        .from('clients').select('id').eq('id', user.id).single();
+        .from('clients').select('id').eq('id', user.id).maybeSingle();
       if (existing) return; // already set up
 
       // Read company name from metadata (stored during sign-up)
