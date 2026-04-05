@@ -1369,8 +1369,8 @@ textarea{resize:vertical;min-height:90px}
   let currentRatee = null; // { appId, contributorId, studyId, studyTitle, name }
 
   async function loadRateList() {
-    const list   = document.getElementById('rate-list');
-    const subEl  = document.getElementById('rate-page-sub');
+    const list  = document.getElementById('rate-list');
+    const subEl = document.getElementById('rate-page-sub');
     if (!db || !currentClientUser) {
       list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">No data — sign in to view.</p>';
       if (subEl) subEl.textContent = '';
@@ -1380,24 +1380,30 @@ textarea{resize:vertical;min-height:90px}
     list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading…</div>';
 
     try {
-      // Get all studies owned by this client
-      const { data: studies } = await db.from('studies').select('id, title').eq('created_by', currentClientUser.id);
+      // Step 1: get this client's studies
+      const { data: studies, error: studyErr } = await db
+        .from('studies')
+        .select('id, title')
+        .eq('created_by', currentClientUser.id);
+      if (studyErr) throw studyErr;
+      console.log('[loadRateList] studies:', studies);
+
       const studyIds = (studies || []).map(s => s.id);
       if (!studyIds.length) {
-        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">No completed participants to rate yet.</p></div>';
+        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><p style="font-size:14px;font-weight:300">No completed participants to rate yet.</p></div>';
         if (subEl) subEl.textContent = 'No participants to rate';
         return;
       }
+      const studyMap = Object.fromEntries(studies.map(s => [s.id, s.title]));
 
-      const studyMap = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
-
-      // Fetch completed applications
-      const { data: apps, error } = await db
+      // Step 2: fetch completed applications for those studies
+      const { data: apps, error: appErr } = await db
         .from('applications')
         .select('id, contributor_id, study_id')
         .in('study_id', studyIds)
         .eq('status', 'completed');
-      if (error) throw error;
+      if (appErr) throw appErr;
+      console.log('[loadRateList] completed apps:', apps);
 
       if (!apps || !apps.length) {
         list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">No completed participants to rate yet. Mark accepted participants as completed first.</p></div>';
@@ -1405,62 +1411,70 @@ textarea{resize:vertical;min-height:90px}
         return;
       }
 
-      // Fetch profiles by contributor IDs (same pattern used by loadContributors which works)
-      const contributorIds = [...new Set(apps.map(a => a.contributor_id).filter(Boolean))];
-      const { data: profileRows } = await db
+      // Step 3: check which apps already have ratings
+      const appIds = apps.map(a => a.id);
+      const { data: existingRatings } = await db
+        .from('ratings')
+        .select('application_id')
+        .in('application_id', appIds);
+      const ratedSet = new Set((existingRatings || []).map(r => r.application_id));
+      console.log('[loadRateList] already rated app IDs:', [...ratedSet]);
+
+      // Only show unrated — already-rated contributors disappear from the queue
+      const unrated = apps.filter(a => !ratedSet.has(a.id));
+      if (!unrated.length) {
+        if (subEl) subEl.textContent = 'All participants have been rated';
+        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">All participants have been rated.</p></div>';
+        return;
+      }
+
+      // Step 4: fetch profiles for unrated contributor IDs
+      // NOTE: requires profiles RLS policy "allow authenticated users to read all profiles"
+      //   CREATE POLICY "Authenticated users can read profiles"
+      //     ON profiles FOR SELECT TO authenticated USING (true);
+      const contributorIds = [...new Set(unrated.map(a => a.contributor_id).filter(Boolean))];
+      const { data: profileRows, error: profErr } = await db
         .from('profiles')
         .select('id, first_name, last_name')
         .in('id', contributorIds);
+      console.log('[loadRateList] contributorIds:', contributorIds);
+      console.log('[loadRateList] profileRows:', profileRows, 'error:', profErr);
+
       const profileMap = Object.fromEntries((profileRows || []).map(p => [p.id, p]));
 
-      // Check which ones already have ratings
-      const appIds = apps.map(a => a.id);
-      const { data: existingRatings } = await db.from('ratings').select('application_id').in('application_id', appIds);
-      const ratedSet = new Set((existingRatings || []).map(r => r.application_id));
-
-      const unrated = apps.filter(a => !ratedSet.has(a.id));
-      const rated   = apps.filter(a =>  ratedSet.has(a.id));
-
-      const pendingCount = unrated.length;
-      if (subEl) subEl.textContent = pendingCount > 0
-        ? `${pendingCount} participant${pendingCount !== 1 ? 's' : ''} awaiting your rating`
-        : 'All participants have been rated';
+      // Step 5: render
+      if (subEl) subEl.textContent = `${unrated.length} participant${unrated.length !== 1 ? 's' : ''} awaiting your rating`;
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
 
-      const allApps = [...unrated, ...rated];
-      list.innerHTML = allApps.map((a, i) => {
-        const p = profileMap[a.contributor_id] || {};
-        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
-        const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      list.innerHTML = unrated.map((a, i) => {
+        const p    = profileMap[a.contributor_id] || {};
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || `Contributor ${a.contributor_id.slice(0,8)}`;
+        const initials  = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
         const studyTitle = studyMap[a.study_id] || 'Study';
-        const isRated = ratedSet.has(a.id);
         const ci = i % avColors.length;
-        // Encode strings for safe use in data-* attributes (no double-quote injection)
         const safeTitle = studyTitle.replace(/"/g, '&quot;');
         const safeName  = name.replace(/"/g, '&quot;');
         return `
-          <div class="card" style="display:flex;align-items:center;gap:1rem;${isRated ? 'opacity:0.55' : ''}">
+          <div class="card" style="display:flex;align-items:center;gap:1rem">
             <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;background:${avColors[ci]};color:${avText[ci]}">${initials}</div>
             <div style="flex:1">
               <div style="font-size:15px;font-weight:600;margin-bottom:2px">${name}</div>
               <div style="font-size:12px;color:var(--gray-400)">${studyTitle}</div>
             </div>
-            ${isRated
-              ? `<div style="font-size:12px;font-weight:600;color:var(--green)">Rated ✓</div>`
-              : `<button class="btn-primary btn-green"
-                  data-app-id="${a.id}"
-                  data-contributor-id="${a.contributor_id}"
-                  data-study-id="${a.study_id}"
-                  data-study-title="${safeTitle}"
-                  data-name="${safeName}"
-                  onclick="openRateModalFromEl(this)">Rate now →</button>`
-            }
+            <button class="btn-primary btn-green"
+              data-app-id="${a.id}"
+              data-contributor-id="${a.contributor_id}"
+              data-study-id="${a.study_id}"
+              data-study-title="${safeTitle}"
+              data-name="${safeName}"
+              onclick="openRateModalFromEl(this)">Rate now →</button>
           </div>`;
       }).join('');
+
     } catch(err) {
-      console.error('loadRateList error:', err);
+      console.error('[loadRateList] error:', err);
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load participants.</div>';
     }
   }
@@ -1524,14 +1538,14 @@ textarea{resize:vertical;min-height:90px}
       const overall = +(Object.values(scores).reduce((a,b)=>a+b,0) / 5).toFixed(2);
       const comment = document.getElementById('rate-comment').value.trim() || null;
 
-      const { error: insertErr } = await db.from('ratings').insert({
+      const { error: insertErr } = await db.from('ratings').upsert({
         application_id: currentRatee.appId,
         rated_by:       currentClientUser.id,
         contributor_id: currentRatee.contributorId,
         ...scores,
         comment,
         created_at: new Date().toISOString()
-      });
+      }, { onConflict: 'application_id' });
       if (insertErr) throw insertErr;
 
       // Recalculate contributor's overall rating & tier
