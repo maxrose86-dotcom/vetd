@@ -1391,10 +1391,10 @@ textarea{resize:vertical;min-height:90px}
 
       const studyMap = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
 
-      // Fetch completed applications that don't have a rating yet
+      // Fetch completed applications
       const { data: apps, error } = await db
         .from('applications')
-        .select('id, contributor_id, study_id, contributors(rating, tier, profiles(first_name, last_name))')
+        .select('id, contributor_id, study_id')
         .in('study_id', studyIds)
         .eq('status', 'completed');
       if (error) throw error;
@@ -1404,6 +1404,14 @@ textarea{resize:vertical;min-height:90px}
         if (subEl) subEl.textContent = 'No participants to rate';
         return;
       }
+
+      // Fetch profiles separately (profiles shares PK with contributors — no FK for PostgREST to auto-join)
+      const contributorIds = [...new Set(apps.map(a => a.contributor_id).filter(Boolean))];
+      const { data: profileRows } = await db
+        .from('profiles')
+        .select('id, first_name, last_name')
+        .in('id', contributorIds);
+      const profileMap = Object.fromEntries((profileRows || []).map(p => [p.id, p]));
 
       // Check which ones already have ratings
       const appIds = apps.map(a => a.id);
@@ -1423,13 +1431,15 @@ textarea{resize:vertical;min-height:90px}
 
       const allApps = [...unrated, ...rated];
       list.innerHTML = allApps.map((a, i) => {
-        const c = a.contributors || {};
-        const p = c.profiles || {};
+        const p = profileMap[a.contributor_id] || {};
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
         const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
         const studyTitle = studyMap[a.study_id] || 'Study';
         const isRated = ratedSet.has(a.id);
         const ci = i % avColors.length;
+        // Encode strings for safe use in data-* attributes (no double-quote injection)
+        const safeTitle = studyTitle.replace(/"/g, '&quot;');
+        const safeName  = name.replace(/"/g, '&quot;');
         return `
           <div class="card" style="display:flex;align-items:center;gap:1rem;${isRated ? 'opacity:0.55' : ''}">
             <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;background:${avColors[ci]};color:${avText[ci]}">${initials}</div>
@@ -1439,7 +1449,13 @@ textarea{resize:vertical;min-height:90px}
             </div>
             ${isRated
               ? `<div style="font-size:12px;font-weight:600;color:var(--green)">Rated ✓</div>`
-              : `<button class="btn-primary btn-green" onclick="openRateModal('${a.id}','${a.contributor_id}','${a.study_id}',${JSON.stringify(studyTitle)},${JSON.stringify(name)})">Rate now →</button>`
+              : `<button class="btn-primary btn-green"
+                  data-app-id="${a.id}"
+                  data-contributor-id="${a.contributor_id}"
+                  data-study-id="${a.study_id}"
+                  data-study-title="${safeTitle}"
+                  data-name="${safeName}"
+                  onclick="openRateModalFromEl(this)">Rate now →</button>`
             }
           </div>`;
       }).join('');
@@ -1447,6 +1463,16 @@ textarea{resize:vertical;min-height:90px}
       console.error('loadRateList error:', err);
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load participants.</div>';
     }
+  }
+
+  function openRateModalFromEl(btn) {
+    openRateModal(
+      btn.dataset.appId,
+      btn.dataset.contributorId,
+      btn.dataset.studyId,
+      btn.dataset.studyTitle,
+      btn.dataset.name
+    );
   }
 
   function openRateModal(appId, contributorId, studyId, studyTitle, name) {
@@ -1648,7 +1674,7 @@ textarea{resize:vertical;min-height:90px}
     }
 
     body.innerHTML = notifs.map(n => `
-      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', ${JSON.stringify(n.link)})">
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
           <div class="notif-row-title">${n.title}</div>

@@ -1799,7 +1799,7 @@
     }
 
     const rows = notifs.map(n => `
-      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', ${JSON.stringify(n.link)})">
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
           <div class="notif-row-title">${n.title}</div>
@@ -1811,7 +1811,7 @@
 
     body.innerHTML = rows;
     if (dashList) dashList.innerHTML = notifs.slice(0, 5).map(n => `
-      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', ${JSON.stringify(n.link)})">
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
           <div class="notif-row-title">${n.title}</div>
