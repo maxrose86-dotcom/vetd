@@ -2168,6 +2168,12 @@
     document.getElementById('profile-edit-form').style.display = 'block';
     document.getElementById('edit-profile-btn').style.display = 'none';
 
+    // Always reset save button in case a previous save left it disabled
+    const saveBtn = document.getElementById('edit-save-btn');
+    saveBtn.textContent = 'Save changes';
+    saveBtn.disabled = false;
+    saveBtn.style.opacity = '1';
+
     document.getElementById('edit-fname').value = _profileData?.first_name || '';
     document.getElementById('edit-lname').value = _profileData?.last_name  || '';
 
@@ -2243,6 +2249,7 @@
       if (pErr) throw pErr;
       if (cErr) throw cErr;
 
+      setLoading(btn, false);
       cancelEdit();
       await loadUserProfile();
       showToast('Profile updated ✓');
