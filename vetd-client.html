@@ -1549,7 +1549,15 @@ textarea{resize:vertical;min-height:90px}
       if (insertErr) throw insertErr;
 
       // Recalculate contributor's overall rating & tier
-      await db.rpc('recalc_contributor_rating', { p_contributor_id: currentRatee.contributorId });
+      const rpcParams = { p_contributor_id: currentRatee.contributorId };
+      console.log('[submitRating] calling recalc_contributor_rating with:', rpcParams);
+      const { error: rpcErr } = await db.rpc('recalc_contributor_rating', rpcParams);
+      if (rpcErr) {
+        console.error('[submitRating] recalc_contributor_rating failed:', rpcErr);
+        // Non-fatal — rating was saved; recalc can be re-run manually
+      } else {
+        console.log('[submitRating] recalc_contributor_rating succeeded');
+      }
 
       // Notify the contributor
       await sendNotification(
