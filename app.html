@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetd — Contributor Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #00C47A;
+    --green-light: #DCFFF0;
+    --green-mid: #34D48E;
+    --green-dark: #009960;
+    --blue: #2563EB;
+    --blue-light: #EFF6FF;
+    --amber: #B45309;
+    --amber-light: #FEF3C7;
+    --coral: #DC2626;
+    --coral-light: #FEE2E2;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-400: #9CA3AF;
+    --gray-700: #374151;
+    --gray-900: #111111;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'Inter', sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+    animation: pageFadeIn 0.3s ease;
+  }
+  @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── LANDING ── */
+  #landing {
+    background: #111111;
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  #landing::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+  #landing::after {
+    content: '';
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,196,122,0.18) 0%, rgba(37,99,235,0.08) 50%, transparent 70%);
+    top: -300px; left: 50%; transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .landing-logo { font-family: var(--serif); font-size: 52px; letter-spacing: -1px; margin-bottom: 6px; }
+  .landing-logo span { color: var(--green-mid); }
+  .landing-tag { font-size: 14px; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 2.5rem; font-weight: 300; }
+  .landing-headline { font-family: var(--serif); font-size: 38px; line-height: 1.15; max-width: 480px; margin: 0 auto 1rem; }
+  .landing-headline em { color: var(--green-mid); font-style: italic; }
+  .landing-sub { color: rgba(255,255,255,0.6); max-width: 380px; margin: 0 auto 2.5rem; font-size: 15px; line-height: 1.6; font-weight: 300; }
+  .btn-primary {
+    display: inline-block; padding: 13px 32px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+    border: none; font-family: var(--sans); transition: all 0.15s;
+    box-shadow: 0 4px 14px rgba(0,196,122,0.35), 0 1px 3px rgba(0,0,0,0.15);
+    letter-spacing: -0.01em;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,196,122,0.45), 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .btn-secondary {
+    display: inline-block; padding: 13px 32px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8);
+    border-radius: 10px; font-size: 15px; font-weight: 500; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.15); font-family: var(--sans); margin-left: 12px;
+    transition: all 0.15s; backdrop-filter: blur(8px);
+  }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.4); color: #fff; background: rgba(255,255,255,0.1); }
+  .landing-trust { margin-top: 3rem; display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; }
+  .trust-stat { text-align: center; }
+  .trust-num { font-family: var(--serif); font-size: 28px; color: var(--green-mid); }
+  .trust-label { font-size: 11px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  /* ── ONBOARDING WRAPPER ── */
+  .onboarding-wrap {
+    flex: 1; display: flex; align-items: stretch;
+    background: #fff; min-height: 100vh;
+  }
+  .onboarding-sidebar {
+    width: 280px; background: var(--gray-900); color: #fff;
+    padding: 2.5rem 2rem; display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-logo { font-family: var(--serif); font-size: 24px; margin-bottom: 3rem; }
+  .sidebar-logo span { color: var(--green-mid); }
+  .sidebar-steps { flex: 1; }
+  .sidebar-step {
+    display: flex; align-items: flex-start; gap: 14px; margin-bottom: 2rem; opacity: 0.35;
+    transition: opacity 0.3s;
+  }
+  .sidebar-step.done, .sidebar-step.current { opacity: 1; }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5);
+    transition: all 0.3s;
+  }
+  .sidebar-step.current .step-dot { border-color: var(--green-mid); color: var(--green-mid); }
+  .sidebar-step.done .step-dot { background: var(--green); border-color: var(--green); color: #fff; font-size: 13px; }
+  .step-info { padding-top: 4px; }
+  .step-name { font-size: 13px; font-weight: 500; }
+  .step-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .sidebar-step.current .step-desc { color: rgba(255,255,255,0.6); }
+  .onboarding-main { flex: 1; padding: 3rem 3rem; overflow-y: auto; max-width: 640px; }
+  .onboarding-step { display: none; }
+  .onboarding-step.active { display: block; animation: fadeUp 0.3s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .step-header { margin-bottom: 2rem; }
+  .step-header h2 { font-family: var(--serif); font-size: 32px; margin-bottom: 6px; }
+  .step-header p { color: var(--gray-400); font-size: 14px; font-weight: 300; }
+
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-700); margin-bottom: 6px; }
+  input[type=text], input[type=email], input[type=password], input[type=date], select, textarea {
+    width: 100%; padding: 11px 14px; min-height: 44px; border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm); font-family: var(--sans); font-size: 14px;
+    color: var(--gray-900); background: #fff; transition: border-color 0.15s, box-shadow 0.15s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(0,196,122,0.15);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .field { margin-bottom: 1.25rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip {
+    padding: 7px 16px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; cursor: pointer; transition: all 0.15s; background: #fff; color: var(--gray-700);
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--green); color: var(--green); }
+  .chip.selected { background: var(--green-light); border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+
+  .range-field { margin-bottom: 1.5rem; }
+  .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; height: 4px; background: var(--gray-200);
+    border-radius: 100px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--green); cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+
+  .nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--gray-100); }
+  .btn-back {
+    padding: 11px 24px; background: transparent; border: 1.5px solid var(--gray-200);
+    border-radius: 10px; font-size: 14px; cursor: pointer; font-family: var(--sans);
+    color: var(--gray-700); transition: all 0.15s; font-weight: 500;
+  }
+  .btn-back:hover { border-color: var(--gray-400); background: var(--gray-50); }
+  .btn-next {
+    padding: 12px 32px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; font-family: var(--sans);
+    transition: all 0.15s; margin-left: auto;
+    box-shadow: 0 3px 10px rgba(0,196,122,0.3);
+  }
+  .btn-next:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0,196,122,0.4); }
+
+  /* ── APP SHELL (post-onboarding) ── */
+  .app-shell { flex: 1; display: flex; flex-direction: column; }
+  .app-topbar {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0,0,0,0.06); padding: 0 1.5rem;
+    height: 64px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+  }
+  .topbar-logo { font-family: var(--serif); font-size: 22px; }
+  .topbar-logo span { color: var(--green); }
+  .topbar-nav { display: flex; gap: 4px; }
+  .topbar-nav button {
+    padding: 7px 16px; border-radius: 100px; border: none; background: transparent;
+    font-size: 13px; cursor: pointer; font-family: var(--sans); color: var(--gray-400);
+    font-weight: 400; transition: all 0.15s;
+  }
+  .topbar-nav button.active { background: var(--gray-100); color: var(--gray-900); font-weight: 500; }
+  .topbar-nav button:hover:not(.active) { color: var(--gray-700); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    font-weight: 600; color: var(--green-dark); cursor: pointer; flex-shrink: 0;
+  }
+  .notif-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--coral);
+    position: relative; top: -2px;
+  }
+
+  .app-content { flex: 1; padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+  /* ── DASHBOARD ── */
+  .dash-welcome { margin-bottom: 2rem; }
+  .dash-welcome h1 { font-family: var(--serif); font-size: 30px; margin-bottom: 4px; }
+  .dash-welcome p { color: var(--gray-400); font-size: 14px; font-weight: 300; }
+
+  .rating-hero {
+    background: #111111; color: #fff; border-radius: var(--radius-xl);
+    padding: 2rem; display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.5rem; position: relative; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  }
+  .rating-hero::before {
+    content: ''; position: absolute; right: -60px; top: -60px;
+    width: 300px; height: 300px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,196,122,0.25) 0%, rgba(37,99,235,0.1) 50%, transparent 70%);
+  }
+  .rating-hero::after {
+    content: ''; position: absolute; left: 10%; bottom: -80px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
+  }
+  .rating-hero-left h2 { font-family: var(--serif); font-size: 22px; margin-bottom: 4px; }
+  .rating-hero-left p { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 300; }
+  .rating-big { font-family: var(--serif); font-size: 56px; color: var(--green-mid); line-height: 1; }
+  .rating-stars-big { display: flex; gap: 4px; margin-top: 6px; justify-content: flex-end; }
+  .star-icon { font-size: 16px; }
+
+  .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .stat-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+  }
+  .stat-card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 8px; font-weight: 500; }
+  .stat-card-num { font-family: var(--serif); font-size: 30px; color: var(--gray-900); }
+  .stat-card-sub { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+
+  .section-title {
+    font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--gray-400); margin-bottom: 1rem;
+  }
+
+  /* ── JOB CARDS ── */
+  .job-card {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem; margin-bottom: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .job-card:hover {
+    border-color: var(--green);
+    box-shadow: 0 4px 16px rgba(0,196,122,0.1), 0 1px 4px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+  }
+  .job-card.featured { border-color: var(--green); }
+  .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .job-company { display: flex; align-items: center; gap: 10px; }
+  .company-badge {
+    width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--gray-100);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;
+    color: var(--gray-400);
+  }
+  .job-company-name { font-size: 12px; color: var(--gray-400); }
+  .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .job-pay { text-align: right; }
+  .pay-amount { font-family: var(--serif); font-size: 24px; color: var(--green); }
+  .pay-type { font-size: 11px; color: var(--gray-400); }
+  .job-desc { font-size: 13px; color: var(--gray-400); line-height: 1.5; margin-bottom: 12px; font-weight: 300; }
+  .job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tag {
+    padding: 4px 11px; border-radius: 100px; font-size: 11px; font-weight: 500;
+  }
+  .tag-green { background: var(--green-light); color: var(--green-dark); }
+  .tag-blue { background: var(--blue-light); color: #185FA5; }
+  .tag-amber { background: var(--amber-light); color: var(--amber); }
+  .tag-gray { background: var(--gray-100); color: var(--gray-400); }
+  .tag-coral { background: var(--coral-light); color: #993C1D; }
+  .job-footer { display: flex; justify-content: space-between; align-items: center; }
+  .job-meta { font-size: 12px; color: var(--gray-400); }
+  .job-match { display: flex; align-items: center; gap: 6px; }
+  .match-pct { font-size: 13px; font-weight: 600; color: var(--green); }
+  .match-bar { width: 60px; height: 5px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
+  .match-fill { height: 100%; background: var(--green); border-radius: 100px; }
+  .apply-btn {
+    padding: 9px 22px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; font-family: var(--sans);
+    transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(0,196,122,0.3);
+  }
+  .apply-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,196,122,0.4); }
+  .applied-badge {
+    padding: 8px 22px; background: var(--green-light); color: var(--green-dark);
+    border-radius: 100px; font-size: 13px; font-weight: 500;
+  }
+  .progress-thin { height: 4px; background: var(--gray-100); border-radius: 100px; overflow: hidden; margin-top: 10px; }
+  .progress-fill-green { height: 100%; background: var(--green); border-radius: 100px; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+  .filter-chip {
+    padding: 7px 16px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; cursor: pointer; background: #fff; color: var(--gray-700);
+    transition: all 0.15s; font-family: var(--sans);
+  }
+  .filter-chip.active { background: var(--gray-900); color: #fff; border-color: var(--gray-900); }
+  .filter-chip:hover:not(.active) { border-color: var(--gray-400); }
+  .filter-right { margin-left: auto; }
+  select.filter-select {
+    padding: 7px 14px; border-radius: 100px; border: 1px solid var(--gray-200);
+    font-size: 13px; background: #fff; color: var(--gray-700); font-family: var(--sans);
+    width: auto; cursor: pointer;
+  }
+
+  /* ── PROFILE PAGE ── */
+  .profile-header {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-xl);
+    padding: 2rem; display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+  }
+  .profile-avatar-big {
+    width: 72px; height: 72px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    font-weight: 600; color: var(--green-dark); flex-shrink: 0;
+  }
+  .profile-name { font-family: var(--serif); font-size: 26px; margin-bottom: 4px; }
+  .profile-subtitle { font-size: 13px; color: var(--gray-400); margin-bottom: 12px; font-weight: 300; }
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px;
+    border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: var(--gray-100); color: var(--gray-400);
+  }
+  .tier-elite { background: var(--green-light); color: var(--green-dark); }
+  .tier-blue  { background: var(--blue-light);  color: #185FA5; }
+  .tier-verified { background: var(--blue-light); color: #185FA5; }
+  .tier-standard { background: var(--amber-light); color: var(--amber); }
+
+  .bankid-logo { width:44px;height:44px;border-radius:10px;background:#1B4A8A;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+  .bankid-logo span { color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:1.25; }
+  .bankid-verified-badge { display:inline-flex;align-items:center;gap:5px;background:#1B4A8A;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;letter-spacing:0.02em; }
+  .bankid-verified-badge-sm { display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;vertical-align:middle; }
+
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .profile-section {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .profile-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 1rem; }
+  .profile-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row-label { color: var(--gray-400); }
+  .profile-row-value { font-weight: 500; color: var(--gray-900); }
+
+  .rating-breakdown-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; }
+  .rb-label { width: 110px; color: var(--gray-400); flex-shrink: 0; }
+  .rb-bar { flex: 1; height: 6px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
+  .rb-fill { height: 100%; background: var(--amber); border-radius: 100px; }
+  .rb-score { width: 30px; text-align: right; font-weight: 600; color: var(--gray-900); }
+
+  .history-item {
+    padding: 12px 0; border-bottom: 1px solid var(--gray-100); display: flex;
+    justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-title { font-weight: 500; color: var(--gray-900); margin-bottom: 2px; }
+  .history-meta { font-size: 11px; color: var(--gray-400); }
+  .history-pay { font-family: var(--serif); font-size: 18px; color: var(--green); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: var(--radius-xl); padding: 2rem; max-width: 520px; width: 100%;
+    max-height: 90vh; overflow-y: auto; animation: fadeUp 0.2s ease;
+  }
+  .modal h2 { font-family: var(--serif); font-size: 26px; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 1.5rem; font-weight: 300; }
+  .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+  .modal-detail { font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
+  .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
+  .modal-buttons { display: flex; gap: 12px; }
+  .modal-close {
+    padding: 11px 24px; background: transparent; border: 1px solid var(--gray-200);
+    border-radius: 100px; font-size: 14px; cursor: pointer; font-family: var(--sans); color: var(--gray-700);
+  }
+  .modal-apply {
+    flex: 1; padding: 12px;
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    color: #fff; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; font-family: var(--sans);
+    transition: all 0.15s;
+    box-shadow: 0 3px 10px rgba(0,196,122,0.3);
+  }
+  .modal-apply:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(0,196,122,0.4); }
+  .confirm-icon { width: 56px; height: 56px; border-radius: 50%; background: var(--green-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 24px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: var(--gray-900); color: #fff; padding: 12px 24px; border-radius: 100px;
+    font-size: 13px; font-weight: 500; z-index: 300; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--gray-400); }
+  .empty-state-icon { font-size: 40px; margin-bottom: 1rem; }
+  .empty-state h3 { font-family: var(--serif); font-size: 22px; color: var(--gray-700); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; font-weight: 300; }
+
+  /* ── NOTIFICATION BELL & PANEL ── */
+  .notif-wrap { position: relative; }
+  .notif-bell {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; background: transparent; border: none;
+    font-size: 16px; transition: background 0.15s; position: relative; flex-shrink: 0;
+  }
+  .notif-bell:hover { background: var(--gray-100); }
+  .notif-count-badge {
+    position: absolute; top: -1px; right: -1px; min-width: 17px; height: 17px;
+    background: var(--coral); color: #fff; border-radius: 100px; font-size: 9px;
+    font-weight: 700; display: none; align-items: center; justify-content: center;
+    padding: 0 4px; border: 2px solid #fff; font-family: var(--mono, monospace); line-height: 1;
+  }
+  .notif-panel {
+    position: absolute; top: calc(100% + 10px); right: -8px; width: 340px;
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    z-index: 600; display: none; overflow: hidden;
+  }
+  .notif-panel.open { display: block; animation: fadeUp 0.18s ease; }
+  .notif-panel-hd {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 16px; border-bottom: 1px solid var(--gray-100);
+  }
+  .notif-panel-hd-title { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+  .notif-mark-all-btn { font-size: 12px; color: var(--green); background: none; border: none; cursor: pointer; font-family: var(--sans); padding: 0; }
+  .notif-mark-all-btn:hover { text-decoration: underline; }
+  .notif-panel-body { max-height: 380px; overflow-y: auto; }
+  .notif-row {
+    display: flex; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--gray-100);
+    cursor: pointer; transition: background 0.1s; align-items: flex-start;
+  }
+  .notif-row:last-child { border-bottom: none; }
+  .notif-row:hover { background: var(--gray-50); }
+  .notif-row.unread { background: var(--green-light); }
+  .notif-row.unread:hover { background: #c5f7e2; }
+  .notif-row-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; margin-top: 5px; }
+  .notif-row-dot.read { background: var(--gray-200); }
+  .notif-row-content { flex: 1; min-width: 0; }
+  .notif-row-title { font-size: 12px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; line-height: 1.3; }
+  .notif-row-body { font-size: 12px; color: var(--gray-400); line-height: 1.4; }
+  .notif-row-time { font-size: 10px; color: var(--gray-400); margin-top: 3px; font-family: var(--mono, monospace); }
+  .notif-empty { text-align: center; padding: 2.5rem 1rem; color: var(--gray-400); font-size: 13px; }
+
+  @media (max-width: 700px) {
+    .onboarding-sidebar { display: none; }
+    .onboarding-main { padding: 2rem 1.25rem; }
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .rating-hero { flex-direction: column; gap: 1rem; }
+  }
+
+  /* ── MOBILE RESPONSIVENESS ── */
+  /* Hamburger button */
+  #hamburger-btn {
+    display: none;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 20px; padding: 4px 8px; color: var(--gray-700);
+    line-height: 1;
+  }
+  /* Mobile nav dropdown */
+  #mobile-nav {
+    display: none;
+    position: absolute;
+    top: 64px; left: 0; right: 0;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--gray-100);
+    z-index: 99;
+    padding: 0.5rem 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  #mobile-nav.open { display: block; }
+  #mobile-nav button {
+    display: block; width: 100%; text-align: left;
+    padding: 12px 8px; border: none; background: transparent;
+    font-size: 14px; font-family: var(--sans); color: var(--gray-700);
+    cursor: pointer; border-bottom: 1px solid var(--gray-100);
+    font-weight: 400;
+  }
+  #mobile-nav button:last-child { border-bottom: none; }
+  #mobile-nav button.active { color: var(--gray-900); font-weight: 500; }
+
+  @media (max-width: 768px) {
+    body { overflow-x: hidden; }
+    .app-content { max-width: 100%; padding: 1.25rem 1rem; }
+    .lang-toggle { top: 10px; right: 10px; }
+
+    /* Topbar: hide nav, show hamburger */
+    .topbar-nav { display: none; }
+    #hamburger-btn { display: block; }
+
+    /* Landing */
+    .landing-headline { font-size: 28px; }
+    .landing-tag { font-size: 12px; }
+    .landing-sub { font-size: 13px; }
+    #landing .btn-primary,
+    #landing .btn-secondary {
+      display: block; width: 100%; text-align: center;
+      margin-left: 0; margin-top: 12px;
+      padding: 13px 20px;
+    }
+    #landing > div { padding: 0 1rem; padding-top: 60px; }
+    .landing-logo { font-size: 40px; }
+    .landing-trust { gap: 1.5rem; margin-top: 2rem; }
+
+    /* Stat cards: 2 col at 768 */
+    .stat-cards { grid-template-columns: repeat(2, 1fr); }
+
+    /* Job cards: stack header */
+    .job-header { flex-direction: column; gap: 8px; }
+    .job-pay { text-align: left; }
+
+    /* Notification panel: full width fixed */
+    .notif-panel {
+      position: fixed !important;
+      top: 64px !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100vw !important;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    /* Rating hero */
+    .rating-hero { flex-direction: column; gap: 1rem; }
+    .rating-hero > div:last-child { text-align: left; }
+    .rating-stars-big { justify-content: flex-start; }
+  }
+
+  @media (max-width: 375px) {
+    .stat-cards { grid-template-columns: 1fr; }
+    .landing-headline { font-size: 24px; }
+    .app-content { padding: 1rem 0.75rem; }
+  }
+
+  .lang-toggle{position:fixed;top:14px;right:14px;z-index:9999;display:flex;align-items:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.18);border-radius:100px;padding:3px;gap:2px}
+  .lang-btn{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 8px;border-radius:100px;transition:all 0.15s;letter-spacing:0.04em}
+  .lang-btn.active{background:rgba(255,255,255,0.2);color:#fff}
+  .lang-toggle.light{background:rgba(0,0,0,0.05);border-color:rgba(0,0,0,0.1)}
+  .lang-toggle.light .lang-btn{color:rgba(0,0,0,0.35)}
+  .lang-toggle.light .lang-btn.active{background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.8)}
+  .field-error{font-size:12px;color:var(--coral);margin-top:4px;display:none}
+  .field-error.show{display:block}
+  #cookie-banner{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:99999;font-size:13px;font-family:'Inter',sans-serif;flex-wrap:wrap}
+  #cookie-banner a{color:var(--green,#00C47A);text-decoration:underline}
+  .cookie-btns{display:flex;gap:8px;flex-shrink:0}
+  .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
+  .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle" id="lang-toggle">
+  <button class="lang-btn active" id="lb-en" onclick="setLang('en')">EN</button>
+  <button class="lang-btn" id="lb-sv" onclick="setLang('sv')">SV</button>
+</div>
+
+<!-- LANDING -->
+<div id="landing" class="screen active">
+  <div style="position:relative;z-index:1;width:100%">
+    <div class="landing-logo">Vet<span style="color:var(--green-mid)">d</span></div>
+    <div class="landing-tag" data-i18n="landing_tag">Get paid. Get rated. Get better work.</div>
+    <div class="landing-headline"><span data-i18n="landing_headline_plain">Get paid. Get rated. Get</span> <em data-i18n="landing_headline_em">better opportunities.</em></div>
+    <div class="landing-sub" data-i18n="landing_sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
+    <div>
+      <button class="btn-primary" onclick="startOnboarding()" data-i18n="landing_cta">Get started — it's free</button>
+      <button class="btn-secondary" onclick="window.location.href='login.html'" data-i18n="landing_signin">Sign in</button>
+    </div>
+    <div class="landing-trust">
+      <div class="trust-stat"><div class="trust-num">£640</div><div class="trust-label" data-i18n="trust_earned">avg annual earnings</div></div>
+      <div class="trust-stat"><div class="trust-num">48h</div><div class="trust-label">to first assignment</div></div>
+      <div class="trust-stat"><div class="trust-num">4.8★</div><div class="trust-label" data-i18n="trust_contributors">avg contributor score</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding" class="screen">
+  <div class="onboarding-wrap">
+    <div class="onboarding-sidebar">
+      <div class="sidebar-logo">Vet<span style="color:var(--green-mid)">d</span></div>
+      <div class="sidebar-steps">
+        <div class="sidebar-step current" id="sidebar-step-1">
+          <div class="step-dot" id="dot-1">1</div>
+          <div class="step-info"><div class="step-name">Your account</div><div class="step-desc">Name, email & password</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-2">
+          <div class="step-dot" id="dot-2">2</div>
+          <div class="step-info"><div class="step-name">About you</div><div class="step-desc">Age, location, lifestyle</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-3">
+          <div class="step-dot" id="dot-3">3</div>
+          <div class="step-info"><div class="step-name">Your interests</div><div class="step-desc">So we match you well</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-4">
+          <div class="step-dot" id="dot-4">4</div>
+          <div class="step-info"><div class="step-name">Availability</div><div class="step-desc">When & how you prefer</div></div>
+        </div>
+        <div class="sidebar-step" id="sidebar-step-5">
+          <div class="step-dot" id="dot-5">5</div>
+          <div class="step-info"><div class="step-name">All done!</div><div class="step-desc">Start browsing</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboarding-main">
+      <!-- Step 1: Account -->
+      <div class="onboarding-step active" id="step-1">
+        <div class="step-header">
+          <h2 data-i18n="ob_step1_title">Create your account</h2>
+          <p data-i18n="ob_step1_sub">Let's get the basics set up. Takes about 2 minutes.</p>
+        </div>
+        <div class="field-row">
+          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" placeholder="Sarah" value="" maxlength="50"><div class="field-error" id="err-fname"></div></div>
+          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" placeholder="Johnson" value="" maxlength="50"></div>
+        </div>
+        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" placeholder="sarah@example.com" maxlength="254"><div class="field-error" id="err-email"></div></div>
+        <div class="field"><label data-i18n="ob_pass_label">Password</label><input type="password" id="password" data-i18n-ph="ob_pass_ph" placeholder="At least 8 characters" maxlength="128" oninput="checkPasswordStrength(this.value)"><div id="pw-strength-bar" style="height:3px;border-radius:2px;background:#E5E7EB;margin-top:6px;overflow:hidden;display:none"><div id="pw-strength-fill" style="height:100%;width:0;border-radius:2px;transition:width 0.2s,background 0.2s"></div></div><div id="pw-strength-label" style="font-size:11px;margin-top:3px;display:none"></div><div class="field-error" id="err-password"></div></div>
+        <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-top:1rem">
+          <div style="font-size:32px;margin-bottom:8px">📧</div>
+          <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px">Check your email</h3>
+          <p style="font-size:13px;color:#374151;line-height:1.5">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
+        </div>
+        <div class="field">
+          <label>How did you hear about us?</label>
+          <select id="referral">
+            <option value="">Select an option</option>
+            <option value="social_media">Social media</option>
+            <option value="friend_family">Friend or family</option>
+            <option value="google_search">Google search</option>
+            <option value="online_forum">Online forum</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-next" onclick="nextStep(1)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: About you -->
+      <div class="onboarding-step" id="step-2">
+        <div class="step-header">
+          <h2 data-i18n="ob_step2_title">Tell us about yourself</h2>
+          <p>Companies use this to match you with relevant studies. Your data is never sold.</p>
+        </div>
+        <div class="field-row">
+          <div class="field"><label data-i18n="ob_dob_label">Date of birth</label><input type="date" id="dob"></div>
+          <div class="field">
+            <label data-i18n="ob_gender_label">Gender</label>
+            <select id="gender">
+              <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
+              <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Country</label>
+            <select id="country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+          </div>
+          <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester" maxlength="100"></div>
+        </div>
+        <div class="field">
+          <label>Employment status</label>
+          <select id="employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+        </div>
+        <div class="field">
+          <label>Household income (annual, approximate)</label>
+          <select id="income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+        </div>
+        <div class="field">
+          <label>Living situation</label>
+          <div class="chip-group" data-field="living_situation">
+            <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
+            <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
+            <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
+            <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you have children?</label>
+          <div class="chip-group" data-field="children">
+            <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
+            <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
+            <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
+            <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
+            <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(2)">← Back</button>
+          <button class="btn-next" onclick="nextStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Interests -->
+      <div class="onboarding-step" id="step-3">
+        <div class="step-header">
+          <h2 data-i18n="ob_step3_title">What are you into?</h2>
+          <p>Select everything that applies — the more you share, the better the matches.</p>
+        </div>
+        <div class="field">
+          <label>Shopping & lifestyle</label>
+          <div class="chip-group" data-field="interests_lifestyle">
+            <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
+            <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
+            <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
+            <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
+            <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
+            <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
+            <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
+            <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
+            <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Technology & media</label>
+          <div class="chip-group" data-field="interests_tech">
+            <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
+            <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
+            <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
+            <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
+            <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
+            <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Finance & banking</label>
+          <div class="chip-group" data-field="interests_finance">
+            <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
+            <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
+            <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
+            <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
+            <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
+            <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Which brands do you shop with regularly?</label>
+          <div class="chip-group" data-field="brands">
+            <div class="chip" data-value="hm" onclick="toggleChip(this)">H&M</div>
+            <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
+            <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
+            <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
+            <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks & Spencer</div>
+            <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
+            <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
+            <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
+            <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
+            <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
+          </div>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(3)">← Back</button>
+          <button class="btn-next" onclick="nextStep(3)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Availability -->
+      <div class="onboarding-step" id="step-4">
+        <div class="step-header">
+          <h2 data-i18n="ob_step4_title">When are you available?</h2>
+          <p>This helps us surface studies that work around your life.</p>
+        </div>
+        <div class="field">
+          <label>Preferred study format</label>
+          <div class="chip-group" data-field="study_formats">
+            <div class="chip selected" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
+            <div class="chip selected" data-value="video_call" onclick="toggleChip(this)">Video call</div>
+            <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
+            <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
+            <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Available times</label>
+          <div class="chip-group" data-field="available_times">
+            <div class="chip selected" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
+            <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
+            <div class="chip selected" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
+            <div class="chip selected" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Maximum session length I'm comfortable with</label>
+          <div class="chip-group" data-field="max_session_length" data-single="true">
+            <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
+            <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
+            <div class="chip selected" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
+            <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
+            <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>How often would you like to participate?</label>
+          <select id="frequency">
+            <option value="once_a_month">Once a month</option>
+            <option value="2_3_per_month">2–3 times a month</option>
+            <option value="weekly">Weekly</option>
+            <option value="as_often_as_possible">As often as possible</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Minimum pay you'd accept (per hour equivalent)</label>
+          <div style="margin-top:8px">
+            <input type="range" min="5" max="100" value="25" id="minpay" oninput="document.getElementById('payval').textContent='£'+this.value">
+            <div class="range-labels"><span>£5</span><span id="payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Anything else you'd like us to know?</label>
+          <textarea id="additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn-back" onclick="prevStep(4)">← Back</button>
+          <button class="btn-next" onclick="nextStep(4)">Finish →</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Done -->
+      <div class="onboarding-step" id="step-5">
+        <div style="text-align:center;padding:2rem 0">
+          <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:32px">✓</div>
+          <h2 style="font-family:var(--serif);font-size:36px;margin-bottom:8px">You're all set!</h2>
+          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto">Your profile is live. We've already found <strong style="color:var(--green)">4 studies</strong> that match your interests.</p>
+          <div style="background:var(--gray-50);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:2rem;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:12px;font-weight:600">Your starting profile</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Tier</span><span style="font-weight:600">Standard (new member)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Rating</span><span style="color:var(--gray-400)">No ratings yet</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)">Studies matched</span><span style="color:var(--green);font-weight:600">4 waiting</span></div>
+          </div>
+          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()">Start browsing studies →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="screen">
+  <div class="app-shell">
+    <div class="app-topbar">
+      <div class="topbar-logo">Vet<span style="color:var(--green)">d</span></div>
+      <div class="topbar-nav">
+        <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
+        <button onclick="showTab('jobs', this)" data-i18n="nav_browse">Browse studies</button>
+        <button onclick="showTab('profile', this)" data-i18n="nav_profile">My profile</button>
+      </div>
+      <div class="topbar-right">
+        <button id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Open menu">☰</button>
+        <div class="notif-wrap" id="notif-wrap">
+          <button class="notif-bell" id="notif-bell" onclick="toggleNotifPanel()" aria-label="Notifications">🔔</button>
+          <div class="notif-count-badge" id="notif-count-badge"></div>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-panel-hd">
+              <span class="notif-panel-hd-title">Notifications</span>
+              <button class="notif-mark-all-btn" onclick="markAllRead()">Mark all as read</button>
+            </div>
+            <div class="notif-panel-body" id="notif-panel-body">
+              <div class="notif-empty">No notifications yet</div>
+            </div>
+          </div>
+        </div>
+        <div id="topbar-avatar" class="avatar-sm" onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)'))">?</div>
+        <button onclick="signOut()" style="padding:7px 14px;border-radius:100px;border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" data-i18n="sign_out">Sign out</button>
+      </div>
+    </div>
+    <!-- MOBILE NAV DROPDOWN -->
+    <div id="mobile-nav">
+      <button onclick="showTab('dashboard', document.querySelector('.topbar-nav button:nth-child(1)')); toggleMobileNav();" data-i18n="nav_dashboard">Dashboard</button>
+      <button onclick="showTab('jobs', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
+      <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
+    </div>
+
+    <div class="app-content">
+
+      <!-- DASHBOARD TAB -->
+      <div id="tab-dashboard">
+        <div class="dash-welcome">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h1 id="dash-greeting">Welcome 👋</h1>
+            <span id="dash-bankid-badge" class="bankid-verified-badge" style="display:none">🔒 BankID Verified</span>
+          </div>
+          <p id="dash-subtext">Browse available studies and apply to start earning.</p>
+        </div>
+
+        <div class="rating-hero">
+          <div class="rating-hero-left">
+            <h2>Your Vetd rating</h2>
+            <p id="dash-rating-desc">Complete your first study to earn a rating</p>
+            <div style="margin-top:1rem">
+              <div id="dash-tier-badge" class="tier-badge">New member</div>
+            </div>
+          </div>
+          <div style="text-align:right;position:relative;z-index:1">
+            <div id="dash-rating-num" class="rating-big">—</div>
+            <div id="dash-rating-stars" class="rating-stars-big">
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+              <span class="star-icon" style="color:rgba(255,255,255,0.2)">★</span>
+            </div>
+            <div id="dash-rating-pct" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px">No ratings yet</div>
+          </div>
+        </div>
+
+        <div class="stat-cards">
+          <div class="stat-card">
+            <div class="stat-card-label" data-i18n="dash_earned">Total earned</div>
+            <div id="stat-earned" class="stat-card-num">£0</div>
+            <div id="stat-earned-sub" class="stat-card-sub">Complete a study to start earning</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label" data-i18n="dash_studies">Studies done</div>
+            <div id="stat-studies" class="stat-card-num">0</div>
+            <div id="stat-studies-sub" class="stat-card-sub">No studies yet</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Completion rate</div>
+            <div id="stat-completion" class="stat-card-num">—</div>
+            <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
+          </div>
+        </div>
+
+        <div class="section-title">New matches for you</div>
+        <div id="dashboard-jobs"></div>
+
+        <div class="section-title" style="margin-top:1.5rem">Recent notifications</div>
+        <div id="dash-notif-list" style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden">
+          <div class="notif-empty">No notifications yet</div>
+        </div>
+      </div>
+
+      <!-- JOBS TAB -->
+      <div id="tab-jobs" style="display:none">
+        <div style="margin-bottom:1.5rem">
+          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Browse studies</h1>
+          <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
+        </div>
+        <div class="filter-bar">
+          <button class="filter-chip active" onclick="filterJobs('all', this)" data-i18n="filter_all">All studies</button>
+          <button class="filter-chip" onclick="filterJobs('matched', this)">Best matches</button>
+          <button class="filter-chip" onclick="filterJobs('online', this)" data-i18n="filter_online">Online only</button>
+          <button class="filter-chip" onclick="filterJobs('high-pay', this)">High pay</button>
+          <select class="filter-select filter-right">
+            <option>Sort: Best match</option>
+            <option>Sort: Highest pay</option>
+            <option>Sort: Newest</option>
+            <option>Sort: Shortest</option>
+          </select>
+        </div>
+        <div id="jobs-list"></div>
+      </div>
+
+      <!-- PROFILE TAB -->
+      <div id="tab-profile" style="display:none">
+        <!-- profile_title handled via nav -->
+        <div class="profile-header">
+          <div id="profile-avatar-big" class="profile-avatar-big">?</div>
+          <div style="flex:1">
+            <div id="profile-fullname" class="profile-name">Member</div>
+            <div id="profile-subtitle" class="profile-subtitle">New member</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <div id="profile-tier-badge" class="tier-badge">New member</div>
+              <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · £0 earned</div>
+            </div>
+          </div>
+          <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()">Edit profile</button>
+        </div>
+
+        <div class="profile-grid" id="profile-grid">
+          <div class="profile-section">
+            <h3>Personal details</h3>
+            <div class="profile-row"><span class="profile-row-label">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Gender</span><span id="profile-detail-gender" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Location</span><span id="profile-detail-location" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Employment</span><span id="profile-detail-employment" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Children</span><span id="profile-detail-children" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label">Living situation</span><span id="profile-detail-living" class="profile-row-value">—</span></div>
+          </div>
+
+          <div class="profile-section">
+            <h3>Rating breakdown</h3>
+            <div id="rating-breakdown-content">
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1" id="bankid-section">
+            <h3>Identity verification</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div class="bankid-logo"><span>Bank<br>ID</span></div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:var(--gray-900)">Verify your identity</div>
+                  <div style="font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px">Verified contributors get priority access to premium studies</div>
+                </div>
+              </div>
+              <div id="bankid-status">
+                <button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1">
+            <h3>My interests & tags</h3>
+            <div class="job-tags" style="margin-top:4px">
+              <span class="tag tag-green">Fashion & clothing</span>
+              <span class="tag tag-green">Beauty & skincare</span>
+              <span class="tag tag-blue">Smartphones & apps</span>
+              <span class="tag tag-blue">Online banking</span>
+              <span class="tag tag-amber">Food & cooking</span>
+              <span class="tag tag-amber">Fitness & wellness</span>
+              <span class="tag tag-gray">Travel</span>
+              <span class="tag tag-gray">Streaming & TV</span>
+              <span class="tag tag-gray">Home & interiors</span>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1">
+            <h3>Payment history</h3>
+            <div id="payment-history-section">
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Loading…</p>
+            </div>
+          </div>
+
+          <div class="profile-section" style="grid-column:1/-1;border-top:1px solid var(--gray-100);padding-top:1.5rem;margin-top:0.5rem">
+            <h3 style="color:var(--coral)">Danger zone</h3>
+            <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Delete my account</button>
+          </div>
+        </div>
+
+        <!-- PROFILE EDIT FORM -->
+        <div id="profile-edit-form" style="display:none">
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Name</h3>
+            <div class="field-row" style="margin-top:0.75rem">
+              <div class="field"><label>First name</label><input type="text" id="edit-fname" maxlength="100" placeholder="First name"></div>
+              <div class="field"><label>Last name</label><input type="text" id="edit-lname" maxlength="100" placeholder="Last name"></div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Personal details</h3>
+            <div class="field-row" style="margin-top:0.75rem">
+              <div class="field"><label>Date of birth</label><input type="date" id="edit-dob"></div>
+              <div class="field">
+                <label>Gender</label>
+                <select id="edit-gender">
+                  <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
+                  <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Country</label>
+                <select id="edit-country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+              </div>
+              <div class="field"><label>City / Town</label><input type="text" id="edit-city" placeholder="e.g. Manchester" maxlength="100"></div>
+            </div>
+            <div class="field">
+              <label>Employment status</label>
+              <select id="edit-employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+            </div>
+            <div class="field">
+              <label>Household income (annual, approximate)</label>
+              <select id="edit-income"><option value="under_20k">Under £20,000</option><option value="20k_35k">£20,000–£34,999</option><option value="35k_60k">£35,000–£59,999</option><option value="60k_100k">£60,000–£99,999</option><option value="100k_plus">£100,000+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+            </div>
+            <div class="field">
+              <label>Living situation</label>
+              <div class="chip-group" data-field="living_situation" id="edit-chips-living">
+                <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
+                <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
+                <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
+                <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Do you have children?</label>
+              <div class="chip-group" data-field="children" id="edit-chips-children">
+                <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
+                <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
+                <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
+                <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
+                <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Interests</h3>
+            <div class="field" style="margin-top:0.75rem">
+              <label>Shopping & lifestyle</label>
+              <div class="chip-group" data-field="interests_lifestyle" id="edit-chips-lifestyle">
+                <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
+                <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
+                <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
+                <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
+                <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
+                <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
+                <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
+                <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
+                <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Technology & media</label>
+              <div class="chip-group" data-field="interests_tech" id="edit-chips-tech">
+                <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
+                <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
+                <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
+                <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
+                <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
+                <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Finance & banking</label>
+              <div class="chip-group" data-field="interests_finance" id="edit-chips-finance">
+                <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
+                <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
+                <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
+                <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
+                <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
+                <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Brands you shop with regularly</label>
+              <div class="chip-group" data-field="brands" id="edit-chips-brands">
+                <div class="chip" data-value="hm" onclick="toggleChip(this)">H&amp;M</div>
+                <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
+                <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
+                <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
+                <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks &amp; Spencer</div>
+                <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
+                <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
+                <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
+                <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
+                <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-section" style="margin-bottom:1.5rem">
+            <h3>Availability preferences</h3>
+            <div class="field" style="margin-top:0.75rem">
+              <label>Preferred study format</label>
+              <div class="chip-group" data-field="study_formats" id="edit-chips-formats">
+                <div class="chip" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
+                <div class="chip" data-value="video_call" onclick="toggleChip(this)">Video call</div>
+                <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
+                <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
+                <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Available times</label>
+              <div class="chip-group" data-field="available_times" id="edit-chips-times">
+                <div class="chip" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
+                <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
+                <div class="chip" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
+                <div class="chip" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Maximum session length I'm comfortable with</label>
+              <div class="chip-group" data-field="max_session_length" data-single="true" id="edit-chips-maxlen">
+                <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
+                <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
+                <div class="chip" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
+                <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
+                <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>How often would you like to participate?</label>
+              <select id="edit-frequency">
+                <option value="once_a_month">Once a month</option>
+                <option value="2_3_per_month">2–3 times a month</option>
+                <option value="weekly">Weekly</option>
+                <option value="as_often_as_possible">As often as possible</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Minimum pay you'd accept (per hour equivalent)</label>
+              <div style="margin-top:8px">
+                <input type="range" min="5" max="100" value="25" id="edit-minpay" oninput="document.getElementById('edit-payval').textContent='£'+this.value">
+                <div class="range-labels"><span>£5</span><span id="edit-payval" style="color:var(--green);font-weight:600">£25</span><span>£100</span></div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Anything else you'd like us to know?</label>
+              <textarea id="edit-additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:0.5rem">
+            <button onclick="cancelEdit()" style="padding:10px 24px;border-radius:8px;border:1.5px solid var(--gray-200);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">Cancel</button>
+            <button id="edit-save-btn" onclick="saveProfile()" class="apply-btn" style="padding:10px 28px">Save changes</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="apply-modal">
+  <div class="modal">
+    <div id="modal-pre-apply">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem">
+        <div class="company-badge" id="modal-company-badge" style="width:48px;height:48px;font-size:13px"></div>
+        <div id="modal-pay-display"></div>
+      </div>
+      <h2 id="modal-title"></h2>
+      <p class="modal-sub" id="modal-company-name"></p>
+      <div class="modal-tags" id="modal-tags"></div>
+      <p class="modal-detail" id="modal-detail"></p>
+      <div style="background:var(--green-light);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.5rem">
+        <div style="font-size:12px;font-weight:600;color:var(--green-dark);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Why you're a match</div>
+        <div id="modal-match-reason" style="font-size:13px;color:var(--green-dark);line-height:1.5"></div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-close" onclick="closeModal()">Not now</button>
+        <button class="modal-apply" onclick="confirmApply()">Apply for this study →</button>
+      </div>
+    </div>
+    <div id="modal-confirmed" style="display:none;text-align:center;padding:1rem 0">
+      <div class="confirm-icon">✓</div>
+      <h2>Application sent!</h2>
+      <p style="color:var(--gray-400);margin:8px 0 1.5rem;font-size:14px;font-weight:300">The research team will review your profile and get back to you within 48 hours.</p>
+      <button class="btn-primary" style="width:100%" onclick="closeModal()">Back to studies</button>
+    </div>
+  </div>
+</div>
+
+<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:400px;width:calc(100% - 32px);text-align:center">
+    <div style="font-size:32px;margin-bottom:1rem">⚠️</div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">Delete your account?</h2>
+    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.5">This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.</p>
+    <p style="font-size:13px;margin-bottom:1.5rem">Type <strong>DELETE</strong> to confirm:</p>
+    <input id="delete-confirm-input" type="text" placeholder="Type DELETE" style="width:100%;padding:10px;border:1.5px solid #E5E7EB;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;text-align:center;margin-bottom:1rem">
+    <div style="display:flex;gap:10px">
+      <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px">Cancel</button>
+      <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600">Delete account</button>
+    </div>
+  </div>
+</div>
+
+<div id="bankid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:calc(100% - 32px);text-align:center">
+    <div class="bankid-logo" style="width:64px;height:64px;border-radius:14px;margin:0 auto 1.25rem"><span style="font-size:13px;font-weight:700">Bank<br>ID</span></div>
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">BankID verification</h2>
+    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.6;font-weight:300">BankID integration coming soon — we'll notify you when it's available.</p>
+    <button onclick="closeBankIDModal()" class="btn-primary" style="width:100%">Got it</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── SUPABASE INIT ───────────────────────────────────────
+  // ⚠️  REPLACE these with your real Supabase project values
+  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
+
+  let db = null;
+  try {
+    if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    }
+  } catch(e) {
+    console.warn('Supabase SDK not loaded — running in demo mode');
+  }
+
+  // ─── XSS HELPER ──────────────────────────────────────────
+  function esc(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+
+  // ─── HELPERS ─────────────────────────────────────────────
+  function getChipValues(fieldName) {
+    const group = document.querySelector(`[data-field="${fieldName}"]`);
+    if (!group) return [];
+    return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = isError ? 'var(--coral)' : 'var(--gray-900)';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setLoading(btn, loading) {
+    if (loading) {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = 'Saving…';
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+    } else {
+      btn.textContent = btn.dataset.originalText || 'Continue →';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    }
+  }
+
+  // ─── SIGN-UP RATE LIMITING ──────────────────────────────
+  let signupRateLimited = false;
+
+  // ─── PASSWORD STRENGTH ──────────────────────────────────
+  function checkPasswordStrength(val) {
+    const bar   = document.getElementById('pw-strength-bar');
+    const fill  = document.getElementById('pw-strength-fill');
+    const label = document.getElementById('pw-strength-label');
+    if (!val) { bar.style.display='none'; label.style.display='none'; return; }
+    bar.style.display='block'; label.style.display='block';
+    let score = 0;
+    if (val.length >= 8)  score++;
+    if (val.length >= 12) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const levels = [
+      { label:'Too short', color:'#DC2626', width:'20%' },
+      { label:'Weak',      color:'#DC2626', width:'30%' },
+      { label:'Fair',      color:'#B45309', width:'55%' },
+      { label:'Good',      color:'#2563EB', width:'75%' },
+      { label:'Strong',    color:'#00C47A', width:'100%'},
+      { label:'Very strong',color:'#00C47A',width:'100%'},
+    ];
+    const l = levels[Math.min(score, 5)];
+    fill.style.width = l.width;
+    fill.style.background = l.color;
+    label.textContent = l.label;
+    label.style.color = l.color;
+  }
+
+  // ─── STEP 1: SIGN UP ────────────────────────────────────
+  async function signUpUser() {
+    if (signupRateLimited) return false;
+
+    const fname    = document.getElementById('fname').value.trim();
+    const lname    = document.getElementById('lname').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const referral = document.getElementById('referral').value || null;
+
+    // Clear previous inline errors
+    ['err-fname','err-email','err-password'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = ''; el.classList.remove('show'); }
+    });
+
+    // Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let valid = true;
+
+    if (!fname) {
+      const el = document.getElementById('err-fname');
+      if (el) { el.textContent = 'Please enter your first name'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (!email) {
+      const el = document.getElementById('err-email');
+      if (el) { el.textContent = 'Please enter your email address'; el.classList.add('show'); }
+      valid = false;
+    } else if (!emailRegex.test(email)) {
+      const el = document.getElementById('err-email');
+      if (el) { el.textContent = 'Please enter a valid email address'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (password.length < 8) {
+      const el = document.getElementById('err-password');
+      if (el) { el.textContent = 'Password must be at least 8 characters'; el.classList.add('show'); }
+      valid = false;
+    }
+
+    if (!valid) return false;
+
+    if (!db) {
+      // Demo mode — show confirmation message
+      document.getElementById('email-confirm-msg').style.display = 'block';
+      const formEls = document.querySelectorAll('#step-1 .field-row, #step-1 .field, #step-1 .nav-buttons');
+      formEls.forEach(el => el.style.display = 'none');
+      return false;
+    }
+
+    const btn = document.querySelector('#step-1 .btn-next');
+    setLoading(btn, true);
+
+    // Rate limit
+    signupRateLimited = true;
+    setTimeout(() => { signupRateLimited = false; }, 3000);
+
+    try {
+      const { data, error } = await db.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: fname,
+            last_name: lname,
+            role: 'contributor',
+            referral_source: referral
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Show email confirmation message instead of advancing
+      document.getElementById('email-confirm-msg').style.display = 'block';
+      const formEls = document.querySelectorAll('#step-1 .field-row, #step-1 .field, #step-1 .nav-buttons');
+      formEls.forEach(el => el.style.display = 'none');
+      setLoading(btn, false);
+      return false;
+    } catch (err) {
+      console.error('Sign-up error:', err);
+      showToast(err.message || 'Sign-up failed', true);
+      setLoading(btn, false);
+      signupRateLimited = false;
+      return false;
+    }
+  }
+
+  // ─── STEP 2: ABOUT YOU → save to contributors table ─────
+  async function saveStep2() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-2 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const { error } = await db.from('contributors').update({
+        date_of_birth:    document.getElementById('dob').value || null,
+        gender:           document.getElementById('gender').value,
+        country:          document.getElementById('country').value,
+        city:             document.getElementById('city').value.trim() || null,
+        employment:       document.getElementById('employment').value,
+        income:           document.getElementById('income').value,
+        living_situation: getChipValues('living_situation'),
+        children:         getChipValues('children'),
+        onboarding_step:  3
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 2 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── STEP 3: INTERESTS ──────────────────────────────────
+  async function saveStep3() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-3 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const { error } = await db.from('contributors').update({
+        interests_lifestyle: getChipValues('interests_lifestyle'),
+        interests_tech:      getChipValues('interests_tech'),
+        interests_finance:   getChipValues('interests_finance'),
+        brands:              getChipValues('brands'),
+        onboarding_step:     4
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 3 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── STEP 4: AVAILABILITY ──────────────────────────────
+  async function saveStep4() {
+    if (!db) { showToast('Demo mode — skipping save'); return true; }
+    const btn = document.querySelector('#step-4 .btn-next');
+    setLoading(btn, true);
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      const sessionLengths = getChipValues('max_session_length');
+
+      const { error } = await db.from('contributors').update({
+        study_formats:      getChipValues('study_formats'),
+        available_times:    getChipValues('available_times'),
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        frequency:          document.getElementById('frequency').value,
+        min_pay_per_hour:   parseInt(document.getElementById('minpay').value, 10),
+        additional_notes:   document.getElementById('additional_notes').value.trim() || null,
+        onboarding_step:    5,
+        onboarding_complete: true
+      }).eq('id', user.id);
+
+      if (error) throw error;
+      setLoading(btn, false);
+      return true;
+    } catch (err) {
+      console.error('Step 4 save error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+      return false;
+    }
+  }
+
+  // ─── JOBS (demo fallback — replaced by loadJobs() on login) ─
+  let jobs = [
+    {
+      id: 1, company: 'H&M', title: 'Online shopping experience research',
+      desc: 'Share how you browse and buy fashion online. Walk through the H&M app with a researcher and share your honest thoughts.',
+      pay: 45, payType: 'per session', duration: '60-min video call',
+      tags: [{text:'Women 25–45',cls:'tag-green'},{text:'H&M shopper',cls:'tag-blue'},{text:'Online shopper',cls:'tag-amber'},{text:'UK only',cls:'tag-gray'}],
+      match: 97, spots: 8, filled: 5, format: 'online', featured: true,
+      matchReason: 'You\'re a woman in your 30s, based in the UK, who shops online — exactly the profile H&M is looking for.',
+      detail: 'Help H&M understand how real shoppers experience their digital products. You\'ll be on a 60-minute video call with a researcher where you browse the H&M website and app naturally, sharing your thoughts aloud. No preparation needed — just be yourself.'
+    },
+    {
+      id: 2, company: 'Lloyds', title: 'Digital banking app usability study',
+      desc: 'Evaluate new features in mobile banking with a researcher. £80 for 90 minutes.',
+      pay: 80, payType: 'per session', duration: '90-min in-person, London',
+      tags: [{text:'35–60',cls:'tag-green'},{text:'Lloyds customer',cls:'tag-blue'},{text:'4.5★+ required',cls:'tag-amber'},{text:'London/commutable',cls:'tag-gray'}],
+      match: 91, spots: 8, filled: 4, format: 'online', featured: false,
+      matchReason: 'Your 4.8★ Elite rating unlocks this premium study. Lloyds specifically requested top-rated contributors.',
+      detail: 'Lloyds Bank is testing a new version of their mobile banking app and needs real customers to help identify pain points. You\'ll sit with a researcher at their Canary Wharf office and complete a series of tasks in the app while thinking aloud.'
+    },
+    {
+      id: 3, company: 'ASOS', title: 'Gen Z vs Millennial fashion focus group',
+      desc: 'Join a 45-minute online group discussion about fashion discovery, trends and how you shop for clothes.',
+      pay: 35, payType: 'per session', duration: '45-min group video call',
+      tags: [{text:'25–40',cls:'tag-green'},{text:'Fashion shopper',cls:'tag-blue'},{text:'Social media user',cls:'tag-gray'}],
+      match: 94, spots: 12, filled: 9, format: 'online', featured: false,
+      matchReason: 'Your age, fashion interests and social media usage are a strong match for this group.',
+      detail: 'ASOS is exploring how different generations discover and buy fashion online. You\'ll join a small group of 6 people for an open, moderated conversation. No right or wrong answers — just your genuine perspective.'
+    },
+    {
+      id: 4, company: 'Nike', title: 'Activewear style & fit survey',
+      desc: 'Short 20-minute online survey about how you buy athletic clothing. No video required.',
+      pay: 12, payType: 'per survey', duration: '20-min online survey',
+      tags: [{text:'Any age',cls:'tag-green'},{text:'Fitness interest',cls:'tag-blue'},{text:'Online',cls:'tag-gray'}],
+      match: 88, spots: 100, filled: 67, format: 'online', featured: false,
+      matchReason: 'You listed fitness & wellness as an interest — Nike is looking for people who buy athletic gear.',
+      detail: 'Nike wants to understand how people shop for sportswear. Answer questions about your buying habits, style preferences and what matters most when choosing activewear. Quick, easy, and no video required.'
+    },
+    {
+      id: 5, company: 'Tesco', title: 'Online grocery delivery experience',
+      desc: 'Talk us through your experience using grocery delivery apps. Do you use Tesco, Ocado, or others?',
+      pay: 30, payType: 'per session', duration: '30-min video call',
+      tags: [{text:'Grocery shopper',cls:'tag-green'},{text:'Has children',cls:'tag-amber'},{text:'Online delivery user',cls:'tag-blue'}],
+      match: 85, spots: 15, filled: 11, format: 'online', featured: false,
+      matchReason: 'You have children and shop online — a key profile for Tesco\'s family grocery research.',
+      detail: 'Tesco Groceries is looking at how families use online grocery delivery. You\'ll have a 30-minute video call with a researcher and walk through a recent grocery order, talking about what worked, what frustrated you, and what you wish was different.'
+    },
+    {
+      id: 6, company: 'Boots', title: 'Beauty & skincare loyalty programme research',
+      desc: 'In-person 75-minute session at Boots HQ, Manchester. Discuss your experience with loyalty schemes and beauty buying.',
+      pay: 65, payType: 'per session', duration: '75-min in-person, Manchester',
+      tags: [{text:'Women 25–50',cls:'tag-green'},{text:'Beauty shopper',cls:'tag-blue'},{text:'Manchester area',cls:'tag-amber'},{text:'4.0★+',cls:'tag-gray'}],
+      match: 99, spots: 6, filled: 3, format: 'in-person', featured: true,
+      matchReason: 'Perfect match: you\'re a woman interested in beauty, based in Manchester, with a 4.8★ rating. This study was built for someone like you.',
+      detail: 'Boots wants to overhaul their Advantage Card loyalty scheme and needs real shoppers to help shape the new experience. You\'ll visit their Manchester office for a 75-minute in-depth interview with their UX team. Tea, coffee and biscuits provided!'
+    }
+  ];
+
+  // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
+  const FORMAT_LABEL = {
+    video_call: 'Video call', in_person: 'In-person',
+    online_survey: 'Online survey', diary_study: 'Diary study',
+    product_testing: 'Product testing'
+  };
+  const FORMAT_FILTER = {
+    video_call: 'online', online_survey: 'online',
+    diary_study: 'online', product_testing: 'online', in_person: 'in-person'
+  };
+  const AGE_LABEL = {
+    '18_24':'18–24','25_34':'25–34','35_44':'35–44',
+    '45_54':'45–54','55_64':'55–64','65_plus':'65+','any':'Any age'
+  };
+  const GENDER_LABEL = { woman:'Women', man:'Men', non_binary:'Non-binary', any:'Any gender' };
+  const INTEREST_LABEL = {
+    fashion:'Fashion & clothing', online_shopper:'Online shopper', beauty:'Beauty & skincare',
+    sustainability:'Sustainability', social_media:'Social media',
+    parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
+  };
+
+  async function loadJobs() {
+    if (!db) return; // keep demo data
+    try {
+      const { data: studies, error } = await db
+        .from('studies')
+        .select('*, companies(name)')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (!studies || studies.length === 0) {
+        jobs = [];
+        return;
+      }
+
+      jobs = studies.map(s => {
+        const company    = s.companies?.name || 'Vetd client';
+        const pay        = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
+        const spots      = s.spots || 0;
+        const filled     = s.filled_spots || 0;
+        const fmtLabel   = FORMAT_LABEL[s.format] || s.format || '';
+        const duration   = s.duration_minutes
+          ? `${s.duration_minutes}-min ${fmtLabel.toLowerCase()}`
+          : fmtLabel;
+
+        // Build display tags from targeting criteria
+        const tags = [];
+        const ages      = Array.isArray(s.target_age_ranges) ? s.target_age_ranges : [];
+        const genders   = Array.isArray(s.target_genders)    ? s.target_genders    : [];
+        const interests = Array.isArray(s.target_interests)  ? s.target_interests  : [];
+        const locs      = Array.isArray(s.target_locations)  ? s.target_locations  : [];
+
+        if (ages.length && !ages.includes('any'))
+          tags.push({ text: ages.map(a => AGE_LABEL[a] || a).join(', '), cls: 'tag-green' });
+        if (genders.length && !genders.includes('any'))
+          tags.push({ text: genders.map(g => GENDER_LABEL[g] || g).join(' / '), cls: 'tag-green' });
+        interests.slice(0, 2).forEach(i =>
+          tags.push({ text: INTEREST_LABEL[i] || i, cls: 'tag-blue' }));
+        if (locs.includes('uk_any'))
+          tags.push({ text: 'UK only', cls: 'tag-gray' });
+        else if (locs.includes('remote'))
+          tags.push({ text: 'Remote only', cls: 'tag-gray' });
+        else if (locs.length)
+          tags.push({ text: locs[0].charAt(0).toUpperCase() + locs[0].slice(1), cls: 'tag-gray' });
+        if (s.min_rating)
+          tags.push({ text: `${s.min_rating}★+ rating`, cls: 'tag-amber' });
+
+        return {
+          id:          s.id,
+          company,
+          title:       s.title || 'Untitled study',
+          desc:        s.description || '',
+          pay,
+          payType:     s.format === 'online_survey' ? 'per survey' : 'per session',
+          duration,
+          tags,
+          match:       85,
+          spots,
+          filled,
+          format:      FORMAT_FILTER[s.format] || 'online',
+          featured:    false,
+          matchReason: 'This study is looking for participants that match your profile.',
+          detail:      s.description || 'No additional details provided.'
+        };
+      });
+    } catch(err) {
+      console.warn('Could not load studies — showing demo data:', err);
+      // jobs keeps its demo values as fallback
+    }
+  }
+
+  let appliedJobs = new Set();
+  let currentUser  = null;
+  let currentUserName = '';
+  let currentJob = null;
+  let currentStep = 1;
+  let _profileData = null;
+  let _contribData = null;
+
+  // ─── RENDER JOBS ────────────────────────────────────────
+  function renderJobs(containerId, subset) {
+    const container = document.getElementById(containerId);
+    if (!subset.length) {
+      const isDashboard = containerId === 'dashboard-jobs';
+      container.innerHTML = isDashboard
+        ? '<p style="color:var(--gray-400);font-size:13px;font-weight:300">No active studies right now — check back soon.</p>'
+        : '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No studies available</h3><p>There are no active studies right now. Check back soon.</p></div>';
+      return;
+    }
+    container.innerHTML = subset.map(job => `
+      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
+        ${job.featured ? '<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">★ Top match for you</div>' : ''}
+        <div class="job-header">
+          <div class="job-company">
+            <div class="company-badge">${esc(job.company)}</div>
+            <div><div class="job-company-name">${esc(job.company)}</div><div class="job-title">${esc(job.title)}</div></div>
+          </div>
+          <div class="job-pay">
+            <div class="pay-amount">${fmtPay(job.pay)}</div>
+            <div class="pay-type">${esc(job.payType)}</div>
+          </div>
+        </div>
+        <div class="job-desc">${esc(job.desc)}</div>
+        <div class="job-tags">${job.tags.map(t => `<span class="tag ${esc(t.cls)}">${esc(t.text)}</span>`).join('')}</div>
+        <div class="job-footer">
+          <div>
+            <div class="job-meta">${esc(job.duration)} · ${job.spots - job.filled} spots left</div>
+            <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="job-match">
+              <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
+              <div class="match-pct">${job.match}%</div>
+            </div>
+            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">Apply</button>`}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function filterJobs(type, btn) {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    let subset = jobs;
+    if (type === 'matched') subset = jobs.filter(j => j.match >= 90);
+    if (type === 'online') subset = jobs.filter(j => j.format === 'online');
+    if (type === 'high-pay') subset = jobs.filter(j => j.pay >= 40);
+    renderJobs('jobs-list', subset);
+  }
+
+  // ─── MODAL ──────────────────────────────────────────────
+  function openModal(id) {
+    currentJob = jobs.find(j => j.id == id);
+    document.getElementById('modal-pre-apply').style.display = 'block';
+    document.getElementById('modal-confirmed').style.display = 'none';
+    document.getElementById('modal-company-badge').textContent = currentJob.company;
+    document.getElementById('modal-title').textContent = currentJob.title;
+    document.getElementById('modal-company-name').textContent = currentJob.company + ' · ' + currentJob.duration;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(currentJob.pay)}</div><div class="modal-pay-sub">${currentJob.payType}</div>`;
+    document.getElementById('modal-tags').innerHTML = currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
+    document.getElementById('modal-detail').textContent = currentJob.detail;
+    document.getElementById('modal-match-reason').textContent = currentJob.matchReason;
+    document.getElementById('apply-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('apply-modal').classList.remove('open');
+    if (currentJob) {
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    }
+  }
+
+  function confirmApply() {
+    if (currentJob) {
+      applyToStudy(currentJob.id);
+      document.getElementById('modal-pre-apply').style.display = 'none';
+      document.getElementById('modal-confirmed').style.display = 'block';
+    }
+  }
+
+  // ─── NAVIGATION ─────────────────────────────────────────
+  function showTab(tab, btn) {
+    ['dashboard','jobs','profile'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function startOnboarding() {
+    document.getElementById('landing').classList.remove('active');
+    document.getElementById('onboarding').classList.add('active');
+    document.getElementById('lang-toggle').classList.add('light');
+  }
+
+  async function goToApp() {
+    ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
+    document.getElementById('app').classList.add('active');
+    document.getElementById('lang-toggle').classList.add('light');
+    await Promise.all([loadJobs(), loadAppliedJobs()]);
+    renderJobs('dashboard-jobs', jobs.slice(0,2));
+    renderJobs('jobs-list', jobs);
+    loadUserProfile();
+    loadNotifications();
+    loadPayments();
+  }
+
+  // ─── LOAD WHICH STUDIES THE USER HAS ALREADY APPLIED TO ──
+  async function loadAppliedJobs() {
+    if (!db) return;
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      currentUser = user;
+      const { data, error } = await db
+        .from('applications')
+        .select('study_id')
+        .eq('contributor_id', user.id);
+      if (error) throw error;
+      appliedJobs = new Set((data || []).map(a => a.study_id));
+    } catch(err) {
+      console.warn('Could not load applied studies:', err);
+    }
+  }
+
+  // ─── APPLY TO STUDY ───────────────────────────────────────
+  async function applyToStudy(studyId) {
+    // Optimistic UI update first
+    appliedJobs.add(studyId);
+    renderJobs('jobs-list', jobs);
+    renderJobs('dashboard-jobs', jobs.slice(0,2));
+
+    if (!db || !currentUser) return; // demo mode — local only
+
+    try {
+      // Fetch study details for notification (created_by + title)
+      const { data: study } = await db.from('studies').select('title, created_by').eq('id', studyId).single();
+
+      const { error } = await db.from('applications').insert({
+        study_id:       studyId,
+        contributor_id: currentUser.id,
+        status:         'pending',
+        applied_at:     new Date().toISOString()
+      });
+      // 23505 = unique_violation (already applied) — treat as success
+      if (error && error.code !== '23505') throw error;
+
+      // Notify the client who owns the study
+      if (study?.created_by) {
+        const name = currentUserName || 'A contributor';
+        await sendNotification(
+          study.created_by,
+          'New application received',
+          `${name} applied to your study "${study.title}".`,
+          null
+        );
+      }
+
+      showToast('Application submitted! ✓');
+    } catch(err) {
+      console.error('Apply error:', err);
+      // Roll back optimistic update
+      appliedJobs.delete(studyId);
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0,2));
+      showToast('Could not submit application — try again', true);
+    }
+  }
+
+  // ─── STEP NAVIGATION (with Supabase saves) ─────────────
+  async function nextStep(step) {
+    let saveOk = true;
+
+    if (step === 1) saveOk = await signUpUser();
+    if (step === 2) saveOk = await saveStep2();
+    if (step === 3) saveOk = await saveStep3();
+    if (step === 4) saveOk = await saveStep4();
+
+    if (!saveOk) return; // stay on current step if save failed
+
+    if (step < 5) {
+      document.getElementById('step-' + step).classList.remove('active');
+      document.getElementById('step-' + (step + 1)).classList.add('active');
+      updateSidebar(step + 1);
+    }
+  }
+
+  function prevStep(step) {
+    document.getElementById('step-' + step).classList.remove('active');
+    document.getElementById('step-' + (step - 1)).classList.add('active');
+    updateSidebar(step - 1);
+  }
+
+  function updateSidebar(current) {
+    currentStep = current;
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('sidebar-step-' + i);
+      const dot = document.getElementById('dot-' + i);
+      el.classList.remove('current','done');
+      if (i < current) { el.classList.add('done'); dot.textContent = '✓'; }
+      else if (i === current) { el.classList.add('current'); dot.textContent = i; }
+      else { dot.textContent = i; }
+    }
+  }
+
+  function toggleChip(el) {
+    const group = el.closest('.chip-group');
+    // Single-select groups: deselect siblings first
+    if (group && group.dataset.single === 'true') {
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    }
+    el.classList.toggle('selected');
+  }
+
+  document.getElementById('apply-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ─── LOAD USER PROFILE ──────────────────────────────────
+  async function loadUserProfile() {
+    if (!db) return;
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const [{ data: profile }, { data: contrib }] = await Promise.all([
+        db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified').eq('id', user.id).single()
+      ]);
+      _profileData = profile;
+      _contribData = contrib;
+
+      // ── Name & initials ──
+      const firstName = profile?.first_name || user.user_metadata?.first_name || '';
+      const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
+      const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Member';
+      const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
+
+      // ── Stats (safe defaults for new members) ──
+      const studiesDone    = contrib?.total_studies    ?? 0;
+      const totalEarned    = contrib?.total_earned    ?? 0;
+      const rating         = (studiesDone > 0 && contrib?.rating != null) ? Number(contrib.rating) : null;
+      const completionRate = (studiesDone > 0 && contrib?.completion_rate != null) ? Number(contrib.completion_rate) : null;
+      const tier           = contrib?.tier || 'standard';
+
+      // ── Location & member since ──
+      const city     = contrib?.city    || null;
+      const country  = contrib?.country || null;
+      const location = [city, country].filter(Boolean).join(', ');
+      const createdAt   = profile?.created_at || user.created_at;
+      const memberSince = createdAt
+        ? new Date(createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+        : null;
+
+      // ── Tier label & CSS class ──
+      const tierLabel = tier === 'elite'   ? '★ Elite contributor'
+                      : tier === 'premium' ? '⬡ Premium contributor'
+                      : studiesDone === 0  ? 'New member'
+                      : 'Standard member';
+      const tierClass = tier === 'elite'   ? 'tier-badge tier-elite'
+                      : tier === 'premium' ? 'tier-badge tier-blue'
+                      : 'tier-badge';
+
+      // ── Topbar avatar ──
+      currentUserName = fullName;
+      document.getElementById('topbar-avatar').textContent = initials;
+
+      // ── Dashboard greeting ──
+      const hour = new Date().getHours();
+      const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
+
+      // ── Rating hero ──
+      document.getElementById('dash-rating-desc').textContent =
+        studiesDone > 0
+          ? `Based on ${studiesDone} completed ${studiesDone === 1 ? 'study' : 'studies'}`
+          : 'Complete your first study to earn a rating';
+
+      const dashTier = document.getElementById('dash-tier-badge');
+      dashTier.textContent = tierLabel;
+      dashTier.className   = tierClass;
+
+      document.getElementById('dash-rating-num').textContent = rating !== null ? rating.toFixed(1) : '—';
+
+      const starsFilled = rating !== null ? Math.round(rating) : 0;
+      document.getElementById('dash-rating-stars').innerHTML = [1,2,3,4,5]
+        .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
+        .join('');
+
+      document.getElementById('dash-rating-pct').textContent =
+        rating === null        ? 'No ratings yet'
+        : rating >= 4.7        ? 'Top 5% of contributors'
+        : rating >= 4.5        ? 'Top 15% of contributors'
+        : `${rating.toFixed(1)} overall rating`;
+
+      // ── Stat cards ──
+      document.getElementById('stat-earned').textContent     = `£${totalEarned}`;
+      document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
+
+      document.getElementById('stat-studies').textContent     = studiesDone;
+      document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? 'No studies yet' : `${studiesDone} completed`;
+
+      document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
+      document.getElementById('stat-completion-sub').textContent = completionRate === null ? 'No data yet'
+        : completionRate >= 90 ? 'Excellent' : completionRate >= 70 ? 'Good' : 'Keep it up';
+
+      // ── Profile tab ──
+      document.getElementById('profile-avatar-big').textContent = initials;
+      document.getElementById('profile-fullname').textContent   = fullName;
+
+      const subtitleParts = [];
+      if (location)    subtitleParts.push(location);
+      if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
+      document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || 'New member';
+
+      const profileTier = document.getElementById('profile-tier-badge');
+      profileTier.textContent = tierLabel;
+      profileTier.className   = tierClass;
+
+      const statsLineParts = [];
+      if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
+      statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
+      statsLineParts.push(`£${totalEarned} earned`);
+      document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
+
+      // ── Personal details ──
+      if (contrib?.date_of_birth) {
+        const dob   = new Date(contrib.date_of_birth);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+        document.getElementById('profile-detail-age').textContent = age;
+      } else {
+        document.getElementById('profile-detail-age').textContent = '—';
+      }
+
+      const genderMap = { woman: 'Woman', man: 'Man', non_binary: 'Non-binary', self_describe: 'Self-described', prefer_not_to_say: 'Prefer not to say' };
+      document.getElementById('profile-detail-gender').textContent = genderMap[contrib?.gender] || '—';
+
+      document.getElementById('profile-detail-location').textContent = city || '—';
+
+      const employmentMap = { full_time: 'Full-time', part_time: 'Part-time', self_employed: 'Self-employed', student: 'Student', unemployed: 'Not employed', retired: 'Retired' };
+      document.getElementById('profile-detail-employment').textContent = employmentMap[contrib?.employment] || '—';
+
+      const childrenMap = { no_children: 'No children', under_5: 'Under 5', children_5_12: '5–12', teenagers: 'Teenagers', adult_children: 'Adult children' };
+      const childrenVals = Array.isArray(contrib?.children) ? contrib.children : [];
+      document.getElementById('profile-detail-children').textContent = childrenVals.length ? childrenVals.map(c => childrenMap[c] || c).join(', ') : '—';
+
+      const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
+      const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
+      document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
+
+      // ── Rating breakdown (async, non-blocking) ──
+      loadRatingBreakdown();
+
+      // ── BankID verification status ──
+      const verified = contrib?.bankid_verified === true;
+      const dashBadge = document.getElementById('dash-bankid-badge');
+      if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
+
+      const bankidStatus = document.getElementById('bankid-status');
+      if (bankidStatus) {
+        bankidStatus.innerHTML = verified
+          ? '<span class="bankid-verified-badge">✓ Verified</span>'
+          : '<button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>';
+      }
+
+    } catch(err) {
+      console.error('Failed to load user profile:', err);
+    }
+  }
+
+  // ─── BANKID MODAL ───────────────────────────────────────
+  function openBankIDModal() {
+    const m = document.getElementById('bankid-modal');
+    m.style.display = 'flex';
+  }
+  function closeBankIDModal() {
+    document.getElementById('bankid-modal').style.display = 'none';
+  }
+
+  // ─── PROFILE EDITING ────────────────────────────────────
+  function getEditChipValues(fieldName) {
+    const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
+    if (!group) return [];
+    return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
+  }
+
+  function setEditChips(fieldName, values) {
+    const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
+    if (!group) return;
+    const arr = Array.isArray(values) ? values : (values ? [values] : []);
+    group.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('selected', arr.includes(c.dataset.value));
+    });
+  }
+
+  function enterEditMode() {
+    document.getElementById('profile-grid').style.display = 'none';
+    document.getElementById('profile-edit-form').style.display = 'block';
+    document.getElementById('edit-profile-btn').style.display = 'none';
+
+    document.getElementById('edit-fname').value = _profileData?.first_name || '';
+    document.getElementById('edit-lname').value = _profileData?.last_name  || '';
+
+    document.getElementById('edit-dob').value        = _contribData?.date_of_birth || '';
+    document.getElementById('edit-gender').value     = _contribData?.gender        || 'woman';
+    document.getElementById('edit-country').value    = _contribData?.country       || 'United Kingdom';
+    document.getElementById('edit-city').value       = _contribData?.city          || '';
+    document.getElementById('edit-employment').value = _contribData?.employment    || 'full_time';
+    document.getElementById('edit-income').value     = _contribData?.income        || '';
+
+    setEditChips('living_situation',    _contribData?.living_situation);
+    setEditChips('children',            _contribData?.children);
+    setEditChips('interests_lifestyle', _contribData?.interests_lifestyle);
+    setEditChips('interests_tech',      _contribData?.interests_tech);
+    setEditChips('interests_finance',   _contribData?.interests_finance);
+    setEditChips('brands',              _contribData?.brands);
+    setEditChips('study_formats',       _contribData?.study_formats);
+    setEditChips('available_times',     _contribData?.available_times);
+    setEditChips('max_session_length',  _contribData?.max_session_length ? [_contribData.max_session_length] : []);
+
+    document.getElementById('edit-frequency').value = _contribData?.frequency || 'once_a_month';
+
+    const minpay = _contribData?.min_pay_per_hour || 25;
+    document.getElementById('edit-minpay').value = minpay;
+    document.getElementById('edit-payval').textContent = '£' + minpay;
+
+    document.getElementById('edit-additional_notes').value = _contribData?.additional_notes || '';
+  }
+
+  function cancelEdit() {
+    document.getElementById('profile-edit-form').style.display = 'none';
+    document.getElementById('profile-grid').style.display = '';
+    document.getElementById('edit-profile-btn').style.display = '';
+  }
+
+  async function saveProfile() {
+    if (!db || !currentUser) { showToast('Not connected', true); return; }
+
+    const fname = document.getElementById('edit-fname').value.trim();
+    const lname = document.getElementById('edit-lname').value.trim();
+    if (!fname) { showToast('First name is required', true); return; }
+
+    const btn = document.getElementById('edit-save-btn');
+    setLoading(btn, true);
+
+    try {
+      const sessionLengths = getEditChipValues('max_session_length');
+
+      const [{ error: pErr }, { error: cErr }] = await Promise.all([
+        db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', currentUser.id),
+        db.from('contributors').update({
+          date_of_birth:       document.getElementById('edit-dob').value || null,
+          gender:              document.getElementById('edit-gender').value,
+          country:             document.getElementById('edit-country').value,
+          city:                document.getElementById('edit-city').value.trim() || null,
+          employment:          document.getElementById('edit-employment').value,
+          income:              document.getElementById('edit-income').value || null,
+          living_situation:    getEditChipValues('living_situation'),
+          children:            getEditChipValues('children'),
+          interests_lifestyle: getEditChipValues('interests_lifestyle'),
+          interests_tech:      getEditChipValues('interests_tech'),
+          interests_finance:   getEditChipValues('interests_finance'),
+          brands:              getEditChipValues('brands'),
+          study_formats:       getEditChipValues('study_formats'),
+          available_times:     getEditChipValues('available_times'),
+          max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
+          frequency:           document.getElementById('edit-frequency').value,
+          min_pay_per_hour:    parseInt(document.getElementById('edit-minpay').value, 10),
+          additional_notes:    document.getElementById('edit-additional_notes').value.trim() || null
+        }).eq('id', currentUser.id)
+      ]);
+
+      if (pErr) throw pErr;
+      if (cErr) throw cErr;
+
+      cancelEdit();
+      await loadUserProfile();
+      showToast('Profile updated ✓');
+    } catch(err) {
+      console.error('Save profile error:', err);
+      showToast(err.message || 'Could not save — try again', true);
+      setLoading(btn, false);
+    }
+  }
+
+  // ─── PAYMENTS ─────────────────────────────────────────
+  async function loadPayments() {
+    if (!db || !currentUser) return;
+    try {
+      const { data: payments, error } = await db
+        .from('payments')
+        .select('id, amount, status, paid_at, created_at, application_id')
+        .eq('contributor_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      const all     = payments || [];
+      const paid    = all.filter(p => p.status === 'paid');
+      const totalPaid = paid.reduce((s, p) => s + (p.amount || 0), 0);
+
+      // Update dashboard earnings stat from real payment data
+      const lang = localStorage.getItem('vetd_lang') || 'en';
+      const fmtEarned = lang === 'sv'
+        ? `${Math.round(totalPaid / 100 * 13)} kr`
+        : `£${Math.round(totalPaid / 100)}`;
+      document.getElementById('stat-earned').textContent = fmtEarned;
+      document.getElementById('stat-earned-sub').textContent = totalPaid === 0
+        ? 'Complete a study to start earning'
+        : `${paid.length} paid ${paid.length === 1 ? 'study' : 'studies'}`;
+
+      // Build study title map via applications → studies
+      const appIds = all.map(p => p.application_id).filter(Boolean);
+      let studyTitleMap = {};
+      if (appIds.length) {
+        const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
+        const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
+        if (studyIds.length) {
+          const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
+          const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
+          (apps || []).forEach(a => { studyTitleMap[a.id] = sm[a.study_id] || 'Study'; });
+        }
+      }
+
+      renderPaymentHistory(all.map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' })));
+    } catch(err) {
+      console.warn('loadPayments error:', err);
+    }
+  }
+
+  function renderPaymentHistory(payments) {
+    const section = document.getElementById('payment-history-section');
+    if (!section) return;
+    if (!payments.length) {
+      section.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">No payment history yet. Complete a study to start earning.</p>';
+      return;
+    }
+
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const fmt = amt => lang === 'sv' ? `${Math.round(amt / 100 * 13)} kr` : `£${Math.round(amt / 100)}`;
+
+    const pending = payments.filter(p => p.status !== 'paid');
+    const paid    = payments.filter(p => p.status === 'paid');
+
+    const renderRow = (p, isPaid) => {
+      const d = p.paid_at || p.created_at;
+      const date = d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      const statusLabel = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+      const amtStyle = isPaid ? '' : 'color:var(--amber)';
+      return `<div class="history-item">
+        <div>
+          <div class="history-title">${p.studyTitle}</div>
+          <div class="history-meta">${statusLabel} · ${date}</div>
+        </div>
+        <div class="history-pay" style="${amtStyle}">${fmt(p.amount)}</div>
+      </div>`;
+    };
+
+    let html = '';
+    if (pending.length) {
+      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber);margin-bottom:8px">Pending (${pending.length})</div>`;
+      html += pending.map(p => renderRow(p, false)).join('');
+    }
+    if (paid.length) {
+      if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">Paid (${paid.length})</div>`;
+      html += paid.map(p => renderRow(p, true)).join('');
+    }
+    section.innerHTML = html;
+  }
+
+  // ─── RATING BREAKDOWN ─────────────────────────────────
+  async function loadRatingBreakdown() {
+    if (!db || !currentUser) return;
+    const container = document.getElementById('rating-breakdown-content');
+    if (!container) return;
+
+    try {
+      const { data, error } = await db
+        .from('ratings')
+        .select('punctuality, engagement, quality, honesty, profile_fit')
+        .eq('contributor_id', currentUser.id);
+      if (error) throw error;
+
+      if (!data || !data.length) {
+        container.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>';
+        return;
+      }
+
+      const count = data.length;
+      const avg = key => +(data.reduce((s, r) => s + (r[key] || 0), 0) / count).toFixed(1);
+
+      const dims = [
+        { label: 'Punctuality',    key: 'punctuality'  },
+        { label: 'Engagement',     key: 'engagement'   },
+        { label: 'Quality of input', key: 'quality'    },
+        { label: 'Honesty',        key: 'honesty'      },
+        { label: 'Profile fit',    key: 'profile_fit'  },
+      ];
+
+      container.innerHTML = dims.map(d => {
+        const score = avg(d.key);
+        const pct   = Math.round(score / 5 * 100);
+        return `
+          <div class="rating-breakdown-row">
+            <span class="rb-label">${d.label}</span>
+            <div class="rb-bar"><div class="rb-fill" style="width:${pct}%"></div></div>
+            <span class="rb-score">${score}</span>
+          </div>`;
+      }).join('') + `<p style="font-size:11px;color:var(--gray-400);margin-top:10px;font-weight:300">Based on ${count} ${count === 1 ? 'rating' : 'ratings'}</p>`;
+    } catch(err) {
+      console.warn('loadRatingBreakdown error:', err);
+    }
+  }
+
+  // ─── NOTIFICATIONS ────────────────────────────────────
+  async function loadNotifications() {
+    if (!db || !currentUser) return;
+    try {
+      const { data, error } = await db
+        .from('notifications')
+        .select('id, title, body, link, read, created_at')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      renderNotifications(data || []);
+    } catch(err) {
+      console.warn('Could not load notifications:', err);
+    }
+  }
+
+  function renderNotifications(notifs) {
+    const badge = document.getElementById('notif-count-badge');
+    const body  = document.getElementById('notif-panel-body');
+    const unreadCount = notifs.filter(n => !n.read).length;
+
+    // Badge
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    const dashList = document.getElementById('dash-notif-list');
+
+    if (!notifs.length) {
+      body.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+      if (dashList) dashList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+      return;
+    }
+
+    const rows = notifs.map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
+        <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
+        <div class="notif-row-content">
+          <div class="notif-row-title">${n.title}</div>
+          <div class="notif-row-body">${n.body}</div>
+          <div class="notif-row-time">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+
+    body.innerHTML = rows;
+    if (dashList) dashList.innerHTML = notifs.slice(0, 5).map(n => `
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
+        <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
+        <div class="notif-row-content">
+          <div class="notif-row-title">${n.title}</div>
+          <div class="notif-row-body">${n.body}</div>
+          <div class="notif-row-time">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleNotifPanel() {
+    const panel = document.getElementById('notif-panel');
+    panel.classList.toggle('open');
+  }
+
+  async function handleNotifClick(notifId, link) {
+    // Mark as read
+    if (db && currentUser) {
+      await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', currentUser.id);
+      // Refresh to update badge
+      loadNotifications();
+    }
+    if (link) window.location.href = link;
+    else document.getElementById('notif-panel').classList.remove('open');
+  }
+
+  async function markAllRead() {
+    if (!db || !currentUser) return;
+    try {
+      await db.from('notifications').update({ read: true }).eq('user_id', currentUser.id).eq('read', false);
+      loadNotifications();
+    } catch(err) {
+      console.warn('markAllRead error:', err);
+    }
+  }
+
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7)  return `${days}d ago`;
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  async function sendNotification(userId, title, body, link) {
+    if (!db) return;
+    try {
+      await db.rpc('insert_notification', {
+        p_user_id: userId,
+        p_title:   title,
+        p_body:    body,
+        p_link:    link || null
+      });
+    } catch(err) {
+      console.warn('sendNotification error:', err);
+    }
+  }
+
+  // Close notification panel when clicking outside
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('notif-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('notif-panel').classList.remove('open');
+    }
+  });
+
+  // ─── AUTO-LOGIN CHECK ──────────────────────────────────
+  // If user came from login page or has an active session, skip to dashboard
+  (async function checkSession() {
+    // Check URL flag first (instant, no waiting)
+    if (new URLSearchParams(window.location.search).has('logged_in')) {
+      goToApp();
+      return;
+    }
+    // Then check Supabase session
+    if (!db) return;
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        goToApp();
+      }
+    } catch(e) {
+      console.warn('Session check failed:', e);
+    }
+  })();
+
+  // ─── SIGN OUT ──────────────────────────────────────────
+  async function signOut() {
+    if (db) {
+      await db.auth.signOut();
+    }
+    window.location.href = 'login.html';
+  }
+
+  // ─── LANGUAGE TOGGLE ───────────────────────────────────
+  const LANG = {
+    en: {
+      landing_tag: 'Get paid. Get rated. Get better work.',
+      landing_headline_plain: 'Get paid. Get rated. Get',
+      landing_headline_em: 'better opportunities.',
+      landing_sub: 'Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.',
+      landing_cta: "Get started — it's free",
+      landing_signin: 'Sign in',
+      trust_contributors: 'avg contributor score',
+      trust_earned: 'avg annual earnings',
+      trust_studies: 'active studies',
+      ob_step1_title: 'Create your account',
+      ob_step1_sub: "Let's get the basics set up. Takes about 2 minutes.",
+      ob_step2_title: 'Tell us about yourself',
+      ob_step3_title: 'What are you into?',
+      ob_step4_title: 'When are you available?',
+      ob_name_label: 'First name',
+      ob_lname_label: 'Last name',
+      ob_email_label: 'Email address',
+      ob_pass_label: 'Password',
+      ob_pass_ph: 'At least 8 characters',
+      ob_dob_label: 'Date of birth',
+      ob_city_label: 'City / Town',
+      ob_city_ph: 'e.g. Manchester',
+      ob_gender_label: 'Gender',
+      nav_dashboard: 'Dashboard',
+      nav_browse: 'Browse studies',
+      nav_profile: 'My profile',
+      nav_notifications: 'Notifications',
+      sign_out: 'Sign out',
+      dash_welcome: 'Welcome back',
+      dash_studies: 'Studies done',
+      dash_earned: 'Total earned',
+      dash_rating: 'Your rating',
+      browse_title: 'Browse studies',
+      apply_btn: 'Apply',
+      applied_badge: 'Applied ✓',
+      filter_all: 'All studies',
+      filter_online: 'Online only',
+      filter_video: 'Video',
+      filter_person: 'In-person',
+      profile_title: 'My profile',
+    },
+    sv: {
+      landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
+      landing_headline_plain: 'Tjäna pengar. Få betyg. Få',
+      landing_headline_em: 'bättre möjligheter.',
+      landing_sub: 'Gå med i verifierade studier från ledande varumärken. Tjäna pengar för din ärliga åsikt. Bygg ett rykte som öppnar dörrar.',
+      landing_cta: 'Kom igång — det är gratis',
+      landing_signin: 'Logga in',
+      trust_contributors: 'verifierade deltagare',
+      trust_earned: 'totalt utbetalat',
+      trust_studies: 'aktiva studier',
+      ob_step1_title: 'Välkommen till Vetd',
+      ob_step1_sub: 'Låt oss skapa din profil. Det tar mindre än 3 minuter.',
+      ob_step2_title: 'Berätta om dig',
+      ob_step3_title: 'Dina intressen',
+      ob_step4_title: 'Tillgänglighet',
+      ob_name_label: 'Förnamn',
+      ob_lname_label: 'Efternamn',
+      ob_email_label: 'E-postadress',
+      ob_pass_label: 'Lösenord',
+      ob_pass_ph: 'Minst 8 tecken',
+      ob_dob_label: 'Födelsedatum',
+      ob_city_label: 'Stad',
+      ob_city_ph: 't.ex. Stockholm',
+      ob_gender_label: 'Kön',
+      nav_dashboard: 'Översikt',
+      nav_browse: 'Bläddra',
+      nav_profile: 'Profil',
+      nav_notifications: 'Aviseringar',
+      sign_out: 'Logga ut',
+      dash_welcome: 'Välkommen tillbaka',
+      dash_studies: 'Studier gjorda',
+      dash_earned: 'Totalt tjänat',
+      dash_rating: 'Ditt betyg',
+      browse_title: 'Tillgängliga studier',
+      apply_btn: 'Ansök',
+      applied_badge: 'Ansökt ✓',
+      filter_all: 'Alla',
+      filter_online: 'Online',
+      filter_video: 'Video',
+      filter_person: 'På plats',
+      profile_title: 'Min profil',
+    }
+  };
+
+  function fmtPay(pay) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    return lang === 'sv' ? `${pay * 13} kr` : `£${pay}`;
+  }
+
+  function setLang(lang) {
+    if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
+    document.getElementById('lb-en').classList.toggle('active', lang === 'en');
+    document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+    // Switch toggle style based on current screen
+    const toggle = document.getElementById('lang-toggle');
+    const appVisible = document.getElementById('app') && document.getElementById('app').classList.contains('active');
+    const onboardingVisible = document.getElementById('onboarding') && document.getElementById('onboarding').classList.contains('active');
+    if (appVisible || onboardingVisible) {
+      toggle.classList.add('light');
+    } else {
+      toggle.classList.remove('light');
+    }
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.dataset.i18n;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const k = el.dataset.i18nPh;
+      if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
+    });
+    // Re-render job cards if already loaded
+    if (typeof renderJobs === 'function' && jobs && jobs.length) {
+      renderJobs('jobs-list', jobs);
+      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    }
+  }
+
+  setLang(localStorage.getItem('vetd_lang') || 'en');
+
+  // ── MOBILE HAMBURGER NAV ────────────────────────────────
+  function toggleMobileNav() {
+    var nav = document.getElementById('mobile-nav');
+    if (nav) nav.classList.toggle('open');
+  }
+  document.addEventListener('click', function(e) {
+    var nav = document.getElementById('mobile-nav');
+    var btn = document.getElementById('hamburger-btn');
+    if (nav && nav.classList.contains('open') && !nav.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      nav.classList.remove('open');
+    }
+  });
+
+  // ─── COOKIE BANNER ─────────────────────────────────────
+  (function initCookieBanner() {
+    const consent = localStorage.getItem('vetd_cookie_consent');
+    if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+  })();
+  function cookieChoice(accepted) {
+    localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
+    document.getElementById('cookie-banner').style.display = 'none';
+    if (!accepted) {
+      localStorage.removeItem('vetd_lang');
+    }
+  }
+
+  // ─── GDPR DELETE ACCOUNT ───────────────────────────────
+  function openDeleteModal() {
+    document.getElementById('delete-confirm-input').value = '';
+    document.getElementById('delete-modal').style.display = 'flex';
+  }
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').style.display = 'none';
+  }
+  async function confirmDeleteAccount() {
+    if (document.getElementById('delete-confirm-input').value !== 'DELETE') {
+      showToast('Please type DELETE to confirm', true);
+      return;
+    }
+    const btn = document.querySelector('#delete-modal button:last-child');
+    btn.disabled = true; btn.textContent = 'Deleting…';
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+      const { error } = await db.rpc('delete_contributor_data', { p_user_id: user.id });
+      if (error) throw error;
+      await db.auth.signOut();
+      window.location.href = 'login.html';
+    } catch(err) {
+      console.error('Delete account error:', err);
+      showToast('Could not delete account — contact support', true);
+      btn.disabled = false; btn.textContent = 'Delete account';
+    }
+  }
+</script>
+
+<div id="cookie-banner" style="display:none">
+  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <div class="cookie-btns">
+    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+  </div>
+</div>
+</body>
+</html>

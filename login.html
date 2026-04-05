@@ -294,7 +294,7 @@
     <div class="divider">or</div>
 
     <div class="signup-link">
-      <span data-i18n="login_no_account">Don't have an account?</span> <a href="index.html" data-i18n="login_signup_link">Sign up free</a>
+      <span data-i18n="login_no_account">Don't have an account?</span> <a href="app.html" data-i18n="login_signup_link">Sign up free</a>
     </div>
   </div>
 
@@ -399,7 +399,7 @@
 
     if (!db) {
       // Demo mode — just redirect
-      window.location.href = 'index.html';
+      window.location.href = 'app.html';
       return;
     }
 
@@ -426,7 +426,7 @@
       const role = data.user?.user_metadata?.role || 'contributor';
 
       if (role === 'contributor') {
-        window.location.href = 'index.html?logged_in=1';
+        window.location.href = 'app.html?logged_in=1';
       } else if (role === 'client') {
         window.location.href = 'vetd-client.html';
       } else {
