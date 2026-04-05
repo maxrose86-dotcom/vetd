@@ -950,25 +950,9 @@
           </div>
 
           <div class="profile-section" style="grid-column:1/-1">
-            <h3>Study history</h3>
-            <div class="history-item">
-              <div><div class="history-title">ASOS — Fashion discovery focus group</div><div class="history-meta">Video call · 60 mins · Feb 2026 · Rated 5.0★</div></div>
-              <div class="history-pay">£45</div>
-            </div>
-            <div class="history-item">
-              <div><div class="history-title">Nike — Activewear style survey</div><div class="history-meta">Online survey · 20 mins · Feb 2026 · Rated 4.8★</div></div>
-              <div class="history-pay">£15</div>
-            </div>
-            <div class="history-item">
-              <div><div class="history-title">Tesco — Online grocery UX study</div><div class="history-meta">Video call · 45 mins · Jan 2026 · Rated 4.6★</div></div>
-              <div class="history-pay">£35</div>
-            </div>
-            <div class="history-item">
-              <div><div class="history-title">Barclays — Mobile app usability</div><div class="history-meta">In-person · 90 mins · Jan 2026 · Rated 5.0★</div></div>
-              <div class="history-pay">£80</div>
-            </div>
-            <div style="text-align:center;margin-top:1rem">
-              <button class="filter-chip" onclick="showToast('Full history coming soon!')">View all 23 studies</button>
+            <h3>Payment history</h3>
+            <div id="payment-history-section">
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Loading…</p>
             </div>
           </div>
         </div>
@@ -1463,6 +1447,7 @@
     renderJobs('jobs-list', jobs);
     loadUserProfile();
     loadNotifications();
+    loadPayments();
   }
 
   // ─── LOAD WHICH STUDIES THE USER HAS ALREADY APPLIED TO ──
@@ -1714,6 +1699,90 @@
     } catch(err) {
       console.error('Failed to load user profile:', err);
     }
+  }
+
+  // ─── PAYMENTS ─────────────────────────────────────────
+  async function loadPayments() {
+    if (!db || !currentUser) return;
+    try {
+      const { data: payments, error } = await db
+        .from('payments')
+        .select('id, amount, status, paid_at, created_at, application_id')
+        .eq('contributor_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      const all     = payments || [];
+      const paid    = all.filter(p => p.status === 'paid');
+      const totalPaid = paid.reduce((s, p) => s + (p.amount || 0), 0);
+
+      // Update dashboard earnings stat from real payment data
+      const lang = localStorage.getItem('vetd_lang') || 'en';
+      const fmtEarned = lang === 'sv'
+        ? `${Math.round(totalPaid / 100 * 13)} kr`
+        : `£${Math.round(totalPaid / 100)}`;
+      document.getElementById('stat-earned').textContent = fmtEarned;
+      document.getElementById('stat-earned-sub').textContent = totalPaid === 0
+        ? 'Complete a study to start earning'
+        : `${paid.length} paid ${paid.length === 1 ? 'study' : 'studies'}`;
+
+      // Build study title map via applications → studies
+      const appIds = all.map(p => p.application_id).filter(Boolean);
+      let studyTitleMap = {};
+      if (appIds.length) {
+        const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
+        const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
+        if (studyIds.length) {
+          const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
+          const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
+          (apps || []).forEach(a => { studyTitleMap[a.id] = sm[a.study_id] || 'Study'; });
+        }
+      }
+
+      renderPaymentHistory(all.map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' })));
+    } catch(err) {
+      console.warn('loadPayments error:', err);
+    }
+  }
+
+  function renderPaymentHistory(payments) {
+    const section = document.getElementById('payment-history-section');
+    if (!section) return;
+    if (!payments.length) {
+      section.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">No payment history yet. Complete a study to start earning.</p>';
+      return;
+    }
+
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const fmt = amt => lang === 'sv' ? `${Math.round(amt / 100 * 13)} kr` : `£${Math.round(amt / 100)}`;
+
+    const pending = payments.filter(p => p.status !== 'paid');
+    const paid    = payments.filter(p => p.status === 'paid');
+
+    const renderRow = (p, isPaid) => {
+      const d = p.paid_at || p.created_at;
+      const date = d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      const statusLabel = p.status.charAt(0).toUpperCase() + p.status.slice(1);
+      const amtStyle = isPaid ? '' : 'color:var(--amber)';
+      return `<div class="history-item">
+        <div>
+          <div class="history-title">${p.studyTitle}</div>
+          <div class="history-meta">${statusLabel} · ${date}</div>
+        </div>
+        <div class="history-pay" style="${amtStyle}">${fmt(p.amount)}</div>
+      </div>`;
+    };
+
+    let html = '';
+    if (pending.length) {
+      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber);margin-bottom:8px">Pending (${pending.length})</div>`;
+      html += pending.map(p => renderRow(p, false)).join('');
+    }
+    if (paid.length) {
+      if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">Paid (${paid.length})</div>`;
+      html += paid.map(p => renderRow(p, true)).join('');
+    }
+    section.innerHTML = html;
   }
 
   // ─── RATING BREAKDOWN ─────────────────────────────────

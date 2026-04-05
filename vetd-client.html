@@ -429,7 +429,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="stat-card"><div class="stat-label">Active studies</div><div class="stat-num">3</div><div class="stat-sub up">↑ 1 launched this week</div></div>
           <div class="stat-card"><div class="stat-label">Participants recruited</div><div class="stat-num">47</div><div class="stat-sub up">↑ 12 this week</div></div>
           <div class="stat-card"><div class="stat-label">Avg contributor rating</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent quality</div></div>
-          <div class="stat-card"><div class="stat-label">Budget used this month</div><div class="stat-num">£2,340</div><div class="stat-sub warn">£660 remaining</div></div>
+          <div class="stat-card"><div class="stat-label">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
@@ -964,18 +964,37 @@ textarea{resize:vertical;min-height:90px}
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Fetch application counts for all studies in one query
+      // Fetch application counts + IDs for all studies in one query
       let appCountMap = {};
+      let allAppRows  = [];
       if (studies && studies.length > 0) {
         const { data: apps } = await db
           .from('applications')
-          .select('study_id, status')
+          .select('id, study_id, status')
           .in('study_id', studies.map(s => s.id));
-        (apps || []).forEach(a => {
+        allAppRows = apps || [];
+        allAppRows.forEach(a => {
           if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0 };
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
+        });
+      }
+
+      // Fetch real payment spend per study
+      let paymentSpendMap = {};
+      const allAppIds = allAppRows.map(a => a.id);
+      if (allAppIds.length) {
+        const { data: payments } = await db
+          .from('payments')
+          .select('application_id, amount, status')
+          .in('application_id', allAppIds);
+        const appStudyMap = Object.fromEntries(allAppRows.map(a => [a.id, a.study_id]));
+        (payments || []).forEach(p => {
+          const sid = appStudyMap[p.application_id];
+          if (!sid) return;
+          if (!paymentSpendMap[sid]) paymentSpendMap[sid] = 0;
+          paymentSpendMap[sid] += p.amount || 0;
         });
       }
 
@@ -1026,7 +1045,7 @@ textarea{resize:vertical;min-height:90px}
             <div class="study-meta" style="margin-bottom:10px">
               <span>Spots: <strong>${filled} / ${spots}</strong></span>
               ${payDisplay ? `<span>Pay: <strong>${payDisplay}</strong></span>` : ''}
-              ${payDisplay && filled ? `<span>Spent: <strong>£${Math.round(filled * s.pay_per_participant / 100)}</strong></span>` : ''}
+              ${paymentSpendMap[s.id] ? `<span>Spent: <strong>£${Math.round(paymentSpendMap[s.id] / 100)}</strong></span>` : (payDisplay && filled ? `<span>Est. spend: <strong>£${Math.round(filled * s.pay_per_participant / 100)}</strong></span>` : '')}
               <span>Closes: <strong>${closes}</strong></span>
               ${counts.total > 0 ? `<span>Applications: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} pending)</span>` : ''}</span>` : ''}
             </div>
@@ -1585,16 +1604,72 @@ textarea{resize:vertical;min-height:90px}
   // ─── MARK APPLICATION AS COMPLETED ──────────────────────
   async function markCompleted(appId, studyId) {
     try {
+      // Mark application as completed
       const { error } = await db.from('applications')
         .update({ status: 'completed', updated_at: new Date().toISOString() })
         .eq('id', appId);
       if (error) throw error;
-      showToast('Marked as completed ✓');
+
+      // Create payment record — fetch study pay and contributor_id
+      const [{ data: study }, { data: app }] = await Promise.all([
+        db.from('studies').select('pay_per_participant').eq('id', studyId).single(),
+        db.from('applications').select('contributor_id').eq('id', appId).single()
+      ]);
+      if (study?.pay_per_participant && app?.contributor_id) {
+        const amount      = study.pay_per_participant;
+        const platformFee = Math.round(amount * 0.2);
+        const { error: payErr } = await db.from('payments').insert({
+          application_id: appId,
+          contributor_id: app.contributor_id,
+          amount,
+          platform_fee:   platformFee,
+          status:         'pending',
+          created_at:     new Date().toISOString()
+        });
+        if (payErr) console.warn('Payment insert error:', payErr);
+      }
+
+      showToast('Marked as completed ✓ — payment queued');
       await loadApplicants(studyId);
       await loadRateList();
+      loadClientBudget();
     } catch(err) {
       console.error('markCompleted error:', err);
       showToast('Could not update — try again', true);
+    }
+  }
+
+  // ─── CLIENT BUDGET STAT ──────────────────────────────────
+  async function loadClientBudget() {
+    const numEl = document.getElementById('stat-budget-num');
+    const subEl = document.getElementById('stat-budget-sub');
+    if (!db || !currentClientUser || !numEl) return;
+    try {
+      const { data: studies } = await db.from('studies').select('id').eq('created_by', currentClientUser.id);
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) { numEl.textContent = '£0'; if (subEl) { subEl.textContent = 'No studies yet'; subEl.className = 'stat-sub'; } return; }
+
+      const { data: apps } = await db.from('applications').select('id').in('study_id', studyIds);
+      const appIds = (apps || []).map(a => a.id);
+      if (!appIds.length) { numEl.textContent = '£0'; if (subEl) { subEl.textContent = 'No payments yet'; subEl.className = 'stat-sub'; } return; }
+
+      const { data: payments } = await db.from('payments').select('amount, status').in('application_id', appIds);
+      const all     = payments || [];
+      const total   = all.reduce((s, p) => s + (p.amount || 0), 0);
+      const pending = all.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + (p.amount || 0), 0);
+
+      numEl.textContent = `£${Math.round(total / 100)}`;
+      if (subEl) {
+        if (pending > 0) {
+          subEl.textContent = `£${Math.round(pending / 100)} pending release`;
+          subEl.className = 'stat-sub warn';
+        } else {
+          subEl.textContent = `${all.filter(p=>p.status==='paid').length} payments processed`;
+          subEl.className = 'stat-sub up';
+        }
+      }
+    } catch(err) {
+      console.warn('loadClientBudget error:', err);
     }
   }
 
@@ -1658,6 +1733,7 @@ textarea{resize:vertical;min-height:90px}
     }
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
     loadNotifications();
+    loadClientBudget();
   }
 
   // ─── NOTIFICATIONS ────────────────────────────────────

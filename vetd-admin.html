@@ -717,8 +717,8 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   <div class="stat-grid">
     <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num" id="stat-paid">—</div><div class="stat-sub up" id="stat-paid-sub"> </div></div>
     <div class="stat b"><div class="stat-label">Pending release</div><div class="stat-num" id="stat-pending">—</div><div class="stat-sub" id="stat-pending-sub"> </div></div>
-    <div class="stat a"><div class="stat-label">On hold (disputes)</div><div class="stat-num" id="stat-hold">—</div><div class="stat-sub warn"> </div></div>
-    <div class="stat r"><div class="stat-label">Refunded (fraud)</div><div class="stat-num" id="stat-refunded">—</div><div class="stat-sub danger"> </div></div>
+    <div class="stat a"><div class="stat-label">Platform fees earned</div><div class="stat-num" id="stat-hold">—</div><div class="stat-sub" id="stat-hold-sub"> </div></div>
+    <div class="stat r"><div class="stat-label">Failed payments</div><div class="stat-num" id="stat-refunded">—</div><div class="stat-sub danger" id="stat-refunded-sub"> </div></div>
   </div>
   <div class="card">
     <div class="card-title">Pending payouts</div>
@@ -960,14 +960,97 @@ async function loadContributors() {
 
 // ─── PAYOUTS ──────────────────────────────────────────────────
 async function loadPayouts() {
-  // No payments table in current schema — show empty state
-  ['stat-paid','stat-pending','stat-hold','stat-refunded'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = '£0';
-  });
+  if (!db) return;
   const tbody = document.getElementById('payouts-list');
-  if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text3);font-family:var(--mono)">No payment records yet — payouts will appear here once contributors complete studies</td></tr>';
+  const fmt = p => `£${(p / 100).toFixed(2)}`;
+
+  try {
+    const { data: payments, error } = await db
+      .from('payments')
+      .select('id, application_id, contributor_id, amount, platform_fee, status, paid_at, created_at')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const all = payments || [];
+    const totalPaid     = all.filter(p => p.status === 'paid').reduce((s,p) => s + (p.amount||0), 0);
+    const totalPending  = all.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s,p) => s + (p.amount||0), 0);
+    const totalFees     = all.filter(p => p.status === 'paid').reduce((s,p) => s + (p.platform_fee||0), 0);
+    const totalFailed   = all.filter(p => p.status === 'failed').reduce((s,p) => s + (p.amount||0), 0);
+    const paidCount     = all.filter(p => p.status === 'paid').length;
+    const pendingCount  = all.filter(p => p.status === 'pending' || p.status === 'processing').length;
+
+    document.getElementById('stat-paid').textContent      = fmt(totalPaid);
+    document.getElementById('stat-pending').textContent   = fmt(totalPending);
+    document.getElementById('stat-hold').textContent      = fmt(totalFees);
+    document.getElementById('stat-refunded').textContent  = fmt(totalFailed);
+
+    const paidSub    = document.getElementById('stat-paid-sub');
+    const pendingSub = document.getElementById('stat-pending-sub');
+    const holdSub    = document.getElementById('stat-hold-sub');
+    if (paidSub)    paidSub.textContent    = `${paidCount} payment${paidCount!==1?'s':''} processed`;
+    if (pendingSub) pendingSub.textContent = `${pendingCount} awaiting release`;
+    if (holdSub)    holdSub.textContent    = `20% cut on ${paidCount} paid`;
+
+    if (!tbody) return;
+
+    const pending = all.filter(p => p.status === 'pending' || p.status === 'processing');
+    if (!pending.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text3);font-family:var(--mono)">No pending payments</td></tr>';
+      return;
+    }
+
+    // Fetch contributor names
+    const contribIds = [...new Set(pending.map(p => p.contributor_id).filter(Boolean))];
+    const { data: profiles } = await db.from('profiles').select('id, first_name, last_name').in('id', contribIds);
+    const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
+
+    // Fetch study titles via applications
+    const appIds = pending.map(p => p.application_id).filter(Boolean);
+    let studyTitleMap = {};
+    if (appIds.length) {
+      const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
+      const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
+      if (studyIds.length) {
+        const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
+        const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
+        (apps || []).forEach(a => { studyTitleMap[a.id] = sm[a.study_id] || '—'; });
+      }
+    }
+
+    tbody.innerHTML = pending.map(p => {
+      const prof  = profileMap[p.contributor_id] || {};
+      const name  = [prof.first_name, prof.last_name].filter(Boolean).join(' ') || 'Unknown';
+      const study = studyTitleMap[p.application_id] || '—';
+      const date  = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '—';
+      const statusColor = p.status === 'processing' ? 'color:var(--blue)' : 'color:var(--amber)';
+      return `<tr>
+        <td style="font-weight:500">${name}</td>
+        <td style="color:var(--text3)">${study}</td>
+        <td style="font-family:var(--mono);font-weight:600">${fmt(p.amount)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--text3)">${date}</td>
+        <td><span style="font-family:var(--mono);font-size:12px;${statusColor}">${p.status}</span></td>
+        <td><button class="btn" style="padding:5px 12px;font-size:11px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer" onclick="markAsPaid('${p.id}')">Mark paid</button></td>
+      </tr>`;
+    }).join('');
+
+  } catch(err) {
+    console.warn('loadPayouts error:', err);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--coral);font-family:var(--mono)">Error loading payment data</td></tr>';
+  }
+}
+
+async function markAsPaid(paymentId) {
+  if (!db) return;
+  try {
+    const { error } = await db.from('payments')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('id', paymentId);
+    if (error) throw error;
+    showToast('Payment marked as paid ✓');
+    loadPayouts();
+  } catch(err) {
+    console.error('markAsPaid error:', err);
+    showToast('Could not update payment', true);
   }
 }
 
