@@ -1585,7 +1585,7 @@
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, living_situation, children, rating, studies_done, total_earned, completion_rate, tier').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, living_situation, children, rating, total_studies, total_earned, completion_rate, tier').eq('id', user.id).single()
       ]);
 
       // ── Name & initials ──
@@ -1595,7 +1595,7 @@
       const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
 
       // ── Stats (safe defaults for new members) ──
-      const studiesDone    = contrib?.studies_done    ?? 0;
+      const studiesDone    = contrib?.total_studies    ?? 0;
       const totalEarned    = contrib?.total_earned    ?? 0;
       const rating         = (studiesDone > 0 && contrib?.rating != null) ? Number(contrib.rating) : null;
       const completionRate = (studiesDone > 0 && contrib?.completion_rate != null) ? Number(contrib.completion_rate) : null;
