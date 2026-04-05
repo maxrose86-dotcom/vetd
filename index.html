@@ -98,6 +98,22 @@ nav {
 }
 .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.06); }
 .nav-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.lang-toggle {
+  display: flex; gap: 2px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 100px;
+  padding: 3px;
+}
+.lt-btn {
+  background: none; border: none; cursor: pointer;
+  font-family: var(--sans); font-size: 12px; font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  padding: 4px 10px; border-radius: 100px;
+  transition: color 0.15s, background 0.15s;
+  letter-spacing: 0.04em;
+}
+.lt-btn:hover { color: rgba(255,255,255,0.75); }
+.lt-btn.active { background: rgba(255,255,255,0.12); color: #fff; }
 .nav-signin {
   font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.6);
   text-decoration: none; padding: 8px 14px; border-radius: 8px;
@@ -767,6 +783,10 @@ footer {
       <li><a href="#faq">FAQ</a></li>
     </ul>
     <div class="nav-actions">
+      <div class="lang-toggle">
+        <button id="lb-en" class="lt-btn active" onclick="setLang('en')">EN</button>
+        <button id="lb-sv" class="lt-btn" onclick="setLang('sv')">SV</button>
+      </div>
       <a href="login.html" class="nav-signin" data-i18n="nav_signin">Sign in</a>
       <a href="app.html" class="nav-cta" data-i18n="nav_get_started">Get started →</a>
     </div>
@@ -780,6 +800,13 @@ footer {
   <a href="#faq" onclick="closeNav()">FAQ</a>
   <a href="login.html" data-i18n="nav_signin">Sign in</a>
   <a href="app.html" style="color:var(--green)" data-i18n="nav_get_started">Get started →</a>
+  <div style="display:flex;gap:8px;align-items:center;padding:10px 0">
+    <span style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:500">Language:</span>
+    <div class="lang-toggle">
+      <button id="lb-en-m" class="lt-btn active" onclick="setLang('en')">EN</button>
+      <button id="lb-sv-m" class="lt-btn" onclick="setLang('sv')">SV</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ HERO ══════════════════════════════════════════════════ -->
@@ -1623,8 +1650,15 @@ footer {
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') {
       localStorage.setItem('vetd_lang', lang);
     }
+    // Sync desktop toggle
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
+    // Sync mobile toggle
+    const lbEnM = document.getElementById('lb-en-m');
+    const lbSvM = document.getElementById('lb-sv-m');
+    if (lbEnM) lbEnM.classList.toggle('active', lang === 'en');
+    if (lbSvM) lbSvM.classList.toggle('active', lang === 'sv');
+    // Translate all data-i18n elements
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.dataset.i18n;
       if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
