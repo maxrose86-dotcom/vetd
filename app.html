@@ -1596,63 +1596,8 @@
     }
   }
 
-  // ─── JOBS (demo fallback — replaced by loadJobs() on login) ─
-  let jobs = [
-    {
-      id: 1, company: 'H&M', title: 'Online shopping experience research',
-      desc: 'Share how you browse and buy fashion online. Walk through the H&M app with a researcher and share your honest thoughts.',
-      pay: 450, payType: 'per session', duration: '60-min video call',
-      tags: [{text:'Women 25–45',cls:'tag-green'},{text:'H&M shopper',cls:'tag-blue'},{text:'Online shopper',cls:'tag-amber'},{text:'UK only',cls:'tag-gray'}],
-      match: 97, spots: 8, filled: 5, format: 'online', featured: true,
-      matchReason: 'You\'re a woman in your 30s, based in the UK, who shops online — exactly the profile H&M is looking for.',
-      detail: 'Help H&M understand how real shoppers experience their digital products. You\'ll be on a 60-minute video call with a researcher where you browse the H&M website and app naturally, sharing your thoughts aloud. No preparation needed — just be yourself.'
-    },
-    {
-      id: 2, company: 'Lloyds', title: 'Digital banking app usability study',
-      desc: 'Evaluate new features in mobile banking with a researcher. 800 kr for 90 minutes.',
-      pay: 800, payType: 'per session', duration: '90-min in-person, London',
-      tags: [{text:'35–60',cls:'tag-green'},{text:'Lloyds customer',cls:'tag-blue'},{text:'4.5★+ required',cls:'tag-amber'},{text:'London/commutable',cls:'tag-gray'}],
-      match: 91, spots: 8, filled: 4, format: 'online', featured: false,
-      matchReason: 'Your 4.8★ Elite rating unlocks this premium study. Lloyds specifically requested top-rated contributors.',
-      detail: 'Lloyds Bank is testing a new version of their mobile banking app and needs real customers to help identify pain points. You\'ll sit with a researcher at their Canary Wharf office and complete a series of tasks in the app while thinking aloud.'
-    },
-    {
-      id: 3, company: 'ASOS', title: 'Gen Z vs Millennial fashion focus group',
-      desc: 'Join a 45-minute online group discussion about fashion discovery, trends and how you shop for clothes.',
-      pay: 350, payType: 'per session', duration: '45-min group video call',
-      tags: [{text:'25–40',cls:'tag-green'},{text:'Fashion shopper',cls:'tag-blue'},{text:'Social media user',cls:'tag-gray'}],
-      match: 94, spots: 12, filled: 9, format: 'online', featured: false,
-      matchReason: 'Your age, fashion interests and social media usage are a strong match for this group.',
-      detail: 'ASOS is exploring how different generations discover and buy fashion online. You\'ll join a small group of 6 people for an open, moderated conversation. No right or wrong answers — just your genuine perspective.'
-    },
-    {
-      id: 4, company: 'Nike', title: 'Activewear style & fit survey',
-      desc: 'Short 20-minute online survey about how you buy athletic clothing. No video required.',
-      pay: 120, payType: 'per survey', duration: '20-min online survey',
-      tags: [{text:'Any age',cls:'tag-green'},{text:'Fitness interest',cls:'tag-blue'},{text:'Online',cls:'tag-gray'}],
-      match: 88, spots: 100, filled: 67, format: 'online', featured: false,
-      matchReason: 'You listed fitness & wellness as an interest — Nike is looking for people who buy athletic gear.',
-      detail: 'Nike wants to understand how people shop for sportswear. Answer questions about your buying habits, style preferences and what matters most when choosing activewear. Quick, easy, and no video required.'
-    },
-    {
-      id: 5, company: 'Tesco', title: 'Online grocery delivery experience',
-      desc: 'Talk us through your experience using grocery delivery apps. Do you use Tesco, Ocado, or others?',
-      pay: 300, payType: 'per session', duration: '30-min video call',
-      tags: [{text:'Grocery shopper',cls:'tag-green'},{text:'Has children',cls:'tag-amber'},{text:'Online delivery user',cls:'tag-blue'}],
-      match: 85, spots: 15, filled: 11, format: 'online', featured: false,
-      matchReason: 'You have children and shop online — a key profile for Tesco\'s family grocery research.',
-      detail: 'Tesco Groceries is looking at how families use online grocery delivery. You\'ll have a 30-minute video call with a researcher and walk through a recent grocery order, talking about what worked, what frustrated you, and what you wish was different.'
-    },
-    {
-      id: 6, company: 'Boots', title: 'Beauty & skincare loyalty programme research',
-      desc: 'In-person 75-minute session at Boots HQ, Manchester. Discuss your experience with loyalty schemes and beauty buying.',
-      pay: 650, payType: 'per session', duration: '75-min in-person, Stockholm',
-      tags: [{text:'Women 25–50',cls:'tag-green'},{text:'Beauty shopper',cls:'tag-blue'},{text:'Manchester area',cls:'tag-amber'},{text:'4.0★+',cls:'tag-gray'}],
-      match: 99, spots: 6, filled: 3, format: 'in-person', featured: true,
-      matchReason: 'Perfect match: you\'re a woman interested in beauty, based in Manchester, with a 4.8★ rating. This study was built for someone like you.',
-      detail: 'Boots wants to overhaul their Advantage Card loyalty scheme and needs real shoppers to help shape the new experience. You\'ll visit their Manchester office for a 75-minute in-depth interview with their UX team. Tea, coffee and biscuits provided!'
-    }
-  ];
+  // ─── JOBS ────────────────────────────────────────────────
+  let jobs = [];
 
   // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
   const FORMAT_LABEL = {
