@@ -1596,8 +1596,17 @@
     }
   }
 
-  // ─── JOBS ────────────────────────────────────────────────
-  let jobs = [];
+  // ─── STATE ───────────────────────────────────────────────
+  const state = {
+    jobs: [],
+    appliedJobs: new Set(),
+    currentUser: null,
+    currentUserName: '',
+    currentJob: null,
+    currentStep: 1,
+    profileData: null,
+    contribData: null
+  };
 
   // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
   const FORMAT_LABEL = {
@@ -1632,11 +1641,11 @@
       if (error) throw error;
 
       if (!studies || studies.length === 0) {
-        jobs = [];
+        state.jobs = [];
         return;
       }
 
-      jobs = studies.map(s => {
+      state.jobs = studies.map(s => {
         const company    = s.companies?.name || 'Vetd client';
         const payRaw     = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
         // Legacy studies stored in GBP pence round to 0 after /100 — show TBD instead
@@ -1689,18 +1698,10 @@
         };
       });
     } catch(err) {
-      console.warn('Could not load studies — showing demo data:', err);
-      // jobs keeps its demo values as fallback
+      console.warn('Could not load studies:', err);
     }
   }
 
-  let appliedJobs = new Set();
-  let currentUser  = null;
-  let currentUserName = '';
-  let currentJob = null;
-  let currentStep = 1;
-  let _profileData = null;
-  let _contribData = null;
 
   // ─── RENDER JOBS ────────────────────────────────────────
   function renderJobs(containerId, subset) {
@@ -1737,7 +1738,7 @@
               <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
               <div class="match-pct">${job.match}%</div>
             </div>
-            ${appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">Apply</button>`}
+            ${state.appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">Apply</button>`}
           </div>
         </div>
       </div>
@@ -1747,40 +1748,40 @@
   function filterJobs(type, btn) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    let subset = jobs;
-    if (type === 'matched') subset = jobs.filter(j => j.match >= 90);
-    if (type === 'online') subset = jobs.filter(j => j.format === 'online');
-    if (type === 'high-pay') subset = jobs.filter(j => j.pay >= 40);
+    let subset = state.jobs;
+    if (type === 'matched') subset = state.jobs.filter(j => j.match >= 90);
+    if (type === 'online') subset = state.jobs.filter(j => j.format === 'online');
+    if (type === 'high-pay') subset = state.jobs.filter(j => j.pay >= 40);
     renderJobs('jobs-list', subset);
   }
 
   // ─── MODAL ──────────────────────────────────────────────
   function openModal(id) {
-    currentJob = jobs.find(j => j.id == id);
+    state.currentJob = state.jobs.find(j => j.id == id);
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
-    document.getElementById('modal-company-badge').textContent = currentJob.company;
-    document.getElementById('modal-title').textContent = currentJob.title;
-    document.getElementById('modal-company-name').textContent = currentJob.company + ' · ' + currentJob.duration;
-    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(currentJob.pay)}</div><div class="modal-pay-sub">${currentJob.payType}</div>`;
-    document.getElementById('modal-tags').innerHTML = currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
-    document.getElementById('modal-detail').textContent = currentJob.detail;
-    document.getElementById('modal-match-reason').textContent = currentJob.matchReason;
+    document.getElementById('modal-company-badge').textContent = state.currentJob.company;
+    document.getElementById('modal-title').textContent = state.currentJob.title;
+    document.getElementById('modal-company-name').textContent = state.currentJob.company + ' · ' + state.currentJob.duration;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentJob.pay)}</div><div class="modal-pay-sub">${state.currentJob.payType}</div>`;
+    document.getElementById('modal-tags').innerHTML = state.currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
+    document.getElementById('modal-detail').textContent = state.currentJob.detail;
+    document.getElementById('modal-match-reason').textContent = state.currentJob.matchReason;
     document.getElementById('apply-modal').classList.add('open');
   }
 
   function closeModal() {
     document.getElementById('apply-modal').classList.remove('open');
-    if (currentJob) {
-      renderJobs('jobs-list', jobs);
-      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    if (state.currentJob) {
+      renderJobs('jobs-list', state.jobs);
+      renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
     }
   }
 
   async function confirmApply() {
-    if (!currentJob) return;
+    if (!state.currentJob) return;
     document.getElementById('modal-pre-apply').style.display = 'none';
-    const ok = await applyToStudy(currentJob.id);
+    const ok = await applyToStudy(state.currentJob.id);
     if (ok) {
       document.getElementById('modal-confirmed').style.display = 'block';
     }
@@ -1808,8 +1809,8 @@
     document.getElementById('app').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
     await Promise.all([loadJobs(), loadAppliedJobs()]);
-    renderJobs('dashboard-jobs', jobs.slice(0,2));
-    renderJobs('jobs-list', jobs);
+    renderJobs('dashboard-jobs', state.jobs.slice(0,2));
+    renderJobs('jobs-list', state.jobs);
     loadUserProfile();
     loadNotifications();
     loadPayments();
@@ -1821,13 +1822,13 @@
     try {
       const { data: { user } } = await db.auth.getUser();
       if (!user) return;
-      currentUser = user;
+      state.currentUser = user;
       const { data, error } = await db
         .from('applications')
         .select('study_id')
         .eq('contributor_id', user.id);
       if (error) throw error;
-      appliedJobs = new Set((data || []).map(a => a.study_id));
+      state.appliedJobs = new Set((data || []).map(a => a.study_id));
     } catch(err) {
       console.warn('Could not load applied studies:', err);
     }
@@ -1836,11 +1837,11 @@
   // ─── APPLY TO STUDY ───────────────────────────────────────
   async function applyToStudy(studyId) {
     // Optimistic UI update first
-    appliedJobs.add(studyId);
-    renderJobs('jobs-list', jobs);
-    renderJobs('dashboard-jobs', jobs.slice(0,2));
+    state.appliedJobs.add(studyId);
+    renderJobs('jobs-list', state.jobs);
+    renderJobs('dashboard-jobs', state.jobs.slice(0,2));
 
-    if (!db || !currentUser) return true; // demo mode — treat as success
+    if (!db || !state.currentUser) return true; // demo mode — treat as success
 
     try {
       // Fetch study details for notification (created_by + title)
@@ -1848,7 +1849,7 @@
 
       const { error } = await db.from('applications').insert({
         study_id:       studyId,
-        contributor_id: currentUser.id,
+        contributor_id: state.currentUser.id,
         status:         'pending',
         applied_at:     new Date().toISOString()
       });
@@ -1857,7 +1858,7 @@
 
       // Notify the client who owns the study
       if (study?.created_by) {
-        const name = currentUserName || 'A contributor';
+        const name = state.currentUserName || 'A contributor';
         await sendNotification(
           study.created_by,
           'New application received',
@@ -1870,9 +1871,9 @@
     } catch(err) {
       console.error('Apply error:', err.message, err);
       // Roll back optimistic update
-      appliedJobs.delete(studyId);
-      renderJobs('jobs-list', jobs);
-      renderJobs('dashboard-jobs', jobs.slice(0,2));
+      state.appliedJobs.delete(studyId);
+      renderJobs('jobs-list', state.jobs);
+      renderJobs('dashboard-jobs', state.jobs.slice(0,2));
       showToast(err.message || 'Could not submit application — try again', true);
       return false;
     }
@@ -1903,7 +1904,7 @@
   }
 
   function updateSidebar(current) {
-    currentStep = current;
+    state.currentStep = current;
     for (let i = 1; i <= 5; i++) {
       const el = document.getElementById('sidebar-step-' + i);
       const dot = document.getElementById('dot-' + i);
@@ -1938,8 +1939,8 @@
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
         db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified').eq('id', user.id).single()
       ]);
-      _profileData = profile;
-      _contribData = contrib;
+      state.profileData = profile;
+      state.contribData = contrib;
 
       // ── Name & initials ──
       const firstName = profile?.first_name || user.user_metadata?.first_name || '';
@@ -1973,7 +1974,7 @@
                       : 'tier-badge';
 
       // ── Topbar avatar ──
-      currentUserName = fullName;
+      state.currentUserName = fullName;
       document.getElementById('topbar-avatar').textContent = initials;
 
       // ── Dashboard greeting ──
@@ -2155,33 +2156,33 @@
     saveBtn.disabled = false;
     saveBtn.style.opacity = '1';
 
-    document.getElementById('edit-fname').value = _profileData?.first_name || '';
-    document.getElementById('edit-lname').value = _profileData?.last_name  || '';
+    document.getElementById('edit-fname').value = state.profileData?.first_name || '';
+    document.getElementById('edit-lname').value = state.profileData?.last_name  || '';
 
-    document.getElementById('edit-dob').value        = _contribData?.date_of_birth || '';
-    document.getElementById('edit-gender').value     = _contribData?.gender        || 'woman';
-    document.getElementById('edit-country').value    = _contribData?.country       || 'United Kingdom';
-    document.getElementById('edit-city').value       = _contribData?.city          || '';
-    document.getElementById('edit-employment').value = _contribData?.employment    || 'full_time';
-    document.getElementById('edit-income').value     = _contribData?.income        || '';
+    document.getElementById('edit-dob').value        = state.contribData?.date_of_birth || '';
+    document.getElementById('edit-gender').value     = state.contribData?.gender        || 'woman';
+    document.getElementById('edit-country').value    = state.contribData?.country       || 'United Kingdom';
+    document.getElementById('edit-city').value       = state.contribData?.city          || '';
+    document.getElementById('edit-employment').value = state.contribData?.employment    || 'full_time';
+    document.getElementById('edit-income').value     = state.contribData?.income        || '';
 
-    setEditChips('living_situation',    _contribData?.living_situation);
-    setEditChips('children',            _contribData?.children);
-    setEditChips('interests_lifestyle', _contribData?.interests_lifestyle);
-    setEditChips('interests_tech',      _contribData?.interests_tech);
-    setEditChips('interests_finance',   _contribData?.interests_finance);
-    setEditChips('brands',              _contribData?.brands);
-    setEditChips('study_formats',       _contribData?.study_formats);
-    setEditChips('available_times',     _contribData?.available_times);
-    setEditChips('max_session_length',  _contribData?.max_session_length ? [_contribData.max_session_length] : []);
+    setEditChips('living_situation',    state.contribData?.living_situation);
+    setEditChips('children',            state.contribData?.children);
+    setEditChips('interests_lifestyle', state.contribData?.interests_lifestyle);
+    setEditChips('interests_tech',      state.contribData?.interests_tech);
+    setEditChips('interests_finance',   state.contribData?.interests_finance);
+    setEditChips('brands',              state.contribData?.brands);
+    setEditChips('study_formats',       state.contribData?.study_formats);
+    setEditChips('available_times',     state.contribData?.available_times);
+    setEditChips('max_session_length',  state.contribData?.max_session_length ? [state.contribData.max_session_length] : []);
 
-    document.getElementById('edit-frequency').value = _contribData?.frequency || 'once_a_month';
+    document.getElementById('edit-frequency').value = state.contribData?.frequency || 'once_a_month';
 
-    const minpay = _contribData?.min_pay_per_hour || 250;
+    const minpay = state.contribData?.min_pay_per_hour || 250;
     document.getElementById('edit-minpay').value = minpay;
     document.getElementById('edit-payval').textContent = minpay + ' kr';
 
-    document.getElementById('edit-additional_notes').value = _contribData?.additional_notes || '';
+    document.getElementById('edit-additional_notes').value = state.contribData?.additional_notes || '';
   }
 
   function cancelEdit() {
@@ -2191,7 +2192,7 @@
   }
 
   async function saveProfile() {
-    if (!db || !currentUser) { showToast('Not connected', true); return; }
+    if (!db || !state.currentUser) { showToast('Not connected', true); return; }
 
     const fname = document.getElementById('edit-fname').value.trim();
     const lname = document.getElementById('edit-lname').value.trim();
@@ -2204,7 +2205,7 @@
       const sessionLengths = getEditChipValues('max_session_length');
 
       const [{ error: pErr }, { error: cErr }] = await Promise.all([
-        db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', currentUser.id),
+        db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', state.currentUser.id),
         db.from('contributors').update({
           date_of_birth:       document.getElementById('edit-dob').value || null,
           gender:              document.getElementById('edit-gender').value,
@@ -2224,7 +2225,7 @@
           frequency:           document.getElementById('edit-frequency').value,
           min_pay_per_hour:    parseInt(document.getElementById('edit-minpay').value, 10),
           additional_notes:    document.getElementById('edit-additional_notes').value.trim() || null
-        }).eq('id', currentUser.id)
+        }).eq('id', state.currentUser.id)
       ]);
 
       if (pErr) throw pErr;
@@ -2243,12 +2244,12 @@
 
   // ─── PAYMENTS ─────────────────────────────────────────
   async function loadPayments() {
-    if (!db || !currentUser) return;
+    if (!db || !state.currentUser) return;
     try {
       const { data: payments, error } = await db
         .from('payments')
         .select('id, amount, status, paid_at, created_at, application_id')
-        .eq('contributor_id', currentUser.id)
+        .eq('contributor_id', state.currentUser.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -2322,7 +2323,7 @@
 
   // ─── RATING BREAKDOWN ─────────────────────────────────
   async function loadRatingBreakdown() {
-    if (!db || !currentUser) return;
+    if (!db || !state.currentUser) return;
     const container = document.getElementById('rating-breakdown-content');
     if (!container) return;
 
@@ -2330,7 +2331,7 @@
       const { data, error } = await db
         .from('ratings')
         .select('punctuality, engagement, quality, honesty, profile_fit')
-        .eq('contributor_id', currentUser.id);
+        .eq('contributor_id', state.currentUser.id);
       if (error) throw error;
 
       if (!data || !data.length) {
@@ -2366,12 +2367,12 @@
 
   // ─── NOTIFICATIONS ────────────────────────────────────
   async function loadNotifications() {
-    if (!db || !currentUser) return;
+    if (!db || !state.currentUser) return;
     try {
       const { data, error } = await db
         .from('notifications')
         .select('id, title, body, link, read, created_at')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', state.currentUser.id)
         .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
@@ -2424,8 +2425,8 @@
 
   async function handleNotifClick(notifId, link) {
     // Mark as read
-    if (db && currentUser) {
-      await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', currentUser.id);
+    if (db && state.currentUser) {
+      await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', state.currentUser.id);
       // Refresh to update badge
       loadNotifications();
     }
@@ -2434,9 +2435,9 @@
   }
 
   async function markAllRead() {
-    if (!db || !currentUser) return;
+    if (!db || !state.currentUser) return;
     try {
-      await db.from('notifications').update({ read: true }).eq('user_id', currentUser.id).eq('read', false);
+      await db.from('notifications').update({ read: true }).eq('user_id', state.currentUser.id).eq('read', false);
       loadNotifications();
     } catch(err) {
       console.warn('markAllRead error:', err);
@@ -2744,9 +2745,9 @@
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
     // Re-render job cards if already loaded
-    if (typeof renderJobs === 'function' && jobs && jobs.length) {
-      renderJobs('jobs-list', jobs);
-      renderJobs('dashboard-jobs', jobs.slice(0, 2));
+    if (typeof renderJobs === 'function' && state.jobs && state.jobs.length) {
+      renderJobs('jobs-list', state.jobs);
+      renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
     }
   }
 
