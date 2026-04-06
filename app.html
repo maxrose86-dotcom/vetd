@@ -2302,7 +2302,7 @@
       return `<div class="history-item">
         <div>
           <div class="history-title">${esc(p.studyTitle)}</div>
-          <div class="history-meta">${statusLabel} · ${date}</div>
+          <div class="history-meta">${statusLabel} · ${esc(date)}</div>
         </div>
         <div class="history-pay" style="${amtStyle}">${fmt(p.amount)}</div>
       </div>`;
