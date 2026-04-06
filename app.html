@@ -1873,13 +1873,10 @@
 
       // Notify the client who owns the study
       if (study?.created_by) {
-        const name = state.currentUserName || 'A contributor';
-        await sendNotification(
-          study.created_by,
-          'New application received',
-          `${name} applied to your study "${study.title}".`,
-          null
-        );
+        sendStructuredNotification(study.created_by, 'application_received', {
+          contributor_name: state.currentUserName || 'A contributor',
+          study_title: study.title || 'Untitled study'
+        }, null);
       }
 
       return true;
@@ -2376,7 +2373,7 @@
     try {
       const { data, error } = await db
         .from('notifications')
-        .select('id, title, body, link, read, created_at')
+        .select('id, title, body, link, read, created_at, notif_type, params')
         .eq('user_id', state.currentUser.id)
         .order('created_at', { ascending: false })
         .limit(30);
@@ -2385,6 +2382,24 @@
     } catch(err) {
       console.warn('Could not load notifications:', err);
     }
+  }
+
+  function resolveNotification(notif) {
+    if (notif.notif_type) {
+      const titleKey = 'notif_tpl_' + notif.notif_type + '_title';
+      const bodyKey  = 'notif_tpl_' + notif.notif_type + '_body';
+      const params   = notif.params || {};
+      let title = t(titleKey);
+      let body  = t(bodyKey);
+      Object.keys(params).forEach(k => {
+        const re = new RegExp('\\{' + k + '\\}', 'g');
+        title = title.replace(re, params[k]);
+        body  = body.replace(re, params[k]);
+      });
+      return { title, body };
+    }
+    // Backward compatibility: fall back to stored title/body
+    return { title: notif.title || '', body: notif.body || '' };
   }
 
   function renderNotifications(notifs) {
@@ -2409,16 +2424,19 @@
       return;
     }
 
-    const notifRow = n => `
+    const notifRow = n => {
+      const { title, body } = resolveNotification(n);
+      return `
       <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${esc(n.id)}', '${esc(n.link || '')}')">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
-          <div class="notif-row-title">${esc(n.title)}</div>
-          <div class="notif-row-body">${esc(n.body)}</div>
+          <div class="notif-row-title">${esc(title)}</div>
+          <div class="notif-row-body">${esc(body)}</div>
           <div class="notif-row-time">${timeAgo(n.created_at)}</div>
         </div>
       </div>
     `;
+    };
 
     body.innerHTML = notifs.map(notifRow).join('');
     if (dashList) dashList.innerHTML = notifs.slice(0, 5).map(notifRow).join('');
@@ -2462,6 +2480,7 @@
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
+  // @deprecated — use sendStructuredNotification() for new notification types
   async function sendNotification(userId, title, body, link) {
     if (!db) return;
     try {
@@ -2473,6 +2492,35 @@
       });
     } catch(err) {
       console.warn('sendNotification error:', err);
+    }
+  }
+
+  async function sendStructuredNotification(userId, notifType, params, link) {
+    if (!db) return;
+    try {
+      // Build English fallback for title/body (backward compat with existing readers)
+      const en = LANG.en;
+      const titleKey = 'notif_tpl_' + notifType + '_title';
+      const bodyKey  = 'notif_tpl_' + notifType + '_body';
+      let fallbackTitle = en[titleKey] || notifType;
+      let fallbackBody  = en[bodyKey]  || '';
+      Object.keys(params).forEach(k => {
+        const re = new RegExp('\\{' + k + '\\}', 'g');
+        fallbackTitle = fallbackTitle.replace(re, params[k]);
+        fallbackBody  = fallbackBody.replace(re, params[k]);
+      });
+
+      await db.rpc('insert_notification', {
+        p_user_id: userId,
+        p_title:   fallbackTitle,
+        p_body:    fallbackBody,
+        p_link:    link || null
+      });
+
+      // When the RPC is updated to accept notif_type/params, pass them directly instead.
+    } catch(err) {
+      console.warn('sendStructuredNotification error:', err);
+      if (window.Sentry) Sentry.captureException(err);
     }
   }
 
@@ -2626,6 +2674,20 @@
       notif_title: 'Notifications',
       notif_mark_all: 'Mark all as read',
       notif_empty: 'No notifications yet',
+      notif_tpl_application_received_title: 'New application received',
+      notif_tpl_application_received_body: '{contributor_name} applied to your study "{study_title}".',
+      notif_tpl_application_accepted_title: 'Application accepted!',
+      notif_tpl_application_accepted_body: 'Your application to "{study_title}" has been accepted.',
+      notif_tpl_application_rejected_title: 'Application update',
+      notif_tpl_application_rejected_body: 'Your application to "{study_title}" was not selected this time.',
+      notif_tpl_study_completed_title: 'Study completed',
+      notif_tpl_study_completed_body: 'You completed "{study_title}". Payment will be processed shortly.',
+      notif_tpl_payment_sent_title: 'Payment sent',
+      notif_tpl_payment_sent_body: 'Payment of {amount} kr for "{study_title}" has been sent.',
+      notif_tpl_rating_received_title: 'New rating received',
+      notif_tpl_rating_received_body: 'You received a {rating}★ rating for "{study_title}".',
+      notif_tpl_welcome_title: 'Welcome to Vetd!',
+      notif_tpl_welcome_body: 'Your profile is live. Start browsing studies to find your first match.',
       just_now: 'just now',
       time_m_ago: 'm ago',
       time_h_ago: 'h ago',
@@ -2757,6 +2819,20 @@
       notif_title: 'Aviseringar',
       notif_mark_all: 'Markera alla som lästa',
       notif_empty: 'Inga aviseringar ännu',
+      notif_tpl_application_received_title: 'Ny ansökan mottagen',
+      notif_tpl_application_received_body: '{contributor_name} ansökte till din studie "{study_title}".',
+      notif_tpl_application_accepted_title: 'Ansökan accepterad!',
+      notif_tpl_application_accepted_body: 'Din ansökan till "{study_title}" har accepterats.',
+      notif_tpl_application_rejected_title: 'Ansökningsuppdatering',
+      notif_tpl_application_rejected_body: 'Din ansökan till "{study_title}" valdes inte denna gång.',
+      notif_tpl_study_completed_title: 'Studie slutförd',
+      notif_tpl_study_completed_body: 'Du slutförde "{study_title}". Betalning behandlas inom kort.',
+      notif_tpl_payment_sent_title: 'Betalning skickad',
+      notif_tpl_payment_sent_body: 'Betalning på {amount} kr för "{study_title}" har skickats.',
+      notif_tpl_rating_received_title: 'Nytt betyg mottaget',
+      notif_tpl_rating_received_body: 'Du fick {rating}★ i betyg för "{study_title}".',
+      notif_tpl_welcome_title: 'Välkommen till Vetd!',
+      notif_tpl_welcome_body: 'Din profil är aktiv. Börja bläddra bland studier för att hitta din första matchning.',
       just_now: 'just nu',
       time_m_ago: 'm sedan',
       time_h_ago: 'h sedan',
