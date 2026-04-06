@@ -387,27 +387,27 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <div style="background:rgba(255,255,255,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);border-radius:var(--r-xl);padding:2rem;box-shadow:0 8px 40px rgba(0,0,0,0.3),0 1px 3px rgba(0,0,0,0.1)">
         <div style="display:flex;border-bottom:1px solid var(--gray-100);margin-bottom:1.5rem">
-          <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid var(--blue);margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--blue)">Create account</button>
-          <button id="auth-tab-login"  onclick="switchAuthTab('login')"  style="flex:1;padding:10px;font-size:13px;font-weight:500;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign in</button>
+          <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:none;border-bottom:2px solid var(--blue);margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--blue)" data-i18n="cl_auth_tab_create">Create account</button>
+          <button id="auth-tab-login"  onclick="switchAuthTab('login')"  style="flex:1;padding:10px;font-size:13px;font-weight:500;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;cursor:pointer;font-family:var(--sans);color:var(--gray-400)" data-i18n="cl_auth_tab_signin">Sign in</button>
         </div>
 
         <!-- SIGN UP FORM -->
         <div id="auth-signup-form">
           <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-bottom:1rem">
             <div style="font-size:32px;margin-bottom:8px">📧</div>
-            <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:6px;color:#111">Check your email</h3>
-            <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem">We sent a confirmation link to your email. Click it to activate your account, then come back here to sign in.</p>
-            <button onclick="switchAuthTab('login')" style="display:inline-block;padding:9px 22px;background:var(--blue);color:#fff;border-radius:100px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans)">Go to sign in →</button>
+            <h3 style="font-family:var(--serif);font-size:20px;margin-bottom:6px;color:#111" data-i18n="cl_auth_check_email">Check your email</h3>
+            <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem" data-i18n="cl_auth_check_sub">We sent a confirmation link to your email. Click it to activate your account, then come back here to sign in.</p>
+            <button onclick="switchAuthTab('login')" style="display:inline-block;padding:9px 22px;background:var(--blue);color:#fff;border-radius:100px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans)" data-i18n="cl_auth_goto_signin">Go to sign in →</button>
           </div>
           <div id="auth-signup-fields">
-            <div class="field"><label>Company name</label><input type="text" id="auth-company" placeholder="e.g. H&amp;M Group"></div>
+            <div class="field"><label data-i18n="cl_auth_company">Company name</label><input type="text" id="auth-company" placeholder="e.g. H&amp;M Group" data-i18n-ph="cl_auth_ph_company"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-              <div class="field"><label>First name</label><input type="text" id="auth-fname" placeholder="Emma"></div>
-              <div class="field"><label>Last name</label><input type="text" id="auth-lname" placeholder="Johnson"></div>
+              <div class="field"><label data-i18n="cl_auth_fname">First name</label><input type="text" id="auth-fname" placeholder="Emma"></div>
+              <div class="field"><label data-i18n="cl_auth_lname">Last name</label><input type="text" id="auth-lname" placeholder="Johnson"></div>
             </div>
-            <div class="field"><label>Work email</label><input type="email" id="auth-email-signup" placeholder="emma@company.com"></div>
-            <div class="field"><label>Password</label><input type="password" id="auth-pass-signup" placeholder="At least 8 characters"></div>
-            <button id="auth-signup-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signUpClient()">Create account →</button>
+            <div class="field"><label data-i18n="cl_auth_email">Work email</label><input type="email" id="auth-email-signup" placeholder="emma@company.com" data-i18n-ph="cl_auth_ph_email"></div>
+            <div class="field"><label data-i18n="cl_auth_password">Password</label><input type="password" id="auth-pass-signup" placeholder="At least 8 characters" data-i18n-ph="cl_auth_ph_pass"></div>
+            <button id="auth-signup-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signUpClient()" data-i18n="cl_auth_create_btn">Create account →</button>
           </div>
         </div>
 
@@ -416,17 +416,17 @@ textarea{resize:vertical;min-height:90px}
           <div id="email-confirmed-banner" style="display:none;background:#DCFFF0;border:1px solid #A7F3D0;border-radius:10px;padding:12px 16px;margin-bottom:1rem;align-items:center;gap:10px">
             <span style="font-size:18px">✅</span>
             <div>
-              <div style="font-size:13px;font-weight:600;color:#065F46">Email confirmed</div>
-              <div style="font-size:12px;color:#047857;font-weight:300">Your account is active — please sign in below.</div>
+              <div style="font-size:13px;font-weight:600;color:#065F46" data-i18n="cl_auth_confirmed_title">Email confirmed</div>
+              <div style="font-size:12px;color:#047857;font-weight:300" data-i18n="cl_auth_confirmed_sub">Your account is active — please sign in below.</div>
             </div>
           </div>
-          <div class="field"><label>Email</label><input type="email" id="auth-email-login" placeholder="emma@company.com"></div>
-          <div class="field"><label>Password</label><input type="password" id="auth-pass-login" placeholder="Your password"></div>
-          <button id="auth-login-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signInClient()">Sign in →</button>
+          <div class="field"><label data-i18n="cl_auth_email">Email</label><input type="email" id="auth-email-login" placeholder="emma@company.com" data-i18n-ph="cl_auth_ph_email"></div>
+          <div class="field"><label data-i18n="cl_auth_password">Password</label><input type="password" id="auth-pass-login" placeholder="Your password"></div>
+          <button id="auth-login-btn" class="btn-cta" style="width:100%;margin-top:0.5rem;justify-content:center" onclick="signInClient()" data-i18n="cl_auth_signin_btn">Sign in →</button>
         </div>
       </div>
       <div style="text-align:center;margin-top:1rem">
-        <a href="index.html" style="font-size:12px;color:rgba(255,255,255,0.4)">← Back to homepage</a>
+        <a href="index.html" style="font-size:12px;color:rgba(255,255,255,0.4)" data-i18n="cl_auth_back">← Back to homepage</a>
       </div>
     </div>
   </div>
@@ -445,12 +445,12 @@ textarea{resize:vertical;min-height:90px}
       <div style="font-size:12px;color:var(--gray-400)" id="cl-mob-company">Your company</div>
     </div>
     <div style="padding:0.5rem 0.75rem">
-      <button class="nav-item active" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span>Dashboard</button>
-      <button class="nav-item" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span>Analytics</button>
-      <button class="nav-item" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span>My studies</button>
-      <button class="nav-item" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span>Post a study</button>
-      <button class="nav-item" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span>Browse contributors</button>
-      <button class="nav-item" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span>Rate participants</button>
+      <button class="nav-item active" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Dashboard</span></button>
+      <button class="nav-item" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
+      <button class="nav-item" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">My studies</span></button>
+      <button class="nav-item" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
+      <button class="nav-item" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span></button>
+      <button class="nav-item" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
     </div>
     <div style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)">
       <button onclick="signOut()" style="width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign out</button>
@@ -466,19 +466,19 @@ textarea{resize:vertical;min-height:90px}
         <div class="sidebar-company"><strong id="sidebar-company-name">Your company</strong><span id="sidebar-company-sub">Research &amp; Insights</span></div>
       </div>
       <div class="nav-section">
-        <div class="nav-label">Overview</div>
+        <div class="nav-label" data-i18n="cl_nav_label_overview">Overview</div>
         <button class="nav-item active" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Dashboard</span></button>
         <button class="nav-item" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       </div>
       <div class="nav-section">
-        <div class="nav-label">Studies</div>
+        <div class="nav-label" data-i18n="cl_nav_label_studies">Studies</div>
         <button class="nav-item" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">My studies</span></button>
         <button class="nav-item" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
       </div>
       <div class="nav-section">
-        <div class="nav-label">Panel</div>
+        <div class="nav-label" data-i18n="cl_nav_label_panel">Panel</div>
         <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span><span class="nav-badge">3</span></button>
-        <button class="nav-item" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span>Rate participants</button>
+        <button class="nav-item" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
       </div>
       <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -488,19 +488,19 @@ textarea{resize:vertical;min-height:90px}
             <div class="notif-count-badge" id="notif-count-badge"></div>
             <div class="notif-panel" id="notif-panel">
               <div class="notif-panel-hd">
-                <span class="notif-panel-hd-title">Notifications</span>
-                <button class="notif-mark-all-btn" onclick="markAllRead()">Mark all as read</button>
+                <span class="notif-panel-hd-title" data-i18n="cl_notif_title">Notifications</span>
+                <button class="notif-mark-all-btn" onclick="markAllRead()" data-i18n="cl_notif_mark_all">Mark all as read</button>
               </div>
               <div class="notif-panel-body" id="notif-panel-body">
-                <div class="notif-empty">No notifications yet</div>
+                <div class="notif-empty" data-i18n="cl_notif_empty">No notifications yet</div>
               </div>
             </div>
           </div>
         </div>
         <div class="plan-card">
-          <div class="plan-name">Pro plan</div>
-          <div class="plan-detail">Unlimited studies · Priority panel</div>
-          <div class="plan-upgrade">↑ Upgrade to Enterprise</div>
+          <div class="plan-name" data-i18n="cl_plan_name">Pro plan</div>
+          <div class="plan-detail" data-i18n="cl_plan_detail">Unlimited studies · Priority panel</div>
+          <div class="plan-upgrade" data-i18n="cl_plan_upgrade">↑ Upgrade to Enterprise</div>
         </div>
         <button onclick="signOut()" style="margin-top:10px;width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400);transition:all 0.15s" onmouseover="this.style.borderColor='var(--gray-400)'" onmouseout="this.style.borderColor='var(--gray-200)'" data-i18n="sign_out">Sign out</button>
       </div>
@@ -513,19 +513,19 @@ textarea{resize:vertical;min-height:90px}
       <div class="tab-pane active" id="tab-dashboard">
         <div class="page-topbar">
           <div class="page-title"><h1 id="dash-greeting">Welcome 👋</h1><p id="dash-subtitle">Research &amp; Insights</p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item:nth-child(6)'))">＋ Post new study</button>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item:nth-child(6)'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
 
         <div class="stat-row">
-          <div class="stat-card"><div class="stat-label">Active studies</div><div class="stat-num">3</div><div class="stat-sub up">↑ 1 launched this week</div></div>
-          <div class="stat-card"><div class="stat-label">Participants recruited</div><div class="stat-num">47</div><div class="stat-sub up">↑ 12 this week</div></div>
-          <div class="stat-card"><div class="stat-label">Avg contributor rating</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent quality</div></div>
-          <div class="stat-card"><div class="stat-label">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_active">Active studies</div><div class="stat-num">3</div><div class="stat-sub up">↑ 1 launched this week</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_recruited">Participants recruited</div><div class="stat-num">47</div><div class="stat-sub up">↑ 12 this week</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_rating">Avg contributor rating</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent quality</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_spend">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title">Active studies</div>
+            <div class="sec-title" data-i18n="cl_dash_active_studies">Active studies</div>
             <div class="study-row" style="margin-bottom:10px;cursor:default" onclick="showTab('studies', document.querySelector('.nav-item:nth-child(5)'))">
               <div class="study-row-header">
                 <div class="study-title-group"><h3>Online shopping experience</h3><p>Video call · 60 mins</p></div>
@@ -553,7 +553,7 @@ textarea{resize:vertical;min-height:90px}
           </div>
 
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title">Top contributor matches waiting</div>
+            <div class="sec-title" data-i18n="cl_dash_top_matches">Top contributor matches waiting</div>
             <div style="display:flex;flex-direction:column;gap:10px">
               <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
                 <div class="avatar av-green" style="width:38px;height:38px;font-size:12px">SL</div>
@@ -562,33 +562,33 @@ textarea{resize:vertical;min-height:90px}
                   <div style="font-size:11px;color:var(--amber);font-weight:600">4.8★ Elite</div>
                 </div>
                 <div style="font-size:13px;color:var(--blue);font-weight:600">99% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Sarah!')">Invite</button>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Sarah!')" data-i18n="cl_invite">Invite</button>
               </div>
               <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
                 <div class="avatar av-blue" style="width:38px;height:38px;font-size:12px">MK</div>
                 <div style="flex:1"><div style="font-size:13px;font-weight:600">Marcus K.</div><div style="font-size:11px;color:var(--blue);font-weight:600">4.4★ Verified</div></div>
                 <div style="font-size:13px;color:var(--blue);font-weight:600">94% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Marcus!')">Invite</button>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Marcus!')" data-i18n="cl_invite">Invite</button>
               </div>
               <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
                 <div class="avatar av-purple" style="width:38px;height:38px;font-size:12px">PR</div>
                 <div style="flex:1"><div style="font-size:13px;font-weight:600">Priya R.</div><div style="font-size:11px;color:var(--green);font-weight:600">4.9★ Elite</div></div>
                 <div style="font-size:13px;color:var(--blue);font-weight:600">91% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Priya!')">Invite</button>
+                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Priya!')" data-i18n="cl_invite">Invite</button>
               </div>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="sec-title">Recent activity</div>
+          <div class="sec-title" data-i18n="cl_dash_recent_activity">Recent activity</div>
           <table class="data-table">
-            <thead><tr><th>Contributor</th><th>Study</th><th>Status</th><th>Rating given</th><th>Date</th></tr></thead>
+            <thead><tr><th data-i18n="cl_th_contributor">Contributor</th><th data-i18n="cl_th_study">Study</th><th data-i18n="cl_th_status">Status</th><th data-i18n="cl_th_rating">Rating given</th><th data-i18n="cl_th_date">Date</th></tr></thead>
             <tbody>
-              <tr><td><strong>Sarah L.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green">Completed</span></td><td><span style="color:var(--amber)">★★★★★ 5.0</span></td><td>Mar 28</td></tr>
-              <tr><td><strong>Tom W.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green">Completed</span></td><td><span style="color:var(--amber)">★★★★☆ 4.0</span></td><td>Mar 27</td></tr>
-              <tr><td><strong>Aisha B.</strong></td><td>Sustainability survey</td><td><span class="badge badge-blue">In progress</span></td><td>—</td><td>Mar 29</td></tr>
-              <tr><td><strong>Jamie R.</strong></td><td>Online shopping experience</td><td><span class="badge badge-coral">No-show</span></td><td><span style="color:var(--coral)">★☆☆☆☆ 1.0</span></td><td>Mar 26</td></tr>
+              <tr><td><strong>Sarah L.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green" data-i18n="cl_badge_completed">Completed</span></td><td><span style="color:var(--amber)">★★★★★ 5.0</span></td><td>Mar 28</td></tr>
+              <tr><td><strong>Tom W.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green" data-i18n="cl_badge_completed">Completed</span></td><td><span style="color:var(--amber)">★★★★☆ 4.0</span></td><td>Mar 27</td></tr>
+              <tr><td><strong>Aisha B.</strong></td><td>Sustainability survey</td><td><span class="badge badge-blue" data-i18n="cl_badge_in_progress">In progress</span></td><td>—</td><td>Mar 29</td></tr>
+              <tr><td><strong>Jamie R.</strong></td><td>Online shopping experience</td><td><span class="badge badge-coral" data-i18n="cl_badge_no_show">No-show</span></td><td><span style="color:var(--coral)">★☆☆☆☆ 1.0</span></td><td>Mar 26</td></tr>
             </tbody>
           </table>
         </div>
@@ -597,14 +597,14 @@ textarea{resize:vertical;min-height:90px}
       <!-- STUDIES -->
       <div class="tab-pane" id="tab-studies">
         <div class="page-topbar">
-          <div class="page-title"><h1>My studies</h1><p>3 active · 2 completed · 1 draft</p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">＋ Post new study</button>
+          <div class="page-title"><h1 data-i18n="cl_my_studies">My studies</h1><p>3 active · 2 completed · 1 draft</p></div>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
         <div class="filter-bar">
-          <button class="fc on" onclick="fc(this)">All</button>
-          <button class="fc" onclick="fc(this)">Active</button>
-          <button class="fc" onclick="fc(this)">Completed</button>
-          <button class="fc" onclick="fc(this)">Draft</button>
+          <button class="fc on" onclick="fc(this)" data-i18n="cl_filter_all">All</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_active">Active</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_completed">Completed</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_draft">Draft</button>
         </div>
 
         <div id="studies-list">
@@ -617,17 +617,17 @@ textarea{resize:vertical;min-height:90px}
       <!-- POST STUDY -->
       <div class="tab-pane" id="tab-new-study">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_post_title">Post a new study</h1><p>Fill in the details — we'll estimate your panel size as you go.</p></div>
+          <div class="page-title"><h1 data-i18n="cl_post_title">Post a new study</h1><p data-i18n="cl_post_subtitle">Fill in the details — we'll estimate your panel size as you go.</p></div>
         </div>
         <div class="builder-wrap">
           <div class="builder-main">
 
             <div class="section-group">
-              <h3>Study basics</h3>
-              <div class="field"><label>Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" oninput="updatePreview()" maxlength="200"></div>
-              <div class="field"><label>Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." oninput="updatePreview()" maxlength="2000"></textarea></div>
+              <h3 data-i18n="cl_section_basics">Study basics</h3>
+              <div class="field"><label data-i18n="cl_label_title">Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" data-i18n-ph="cl_ph_title" oninput="updatePreview()" maxlength="200"></div>
+              <div class="field"><label data-i18n="cl_label_desc">Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." data-i18n-ph="cl_ph_desc" oninput="updatePreview()" maxlength="2000"></textarea></div>
               <div class="field-row">
-                <div class="field"><label>Study format</label>
+                <div class="field"><label data-i18n="cl_label_format">Study format</label>
                   <select id="b-format" onchange="updatePreview()">
                     <option value="video_call">Video call (1-on-1)</option>
                     <option value="video_call">Focus group (online)</option>
@@ -637,7 +637,7 @@ textarea{resize:vertical;min-height:90px}
                     <option value="product_testing">Product testing at home</option>
                   </select>
                 </div>
-                <div class="field"><label>Session length</label>
+                <div class="field"><label data-i18n="cl_label_length">Session length</label>
                   <select id="b-length" onchange="updatePreview()">
                     <option>15 minutes</option>
                     <option>30 minutes</option>
@@ -648,18 +648,18 @@ textarea{resize:vertical;min-height:90px}
                 </div>
               </div>
               <div class="field-row">
-                <div class="field"><label>Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
-                <div class="field"><label>Pay per participant (kr)</label><input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label data-i18n="cl_label_spots">Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label data-i18n="cl_label_pay">Pay per participant (kr)</label><input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()"></div>
               </div>
               <div class="field-row">
-                <div class="field"><label>Study start date</label><input type="date" id="b-start"></div>
-                <div class="field"><label>Closing date</label><input type="date" id="b-close"></div>
+                <div class="field"><label data-i18n="cl_label_start">Study start date</label><input type="date" id="b-start"></div>
+                <div class="field"><label data-i18n="cl_label_close">Closing date</label><input type="date" id="b-close"></div>
               </div>
             </div>
 
             <div class="section-group">
-              <h3>Who are you looking for?</h3>
-              <div class="field"><label>Age range</label>
+              <h3 data-i18n="cl_section_targeting">Who are you looking for?</h3>
+              <div class="field"><label data-i18n="cl_label_age">Age range</label>
                 <div class="chip-group" data-field="age_ranges">
                   <div class="chip" data-value="18_24" onclick="tc(this)">18–24</div>
                   <div class="chip on" data-value="25_34" onclick="tc(this)">25–34</div>
@@ -667,64 +667,64 @@ textarea{resize:vertical;min-height:90px}
                   <div class="chip" data-value="45_54" onclick="tc(this)">45–54</div>
                   <div class="chip" data-value="55_64" onclick="tc(this)">55–64</div>
                   <div class="chip" data-value="65_plus" onclick="tc(this)">65+</div>
-                  <div class="chip" data-value="any" onclick="tc(this)">Any age</div>
+                  <div class="chip" data-value="any" onclick="tc(this)" data-i18n="cl_chip_any_age">Any age</div>
                 </div>
               </div>
-              <div class="field"><label>Gender</label>
+              <div class="field"><label data-i18n="cl_label_gender">Gender</label>
                 <div class="chip-group" data-field="genders">
-                  <div class="chip on" data-value="woman" onclick="tc(this)">Women</div>
-                  <div class="chip" data-value="man" onclick="tc(this)">Men</div>
-                  <div class="chip" data-value="non_binary" onclick="tc(this)">Non-binary</div>
-                  <div class="chip" data-value="any" onclick="tc(this)">Any gender</div>
+                  <div class="chip on" data-value="woman" onclick="tc(this)" data-i18n="cl_chip_women">Women</div>
+                  <div class="chip" data-value="man" onclick="tc(this)" data-i18n="cl_chip_men">Men</div>
+                  <div class="chip" data-value="non_binary" onclick="tc(this)" data-i18n="cl_chip_nonbinary">Non-binary</div>
+                  <div class="chip" data-value="any" onclick="tc(this)" data-i18n="cl_chip_any_gender">Any gender</div>
                 </div>
               </div>
-              <div class="field"><label>Location</label>
+              <div class="field"><label data-i18n="cl_label_location">Location</label>
                 <div class="chip-group" data-field="locations">
-                  <div class="chip on" data-value="uk_any" onclick="tc(this)">UK — any</div>
-                  <div class="chip" data-value="london" onclick="tc(this)">London</div>
-                  <div class="chip" data-value="manchester" onclick="tc(this)">Manchester</div>
-                  <div class="chip" data-value="birmingham" onclick="tc(this)">Birmingham</div>
-                  <div class="chip" data-value="remote" onclick="tc(this)">Remote only</div>
+                  <div class="chip on" data-value="se_any" onclick="tc(this)" data-i18n="cl_chip_uk_any">Sverige — hela</div>
+                  <div class="chip" data-value="stockholm" onclick="tc(this)">Stockholm</div>
+                  <div class="chip" data-value="goteborg" onclick="tc(this)">Göteborg</div>
+                  <div class="chip" data-value="malmo" onclick="tc(this)">Malmö</div>
+                  <div class="chip" data-value="remote" onclick="tc(this)" data-i18n="cl_chip_remote">Remote only</div>
                 </div>
               </div>
-              <div class="field"><label>Interests &amp; behaviours (select all that apply)</label>
+              <div class="field"><label data-i18n="cl_label_interests">Interests &amp; behaviours (select all that apply)</label>
                 <div class="chip-group" data-field="interests">
-                  <div class="chip on" data-value="fashion" onclick="tc(this)">Fashion &amp; clothing</div>
-                  <div class="chip on" data-value="online_shopper" onclick="tc(this)">Online shopper</div>
-                  <div class="chip" data-value="beauty" onclick="tc(this)">Beauty &amp; skincare</div>
-                  <div class="chip" data-value="brand_customer" onclick="tc(this)">H&amp;M customer</div>
-                  <div class="chip" data-value="sustainability" onclick="tc(this)">Sustainability interest</div>
-                  <div class="chip" data-value="social_media" onclick="tc(this)">Social media user</div>
-                  <div class="chip" data-value="parent" onclick="tc(this)">Parent</div>
-                  <div class="chip" data-value="homeowner" onclick="tc(this)">Homeowner</div>
+                  <div class="chip on" data-value="fashion" onclick="tc(this)" data-i18n="cl_chip_fashion">Fashion &amp; clothing</div>
+                  <div class="chip on" data-value="online_shopper" onclick="tc(this)" data-i18n="cl_chip_online_shopper">Online shopper</div>
+                  <div class="chip" data-value="beauty" onclick="tc(this)" data-i18n="cl_chip_beauty">Beauty &amp; skincare</div>
+                  <div class="chip" data-value="brand_customer" onclick="tc(this)" data-i18n="cl_chip_brand_customer">Brand customer</div>
+                  <div class="chip" data-value="sustainability" onclick="tc(this)" data-i18n="cl_chip_sustainability">Sustainability interest</div>
+                  <div class="chip" data-value="social_media" onclick="tc(this)" data-i18n="cl_chip_social_media">Social media user</div>
+                  <div class="chip" data-value="parent" onclick="tc(this)" data-i18n="cl_chip_parent">Parent</div>
+                  <div class="chip" data-value="homeowner" onclick="tc(this)" data-i18n="cl_chip_homeowner">Homeowner</div>
                 </div>
               </div>
-              <div class="field"><label>Minimum contributor rating</label>
+              <div class="field"><label data-i18n="cl_label_min_rating">Minimum contributor rating</label>
                 <div class="chip-group" data-field="min_rating" data-single="true">
-                  <div class="chip" data-value="0" onclick="tc(this)">Any rating</div>
-                  <div class="chip on" data-value="3.0" onclick="tc(this)">3.0★ and above</div>
-                  <div class="chip" data-value="4.0" onclick="tc(this)">4.0★ and above</div>
-                  <div class="chip" data-value="4.5" onclick="tc(this)">4.5★ Elite only</div>
+                  <div class="chip" data-value="0" onclick="tc(this)" data-i18n="cl_chip_any_rating">Any rating</div>
+                  <div class="chip on" data-value="3.0" onclick="tc(this)" data-i18n="cl_chip_3_above">3.0★ and above</div>
+                  <div class="chip" data-value="4.0" onclick="tc(this)" data-i18n="cl_chip_4_above">4.0★ and above</div>
+                  <div class="chip" data-value="4.5" onclick="tc(this)" data-i18n="cl_chip_45_elite">4.5★ Elite only</div>
                 </div>
               </div>
             </div>
 
             <div class="section-group">
-              <h3>Additional screening</h3>
-              <div class="field"><label>Screening question 1 (optional)</label><input type="text" id="b-sq1" placeholder="e.g. Have you shopped with H&M online in the last 12 months?"></div>
-              <div class="field"><label>Screening question 2 (optional)</label><input type="text" id="b-sq2" placeholder="e.g. How often do you shop for clothes online?"></div>
-              <div class="field"><label>Any other requirements or notes for Vetd?</label><textarea id="b-addreqs" placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly."></textarea></div>
+              <h3 data-i18n="cl_section_screening">Additional screening</h3>
+              <div class="field"><label data-i18n="cl_label_sq1">Screening question 1 (optional)</label><input type="text" id="b-sq1" placeholder="e.g. Have you shopped with H&M online in the last 12 months?" data-i18n-ph="cl_ph_sq1"></div>
+              <div class="field"><label data-i18n="cl_label_sq2">Screening question 2 (optional)</label><input type="text" id="b-sq2" placeholder="e.g. How often do you shop for clothes online?" data-i18n-ph="cl_ph_sq2"></div>
+              <div class="field"><label data-i18n="cl_label_addreqs">Any other requirements or notes for Vetd?</label><textarea id="b-addreqs" placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly." data-i18n-ph="cl_ph_addreqs"></textarea></div>
             </div>
 
             <div style="display:flex;gap:12px">
-              <button class="btn-outline" onclick="showToast('Draft saved!')">Save as draft</button>
+              <button class="btn-outline" onclick="showToast('Draft saved!')" data-i18n="cl_save_draft">Save as draft</button>
               <button class="btn-primary btn-green" onclick="publishStudy()" data-i18n="cl_publish_btn">Publish study →</button>
             </div>
           </div>
 
           <!-- LIVE PREVIEW -->
           <div class="preview-card">
-            <h3>Live preview</h3>
+            <h3 data-i18n="cl_preview_title">Live preview</h3>
             <div class="preview-title" id="prev-title">Your study title</div>
             <div class="preview-pay" id="prev-pay">450 kr</div>
             <div class="preview-type" id="prev-type">Video call (1-on-1) · 60 minutes</div>
@@ -734,12 +734,12 @@ textarea{resize:vertical;min-height:90px}
               <span class="preview-tag">Online shopper</span>
               <span class="preview-tag">3.0★ and above</span>
             </div>
-            <div class="preview-stat"><span class="preview-stat-label">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
-            <div class="preview-stat"><span class="preview-stat-label">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
-            <div class="preview-stat"><span class="preview-stat-label">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
+            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_spots">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
+            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_budget">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
+            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_fee">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
             <div class="match-estimate">
               <div class="match-est-n" id="prev-match">~340</div>
-              <div class="match-est-l">contributors match your criteria right now</div>
+              <div class="match-est-l" data-i18n="cl_preview_match">contributors match your criteria right now</div>
             </div>
           </div>
         </div>
@@ -748,14 +748,14 @@ textarea{resize:vertical;min-height:90px}
       <!-- PANEL BROWSER -->
       <div class="tab-pane" id="tab-panel">
         <div class="page-topbar">
-          <div class="page-title"><h1>Browse contributors</h1><p>Filtered for: Online shopping experience research</p></div>
-          <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')">Invite top 10</button>
+          <div class="page-title"><h1 data-i18n="cl_browse_title">Browse contributors</h1><p data-i18n="cl_browse_sub">Filtered for: Online shopping experience research</p></div>
+          <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')" data-i18n="cl_invite_top">Invite top 10</button>
         </div>
         <div class="filter-bar">
-          <button class="fc on" onclick="fc(this)">All matches</button>
-          <button class="fc" onclick="fc(this)">Elite only</button>
-          <button class="fc" onclick="fc(this)">Not yet invited</button>
-          <button class="fc" onclick="fc(this)">Applied</button>
+          <button class="fc on" onclick="fc(this)" data-i18n="cl_fc_all">All matches</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_fc_elite">Elite only</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_fc_not_invited">Not yet invited</button>
+          <button class="fc" onclick="fc(this)" data-i18n="cl_fc_applied">Applied</button>
         </div>
 
         <div id="contrib-list"></div>
@@ -764,9 +764,9 @@ textarea{resize:vertical;min-height:90px}
       <!-- RATE PARTICIPANTS -->
       <div class="tab-pane" id="tab-rate">
         <div class="page-topbar">
-          <div class="page-title"><h1>Rate participants</h1><p id="rate-page-sub">Loading…</p></div>
+          <div class="page-title"><h1 data-i18n="cl_rate_title">Rate participants</h1><p id="rate-page-sub">Loading…</p></div>
         </div>
-        <div style="background:var(--amber-light);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:var(--amber);font-weight:500">
+        <div style="background:var(--amber-light);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:var(--amber);font-weight:500" data-i18n="cl_rate_warning">
           ⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.
         </div>
 
@@ -776,20 +776,20 @@ textarea{resize:vertical;min-height:90px}
       <!-- ANALYTICS -->
       <div class="tab-pane" id="tab-analytics">
         <div class="page-topbar">
-          <div class="page-title"><h1>Analytics</h1><p>H&amp;M Group · Last 90 days</p></div>
-          <button class="btn-outline" onclick="showToast('Report exported!')">Export report</button>
+          <div class="page-title"><h1 data-i18n="cl_analytics_title">Analytics</h1><p>H&amp;M Group · Last 90 days</p></div>
+          <button class="btn-outline" onclick="showToast('Report exported!')" data-i18n="cl_analytics_export">Export report</button>
         </div>
 
         <div class="stat-row">
-          <div class="stat-card"><div class="stat-label">Total studies run</div><div class="stat-num">8</div><div class="stat-sub">Since Jan 2026</div></div>
-          <div class="stat-card"><div class="stat-label">Total participants</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
-          <div class="stat-card"><div class="stat-label">Total invested</div><div class="stat-num">78 200 kr</div><div class="stat-sub">incl. Vetd fees</div></div>
-          <div class="stat-card"><div class="stat-label">Avg participant quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_studies">Total studies run</div><div class="stat-num">8</div><div class="stat-sub">Since Jan 2026</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_participants">Total participants</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_invested">Total invested</div><div class="stat-num">78 200 kr</div><div class="stat-sub">incl. Vetd fees</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_quality">Avg participant quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title">Participants per month</div>
+            <div class="sec-title" data-i18n="cl_chart_per_month">Participants per month</div>
             <div class="chart-bar-wrap">
               <div class="bar-col"><div class="bar-val">18</div><div class="bar-fill" style="height:35%"></div><div class="bar-label">Oct</div></div>
               <div class="bar-col"><div class="bar-val">22</div><div class="bar-fill" style="height:43%"></div><div class="bar-label">Nov</div></div>
@@ -800,7 +800,7 @@ textarea{resize:vertical;min-height:90px}
             </div>
           </div>
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title">Participant quality distribution</div>
+            <div class="sec-title" data-i18n="cl_chart_quality">Participant quality distribution</div>
             <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
               <div style="display:flex;align-items:center;gap:10px;font-size:13px">
                 <span style="width:80px;color:var(--gray-400)">Elite 4.7–5.0</span>
@@ -827,9 +827,9 @@ textarea{resize:vertical;min-height:90px}
         </div>
 
         <div class="card">
-          <div class="sec-title">Study performance</div>
+          <div class="sec-title" data-i18n="cl_perf_title">Study performance</div>
           <table class="data-table">
-            <thead><tr><th>Study</th><th>Participants</th><th>Completion</th><th>Avg rating</th><th>Cost</th></tr></thead>
+            <thead><tr><th data-i18n="cl_perf_study">Study</th><th data-i18n="cl_perf_participants">Participants</th><th data-i18n="cl_perf_completion">Completion</th><th data-i18n="cl_perf_rating">Avg rating</th><th data-i18n="cl_perf_cost">Cost</th></tr></thead>
             <tbody>
               <tr><td><strong>Online shopping experience</strong></td><td>12/20</td><td>100%</td><td><span style="color:var(--amber)">★ 4.8</span></td><td>5 400 kr</td></tr>
               <tr><td><strong>Gen Z style focus group</strong></td><td>8/8</td><td>100%</td><td><span style="color:var(--amber)">★ 4.9</span></td><td>4 000 kr</td></tr>
@@ -849,13 +849,13 @@ textarea{resize:vertical;min-height:90px}
   <div class="modal applicants-modal">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
       <div>
-        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px">Applicants</h2>
+        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px" data-i18n="cl_applicants">Applicants</h2>
         <p class="modal-sub" id="applicants-count" style="margin-bottom:0"></p>
       </div>
       <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
     </div>
     <div id="applicants-list">
-      <div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading applicants…</div>
+      <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
     </div>
   </div>
 </div>
@@ -867,30 +867,30 @@ textarea{resize:vertical;min-height:90px}
     <p class="modal-sub" id="rate-study-name"></p>
     <div style="margin-bottom:1.5rem">
       <div class="rating-dimension">
-        <div class="dim-label">Punctuality <span class="dim-score" id="sc-1">—</span></div>
+        <div class="dim-label"><span data-i18n="cl_dim_punctuality">Punctuality</span> <span class="dim-score" id="sc-1">—</span></div>
         <div class="dim-stars" id="ds-1"></div>
       </div>
       <div class="rating-dimension">
-        <div class="dim-label">Engagement &amp; participation <span class="dim-score" id="sc-2">—</span></div>
+        <div class="dim-label"><span data-i18n="cl_dim_engagement">Engagement &amp; participation</span> <span class="dim-score" id="sc-2">—</span></div>
         <div class="dim-stars" id="ds-2"></div>
       </div>
       <div class="rating-dimension">
-        <div class="dim-label">Quality &amp; depth of input <span class="dim-score" id="sc-3">—</span></div>
+        <div class="dim-label"><span data-i18n="cl_dim_quality">Quality &amp; depth of input</span> <span class="dim-score" id="sc-3">—</span></div>
         <div class="dim-stars" id="ds-3"></div>
       </div>
       <div class="rating-dimension">
-        <div class="dim-label">Honesty &amp; authenticity <span class="dim-score" id="sc-4">—</span></div>
+        <div class="dim-label"><span data-i18n="cl_dim_honesty">Honesty &amp; authenticity</span> <span class="dim-score" id="sc-4">—</span></div>
         <div class="dim-stars" id="ds-4"></div>
       </div>
       <div class="rating-dimension">
-        <div class="dim-label">Profile accuracy (matched expectations?) <span class="dim-score" id="sc-5">—</span></div>
+        <div class="dim-label"><span data-i18n="cl_dim_profile">Profile accuracy (matched expectations?)</span> <span class="dim-score" id="sc-5">—</span></div>
         <div class="dim-stars" id="ds-5"></div>
       </div>
     </div>
-    <div class="field"><label>Optional written feedback (shared with contributor)</label><textarea id="rate-comment" placeholder="e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again."></textarea></div>
+    <div class="field"><label data-i18n="cl_rate_feedback_label">Optional written feedback (shared with contributor)</label><textarea id="rate-comment" placeholder="e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again." data-i18n-ph="cl_rate_feedback_ph"></textarea></div>
     <div style="display:flex;gap:12px;margin-top:1rem">
-      <button class="btn-outline" style="flex:1" onclick="closeRateModal()">Cancel</button>
-      <button class="btn-primary btn-green" style="flex:2" onclick="submitRating()">Submit rating →</button>
+      <button class="btn-outline" style="flex:1" onclick="closeRateModal()" data-i18n="cl_rate_cancel">Cancel</button>
+      <button class="btn-primary btn-green" style="flex:2" onclick="submitRating()" data-i18n="cl_rate_submit">Submit rating →</button>
     </div>
   </div>
 </div>
@@ -1058,7 +1058,7 @@ textarea{resize:vertical;min-height:90px}
       const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
       const fullName  = [firstName, lastName].filter(w => w && w !== 'there').join(' ') || firstName;
       const hour = new Date().getHours();
-      const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+      const greeting = hour < 12 ? t('cl_good_morning') : hour < 18 ? t('cl_good_afternoon') : t('cl_good_evening');
 
       const greetEl = document.getElementById('dash-greeting');
       if (greetEl) greetEl.textContent = `${greeting}, ${firstName} 👋`;
@@ -1135,9 +1135,9 @@ textarea{resize:vertical;min-height:90px}
         list.innerHTML = `
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
             <div style="font-size:32px;margin-bottom:1rem">📋</div>
-            <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">No studies yet</h3>
-            <p style="font-size:14px;font-weight:300">Post your first study to start recruiting contributors.</p>
-            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">＋ Post a study</button>
+            <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${t('cl_no_studies')}</h3>
+            <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub')}</p>
+            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_post_a_study')}</button>
           </div>`;
         return;
       }
@@ -1160,7 +1160,8 @@ textarea{resize:vertical;min-height:90px}
         const closes = s.close_date
           ? new Date(s.close_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
           : '—';
-        const label = status.charAt(0).toUpperCase() + status.slice(1);
+        const statusKeyMap = { active: 'cl_badge_live', paused: 'cl_badge_filling', completed: 'cl_badge_completed', cancelled: 'cl_badge_no_show', draft: 'cl_filter_draft' };
+        const label = statusKeyMap[status] ? t(statusKeyMap[status]) : (status.charAt(0).toUpperCase() + status.slice(1));
         const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0 };
         const payDisplay = s.pay_per_participant
           ? `${formatCurrency(s.pay_per_participant)}/person`
@@ -1176,18 +1177,18 @@ textarea{resize:vertical;min-height:90px}
               <span class="badge ${badgeCls}">${label}</span>
             </div>
             <div class="study-meta" style="margin-bottom:10px">
-              <span>Spots: <strong>${filled} / ${spots}</strong></span>
-              ${payDisplay ? `<span>Pay: <strong>${payDisplay}</strong></span>` : ''}
-              ${paymentSpendMap[s.id] ? `<span>Spent: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>Est. spend: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
-              <span>Closes: <strong>${closes}</strong></span>
-              ${counts.total > 0 ? `<span>Applications: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} pending)</span>` : ''}</span>` : ''}
+              <span>${t('cl_spots')}: <strong>${filled} / ${spots}</strong></span>
+              ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
+              ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>${t('cl_est_spend')}: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
+              <span>${t('cl_closes')}: <strong>${closes}</strong></span>
+              ${counts.total > 0 ? `<span>${t('cl_applications')}: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} ${t('cl_pending')})</span>` : ''}</span>` : ''}
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
             <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
               <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${s.id}','${safeTitle}')">
-                👥 ${counts.total === 0 ? 'No applications yet' : `View ${counts.total} applicant${counts.total !== 1 ? 's' : ''}`}
+                👥 ${counts.total === 0 ? t('cl_no_applications') : t(counts.total !== 1 ? 'cl_view_applicants_plural' : 'cl_view_applicants').replace('{count}', counts.total)}
               </button>
-              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">Continue editing</button>` : ''}
+              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_continue_editing')}</button>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -1204,9 +1205,9 @@ textarea{resize:vertical;min-height:90px}
   async function openApplicants(studyId, studyTitle) {
     currentApplicantsStudyId = studyId;
     document.getElementById('applicants-study-title').textContent = studyTitle;
-    document.getElementById('applicants-count').textContent = 'Loading…';
+    document.getElementById('applicants-count').textContent = t('cl_loading');
     document.getElementById('applicants-list').innerHTML =
-      '<div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading applicants…</div>';
+      `<div style="text-align:center;padding:2rem;color:var(--gray-400)">${t('cl_loading_applicants')}</div>`;
     document.getElementById('applicants-modal').classList.add('open');
     await loadApplicants(studyId);
   }
@@ -1230,18 +1231,19 @@ textarea{resize:vertical;min-height:90px}
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        countEl.textContent = 'No applications yet';
+        countEl.textContent = t('cl_no_applications');
         list.innerHTML = `
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
             <div style="font-size:32px;margin-bottom:0.75rem">📭</div>
-            <p style="font-size:14px;font-weight:300">No one has applied yet. Check back once your study is live.</p>
+            <p style="font-size:14px;font-weight:300">${t('cl_no_applicants')}</p>
           </div>`;
         return;
       }
 
       const pending  = data.filter(a => a.status === 'pending').length;
       const accepted = data.filter(a => a.status === 'accepted').length;
-      countEl.textContent = `${data.length} applicant${data.length !== 1 ? 's' : ''} · ${accepted} accepted · ${pending} pending`;
+      countEl.textContent = t(data.length !== 1 ? 'cl_applicant_count_plural' : 'cl_applicant_count')
+        .replace('{count}', data.length).replace('{accepted}', accepted).replace('{pending}', pending);
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1263,14 +1265,14 @@ textarea{resize:vertical;min-height:90px}
         let actions = '';
         if (a.status === 'pending') {
           actions = `
-            <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}','${a.contributor_id}')">Accept</button>
-            <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}','${a.contributor_id}')">Reject</button>`;
+            <button class="btn-accept" onclick="updateApplication('${a.id}','accepted','${studyId}','${a.contributor_id}')">${t('cl_accept')}</button>
+            <button class="btn-reject" onclick="updateApplication('${a.id}','rejected','${studyId}','${a.contributor_id}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           actions = `
-            <span class="status-pill status-accepted">Accepted</span>
-            <button class="btn-complete" onclick="markCompleted('${a.id}','${studyId}')">Mark completed</button>`;
+            <span class="status-pill status-accepted">${t('cl_accepted')}</span>
+            <button class="btn-complete" onclick="markCompleted('${a.id}','${studyId}')">${t('cl_mark_completed')}</button>`;
         } else if (a.status === 'completed') {
-          actions = `<span class="status-pill status-completed">Completed ✓</span>`;
+          actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1298,7 +1300,7 @@ textarea{resize:vertical;min-height:90px}
   async function updateApplication(appId, newStatus, studyId, contributorId) {
     const row = document.getElementById('approw-' + appId);
     const actionsEl = row?.querySelector('.applicant-actions');
-    if (actionsEl) actionsEl.innerHTML = '<span style="font-size:12px;color:var(--gray-400)">Saving…</span>';
+    if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
 
     try {
       const { error: updateErr } = await db
@@ -1339,7 +1341,7 @@ textarea{resize:vertical;min-height:90px}
         }
       }
 
-      showToast(newStatus === 'accepted' ? 'Applicant accepted ✓' : 'Applicant rejected');
+      showToast(newStatus === 'accepted' ? t('cl_applicant_accepted') : t('cl_applicant_rejected'));
       // Refresh applicant list in-place
       await loadApplicants(studyId);
       // Refresh study list to update counts and progress bar
@@ -1402,7 +1404,7 @@ textarea{resize:vertical;min-height:90px}
     if (!title) { showToast('Please enter a study title', true); return; }
 
     if (!db) {
-      showToast('Study published! Contributors are being matched now.');
+      showToast(t('cl_study_published'));
       setTimeout(() => showTab('studies', document.querySelectorAll('.nav-item')[4]), 1200);
       return;
     }
@@ -1446,7 +1448,7 @@ textarea{resize:vertical;min-height:90px}
       });
       if (error) throw error;
 
-      showToast('Study published! Contributors are being matched now.');
+      showToast(t('cl_study_published'));
       setTimeout(async () => {
         await loadStudies();
         showTab('studies', document.querySelectorAll('.nav-item')[4]);
@@ -1456,7 +1458,7 @@ textarea{resize:vertical;min-height:90px}
       if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not publish — try again', true);
     } finally {
-      btn.textContent = 'Publish study →'; btn.disabled = false;
+      btn.textContent = t('cl_publish_btn'); btn.disabled = false;
     }
   }
 
@@ -1485,7 +1487,7 @@ textarea{resize:vertical;min-height:90px}
       const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
 
       if (!contribs || contribs.length === 0) {
-        list.innerHTML = '<p style="color:var(--gray-400);padding:1rem;text-align:center">No contributors found yet.</p>';
+        list.innerHTML = `<p style="color:var(--gray-400);padding:1rem;text-align:center">${t('cl_no_contributors')}</p>`;
         return;
       }
 
@@ -1527,7 +1529,7 @@ textarea{resize:vertical;min-height:90px}
               ${tags.length ? `<div class="tags-row">${tags.map(t=>`<span class="tag tag-gray">${esc(t)}</span>`).join('')}</div>` : ''}
             </div>
             <div style="margin-left:8px;flex-shrink:0">
-              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${esc(dispName)}!')">Invite</button>
+              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${esc(dispName)}!')">${t('cl_invite')}</button>
             </div>
           </div>`;
       }).join('');
@@ -1565,8 +1567,8 @@ textarea{resize:vertical;min-height:90px}
 
       const studyIds = (studies || []).map(s => s.id);
       if (!studyIds.length) {
-        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><p style="font-size:14px;font-weight:300">No completed participants to rate yet.</p></div>';
-        if (subEl) subEl.textContent = 'No participants to rate';
+        list.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--gray-400)"><p style="font-size:14px;font-weight:300">${t('cl_no_rate_yet')}</p></div>`;
+        if (subEl) subEl.textContent = t('cl_no_rate_yet');
         return;
       }
       const studyMap = Object.fromEntries(studies.map(s => [s.id, s.title]));
@@ -1581,8 +1583,8 @@ textarea{resize:vertical;min-height:90px}
       console.log('[loadRateList] completed apps:', apps);
 
       if (!apps || !apps.length) {
-        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">No completed participants to rate yet. Mark accepted participants as completed first.</p></div>';
-        if (subEl) subEl.textContent = 'No participants to rate';
+        list.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">${t('cl_no_rate_yet_sub')}</p></div>`;
+        if (subEl) subEl.textContent = t('cl_no_rate_yet');
         return;
       }
 
@@ -1598,8 +1600,8 @@ textarea{resize:vertical;min-height:90px}
       // Only show unrated — already-rated contributors disappear from the queue
       const unrated = apps.filter(a => !ratedSet.has(a.id));
       if (!unrated.length) {
-        if (subEl) subEl.textContent = 'All participants have been rated';
-        list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">All participants have been rated.</p></div>';
+        if (subEl) subEl.textContent = t('cl_all_rated');
+        list.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--gray-400)"><div style="font-size:32px;margin-bottom:0.75rem">✅</div><p style="font-size:14px;font-weight:300">${t('cl_all_rated')}</p></div>`;
         return;
       }
 
@@ -1618,7 +1620,7 @@ textarea{resize:vertical;min-height:90px}
       const profileMap = Object.fromEntries((profileRows || []).map(p => [p.id, p]));
 
       // Step 5: render
-      if (subEl) subEl.textContent = `${unrated.length} participant${unrated.length !== 1 ? 's' : ''} awaiting your rating`;
+      if (subEl) subEl.textContent = t(unrated.length !== 1 ? 'cl_awaiting_rating_plural' : 'cl_awaiting_rating').replace('{count}', unrated.length);
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1644,7 +1646,7 @@ textarea{resize:vertical;min-height:90px}
               data-study-id="${a.study_id}"
               data-study-title="${safeTitle}"
               data-name="${safeName}"
-              onclick="openRateModalFromEl(this)">Rate now →</button>
+              onclick="openRateModalFromEl(this)">${t('cl_rate_now')}</button>
           </div>`;
       }).join('');
 
@@ -1696,12 +1698,12 @@ textarea{resize:vertical;min-height:90px}
     // Validate all 5 dimensions are rated
     const missing = dimKeys.filter(k => !dimScores[k]);
     if (missing.length) {
-      showToast('Please rate all 5 dimensions before submitting', true);
+      showToast(t('cl_rate_all_dims'), true);
       return;
     }
 
     const btn = document.querySelector('#rate-modal .btn-green');
-    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+    if (btn) { btn.disabled = true; btn.textContent = t('cl_loading'); }
 
     try {
       const scores = {
@@ -1745,14 +1747,14 @@ textarea{resize:vertical;min-height:90px}
       );
 
       document.getElementById('rate-modal').classList.remove('open');
-      showToast(`Rating submitted for ${currentRatee.name}. Their score has been updated.`);
+      showToast(t('cl_rating_submitted').replace('{name}', currentRatee.name));
       await loadRateList();
     } catch(err) {
       console.error('submitRating error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast('Could not submit rating — try again', true);
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Submit rating →'; }
+      if (btn) { btn.disabled = false; btn.textContent = t('cl_rate_submit'); }
     }
   }
 
@@ -1788,7 +1790,7 @@ textarea{resize:vertical;min-height:90px}
         if (payErr) console.warn('Payment insert error:', payErr);
       }
 
-      showToast('Marked as completed ✓ — payment queued');
+      showToast(t('cl_marked_completed'));
       await loadApplicants(studyId);
       await loadRateList();
       loadClientBudget();
@@ -1807,11 +1809,11 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data: studies } = await db.from('studies').select('id').eq('created_by', currentClientUser.id);
       const studyIds = (studies || []).map(s => s.id);
-      if (!studyIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = 'No studies yet'; subEl.className = 'stat-sub'; } return; }
+      if (!studyIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = t('cl_no_studies_budget'); subEl.className = 'stat-sub'; } return; }
 
       const { data: apps } = await db.from('applications').select('id').in('study_id', studyIds);
       const appIds = (apps || []).map(a => a.id);
-      if (!appIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = 'No payments yet'; subEl.className = 'stat-sub'; } return; }
+      if (!appIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = t('cl_no_payments'); subEl.className = 'stat-sub'; } return; }
 
       const { data: payments } = await db.from('payments').select('amount, status').in('application_id', appIds);
       const all     = payments || [];
@@ -1821,10 +1823,10 @@ textarea{resize:vertical;min-height:90px}
       numEl.textContent = formatCurrency(total);
       if (subEl) {
         if (pending > 0) {
-          subEl.textContent = `${formatCurrency(pending)} pending release`;
+          subEl.textContent = `${formatCurrency(pending)} ${t('cl_pending_release')}`;
           subEl.className = 'stat-sub warn';
         } else {
-          subEl.textContent = `${all.filter(p=>p.status==='paid').length} payments processed`;
+          subEl.textContent = `${all.filter(p=>p.status==='paid').length} ${t('cl_payments_processed')}`;
           subEl.className = 'stat-sub up';
         }
       }
@@ -1843,7 +1845,7 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('prev-title').textContent  = title;
     document.getElementById('prev-pay').textContent    = pay + ' kr';
     document.getElementById('prev-type').textContent   = format + ' · ' + length;
-    document.getElementById('prev-spots').textContent  = spots + ' participants';
+    document.getElementById('prev-spots').textContent  = spots + ' ' + t('cl_participants_suffix');
     document.getElementById('prev-budget').textContent = (pay*spots) + ' kr';
     document.getElementById('prev-fee').textContent    = Math.round(pay*spots*0.2) + ' kr';
     document.getElementById('prev-match').textContent  = '~'+Math.max(50, Math.round(500 - spots*4 - pay*0.5));
@@ -1884,9 +1886,9 @@ textarea{resize:vertical;min-height:90px}
 
         // Locations: "Remote only" and specific cities are mutually exclusive
         if (val === 'remote') {
-          ['london', 'manchester', 'birmingham'].forEach(city =>
+          ['stockholm', 'goteborg', 'malmo'].forEach(city =>
             group.querySelector(`[data-value="${city}"]`)?.classList.remove('on'));
-        } else if (['london', 'manchester', 'birmingham'].includes(val)) {
+        } else if (['stockholm', 'goteborg', 'malmo'].includes(val)) {
           group.querySelector('[data-value="remote"]')?.classList.remove('on');
         }
       }
@@ -1923,6 +1925,8 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ─── NOTIFICATIONS ────────────────────────────────────
+  let lastNotifications = [];
+
   async function loadNotifications() {
     if (!db || !currentClientUser) return;
     try {
@@ -1940,9 +1944,17 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function renderNotifications(notifs) {
+    lastNotifications = notifs;
     const badge = document.getElementById('notif-count-badge');
     const body  = document.getElementById('notif-panel-body');
+    if (!badge || !body) return;
     const unreadCount = notifs.filter(n => !n.read).length;
+
+    // Update panel header text
+    const titleEl = document.querySelector('.notif-panel-hd-title');
+    const markAllEl = document.querySelector('.notif-mark-all-btn');
+    if (titleEl) titleEl.textContent = t('cl_notif_title');
+    if (markAllEl) markAllEl.textContent = t('cl_notif_mark_all');
 
     if (unreadCount > 0) {
       badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -1952,16 +1964,16 @@ textarea{resize:vertical;min-height:90px}
     }
 
     if (!notifs.length) {
-      body.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+      body.innerHTML = `<div class="notif-empty">${t('cl_notif_empty')}</div>`;
       return;
     }
 
     body.innerHTML = notifs.map(n => `
-      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.link || ''}')">
+      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${esc(n.id)}', '${esc(n.link || '')}')">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
-          <div class="notif-row-title">${n.title}</div>
-          <div class="notif-row-body">${n.body}</div>
+          <div class="notif-row-title">${esc(n.title)}</div>
+          <div class="notif-row-body">${esc(n.body)}</div>
           <div class="notif-row-time">${timeAgo(n.created_at)}</div>
         </div>
       </div>
@@ -1994,12 +2006,12 @@ textarea{resize:vertical;min-height:90px}
   function timeAgo(iso) {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1)  return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1)  return t('cl_just_now');
+    if (mins < 60) return `${mins}${t('cl_time_m_ago')}`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24)  return `${hrs}h ago`;
+    if (hrs < 24)  return `${hrs}${t('cl_time_h_ago')}`;
     const days = Math.floor(hrs / 24);
-    if (days < 7)  return `${days}d ago`;
+    if (days < 7)  return `${days}${t('cl_time_d_ago')}`;
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
@@ -2029,36 +2041,457 @@ textarea{resize:vertical;min-height:90px}
   // ─── LANGUAGE TOGGLE ────────────────────────────────────
   const LANG = {
     en: {
+      // Landing
       cl_landing_h1_plain: 'Find people worth',
       cl_landing_h1_em: 'listening to.',
       cl_landing_sub: 'Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.',
       cl_cta: 'Post your first study',
       cl_signin: 'Sign in',
+      // Sidebar nav
+      cl_nav_label_overview: 'Overview',
+      cl_nav_label_studies: 'Studies',
+      cl_nav_label_panel: 'Panel',
       cl_nav_overview: 'Dashboard',
       cl_nav_studies: 'My studies',
       cl_nav_browse: 'Browse contributors',
       cl_nav_analytics: 'Analytics',
       cl_nav_post: 'Post a study',
-      cl_post_title: 'Post a new study',
-      cl_publish_btn: 'Publish study →',
+      cl_nav_rate: 'Rate participants',
+      cl_plan_name: 'Pro plan',
+      cl_plan_detail: 'Unlimited studies · Priority panel',
+      cl_plan_upgrade: '↑ Upgrade to Enterprise',
       sign_out: 'Sign out',
+      // Notifications
+      cl_notif_title: 'Notifications',
+      cl_notif_mark_all: 'Mark all as read',
+      cl_notif_empty: 'No notifications yet',
+      // Dashboard
+      cl_post_new_btn: '＋ Post new study',
+      cl_stat_active: 'Active studies',
+      cl_stat_recruited: 'Participants recruited',
+      cl_stat_avg_rating: 'Avg contributor rating',
+      cl_stat_spend: 'Total spend',
+      cl_dash_active_studies: 'Active studies',
+      cl_dash_top_matches: 'Top contributor matches waiting',
+      cl_dash_recent_activity: 'Recent activity',
+      cl_th_contributor: 'Contributor',
+      cl_th_study: 'Study',
+      cl_th_status: 'Status',
+      cl_th_rating: 'Rating given',
+      cl_th_date: 'Date',
+      cl_badge_completed: 'Completed',
+      cl_badge_in_progress: 'In progress',
+      cl_badge_no_show: 'No-show',
+      cl_badge_live: 'Live',
+      cl_badge_filling: 'Filling',
+      cl_invite: 'Invite',
+      // Studies tab
+      cl_my_studies: 'My studies',
+      cl_filter_all: 'All',
+      cl_filter_active: 'Active',
+      cl_filter_completed: 'Completed',
+      cl_filter_draft: 'Draft',
+      // Study builder
+      cl_post_title: 'Post a new study',
+      cl_post_subtitle: "Fill in the details — we'll estimate your panel size as you go.",
+      cl_section_basics: 'Study basics',
+      cl_label_title: 'Study title',
+      cl_ph_title: 'e.g. Online shopping experience research',
+      cl_label_desc: 'Brief description (shown to contributors)',
+      cl_ph_desc: "Tell contributors what the study involves and what you're hoping to learn...",
+      cl_label_format: 'Study format',
+      cl_label_length: 'Session length',
+      cl_label_spots: 'Number of participants needed',
+      cl_label_pay: 'Pay per participant (kr)',
+      cl_label_start: 'Study start date',
+      cl_label_close: 'Closing date',
+      cl_section_targeting: 'Who are you looking for?',
+      cl_label_age: 'Age range',
+      cl_label_gender: 'Gender',
+      cl_label_location: 'Location',
+      cl_label_interests: 'Interests & behaviours (select all that apply)',
+      cl_label_min_rating: 'Minimum contributor rating',
+      cl_section_screening: 'Additional screening',
+      cl_label_sq1: 'Screening question 1 (optional)',
+      cl_ph_sq1: 'e.g. Have you shopped with H&M online in the last 12 months?',
+      cl_label_sq2: 'Screening question 2 (optional)',
+      cl_ph_sq2: 'e.g. How often do you shop for clothes online?',
+      cl_label_addreqs: 'Any other requirements or notes for Vetd?',
+      cl_ph_addreqs: 'e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly.',
+      cl_save_draft: 'Save as draft',
+      cl_publish_btn: 'Publish study →',
+      // Chips
+      cl_chip_any_age: 'Any age',
+      cl_chip_women: 'Women',
+      cl_chip_men: 'Men',
+      cl_chip_nonbinary: 'Non-binary',
+      cl_chip_any_gender: 'Any gender',
+      cl_chip_uk_any: 'Sweden — any',
+      cl_chip_remote: 'Remote only',
+      cl_chip_any_rating: 'Any rating',
+      cl_chip_3_above: '3.0★ and above',
+      cl_chip_4_above: '4.0★ and above',
+      cl_chip_45_elite: '4.5★ Elite only',
+      cl_chip_fashion: 'Fashion & clothing',
+      cl_chip_online_shopper: 'Online shopper',
+      cl_chip_beauty: 'Beauty & skincare',
+      cl_chip_brand_customer: 'Brand customer',
+      cl_chip_sustainability: 'Sustainability interest',
+      cl_chip_social_media: 'Social media user',
+      cl_chip_parent: 'Parent',
+      cl_chip_homeowner: 'Homeowner',
+      // Preview
+      cl_preview_title: 'Live preview',
+      cl_preview_spots: 'Spots available',
+      cl_preview_budget: 'Total budget',
+      cl_preview_fee: '+ Vetd fee (20%)',
+      cl_preview_match: 'contributors match your criteria right now',
+      // Browse contributors
+      cl_browse_title: 'Browse contributors',
+      cl_browse_sub: 'Filtered for: Online shopping experience research',
+      cl_invite_top: 'Invite top 10',
+      cl_fc_all: 'All matches',
+      cl_fc_elite: 'Elite only',
+      cl_fc_not_invited: 'Not yet invited',
+      cl_fc_applied: 'Applied',
+      // Rate participants
+      cl_rate_title: 'Rate participants',
+      cl_rate_warning: '⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.',
+      cl_dim_punctuality: 'Punctuality',
+      cl_dim_engagement: 'Engagement & participation',
+      cl_dim_quality: 'Quality & depth of input',
+      cl_dim_honesty: 'Honesty & authenticity',
+      cl_dim_profile: 'Profile accuracy (matched expectations?)',
+      cl_rate_feedback_label: 'Optional written feedback (shared with contributor)',
+      cl_rate_feedback_ph: 'e.g. Really thoughtful insights, came prepared and gave detailed answers. Would love to work with them again.',
+      cl_rate_cancel: 'Cancel',
+      cl_rate_submit: 'Submit rating →',
+      // Analytics
+      cl_analytics_title: 'Analytics',
+      cl_analytics_export: 'Export report',
+      cl_stat_total_studies: 'Total studies run',
+      cl_stat_total_participants: 'Total participants',
+      cl_stat_total_invested: 'Total invested',
+      cl_stat_avg_quality: 'Avg participant quality',
+      cl_chart_per_month: 'Participants per month',
+      cl_chart_quality: 'Participant quality distribution',
+      cl_perf_title: 'Study performance',
+      cl_perf_study: 'Study',
+      cl_perf_participants: 'Participants',
+      cl_perf_completion: 'Completion',
+      cl_perf_rating: 'Avg rating',
+      cl_perf_cost: 'Cost',
+      // Applicants modal
+      cl_applicants: 'Applicants',
+      cl_no_applicants: 'No one has applied yet. Check back once your study is live.',
+      cl_accept: 'Accept',
+      cl_reject: 'Reject',
+      cl_mark_completed: 'Mark completed',
+      cl_loading: 'Loading…',
+      cl_loading_applicants: 'Loading applicants…',
+      // Auth
+      cl_auth_create_title: 'Start your research',
+      cl_auth_create_sub: 'Post your first study in under 5 minutes',
+      cl_auth_tab_create: 'Create account',
+      cl_auth_tab_signin: 'Sign in',
+      cl_auth_company: 'Company name',
+      cl_auth_fname: 'First name',
+      cl_auth_lname: 'Last name',
+      cl_auth_email: 'Work email',
+      cl_auth_password: 'Password',
+      cl_auth_ph_company: 'e.g. H&M Group',
+      cl_auth_ph_email: 'emma@company.com',
+      cl_auth_ph_pass: 'At least 8 characters',
+      cl_auth_create_btn: 'Create account →',
+      cl_auth_signin_btn: 'Sign in →',
+      cl_auth_check_email: 'Check your email',
+      cl_auth_check_sub: 'We sent a confirmation link to your email. Click it to activate your account, then come back here to sign in.',
+      cl_auth_goto_signin: 'Go to sign in →',
+      cl_auth_confirmed_title: 'Email confirmed',
+      cl_auth_confirmed_sub: 'Your account is active — please sign in below.',
+      cl_auth_back: '← Back to homepage',
+      // Cookie
+      cl_cookie_text: 'We use localStorage to remember your language preference.',
+      cl_cookie_accept: 'Accept',
+      cl_cookie_decline: 'Decline',
+      // Dynamic
+      cl_no_studies: 'No studies yet',
+      cl_no_studies_sub: 'Post your first study to start recruiting contributors.',
+      cl_post_a_study: '＋ Post a study',
+      cl_view_applicants: 'View {count} applicant',
+      cl_view_applicants_plural: 'View {count} applicants',
+      cl_no_applications: 'No applications yet',
+      cl_continue_editing: 'Continue editing',
+      cl_spots: 'Spots',
+      cl_pay_label: 'Pay',
+      cl_spent: 'Spent',
+      cl_est_spend: 'Est. spend',
+      cl_closes: 'Closes',
+      cl_applications: 'Applications',
+      cl_pending: 'pending',
+      cl_posted: 'Posted',
+      cl_applicant_count: '{count} applicant · {accepted} accepted · {pending} pending',
+      cl_applicant_count_plural: '{count} applicants · {accepted} accepted · {pending} pending',
+      cl_studies_label: 'studies',
+      cl_accepted: 'Accepted',
+      cl_rejected: 'Rejected',
+      cl_completed: 'Completed ✓',
+      cl_saving: 'Saving…',
+      cl_applicant_accepted: 'Applicant accepted ✓',
+      cl_applicant_rejected: 'Applicant rejected',
+      cl_rate_all_dims: 'Please rate all 5 dimensions before submitting',
+      cl_rating_submitted: 'Rating submitted for {name}. Their score has been updated.',
+      cl_marked_completed: 'Marked as completed ✓ — payment queued',
+      cl_study_published: 'Study published! Contributors are being matched now.',
+      cl_no_rate_yet: 'No completed participants to rate yet.',
+      cl_no_rate_yet_sub: 'No completed participants to rate yet. Mark accepted participants as completed first.',
+      cl_all_rated: 'All participants have been rated.',
+      cl_awaiting_rating: '{count} participant awaiting your rating',
+      cl_awaiting_rating_plural: '{count} participants awaiting your rating',
+      cl_rate_now: 'Rate now →',
+      cl_no_contributors: 'No contributors found yet.',
+      cl_just_now: 'just now',
+      cl_time_m_ago: 'm ago',
+      cl_time_h_ago: 'h ago',
+      cl_time_d_ago: 'd ago',
+      cl_good_morning: 'Good morning',
+      cl_good_afternoon: 'Good afternoon',
+      cl_good_evening: 'Good evening',
+      cl_no_studies_budget: 'No studies yet',
+      cl_no_payments: 'No payments yet',
+      cl_pending_release: 'pending release',
+      cl_payments_processed: 'payments processed',
+      cl_participants_suffix: 'participants',
     },
     sv: {
+      // Landing
       cl_landing_h1_plain: 'Hitta människor värda att',
       cl_landing_h1_em: 'lyssna på.',
       cl_landing_sub: 'Publicera en studie, definiera dina kriterier och matchas med betygsatta, verifierade deltagare — vanligtvis inom 48 timmar.',
       cl_cta: 'Publicera din första studie',
       cl_signin: 'Logga in',
+      // Sidebar nav
+      cl_nav_label_overview: 'Översikt',
+      cl_nav_label_studies: 'Studier',
+      cl_nav_label_panel: 'Panel',
       cl_nav_overview: 'Översikt',
       cl_nav_studies: 'Mina studier',
       cl_nav_browse: 'Bläddra bland deltagare',
       cl_nav_analytics: 'Analys',
       cl_nav_post: 'Publicera studie',
-      cl_post_title: 'Publicera en ny studie',
-      cl_publish_btn: 'Publicera studie',
+      cl_nav_rate: 'Betygsätt deltagare',
+      cl_plan_name: 'Pro-plan',
+      cl_plan_detail: 'Obegränsat antal studier · Prioriterad panel',
+      cl_plan_upgrade: '↑ Uppgradera till Enterprise',
       sign_out: 'Logga ut',
+      // Notifications
+      cl_notif_title: 'Aviseringar',
+      cl_notif_mark_all: 'Markera alla som lästa',
+      cl_notif_empty: 'Inga aviseringar ännu',
+      // Dashboard
+      cl_post_new_btn: '＋ Skapa ny studie',
+      cl_stat_active: 'Aktiva studier',
+      cl_stat_recruited: 'Rekryterade deltagare',
+      cl_stat_avg_rating: 'Snittbetyg deltagare',
+      cl_stat_spend: 'Total kostnad',
+      cl_dash_active_studies: 'Aktiva studier',
+      cl_dash_top_matches: 'Bästa deltagarmatchningar',
+      cl_dash_recent_activity: 'Senaste aktivitet',
+      cl_th_contributor: 'Deltagare',
+      cl_th_study: 'Studie',
+      cl_th_status: 'Status',
+      cl_th_rating: 'Betyg',
+      cl_th_date: 'Datum',
+      cl_badge_completed: 'Slutförd',
+      cl_badge_in_progress: 'Pågående',
+      cl_badge_no_show: 'Uteblev',
+      cl_badge_live: 'Aktiv',
+      cl_badge_filling: 'Fyller på',
+      cl_invite: 'Bjud in',
+      // Studies tab
+      cl_my_studies: 'Mina studier',
+      cl_filter_all: 'Alla',
+      cl_filter_active: 'Aktiva',
+      cl_filter_completed: 'Slutförda',
+      cl_filter_draft: 'Utkast',
+      // Study builder
+      cl_post_title: 'Publicera en ny studie',
+      cl_post_subtitle: 'Fyll i detaljerna — vi uppskattar din panelstorlek allt eftersom.',
+      cl_section_basics: 'Grunduppgifter',
+      cl_label_title: 'Studietitel',
+      cl_ph_title: 't.ex. Undersökning av shoppingupplevelse online',
+      cl_label_desc: 'Kort beskrivning (visas för deltagare)',
+      cl_ph_desc: 'Berätta för deltagarna vad studien innebär och vad du hoppas lära dig...',
+      cl_label_format: 'Studieformat',
+      cl_label_length: 'Sessionslängd',
+      cl_label_spots: 'Antal deltagare som behövs',
+      cl_label_pay: 'Ersättning per deltagare (kr)',
+      cl_label_start: 'Startdatum',
+      cl_label_close: 'Slutdatum',
+      cl_section_targeting: 'Vem söker du?',
+      cl_label_age: 'Åldersintervall',
+      cl_label_gender: 'Kön',
+      cl_label_location: 'Plats',
+      cl_label_interests: 'Intressen och beteenden (välj alla som gäller)',
+      cl_label_min_rating: 'Lägsta deltagarnas betyg',
+      cl_section_screening: 'Ytterligare urval',
+      cl_label_sq1: 'Urvalsfråga 1 (valfritt)',
+      cl_ph_sq1: 't.ex. Har du handlat hos H&M online de senaste 12 månaderna?',
+      cl_label_sq2: 'Urvalsfråga 2 (valfritt)',
+      cl_ph_sq2: 't.ex. Hur ofta handlar du kläder online?',
+      cl_label_addreqs: 'Övriga krav eller anteckningar för Vetd?',
+      cl_ph_addreqs: 't.ex. Deltagare måste vara bekväma med videosamtal. Vi föredrar personer som kan uttrycka sina upplevelser tydligt.',
+      cl_save_draft: 'Spara som utkast',
+      cl_publish_btn: 'Publicera studie →',
+      // Chips
+      cl_chip_any_age: 'Alla åldrar',
+      cl_chip_women: 'Kvinnor',
+      cl_chip_men: 'Män',
+      cl_chip_nonbinary: 'Ickebinär',
+      cl_chip_any_gender: 'Alla kön',
+      cl_chip_uk_any: 'Sverige — hela',
+      cl_chip_remote: 'Enbart distans',
+      cl_chip_any_rating: 'Alla betyg',
+      cl_chip_3_above: '3.0★ och uppåt',
+      cl_chip_4_above: '4.0★ och uppåt',
+      cl_chip_45_elite: '4.5★ Enbart Elite',
+      cl_chip_fashion: 'Mode & kläder',
+      cl_chip_online_shopper: 'E-handlare',
+      cl_chip_beauty: 'Skönhet & hudvård',
+      cl_chip_brand_customer: 'Varumärkeskund',
+      cl_chip_sustainability: 'Hållbarhetsintresse',
+      cl_chip_social_media: 'Sociala medier',
+      cl_chip_parent: 'Förälder',
+      cl_chip_homeowner: 'Bostadsägare',
+      // Preview
+      cl_preview_title: 'Förhandsgranskning',
+      cl_preview_spots: 'Tillgängliga platser',
+      cl_preview_budget: 'Total budget',
+      cl_preview_fee: '+ Vetd-avgift (20%)',
+      cl_preview_match: 'deltagare matchar dina kriterier just nu',
+      // Browse contributors
+      cl_browse_title: 'Bläddra bland deltagare',
+      cl_browse_sub: 'Filtrerat för: Undersökning av shoppingupplevelse online',
+      cl_invite_top: 'Bjud in topp 10',
+      cl_fc_all: 'Alla matchningar',
+      cl_fc_elite: 'Enbart Elite',
+      cl_fc_not_invited: 'Ej inbjudna',
+      cl_fc_applied: 'Ansökt',
+      // Rate participants
+      cl_rate_title: 'Betygsätt deltagare',
+      cl_rate_warning: '⚡ Betygsätt inom 72 timmar. Dina betyg hjälper till att upprätthålla kvaliteten för alla på plattformen.',
+      cl_dim_punctuality: 'Punktlighet',
+      cl_dim_engagement: 'Engagemang & deltagande',
+      cl_dim_quality: 'Kvalitet & djup på input',
+      cl_dim_honesty: 'Ärlighet & autenticitet',
+      cl_dim_profile: 'Profilnoggrannhet (matchade förväntningarna?)',
+      cl_rate_feedback_label: 'Valfri skriftlig feedback (delas med deltagaren)',
+      cl_rate_feedback_ph: 't.ex. Riktigt genomtänkta insikter, kom förberedd och gav detaljerade svar. Vill gärna arbeta med dem igen.',
+      cl_rate_cancel: 'Avbryt',
+      cl_rate_submit: 'Skicka betyg →',
+      // Analytics
+      cl_analytics_title: 'Analys',
+      cl_analytics_export: 'Exportera rapport',
+      cl_stat_total_studies: 'Totalt antal studier',
+      cl_stat_total_participants: 'Totalt antal deltagare',
+      cl_stat_total_invested: 'Totalt investerat',
+      cl_stat_avg_quality: 'Snittbetyg deltagare',
+      cl_chart_per_month: 'Deltagare per månad',
+      cl_chart_quality: 'Kvalitetsfördelning deltagare',
+      cl_perf_title: 'Studieprestanda',
+      cl_perf_study: 'Studie',
+      cl_perf_participants: 'Deltagare',
+      cl_perf_completion: 'Slutförandegrad',
+      cl_perf_rating: 'Snittbetyg',
+      cl_perf_cost: 'Kostnad',
+      // Applicants modal
+      cl_applicants: 'Sökande',
+      cl_no_applicants: 'Ingen har ansökt ännu. Kolla tillbaka när din studie är aktiv.',
+      cl_accept: 'Acceptera',
+      cl_reject: 'Avvisa',
+      cl_mark_completed: 'Markera som slutförd',
+      cl_loading: 'Laddar…',
+      cl_loading_applicants: 'Laddar sökande…',
+      // Auth
+      cl_auth_create_title: 'Starta din forskning',
+      cl_auth_create_sub: 'Publicera din första studie på mindre än 5 minuter',
+      cl_auth_tab_create: 'Skapa konto',
+      cl_auth_tab_signin: 'Logga in',
+      cl_auth_company: 'Företagsnamn',
+      cl_auth_fname: 'Förnamn',
+      cl_auth_lname: 'Efternamn',
+      cl_auth_email: 'E-post (arbete)',
+      cl_auth_password: 'Lösenord',
+      cl_auth_ph_company: 't.ex. H&M Group',
+      cl_auth_ph_email: 'emma@foretag.com',
+      cl_auth_ph_pass: 'Minst 8 tecken',
+      cl_auth_create_btn: 'Skapa konto →',
+      cl_auth_signin_btn: 'Logga in →',
+      cl_auth_check_email: 'Kolla din e-post',
+      cl_auth_check_sub: 'Vi skickade en bekräftelselänk till din e-post. Klicka på den för att aktivera ditt konto, kom sedan tillbaka hit för att logga in.',
+      cl_auth_goto_signin: 'Gå till inloggning →',
+      cl_auth_confirmed_title: 'E-post bekräftad',
+      cl_auth_confirmed_sub: 'Ditt konto är aktivt — logga in nedan.',
+      cl_auth_back: '← Tillbaka till startsidan',
+      // Cookie
+      cl_cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
+      cl_cookie_accept: 'Acceptera',
+      cl_cookie_decline: 'Avböj',
+      // Dynamic
+      cl_no_studies: 'Inga studier ännu',
+      cl_no_studies_sub: 'Publicera din första studie för att börja rekrytera deltagare.',
+      cl_post_a_study: '＋ Skapa en studie',
+      cl_view_applicants: 'Visa {count} sökande',
+      cl_view_applicants_plural: 'Visa {count} sökande',
+      cl_no_applications: 'Inga ansökningar ännu',
+      cl_continue_editing: 'Fortsätt redigera',
+      cl_spots: 'Platser',
+      cl_pay_label: 'Ersättning',
+      cl_spent: 'Spenderat',
+      cl_est_spend: 'Beräknad kostnad',
+      cl_closes: 'Stänger',
+      cl_applications: 'Ansökningar',
+      cl_pending: 'väntande',
+      cl_posted: 'Publicerad',
+      cl_applicant_count: '{count} sökande · {accepted} accepterade · {pending} väntande',
+      cl_applicant_count_plural: '{count} sökande · {accepted} accepterade · {pending} väntande',
+      cl_studies_label: 'studier',
+      cl_accepted: 'Accepterad',
+      cl_rejected: 'Avvisad',
+      cl_completed: 'Slutförd ✓',
+      cl_saving: 'Sparar…',
+      cl_applicant_accepted: 'Sökande accepterad ✓',
+      cl_applicant_rejected: 'Sökande avvisad',
+      cl_rate_all_dims: 'Betygsätt alla 5 dimensioner innan du skickar',
+      cl_rating_submitted: 'Betyg skickat för {name}. Deras poäng har uppdaterats.',
+      cl_marked_completed: 'Markerad som slutförd ✓ — betalning köad',
+      cl_study_published: 'Studie publicerad! Deltagare matchas nu.',
+      cl_no_rate_yet: 'Inga slutförda deltagare att betygsätta ännu.',
+      cl_no_rate_yet_sub: 'Inga slutförda deltagare att betygsätta ännu. Markera accepterade deltagare som slutförda först.',
+      cl_all_rated: 'Alla deltagare har betygsatts.',
+      cl_awaiting_rating: '{count} deltagare väntar på ditt betyg',
+      cl_awaiting_rating_plural: '{count} deltagare väntar på ditt betyg',
+      cl_rate_now: 'Betygsätt nu →',
+      cl_no_contributors: 'Inga deltagare hittades ännu.',
+      cl_just_now: 'just nu',
+      cl_time_m_ago: 'm sedan',
+      cl_time_h_ago: 'h sedan',
+      cl_time_d_ago: 'd sedan',
+      cl_good_morning: 'God morgon',
+      cl_good_afternoon: 'God eftermiddag',
+      cl_good_evening: 'God kväll',
+      cl_no_studies_budget: 'Inga studier ännu',
+      cl_no_payments: 'Inga betalningar ännu',
+      cl_pending_release: 'väntar på utbetalning',
+      cl_payments_processed: 'betalningar behandlade',
+      cl_participants_suffix: 'deltagare',
     }
   };
+
+  function t(key) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    return (LANG[lang] && LANG[lang][key] !== undefined) ? LANG[lang][key] : ((LANG.en && LANG.en[key]) || key);
+  }
 
   function setLang(lang) {
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
@@ -2072,6 +2505,13 @@ textarea{resize:vertical;min-height:90px}
       const k = el.dataset.i18nPh;
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
+    // Re-render dynamic content with updated language
+    if (currentClientUser) {
+      loadStudies();
+      loadContributors();
+      loadRateList();
+      renderNotifications(lastNotifications);
+    }
   }
 
   setLang(localStorage.getItem('vetd_lang') || 'en');
@@ -2133,10 +2573,10 @@ textarea{resize:vertical;min-height:90px}
 </script>
 
 <div id="cookie-banner" style="display:none">
-  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <span data-i18n="cl_cookie_text">We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
   <div class="cookie-btns">
-    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
-    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+    <button class="cookie-decline" onclick="cookieChoice(false)" data-i18n="cl_cookie_decline">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)" data-i18n="cl_cookie_accept">Accept</button>
   </div>
 </div>
 </body>
