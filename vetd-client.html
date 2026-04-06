@@ -824,7 +824,7 @@ textarea{resize:vertical;min-height:90px}
   <div class="modal applicants-modal">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
       <div>
-        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px" data-i18n="cl_applicants">Applicants</h2>
+        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px" data-i18n="cl_participants_title">Participants</h2>
         <p class="modal-sub" id="applicants-count" style="margin-bottom:0"></p>
       </div>
       <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
@@ -1195,12 +1195,12 @@ textarea{resize:vertical;min-height:90px}
               ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
               ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>${t('cl_est_spend')}: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
               <span>${t('cl_closes')}: <strong>${closes}</strong></span>
-              ${counts.total > 0 ? `<span>${t('cl_applications')}: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} ${t('cl_pending')})</span>` : ''}${counts.invited > 0 ? ` <span style="color:var(--blue-dark);font-size:11px">(${counts.invited} ${t('cl_invited')})</span>` : ''}</span>` : ''}
+              ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong>${counts.invited > 0 ? ` <span style="color:var(--blue-dark);font-size:11px">(${counts.invited} ${t('cl_awaiting_response')})</span>` : ''}${counts.accepted > 0 ? ` <span style="color:var(--green-dark);font-size:11px">(${counts.accepted} ${t('cl_accepted').toLowerCase()})</span>` : ''}</span>` : ''}
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
             <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
               <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${s.id}','${safeTitle}')">
-                👥 ${counts.total === 0 ? t('cl_no_applications') : t(counts.total !== 1 ? 'cl_view_applicants_plural' : 'cl_view_applicants').replace('{count}', counts.total)}
+                👥 ${counts.total === 0 ? t('cl_no_invitations_yet') : t(counts.total !== 1 ? 'cl_view_participants_plural' : 'cl_view_participants').replace('{count}', counts.total)}
               </button>
               ${status === 'active' || status === 'draft' ? `<button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${s.id}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>` : ''}
               ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_continue_editing')}</button>` : ''}
@@ -1261,12 +1261,16 @@ textarea{resize:vertical;min-height:90px}
         return;
       }
 
-      const pending  = data.filter(a => a.status === 'pending').length;
-      const accepted = data.filter(a => a.status === 'accepted').length;
-      const invited  = data.filter(a => a.status === 'invited').length;
-      countEl.textContent = t(data.length !== 1 ? 'cl_applicant_count_plural' : 'cl_applicant_count')
-        .replace('{count}', data.length).replace('{accepted}', accepted).replace('{pending}', pending)
-        + (invited > 0 ? ` · ${invited} ${t('cl_invited')}` : '');
+      const accepted  = data.filter(a => a.status === 'accepted').length;
+      const invited   = data.filter(a => a.status === 'invited').length;
+      const declined  = data.filter(a => a.status === 'declined').length;
+      const completed = data.filter(a => a.status === 'completed').length;
+      const parts = [];
+      if (invited   > 0) parts.push(`${invited} ${t('cl_invited')}`);
+      if (accepted  > 0) parts.push(`${accepted} ${t('cl_accepted').toLowerCase()}`);
+      if (completed > 0) parts.push(`${completed} ${t('cl_completed_short')}`);
+      if (declined  > 0) parts.push(`${declined} ${t('cl_declined_short')}`);
+      countEl.textContent = parts.length ? parts.join(' · ') : `${data.length} ${t('cl_participants_total')}`;
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1288,7 +1292,7 @@ textarea{resize:vertical;min-height:90px}
         let actions = '';
         if (a.status === 'pending') {
           actions = `
-            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_accept')}</button>
+            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','pending')">${t('cl_schedule_and_confirm')}</button>
             <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const schedDisplay = a.scheduled_at ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
@@ -1299,18 +1303,24 @@ textarea{resize:vertical;min-height:90px}
             const btnDisabled = remaining !== null ? 'disabled' : '';
             joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}','${escAttr(a.id)}')" ${btnDisabled}>${btnText}</button>`;
           }
+          const scheduleBtn = !a.scheduled_at
+            ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
+            : '';
           actions = `
             <span class="status-pill status-accepted">${t('cl_accepted')}</span>
             ${schedDisplay}
             ${joinBtn}
+            ${scheduleBtn}
             <button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`;
         } else if (a.status === 'invited') {
           actions = `
             <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_accept')}</button>
-            <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
+            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','invited')">${t('cl_schedule_and_confirm')}</button>
+            <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
         } else if (a.status === 'declined') {
-          actions = `<span class="status-pill status-rejected">${t('cl_declined_by_contributor')}</span>`;
+          actions = `
+            <span class="status-pill status-rejected">${t('cl_declined_by_contributor')}</span>
+            <button class="btn-outline" style="font-size:12px;padding:6px 12px" onclick="openContributorBrowser('${esc(studyId)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_invite_someone_else')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else {
@@ -1439,11 +1449,18 @@ textarea{resize:vertical;min-height:90px}
     });
   }
 
-  function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle) {
+  function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, currentStatus) {
     _schedAppId = appId;
     _schedStudyId = studyId;
     _schedContributorId = contributorId;
     document.getElementById('schedule-modal-sub').textContent = contributorName + (studyTitle ? ' · ' + studyTitle : '');
+    // Adjust CTA label: if contributor already accepted, this is just scheduling — not accepting
+    const confirmBtn = document.getElementById('schedule-confirm-btn');
+    if (currentStatus === 'accepted') {
+      confirmBtn.textContent = t('cl_schedule_only');
+    } else {
+      confirmBtn.textContent = t('cl_schedule_accept');
+    }
     // Default date to tomorrow, time to 10:00
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -2631,9 +2648,23 @@ textarea{resize:vertical;min-height:90px}
       cl_perf_completion: 'Completion',
       cl_perf_rating: 'Avg rating',
       cl_perf_cost: 'Cost',
-      // Applicants modal
+      // Participants modal (was: applicants)
       cl_applicants: 'Applicants',
+      cl_participants_title: 'Participants',
+      cl_participants_label: 'Participants',
+      cl_participants_total: 'participants',
       cl_no_applicants: 'No one has applied yet. Check back once your study is live.',
+      cl_no_invitations_yet: 'No invitations sent yet',
+      cl_view_participants: 'View {count} participant',
+      cl_view_participants_plural: 'View {count} participants',
+      cl_completed_short: 'completed',
+      cl_declined_short: 'declined',
+      cl_awaiting_response: 'awaiting response',
+      cl_schedule_and_confirm: 'Schedule & confirm',
+      cl_schedule_session: 'Schedule session',
+      cl_schedule_only: 'Schedule session',
+      cl_cancel_invitation: 'Cancel invitation',
+      cl_invite_someone_else: 'Invite someone else',
       cl_accept: 'Accept',
       cl_reject: 'Reject',
       cl_mark_completed: 'Mark completed',
@@ -2874,9 +2905,23 @@ textarea{resize:vertical;min-height:90px}
       cl_perf_completion: 'Slutförandegrad',
       cl_perf_rating: 'Snittbetyg',
       cl_perf_cost: 'Kostnad',
-      // Applicants modal
+      // Participants modal (was: applicants)
       cl_applicants: 'Sökande',
+      cl_participants_title: 'Deltagare',
+      cl_participants_label: 'Deltagare',
+      cl_participants_total: 'deltagare',
       cl_no_applicants: 'Ingen har ansökt ännu. Kolla tillbaka när din studie är aktiv.',
+      cl_no_invitations_yet: 'Inga inbjudningar skickade ännu',
+      cl_view_participants: 'Visa {count} deltagare',
+      cl_view_participants_plural: 'Visa {count} deltagare',
+      cl_completed_short: 'slutförda',
+      cl_declined_short: 'avböjda',
+      cl_awaiting_response: 'väntar på svar',
+      cl_schedule_and_confirm: 'Schemalägg & bekräfta',
+      cl_schedule_session: 'Schemalägg session',
+      cl_schedule_only: 'Schemalägg session',
+      cl_cancel_invitation: 'Avbryt inbjudan',
+      cl_invite_someone_else: 'Bjud in någon annan',
       cl_accept: 'Acceptera',
       cl_reject: 'Avvisa',
       cl_mark_completed: 'Markera som slutförd',

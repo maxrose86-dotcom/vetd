@@ -300,6 +300,7 @@
   .app-card-status-row { margin-top: 10px; font-size: 12px; color: var(--gray-400); font-weight: 300; }
   .app-status { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
   .app-status-pending { background: var(--amber-light); color: var(--amber); }
+  .app-status-invited { background: var(--blue-light); color: var(--blue-dark); }
   .app-status-accepted { background: var(--green-light); color: var(--green-dark); }
   .app-status-rejected { background: var(--gray-100); color: var(--gray-400); }
   .app-status-completed { background: var(--blue-light); color: #1D4ED8; }
@@ -2138,7 +2139,7 @@
 
       const badgeCls = {
         pending:       'app-status-pending',
-        invited:       'app-status-accepted',
+        invited:       'app-status-invited',
         declined:      'app-status-rejected',
         scheduled:     'app-status-accepted',
         starting_soon: 'app-status-pending',
@@ -2154,13 +2155,15 @@
       let statusDetail = '';
       if (ss.phase === 'invited') {
         statusDetail = `
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <span style="font-style:italic;font-size:12px;color:var(--gray-400)">${esc(ss.sublabel)}</span>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:12px;color:var(--blue-dark);font-weight:500">${t('invite_context_line')}</span>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button id="invite-accept-${esc(a.id)}" class="btn-join" style="padding:7px 16px;font-size:12px" onclick="respondToInvitation('${esc(a.id)}','accepted')">${t('invite_accept_btn')}</button>
               <button id="invite-decline-${esc(a.id)}" style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="respondToInvitation('${esc(a.id)}','declined')">${t('invite_decline_btn')}</button>
             </div>
           </div>`;
+      } else if (ss.phase === 'declined') {
+        statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('invite_you_declined')}</span>`;
       } else if (ss.phase === 'pending') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
       } else if (ss.phase === 'rejected') {
@@ -3131,18 +3134,20 @@ async function applyToStudy(studyId) {
       waiting_response: 'waiting for response',
       status_invited: 'Invited',
       status_declined: 'Declined',
-      waiting_schedule: 'Accepted — waiting for the researcher to schedule your session',
-      waiting_schedule_invited: 'You\'ve been invited — waiting for the researcher to schedule your session',
+      waiting_schedule: 'Accepted — the study team will schedule your session shortly',
+      waiting_schedule_invited: 'You\'ve been personally selected for this study',
       no_applications: 'You have no active invitations yet.',
       browse_studies_btn: 'View opportunities',
+      invite_context_line: 'You\'ve been personally selected for this study',
       invite_accept_btn: 'Accept invitation',
       invite_decline_btn: 'Decline',
       invite_accepted_toast: 'Invitation accepted ✓',
       invite_declined_toast: 'Invitation declined',
+      invite_you_declined: 'You declined this invitation',
       notif_invite_accepted_title: 'Invitation accepted',
-      notif_invite_accepted_body: '{title}: the contributor has accepted your invitation.',
+      notif_invite_accepted_body: '{title}: a contributor has confirmed their participation.',
       notif_invite_declined_title: 'Invitation declined',
-      notif_invite_declined_body: '{title}: the contributor has declined your invitation.',
+      notif_invite_declined_body: '{title}: a contributor has declined — you may want to invite someone else.',
       scheduled_for: 'Scheduled for',
       upcoming_sessions: 'Upcoming sessions',
       no_upcoming: 'No upcoming sessions yet.',
@@ -3325,18 +3330,20 @@ async function applyToStudy(studyId) {
       waiting_response: 'väntar på svar',
       status_invited: 'Inbjuden',
       status_declined: 'Avböjd',
-      waiting_schedule: 'Accepterad — väntar på att forskaren schemalägger din session',
-      waiting_schedule_invited: 'Du har blivit inbjuden — väntar på att forskaren schemalägger din session',
+      waiting_schedule: 'Accepterad — studieansvariga schemalägger din session inom kort',
+      waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
       no_applications: 'Du har inga aktiva inbjudningar ännu.',
       browse_studies_btn: 'Se möjligheter',
+      invite_context_line: 'Du har blivit personligen utvald för den här studien',
       invite_accept_btn: 'Acceptera inbjudan',
       invite_decline_btn: 'Avböj',
       invite_accepted_toast: 'Inbjudan accepterad ✓',
       invite_declined_toast: 'Inbjudan avböjd',
+      invite_you_declined: 'Du avböjde den här inbjudan',
       notif_invite_accepted_title: 'Inbjudan accepterad',
-      notif_invite_accepted_body: '{title}: deltagaren har accepterat din inbjudan.',
+      notif_invite_accepted_body: '{title}: en deltagare har bekräftat sitt deltagande.',
       notif_invite_declined_title: 'Inbjudan avböjd',
-      notif_invite_declined_body: '{title}: deltagaren har avböjt din inbjudan.',
+      notif_invite_declined_body: '{title}: en deltagare har avböjt — du kan bjuda in en annan person.',
       scheduled_for: 'Schemalagd',
       upcoming_sessions: 'Kommande sessioner',
       no_upcoming: 'Inga kommande sessioner ännu.',
