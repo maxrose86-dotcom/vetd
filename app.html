@@ -1961,6 +1961,7 @@
 
     if (status === 'rejected') return { phase: 'rejected',   label: t('status_rejected'),           sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'pending')  return { phase: 'pending',    label: t('status_pending'),             sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+    if (status === 'invited')  return { phase: 'invited',    label: t('status_invited'),             sublabel: t('waiting_schedule_invited'), canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'completed') return { phase: 'completed', label: t('status_completed_awaiting'),  sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
 
     // accepted
@@ -2037,7 +2038,7 @@
     const container = document.getElementById('my-applications-list');
     if (!container) return;
     let apps = state.myApplications || [];
-    if (filter === 'active') apps = apps.filter(a => ['pending','accepted'].includes(a.status));
+    if (filter === 'active') apps = apps.filter(a => ['pending','invited','accepted'].includes(a.status));
     else if (filter === 'past')  apps = apps.filter(a => ['rejected','completed'].includes(a.status));
 
     if (!state.myApplications.length) {
@@ -2075,6 +2076,7 @@
 
       const badgeCls = {
         pending:       'app-status-pending',
+        invited:       'app-status-accepted',
         scheduled:     'app-status-accepted',
         starting_soon: 'app-status-pending',
         in_progress:   'app-status-in-progress',
@@ -2087,7 +2089,9 @@
       const statusBadge = `<span class="app-status ${badgeCls}">${esc(ss.label)}</span>`;
 
       let statusDetail = '';
-      if (ss.phase === 'pending') {
+      if (ss.phase === 'invited') {
+        statusDetail = `<span style="font-style:italic">${esc(ss.sublabel)}</span>`;
+      } else if (ss.phase === 'pending') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
       } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
@@ -3055,9 +3059,11 @@ async function applyToStudy(studyId) {
       status_completed: 'Completed ✓',
       applied_on: 'Applied on',
       waiting_response: 'waiting for response',
+      status_invited: 'Invited',
       waiting_schedule: 'Accepted — waiting for the researcher to schedule your session',
-      no_applications: "You haven't applied to any studies yet.",
-      browse_studies_btn: 'Available opportunities',
+      waiting_schedule_invited: 'You\'ve been invited — waiting for the researcher to schedule your session',
+      no_applications: 'You have no active invitations yet.',
+      browse_studies_btn: 'View opportunities',
       scheduled_for: 'Scheduled for',
       upcoming_sessions: 'Upcoming sessions',
       no_upcoming: 'No upcoming sessions — Available opportunities and apply to get matched.',
@@ -3238,9 +3244,11 @@ async function applyToStudy(studyId) {
       status_completed: 'Slutförd ✓',
       applied_on: 'Ansökt den',
       waiting_response: 'väntar på svar',
+      status_invited: 'Inbjuden',
       waiting_schedule: 'Accepterad — väntar på att forskaren schemalägger din session',
-      no_applications: 'Du har inte ansökt till några studier ännu.',
-      browse_studies_btn: 'Bläddra bland studier',
+      waiting_schedule_invited: 'Du har blivit inbjuden — väntar på att forskaren schemalägger din session',
+      no_applications: 'Du har inga aktiva inbjudningar ännu.',
+      browse_studies_btn: 'Se möjligheter',
       scheduled_for: 'Schemalagd',
       upcoming_sessions: 'Kommande sessioner',
       no_upcoming: 'Inga kommande sessioner — bläddra bland studier och ansök för att bli matchad.',

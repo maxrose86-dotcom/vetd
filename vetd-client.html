@@ -2301,7 +2301,7 @@ textarea{resize:vertical;min-height:90px}
 
     const STATUS_BADGE = {
       completed: 'badge-green', accepted: 'badge-blue',
-      rejected:  'badge-coral', pending: 'badge-gray'
+      rejected:  'badge-coral', pending: 'badge-gray', invited: 'badge-blue'
     };
 
     tbody.innerHTML = apps.map(a => {
@@ -2314,6 +2314,7 @@ textarea{resize:vertical;min-height:90px}
       const statusLabel = status === 'completed' ? t('cl_badge_completed')
                         : status === 'accepted'  ? t('cl_accepted')
                         : status === 'rejected'  ? t('cl_rejected')
+                        : status === 'invited'   ? t('cl_invited_status')
                         : status;
       const date        = a.updated_at
         ? new Date(a.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
