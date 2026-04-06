@@ -1854,16 +1854,10 @@
     }
   }
 
-  async function confirmApply() {
-    if (!state.currentStudy) return;
-    document.getElementById('modal-pre-apply').style.display = 'none';
-    const ok = await applyToStudy(state.currentStudy.id);
-    if (ok) {
-      document.getElementById('modal-confirmed').style.display = 'block';
-    }
-    // On failure applyToStudy shows the error toast and closes nothing — user
-    // can retry or close the modal manually via the backdrop/close button
-  }
+ async function confirmApply() {
+  if (!state.currentStudy) return;
+  await applyToStudy(state.currentStudy.id);
+}
 
   // ─── NAVIGATION ─────────────────────────────────────────
   function showTab(tab, btn) {
@@ -2137,47 +2131,12 @@
   }
 
   // ─── APPLY TO STUDY ───────────────────────────────────────
-  async function applyToStudy(studyId) {
-    // Optimistic UI update first
-    state.appliedStudies.add(studyId);
-    renderStudies('studies-list', state.studies);
-    renderStudies('dashboard-studies', state.studies.slice(0,2));
-
-    if (!db || !state.currentUser) return true; // demo mode — treat as success
-
-    try {
-      // Fetch study details for notification (created_by + title)
-      const { data: study } = await db.from('studies').select('title, created_by').eq('id', studyId).single();
-
-      const { error } = await db.from('applications').insert({
-        study_id:       studyId,
-        contributor_id: state.currentUser.id,
-        status:         'pending',
-        applied_at:     new Date().toISOString()
-      });
-      // 23505 = unique_violation (already applied) — treat as success
-      if (error && error.code !== '23505') throw error;
-
-      // Notify the client who owns the study
-      if (study?.created_by) {
-        sendStructuredNotification(study.created_by, 'application_received', {
-          contributor_name: state.currentUserName || 'A contributor',
-          study_title: study.title || 'Untitled study'
-        }, null);
-      }
-
-      return true;
-    } catch(err) {
-      console.error('Apply error:', err.message, err);
-      if (window.Sentry) Sentry.captureException(err);
-      // Roll back optimistic update
-      state.appliedStudies.delete(studyId);
-      renderStudies('studies-list', state.studies);
-      renderStudies('dashboard-studies', state.studies.slice(0,2));
-      showToast(err.message || 'Could not submit application — try again', true);
-      return false;
-    }
-  }
+// ─── APPLY TO STUDY ───────────────────────────────────────
+async function applyToStudy(studyId) {
+  showToast('Thanks — Vetd will review your profile and invite you to relevant studies.');
+  closeModal();
+  return true;
+}
 
   // ─── STEP NAVIGATION (with Supabase saves) ─────────────
   async function nextStep(step) {
