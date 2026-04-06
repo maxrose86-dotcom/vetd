@@ -278,6 +278,28 @@
     color: var(--gray-400); margin-bottom: 1rem;
   }
 
+  /* ── UPCOMING SESSIONS ── */
+  .session-card {
+    background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
+    padding: 1rem 1.25rem; margin-bottom: 10px; display: flex; align-items: center; gap: 1rem;
+  }
+  .session-card-info { flex: 1; min-width: 0; }
+  .session-card-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
+  .session-card-meta { font-size: 12px; color: var(--gray-400); font-weight: 300; }
+  .session-card-time { font-size: 12px; color: var(--green-dark); font-weight: 500; margin-top: 3px; }
+  .btn-join { padding: 8px 16px; background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
+  .btn-join:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,196,122,0.35); }
+  .btn-join:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ── VIDEO CALL OVERLAY ── */
+  #video-call-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #fff; flex-direction: column; }
+  #video-call-overlay.open { display: flex; }
+  .video-top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--gray-200); background: #fff; flex-shrink: 0; gap: 1rem; }
+  .video-top-bar-title { font-family: var(--serif); font-size: 18px; color: var(--gray-900); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-leave-call { padding: 8px 18px; background: var(--coral); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: background 0.15s; flex-shrink: 0; }
+  .btn-leave-call:hover { background: #B91C1C; }
+  #daily-iframe { width: 100%; flex: 1; border: none; }
+
   /* ── JOB CARDS ── */
   /* TODO: rename .job-* CSS classes to .study-* in future cleanup */
   .job-card {
@@ -939,6 +961,9 @@
             <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
           </div>
         </div>
+
+        <div class="section-title" data-i18n="upcoming_sessions">Upcoming sessions</div>
+        <div id="upcoming-sessions-list"></div>
 
         <div class="section-title">New matches for you</div>
         <div id="dashboard-studies"></div>
@@ -1829,6 +1854,8 @@
     loadUserProfile();
     loadNotifications();
     loadPayments();
+    loadUpcomingSessions();
+    setInterval(refreshJoinButtons, 30000);
   }
 
   // ─── LOAD WHICH STUDIES THE USER HAS ALREADY APPLIED TO ──
@@ -1848,6 +1875,113 @@
     } catch(err) {
       console.warn('Could not load applied studies:', err);
     }
+  }
+
+  // ─── UPCOMING SESSIONS ───────────────────────────────────
+  function formatSessionTime(isoStr) {
+    const d = new Date(isoStr);
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
+    const dayName = d.toLocaleDateString(locale, { weekday: 'long' });
+    const datePart = d.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
+    const timePart = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const at = lang === 'sv' ? 'kl.' : 'at';
+    return `${dayName}, ${datePart} ${at} ${timePart}`;
+  }
+
+  function sessionTimeUntil(isoStr) {
+    const diff = new Date(isoStr) - Date.now();
+    if (diff <= 0) return t('starting_now');
+    const min = Math.floor(diff / 60000);
+    if (min < 60) return t('in_minutes').replace('{n}', min);
+    const h = Math.floor(min / 60);
+    if (h < 24) return t('in_hours').replace('{n}', h);
+    return t('in_days').replace('{n}', Math.floor(h / 24));
+  }
+
+  function callTimeRemaining(isoStr) {
+    const diff = new Date(isoStr) - Date.now();
+    if (diff <= 10 * 60 * 1000) return null;
+    const totalMin = Math.floor(diff / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    return h > 0
+      ? t('opens_in') + ' ' + h + 'h ' + m + 'm'
+      : t('opens_in') + ' ' + m + 'm';
+  }
+
+  function refreshJoinButtons() {
+    document.querySelectorAll('.btn-join[data-scheduled-at]').forEach(btn => {
+      const remaining = callTimeRemaining(btn.dataset.scheduledAt);
+      if (remaining === null) {
+        btn.disabled = false;
+        btn.textContent = t('join_call');
+      } else {
+        btn.disabled = true;
+        btn.textContent = remaining;
+      }
+    });
+  }
+
+  async function loadUpcomingSessions() {
+    const container = document.getElementById('upcoming-sessions-list');
+    if (!container || !db || !state.currentUser) return;
+    try {
+      const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await db
+        .from('applications')
+        .select('id, study_id, status, scheduled_at, room_url, room_name, studies(title, companies(name))')
+        .eq('contributor_id', state.currentUser.id)
+        .eq('status', 'accepted')
+        .not('scheduled_at', 'is', null)
+        .gte('scheduled_at', cutoff)
+        .order('scheduled_at', { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      renderUpcomingSessions(data || []);
+    } catch(err) {
+      console.warn('Could not load upcoming sessions:', err);
+    }
+  }
+
+  function renderUpcomingSessions(sessions) {
+    const container = document.getElementById('upcoming-sessions-list');
+    if (!container) return;
+    if (!sessions.length) {
+      container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300;padding:0.25rem 0 1rem">${t('no_upcoming')}</p>`;
+      return;
+    }
+    container.innerHTML = sessions.map(s => {
+      const study   = s.studies || {};
+      const company = study.companies || {};
+      const title   = study.title || 'Study';
+      const remaining = s.room_url ? callTimeRemaining(s.scheduled_at) : null;
+      const btnText = remaining !== null ? esc(remaining) : t('join_call');
+      const joinBtn = s.room_url
+        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${esc(s.room_url)}',${JSON.stringify(title)})" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
+        : '';
+      return `
+        <div class="session-card">
+          <div class="session-card-info">
+            <div class="session-card-title">${esc(title)}</div>
+            <div class="session-card-meta">${company.name ? esc(company.name) + ' · ' : ''}${esc(formatSessionTime(s.scheduled_at))}</div>
+            <div class="session-card-time">${esc(sessionTimeUntil(s.scheduled_at))}</div>
+          </div>
+          ${joinBtn}
+        </div>`;
+    }).join('');
+  }
+
+  // ─── VIDEO CALL ───────────────────────────────────────────
+  function openVideoCall(roomUrl, title) {
+    document.getElementById('video-call-title').textContent = title || 'Video call';
+    document.getElementById('daily-iframe').src = roomUrl;
+    document.getElementById('video-call-overlay').classList.add('open');
+  }
+
+  function leaveCall() {
+    document.getElementById('video-call-overlay').classList.remove('open');
+    document.getElementById('daily-iframe').src = '';
   }
 
   // ─── APPLY TO STUDY ───────────────────────────────────────
@@ -2722,6 +2856,15 @@
       rating_singular: 'rating',
       rating_plural: 'ratings',
       no_interests: 'No interests selected yet — edit your profile to add some.',
+      upcoming_sessions: 'Upcoming sessions',
+      no_upcoming: 'No upcoming sessions. Apply to studies to get started.',
+      join_call: 'Join call',
+      leave_call: 'Leave call',
+      opens_in: 'Opens in',
+      starting_now: 'Starting now!',
+      in_days: 'In {n} days',
+      in_hours: 'In {n} hours',
+      in_minutes: 'In {n} minutes',
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
@@ -2870,6 +3013,15 @@
       rating_singular: 'betyg',
       rating_plural: 'betyg',
       no_interests: 'Inga intressen valda ännu — redigera din profil för att lägga till.',
+      upcoming_sessions: 'Kommande sessioner',
+      no_upcoming: 'Inga kommande sessioner. Ansök till studier för att komma igång.',
+      join_call: 'Gå med i samtal',
+      leave_call: 'Lämna samtal',
+      opens_in: 'Öppnar om',
+      starting_now: 'Börjar nu!',
+      in_days: 'Om {n} dagar',
+      in_hours: 'Om {n} timmar',
+      in_minutes: 'Om {n} minuter',
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
@@ -2996,6 +3148,15 @@
     }
   }
 </script>
+
+<!-- VIDEO CALL OVERLAY -->
+<div id="video-call-overlay">
+  <div class="video-top-bar">
+    <span class="video-top-bar-title" id="video-call-title">Video call</span>
+    <button class="btn-leave-call" onclick="leaveCall()" data-i18n="leave_call">Leave call</button>
+  </div>
+  <iframe id="daily-iframe" allow="camera; microphone; fullscreen; display-capture" src=""></iframe>
+</div>
 
 <div id="cookie-banner" style="display:none">
   <span data-i18n="cookie_text">We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
