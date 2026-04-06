@@ -516,6 +516,9 @@
       reset_btn: 'Send reset link',
       reset_success: 'Check your inbox — we sent you a reset link.',
       back_to_signin: '← Back to sign in',
+      cookie_text: 'We use localStorage to remember your language preference.',
+      cookie_accept: 'Accept',
+      cookie_decline: 'Decline',
     },
     sv: {
       login_welcome: 'Välkommen tillbaka',
@@ -532,6 +535,9 @@
       reset_btn: 'Skicka återställningslänk',
       reset_success: 'Kolla din inkorg — vi har skickat en återställningslänk.',
       back_to_signin: '← Tillbaka till inloggning',
+      cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
+      cookie_accept: 'Acceptera',
+      cookie_decline: 'Avböj',
     }
   };
 
@@ -583,10 +589,10 @@
 </script>
 
 <div id="cookie-banner" style="display:none">
-  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <span data-i18n="cookie_text">We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
   <div class="cookie-btns">
-    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
-    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+    <button class="cookie-decline" onclick="cookieChoice(false)" data-i18n="cookie_decline">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)" data-i18n="cookie_accept">Accept</button>
   </div>
 </div>
 </body>

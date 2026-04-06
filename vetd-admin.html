@@ -1377,6 +1377,9 @@ const LANG = {
     adm_stat_studies: 'Active studies',
     adm_stat_companies: 'Total companies',
     adm_stat_flags: 'Flags for review',
+    cookie_text: 'We use localStorage to remember your language preference.',
+    cookie_accept: 'Accept',
+    cookie_decline: 'Decline',
   },
   sv: {
     adm_signin_title: 'Logga in',
@@ -1398,6 +1401,9 @@ const LANG = {
     adm_stat_studies: 'Aktiva studier',
     adm_stat_companies: 'Totalt antal företag',
     adm_stat_flags: 'Flaggor för granskning',
+    cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
+    cookie_accept: 'Acceptera',
+    cookie_decline: 'Avböj',
   }
 };
 
@@ -1443,10 +1449,10 @@ function toggleAdminNav() {
 </script>
 
 <div id="cookie-banner" style="display:none">
-  <span>We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
+  <span data-i18n="cookie_text">We use localStorage to remember your language preference. <a href="privacy-policy.html">Privacy Policy</a></span>
   <div class="cookie-btns">
-    <button class="cookie-decline" onclick="cookieChoice(false)">Decline</button>
-    <button class="cookie-accept" onclick="cookieChoice(true)">Accept</button>
+    <button class="cookie-decline" onclick="cookieChoice(false)" data-i18n="cookie_decline">Decline</button>
+    <button class="cookie-accept" onclick="cookieChoice(true)" data-i18n="cookie_accept">Accept</button>
   </div>
 </div>
 </body>
