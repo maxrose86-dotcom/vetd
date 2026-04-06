@@ -723,7 +723,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- PANEL BROWSER -->
       <div class="tab-pane" id="tab-panel">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_browse_title">Browse contributors</h1><p data-i18n="cl_browse_sub">Filtered for: Online shopping experience research</p></div>
+          <div class="page-title"><h1 data-i18n="cl_browse_title">Browse contributors</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all contributors</p></div>
           <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')" data-i18n="cl_invite_top">Invite top 10</button>
         </div>
         <div class="filter-bar">
@@ -1120,10 +1120,11 @@ textarea{resize:vertical;min-height:90px}
           .in('study_id', studies.map(s => s.id));
         allAppRows = apps || [];
         allAppRows.forEach(a => {
-          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0 };
+          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0 };
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
+          if (a.status === 'invited')  appCountMap[a.study_id].invited++;
         });
       }
 
@@ -1175,7 +1176,7 @@ textarea{resize:vertical;min-height:90px}
           : '—';
         const statusKeyMap = { active: 'cl_badge_live', paused: 'cl_badge_filling', completed: 'cl_badge_completed', cancelled: 'cl_badge_no_show', draft: 'cl_filter_draft' };
         const label = statusKeyMap[status] ? t(statusKeyMap[status]) : (status.charAt(0).toUpperCase() + status.slice(1));
-        const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0 };
+        const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0 };
         const payDisplay = s.pay_per_participant
           ? `${formatCurrency(s.pay_per_participant)}/person`
           : null;
@@ -1194,13 +1195,14 @@ textarea{resize:vertical;min-height:90px}
               ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
               ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>${t('cl_est_spend')}: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
               <span>${t('cl_closes')}: <strong>${closes}</strong></span>
-              ${counts.total > 0 ? `<span>${t('cl_applications')}: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} ${t('cl_pending')})</span>` : ''}</span>` : ''}
+              ${counts.total > 0 ? `<span>${t('cl_applications')}: <strong>${counts.total}</strong>${counts.pending > 0 ? ` <span style="color:var(--amber);font-size:11px">(${counts.pending} ${t('cl_pending')})</span>` : ''}${counts.invited > 0 ? ` <span style="color:var(--blue-dark);font-size:11px">(${counts.invited} ${t('cl_invited')})</span>` : ''}</span>` : ''}
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
             <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
               <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${s.id}','${safeTitle}')">
                 👥 ${counts.total === 0 ? t('cl_no_applications') : t(counts.total !== 1 ? 'cl_view_applicants_plural' : 'cl_view_applicants').replace('{count}', counts.total)}
               </button>
+              ${status === 'active' || status === 'draft' ? `<button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${s.id}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>` : ''}
               ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_continue_editing')}</button>` : ''}
             </div>
           </div>`;
@@ -1215,6 +1217,10 @@ textarea{resize:vertical;min-height:90px}
   // ─── APPLICANTS MODAL ───────────────────────────────────
   let currentApplicantsStudyId = null;
   let currentApplicantsStudyTitle = null;
+
+  // ─── INVITE CONTEXT ─────────────────────────────────────
+  let currentInviteStudyId = null;
+  let currentInviteStudyTitle = null;
 
   async function openApplicants(studyId, studyTitle) {
     currentApplicantsStudyId = studyId;
@@ -1257,8 +1263,10 @@ textarea{resize:vertical;min-height:90px}
 
       const pending  = data.filter(a => a.status === 'pending').length;
       const accepted = data.filter(a => a.status === 'accepted').length;
+      const invited  = data.filter(a => a.status === 'invited').length;
       countEl.textContent = t(data.length !== 1 ? 'cl_applicant_count_plural' : 'cl_applicant_count')
-        .replace('{count}', data.length).replace('{accepted}', accepted).replace('{pending}', pending);
+        .replace('{count}', data.length).replace('{accepted}', accepted).replace('{pending}', pending)
+        + (invited > 0 ? ` · ${invited} ${t('cl_invited')}` : '');
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1296,6 +1304,11 @@ textarea{resize:vertical;min-height:90px}
             ${schedDisplay}
             ${joinBtn}
             <button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`;
+        } else if (a.status === 'invited') {
+          actions = `
+            <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
+            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_accept')}</button>
+            <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else {
@@ -1352,15 +1365,15 @@ textarea{resize:vertical;min-height:90px}
         if (newStatus === 'accepted') {
           await sendNotification(
             contributorId,
-            'Application accepted! 🎉',
-            `You've been accepted for the study "${study.title}". Get ready!`,
+            'Session confirmed 🎉',
+            `Your session for "${study.title}" has been confirmed. You'll receive scheduling details shortly.`,
             null
           );
         } else if (newStatus === 'rejected') {
           await sendNotification(
             contributorId,
-            'Application update',
-            `Your application for "${study.title}" was not selected this time. Keep applying!`,
+            'Study update',
+            `We're unable to move forward with your participation in "${study.title}" at this time. Thank you for your interest.`,
             null
           );
         }
@@ -1670,6 +1683,17 @@ textarea{resize:vertical;min-height:90px}
       }
       const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]));
 
+      // Pre-fetch already-invited contributors for the current invite context
+      let alreadyInvited = new Set();
+      if (currentInviteStudyId && ids.length) {
+        const { data: existingRows } = await db
+          .from('applications')
+          .select('contributor_id')
+          .eq('study_id', currentInviteStudyId)
+          .in('contributor_id', ids);
+        (existingRows || []).forEach(r => alreadyInvited.add(r.contributor_id));
+      }
+
       if (!contribs || contribs.length === 0) {
         list.innerHTML = `<p style="color:var(--gray-400);padding:1rem;text-align:center">${t('cl_no_contributors')}</p>`;
         return;
@@ -1713,7 +1737,12 @@ textarea{resize:vertical;min-height:90px}
               ${tags.length ? `<div class="tags-row">${tags.map(t=>`<span class="tag tag-gray">${esc(t)}</span>`).join('')}</div>` : ''}
             </div>
             <div style="margin-left:8px;flex-shrink:0">
-              <button class="btn-primary" style="white-space:nowrap" onclick="showToast('Invitation sent to ${esc(dispName)}!')">${t('cl_invite')}</button>
+              ${currentInviteStudyId
+                ? (alreadyInvited.has(c.id)
+                  ? `<button class="btn-outline" disabled style="white-space:nowrap;opacity:0.6;cursor:default">${t('cl_already_invited')}</button>`
+                  : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" onclick="inviteContributor('${esc(currentInviteStudyId)}','${esc(c.id)}','${escAttr(dispName)}')">${t('cl_invite')}</button>`)
+                : `<button class="btn-outline" style="white-space:nowrap" onclick="showToast('${escAttr(t('cl_invite_no_study'))}')" disabled>${t('cl_invite')}</button>`
+              }
             </div>
           </div>`;
       }).join('');
@@ -1721,6 +1750,68 @@ textarea{resize:vertical;min-height:90px}
       console.error('Failed to load contributors:', err);
       if (window.Sentry) Sentry.captureException(err);
       list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load contributors.</p>';
+    }
+  }
+
+  // ─── CONTRIBUTOR BROWSER CONTEXT ────────────────────────
+  function openContributorBrowser(studyId, studyTitle) {
+    currentInviteStudyId = studyId;
+    currentInviteStudyTitle = studyTitle;
+    const subEl = document.getElementById('browse-study-subtitle');
+    if (subEl) subEl.textContent = studyTitle
+      ? t('cl_browse_for_study').replace('{title}', studyTitle)
+      : t('cl_browse_sub');
+    const panelNavBtn = document.querySelector('.nav-item [data-i18n="cl_nav_browse"]')?.closest('.nav-item');
+    showTab('panel', panelNavBtn || null);
+    loadContributors();
+  }
+
+  async function inviteContributor(studyId, contributorId, displayName) {
+    const btn = document.getElementById('invite-btn-' + contributorId);
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    try {
+      // Mandatory duplicate check
+      const { data: existing } = await db
+        .from('applications')
+        .select('id')
+        .eq('study_id', studyId)
+        .eq('contributor_id', contributorId)
+        .maybeSingle();
+
+      if (existing) {
+        showToast(t('cl_already_invited_toast'));
+        if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+        return;
+      }
+
+      // Insert invitation row
+      const { error } = await db.from('applications').insert({
+        study_id:       studyId,
+        contributor_id: contributorId,
+        status:         'invited',
+        applied_at:     new Date().toISOString()
+      });
+      if (error) throw error;
+
+      // Notify the contributor
+      const { data: study } = await db.from('studies').select('title').eq('id', studyId).single();
+      if (study) {
+        await sendNotification(
+          contributorId,
+          t('cl_notif_invited_title'),
+          t('cl_notif_invited_body').replace('{title}', study.title),
+          null
+        );
+      }
+
+      showToast(t('cl_contributor_invited'));
+      if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; btn.id = ''; }
+    } catch(err) {
+      console.error('Invite contributor error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast('Could not send invite — try again', true);
+      if (btn) { btn.disabled = false; btn.textContent = t('cl_invite'); }
     }
   }
 
@@ -2483,12 +2574,22 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_match: 'contributors match your criteria right now',
       // Browse contributors
       cl_browse_title: 'Browse contributors',
-      cl_browse_sub: 'Filtered for: Online shopping experience research',
+      cl_browse_sub: 'Browse all contributors',
+      cl_browse_for_study: 'Inviting for: {title}',
       cl_invite_top: 'Invite top 10',
-      cl_fc_all: 'All matches',
+      cl_fc_all: 'All',
       cl_fc_elite: 'Elite only',
       cl_fc_not_invited: 'Not yet invited',
-      cl_fc_applied: 'Applied',
+      cl_fc_applied: 'Invited',
+      cl_invite_contributors: '+ Invite contributors',
+      cl_invited: 'invited',
+      cl_invited_status: 'Invited',
+      cl_already_invited: 'Invited ✓',
+      cl_contributor_invited: 'Contributor invited ✓',
+      cl_already_invited_toast: 'Already invited to this study',
+      cl_invite_no_study: 'Open a study first to invite contributors',
+      cl_notif_invited_title: 'You\'ve been invited to a study',
+      cl_notif_invited_body: 'You\'ve been personally selected to participate in "{title}". Open Vetd to accept.',
       // Rate participants
       cl_rate_title: 'Rate participants',
       cl_rate_warning: '⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.',
@@ -2714,12 +2815,22 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_match: 'deltagare matchar dina kriterier just nu',
       // Browse contributors
       cl_browse_title: 'Bläddra bland deltagare',
-      cl_browse_sub: 'Filtrerat för: Undersökning av shoppingupplevelse online',
+      cl_browse_sub: 'Bläddra bland alla deltagare',
+      cl_browse_for_study: 'Bjuder in till: {title}',
       cl_invite_top: 'Bjud in topp 10',
-      cl_fc_all: 'Alla matchningar',
+      cl_fc_all: 'Alla',
       cl_fc_elite: 'Enbart Elite',
       cl_fc_not_invited: 'Ej inbjudna',
-      cl_fc_applied: 'Ansökt',
+      cl_fc_applied: 'Inbjudna',
+      cl_invite_contributors: '+ Bjud in deltagare',
+      cl_invited: 'inbjudna',
+      cl_invited_status: 'Inbjuden',
+      cl_already_invited: 'Inbjuden ✓',
+      cl_contributor_invited: 'Deltagare inbjuden ✓',
+      cl_already_invited_toast: 'Redan inbjuden till denna studie',
+      cl_invite_no_study: 'Öppna en studie först för att bjuda in deltagare',
+      cl_notif_invited_title: 'Du har blivit inbjuden till en studie',
+      cl_notif_invited_body: 'Du har blivit personligen utvald för att delta i "{title}". Öppna Vetd för att acceptera.',
       // Rate participants
       cl_rate_title: 'Betygsätt deltagare',
       cl_rate_warning: '⚡ Betygsätt inom 72 timmar. Dina betyg hjälper till att upprätthålla kvaliteten för alla på plattformen.',
