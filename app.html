@@ -1040,45 +1040,45 @@
               <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · 0 kr earned</div>
             </div>
           </div>
-          <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()">Edit profile</button>
+          <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()" data-i18n="prof_edit_btn">Edit profile</button>
         </div>
 
         <div class="profile-grid" id="profile-grid">
           <div class="profile-section">
-            <h3>Personal details</h3>
-            <div class="profile-row"><span class="profile-row-label">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
-            <div class="profile-row"><span class="profile-row-label">Gender</span><span id="profile-detail-gender" class="profile-row-value">—</span></div>
-            <div class="profile-row"><span class="profile-row-label">Location</span><span id="profile-detail-location" class="profile-row-value">—</span></div>
-            <div class="profile-row"><span class="profile-row-label">Employment</span><span id="profile-detail-employment" class="profile-row-value">—</span></div>
-            <div class="profile-row"><span class="profile-row-label">Children</span><span id="profile-detail-children" class="profile-row-value">—</span></div>
-            <div class="profile-row"><span class="profile-row-label">Living situation</span><span id="profile-detail-living" class="profile-row-value">—</span></div>
+            <h3 data-i18n="prof_personal">Personal details</h3>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_age">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_gender">Gender</span><span id="profile-detail-gender" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_location">Location</span><span id="profile-detail-location" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_employment">Employment</span><span id="profile-detail-employment" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_children">Children</span><span id="profile-detail-children" class="profile-row-value">—</span></div>
+            <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_living">Living situation</span><span id="profile-detail-living" class="profile-row-value">—</span></div>
           </div>
 
           <div class="profile-section">
-            <h3>Rating breakdown</h3>
+            <h3 data-i18n="prof_rating">Rating breakdown</h3>
             <div id="rating-breakdown-content">
-              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300" data-i18n="prof_rating_empty">Complete your first study to see your rating breakdown.</p>
             </div>
           </div>
 
           <div class="profile-section" style="grid-column:1/-1" id="bankid-section">
-            <h3>Identity verification</h3>
+            <h3 data-i18n="prof_identity">Identity verification</h3>
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
               <div style="display:flex;align-items:center;gap:14px">
                 <div class="bankid-logo"><span>Bank<br>ID</span></div>
                 <div>
-                  <div style="font-weight:600;font-size:14px;color:var(--gray-900)">Verify your identity</div>
-                  <div style="font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px">Verified contributors get priority access to premium studies</div>
+                  <div style="font-weight:600;font-size:14px;color:var(--gray-900)" data-i18n="prof_identity_title">Verify your identity</div>
+                  <div style="font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px" data-i18n="prof_identity_sub">Verified contributors get priority access to premium studies</div>
                 </div>
               </div>
               <div id="bankid-status">
-                <button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>
+                <button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap" data-i18n="prof_identity_btn">Verify with BankID</button>
               </div>
             </div>
           </div>
 
           <div class="profile-section" style="grid-column:1/-1">
-            <h3>My interests & tags</h3>
+            <h3 data-i18n="prof_interests">My interests & tags</h3>
             <div class="job-tags" style="margin-top:4px">
               <span class="tag tag-green">Fashion & clothing</span>
               <span class="tag tag-green">Beauty & skincare</span>
@@ -1093,35 +1093,35 @@
           </div>
 
           <div class="profile-section" style="grid-column:1/-1">
-            <h3>Payment history</h3>
+            <h3 data-i18n="prof_payments">Payment history</h3>
             <div id="payment-history-section">
-              <p style="font-size:13px;color:var(--gray-400);font-weight:300">Loading…</p>
+              <p style="font-size:13px;color:var(--gray-400);font-weight:300" data-i18n="prof_payments_loading">Loading…</p>
             </div>
           </div>
 
           <div class="profile-section" style="grid-column:1/-1;border-top:1px solid var(--gray-100);padding-top:1.5rem;margin-top:0.5rem">
-            <h3 style="color:var(--coral)">Danger zone</h3>
-            <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300">Permanently delete your account and all associated data. This cannot be undone.</p>
-            <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)">Delete my account</button>
+            <h3 style="color:var(--coral)" data-i18n="prof_danger">Danger zone</h3>
+            <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300" data-i18n="prof_danger_desc">Permanently delete your account and all associated data. This cannot be undone.</p>
+            <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)" data-i18n="prof_danger_btn">Delete my account</button>
           </div>
         </div>
 
         <!-- PROFILE EDIT FORM -->
         <div id="profile-edit-form" style="display:none">
           <div class="profile-section" style="margin-bottom:1.5rem">
-            <h3>Name</h3>
+            <h3 data-i18n="edit_name">Name</h3>
             <div class="field-row" style="margin-top:0.75rem">
-              <div class="field"><label>First name</label><input type="text" id="edit-fname" maxlength="100" placeholder="First name"></div>
-              <div class="field"><label>Last name</label><input type="text" id="edit-lname" maxlength="100" placeholder="Last name"></div>
+              <div class="field"><label data-i18n="edit_label_fname">First name</label><input type="text" id="edit-fname" maxlength="100" placeholder="First name"></div>
+              <div class="field"><label data-i18n="edit_label_lname">Last name</label><input type="text" id="edit-lname" maxlength="100" placeholder="Last name"></div>
             </div>
           </div>
 
           <div class="profile-section" style="margin-bottom:1.5rem">
-            <h3>Personal details</h3>
+            <h3 data-i18n="edit_details">Personal details</h3>
             <div class="field-row" style="margin-top:0.75rem">
-              <div class="field"><label>Date of birth</label><input type="date" id="edit-dob"></div>
+              <div class="field"><label data-i18n="edit_label_dob">Date of birth</label><input type="date" id="edit-dob"></div>
               <div class="field">
-                <label>Gender</label>
+                <label data-i18n="edit_label_gender">Gender</label>
                 <select id="edit-gender">
                   <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
                   <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
@@ -1130,21 +1130,21 @@
             </div>
             <div class="field-row">
               <div class="field">
-                <label>Country</label>
+                <label data-i18n="edit_label_country">Country</label>
                 <select id="edit-country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
               </div>
-              <div class="field"><label>City / Town</label><input type="text" id="edit-city" placeholder="e.g. Manchester" maxlength="100"></div>
+              <div class="field"><label data-i18n="edit_label_city">City / Town</label><input type="text" id="edit-city" placeholder="e.g. Stockholm" maxlength="100"></div>
             </div>
             <div class="field">
-              <label>Employment status</label>
+              <label data-i18n="edit_label_employment">Employment status</label>
               <select id="edit-employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
             </div>
             <div class="field">
-              <label>Household income (annual, approximate)</label>
+              <label data-i18n="edit_label_income">Household income (annual, approximate)</label>
               <select id="edit-income"><option value="under_20k">Under 200 000 kr</option><option value="20k_35k">200 000–349 999 kr</option><option value="35k_60k">350 000–599 999 kr</option><option value="60k_100k">600 000–999 999 kr</option><option value="100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
             </div>
             <div class="field">
-              <label>Living situation</label>
+              <label data-i18n="edit_label_living">Living situation</label>
               <div class="chip-group" data-field="living_situation" id="edit-chips-living">
                 <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
                 <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
@@ -1153,7 +1153,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Do you have children?</label>
+              <label data-i18n="edit_label_children">Do you have children?</label>
               <div class="chip-group" data-field="children" id="edit-chips-children">
                 <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
                 <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
@@ -1165,9 +1165,9 @@
           </div>
 
           <div class="profile-section" style="margin-bottom:1.5rem">
-            <h3>Interests</h3>
+            <h3 data-i18n="edit_interests">Interests</h3>
             <div class="field" style="margin-top:0.75rem">
-              <label>Shopping & lifestyle</label>
+              <label data-i18n="edit_label_lifestyle">Shopping & lifestyle</label>
               <div class="chip-group" data-field="interests_lifestyle" id="edit-chips-lifestyle">
                 <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
                 <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
@@ -1181,7 +1181,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Technology & media</label>
+              <label data-i18n="edit_label_tech">Technology & media</label>
               <div class="chip-group" data-field="interests_tech" id="edit-chips-tech">
                 <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
                 <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
@@ -1192,7 +1192,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Finance & banking</label>
+              <label data-i18n="edit_label_finance">Finance & banking</label>
               <div class="chip-group" data-field="interests_finance" id="edit-chips-finance">
                 <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
                 <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
@@ -1203,7 +1203,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Brands you shop with regularly</label>
+              <label data-i18n="edit_label_brands">Brands you shop with regularly</label>
               <div class="chip-group" data-field="brands" id="edit-chips-brands">
                 <div class="chip" data-value="hm" onclick="toggleChip(this)">H&amp;M</div>
                 <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
@@ -1220,9 +1220,9 @@
           </div>
 
           <div class="profile-section" style="margin-bottom:1.5rem">
-            <h3>Availability preferences</h3>
+            <h3 data-i18n="edit_availability">Availability preferences</h3>
             <div class="field" style="margin-top:0.75rem">
-              <label>Preferred study format</label>
+              <label data-i18n="edit_label_formats">Preferred study format</label>
               <div class="chip-group" data-field="study_formats" id="edit-chips-formats">
                 <div class="chip" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
                 <div class="chip" data-value="video_call" onclick="toggleChip(this)">Video call</div>
@@ -1232,7 +1232,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Available times</label>
+              <label data-i18n="edit_label_times">Available times</label>
               <div class="chip-group" data-field="available_times" id="edit-chips-times">
                 <div class="chip" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
                 <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
@@ -1241,7 +1241,7 @@
               </div>
             </div>
             <div class="field">
-              <label>Maximum session length I'm comfortable with</label>
+              <label data-i18n="edit_label_maxlen">Maximum session length I'm comfortable with</label>
               <div class="chip-group" data-field="max_session_length" data-single="true" id="edit-chips-maxlen">
                 <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
                 <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
@@ -1251,7 +1251,7 @@
               </div>
             </div>
             <div class="field">
-              <label>How often would you like to participate?</label>
+              <label data-i18n="edit_label_frequency">How often would you like to participate?</label>
               <select id="edit-frequency">
                 <option value="once_a_month">Once a month</option>
                 <option value="2_3_per_month">2–3 times a month</option>
@@ -1260,21 +1260,21 @@
               </select>
             </div>
             <div class="field">
-              <label>Minimum pay you'd accept (per hour equivalent)</label>
+              <label data-i18n="edit_label_minpay">Minimum pay you'd accept (per hour equivalent)</label>
               <div style="margin-top:8px">
                 <input type="range" min="50" max="1500" value="250" id="edit-minpay" oninput="document.getElementById('edit-payval').textContent=this.value+' kr'">
                 <div class="range-labels"><span>50 kr</span><span id="edit-payval" style="color:var(--green);font-weight:600">250 kr</span><span>1 500 kr</span></div>
               </div>
             </div>
             <div class="field">
-              <label>Anything else you'd like us to know?</label>
+              <label data-i18n="edit_label_notes">Anything else you'd like us to know?</label>
               <textarea id="edit-additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
             </div>
           </div>
 
           <div style="display:flex;gap:12px;margin-top:0.5rem">
-            <button onclick="cancelEdit()" style="padding:10px 24px;border-radius:8px;border:1.5px solid var(--gray-200);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">Cancel</button>
-            <button id="edit-save-btn" onclick="saveProfile()" class="apply-btn" style="padding:10px 28px">Save changes</button>
+            <button onclick="cancelEdit()" style="padding:10px 24px;border-radius:8px;border:1.5px solid var(--gray-200);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);color:var(--gray-700)" data-i18n="edit_cancel">Cancel</button>
+            <button id="edit-save-btn" onclick="saveProfile()" class="apply-btn" style="padding:10px 28px" data-i18n="edit_save">Save changes</button>
           </div>
         </div>
       </div>
@@ -2597,6 +2597,52 @@
       filter_video: 'Video',
       filter_person: 'In-person',
       profile_title: 'My profile',
+      prof_personal: 'Personal details',
+      prof_label_age: 'Age',
+      prof_label_gender: 'Gender',
+      prof_label_location: 'Location',
+      prof_label_employment: 'Employment',
+      prof_label_children: 'Children',
+      prof_label_living: 'Living situation',
+      prof_rating: 'Rating breakdown',
+      prof_rating_empty: 'Complete your first study to see your rating breakdown.',
+      prof_identity: 'Identity verification',
+      prof_identity_title: 'Verify your identity',
+      prof_identity_sub: 'Verified contributors get priority access to premium studies',
+      prof_identity_btn: 'Verify with BankID',
+      prof_interests: 'My interests & tags',
+      prof_payments: 'Payment history',
+      prof_payments_loading: 'Loading…',
+      prof_danger: 'Danger zone',
+      prof_danger_desc: 'Permanently delete your account and all associated data. This cannot be undone.',
+      prof_danger_btn: 'Delete my account',
+      prof_edit_btn: 'Edit profile',
+      edit_name: 'Name',
+      edit_label_fname: 'First name',
+      edit_label_lname: 'Last name',
+      edit_details: 'Personal details',
+      edit_label_dob: 'Date of birth',
+      edit_label_gender: 'Gender',
+      edit_label_country: 'Country',
+      edit_label_city: 'City / Town',
+      edit_label_employment: 'Employment status',
+      edit_label_income: 'Household income (annual, approximate)',
+      edit_label_living: 'Living situation',
+      edit_label_children: 'Do you have children?',
+      edit_interests: 'Interests',
+      edit_label_lifestyle: 'Shopping & lifestyle',
+      edit_label_tech: 'Technology & media',
+      edit_label_finance: 'Finance & banking',
+      edit_label_brands: 'Brands you shop with regularly',
+      edit_availability: 'Availability preferences',
+      edit_label_formats: 'Preferred study format',
+      edit_label_times: 'Available times',
+      edit_label_maxlen: "Maximum session length I'm comfortable with",
+      edit_label_frequency: 'How often would you like to participate?',
+      edit_label_minpay: "Minimum pay you'd accept (per hour equivalent)",
+      edit_label_notes: "Anything else you'd like us to know?",
+      edit_cancel: 'Cancel',
+      edit_save: 'Save changes',
     },
     sv: {
       landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
@@ -2639,6 +2685,52 @@
       filter_video: 'Video',
       filter_person: 'På plats',
       profile_title: 'Min profil',
+      prof_personal: 'Personuppgifter',
+      prof_label_age: 'Ålder',
+      prof_label_gender: 'Kön',
+      prof_label_location: 'Plats',
+      prof_label_employment: 'Sysselsättning',
+      prof_label_children: 'Barn',
+      prof_label_living: 'Boendesituation',
+      prof_rating: 'Betygsöversikt',
+      prof_rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
+      prof_identity: 'Identitetsverifiering',
+      prof_identity_title: 'Verifiera din identitet',
+      prof_identity_sub: 'Verifierade deltagare får prioriterad tillgång till premiumstudier',
+      prof_identity_btn: 'Verifiera med BankID',
+      prof_interests: 'Mina intressen',
+      prof_payments: 'Betalningshistorik',
+      prof_payments_loading: 'Laddar…',
+      prof_danger: 'Riskzon',
+      prof_danger_desc: 'Ta bort ditt konto och all tillhörande data permanent. Detta kan inte ångras.',
+      prof_danger_btn: 'Ta bort mitt konto',
+      prof_edit_btn: 'Redigera profil',
+      edit_name: 'Namn',
+      edit_label_fname: 'Förnamn',
+      edit_label_lname: 'Efternamn',
+      edit_details: 'Personuppgifter',
+      edit_label_dob: 'Födelsedatum',
+      edit_label_gender: 'Kön',
+      edit_label_country: 'Land',
+      edit_label_city: 'Stad',
+      edit_label_employment: 'Sysselsättningsstatus',
+      edit_label_income: 'Hushållsinkomst (årsvis, ungefärlig)',
+      edit_label_living: 'Boendesituation',
+      edit_label_children: 'Har du barn?',
+      edit_interests: 'Intressen',
+      edit_label_lifestyle: 'Shopping & livsstil',
+      edit_label_tech: 'Teknik & media',
+      edit_label_finance: 'Ekonomi & bank',
+      edit_label_brands: 'Varumärken du handlar av regelbundet',
+      edit_availability: 'Tillgänglighet',
+      edit_label_formats: 'Föredraget studieformat',
+      edit_label_times: 'Tillgängliga tider',
+      edit_label_maxlen: 'Maximal sessionslängd jag är bekväm med',
+      edit_label_frequency: 'Hur ofta vill du delta?',
+      edit_label_minpay: 'Minsta ersättning du accepterar (per timme)',
+      edit_label_notes: 'Något annat du vill att vi ska veta?',
+      edit_cancel: 'Avbryt',
+      edit_save: 'Spara ändringar',
     }
   };
 
