@@ -931,6 +931,10 @@ textarea{resize:vertical;min-height:90px}
     if (str == null) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
   }
+  // escAttr: safe for embedding inside single-quoted HTML attribute values
+  function escAttr(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
   // ─── AUTH SCREEN ────────────────────────────────────────
   function showAuthScreen(tab = 'signup') {
@@ -1276,7 +1280,7 @@ textarea{resize:vertical;min-height:90px}
         let actions = '';
         if (a.status === 'pending') {
           actions = `
-            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}',${JSON.stringify(name)},${JSON.stringify(currentApplicantsStudyTitle||'')})">${t('cl_accept')}</button>
+            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_accept')}</button>
             <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const schedDisplay = a.scheduled_at ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
@@ -1285,7 +1289,7 @@ textarea{resize:vertical;min-height:90px}
             const remaining = callTimeRemaining(a.scheduled_at);
             const btnText = remaining !== null ? esc(remaining) : t('cl_join_call');
             const btnDisabled = remaining !== null ? 'disabled' : '';
-            joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}',${JSON.stringify(currentApplicantsStudyTitle||'')})" ${btnDisabled}>${btnText}</button>`;
+            joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}')" ${btnDisabled}>${btnText}</button>`;
           }
           actions = `
             <span class="status-pill status-accepted">${t('cl_accepted')}</span>
