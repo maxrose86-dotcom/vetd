@@ -735,22 +735,11 @@
         </div>
         <div class="field">
           <label>Living situation</label>
-          <div class="chip-group" data-field="living_situation">
-            <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
-            <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
-            <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
-            <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
-          </div>
+          <div id="ob-chips-living"></div>
         </div>
         <div class="field">
           <label>Do you have children?</label>
-          <div class="chip-group" data-field="children">
-            <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
-            <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
-            <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
-            <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
-            <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
-          </div>
+          <div id="ob-chips-children"></div>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(2)">← Back</button>
@@ -766,54 +755,19 @@
         </div>
         <div class="field">
           <label>Shopping & lifestyle</label>
-          <div class="chip-group" data-field="interests_lifestyle">
-            <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
-            <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
-            <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
-            <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
-            <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
-            <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
-            <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
-            <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
-            <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
-          </div>
+          <div id="ob-chips-lifestyle"></div>
         </div>
         <div class="field">
           <label>Technology & media</label>
-          <div class="chip-group" data-field="interests_tech">
-            <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
-            <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
-            <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
-            <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
-            <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
-            <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
-          </div>
+          <div id="ob-chips-tech"></div>
         </div>
         <div class="field">
           <label>Finance & banking</label>
-          <div class="chip-group" data-field="interests_finance">
-            <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
-            <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
-            <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
-            <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
-            <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
-            <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
-          </div>
+          <div id="ob-chips-finance"></div>
         </div>
         <div class="field">
           <label>Which brands do you shop with regularly?</label>
-          <div class="chip-group" data-field="brands">
-            <div class="chip" data-value="hm" onclick="toggleChip(this)">H&M</div>
-            <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
-            <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
-            <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
-            <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks & Spencer</div>
-            <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
-            <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
-            <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
-            <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
-            <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
-          </div>
+          <div id="ob-chips-brands"></div>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(3)">← Back</button>
@@ -829,32 +783,15 @@
         </div>
         <div class="field">
           <label>Preferred study format</label>
-          <div class="chip-group" data-field="study_formats">
-            <div class="chip selected" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
-            <div class="chip selected" data-value="video_call" onclick="toggleChip(this)">Video call</div>
-            <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
-            <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
-            <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
-          </div>
+          <div id="ob-chips-formats"></div>
         </div>
         <div class="field">
           <label>Available times</label>
-          <div class="chip-group" data-field="available_times">
-            <div class="chip selected" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
-            <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
-            <div class="chip selected" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
-            <div class="chip selected" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
-          </div>
+          <div id="ob-chips-times"></div>
         </div>
         <div class="field">
           <label>Maximum session length I'm comfortable with</label>
-          <div class="chip-group" data-field="max_session_length" data-single="true">
-            <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
-            <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
-            <div class="chip selected" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
-            <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
-            <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
-          </div>
+          <div id="ob-chips-maxlen"></div>
         </div>
         <div class="field">
           <label>How often would you like to participate?</label>
@@ -1137,22 +1074,11 @@
             </div>
             <div class="field">
               <label data-i18n="edit_label_living">Living situation</label>
-              <div class="chip-group" data-field="living_situation" id="edit-chips-living">
-                <div class="chip" data-value="own_home" onclick="toggleChip(this)">Own my home</div>
-                <div class="chip" data-value="renting" onclick="toggleChip(this)">Renting</div>
-                <div class="chip" data-value="with_family" onclick="toggleChip(this)">Living with family</div>
-                <div class="chip" data-value="student_accommodation" onclick="toggleChip(this)">Student accommodation</div>
-              </div>
+              <div id="edit-chips-living"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_children">Do you have children?</label>
-              <div class="chip-group" data-field="children" id="edit-chips-children">
-                <div class="chip" data-value="no_children" onclick="toggleChip(this)">No children</div>
-                <div class="chip" data-value="under_5" onclick="toggleChip(this)">Children under 5</div>
-                <div class="chip" data-value="children_5_12" onclick="toggleChip(this)">Children 5–12</div>
-                <div class="chip" data-value="teenagers" onclick="toggleChip(this)">Teenagers</div>
-                <div class="chip" data-value="adult_children" onclick="toggleChip(this)">Adult children</div>
-              </div>
+              <div id="edit-chips-children"></div>
             </div>
           </div>
 
@@ -1160,54 +1086,19 @@
             <h3 data-i18n="edit_interests">Interests</h3>
             <div class="field" style="margin-top:0.75rem">
               <label data-i18n="edit_label_lifestyle">Shopping & lifestyle</label>
-              <div class="chip-group" data-field="interests_lifestyle" id="edit-chips-lifestyle">
-                <div class="chip" data-value="fashion" onclick="toggleChip(this)">Fashion & clothing</div>
-                <div class="chip" data-value="beauty" onclick="toggleChip(this)">Beauty & skincare</div>
-                <div class="chip" data-value="home" onclick="toggleChip(this)">Home & interiors</div>
-                <div class="chip" data-value="food" onclick="toggleChip(this)">Food & cooking</div>
-                <div class="chip" data-value="fitness" onclick="toggleChip(this)">Fitness & wellness</div>
-                <div class="chip" data-value="sustainability" onclick="toggleChip(this)">Sustainability</div>
-                <div class="chip" data-value="pets" onclick="toggleChip(this)">Pets</div>
-                <div class="chip" data-value="travel" onclick="toggleChip(this)">Travel</div>
-                <div class="chip" data-value="gardening" onclick="toggleChip(this)">Gardening</div>
-              </div>
+              <div id="edit-chips-lifestyle"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_tech">Technology & media</label>
-              <div class="chip-group" data-field="interests_tech" id="edit-chips-tech">
-                <div class="chip" data-value="smartphones" onclick="toggleChip(this)">Smartphones & apps</div>
-                <div class="chip" data-value="gaming" onclick="toggleChip(this)">Gaming</div>
-                <div class="chip" data-value="streaming" onclick="toggleChip(this)">Streaming & TV</div>
-                <div class="chip" data-value="social_media" onclick="toggleChip(this)">Social media</div>
-                <div class="chip" data-value="podcasts" onclick="toggleChip(this)">Podcasts</div>
-                <div class="chip" data-value="smart_home" onclick="toggleChip(this)">Smart home</div>
-              </div>
+              <div id="edit-chips-tech"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_finance">Finance & banking</label>
-              <div class="chip-group" data-field="interests_finance" id="edit-chips-finance">
-                <div class="chip" data-value="online_banking" onclick="toggleChip(this)">Online banking</div>
-                <div class="chip" data-value="investing" onclick="toggleChip(this)">Investing / stocks</div>
-                <div class="chip" data-value="crypto" onclick="toggleChip(this)">Crypto</div>
-                <div class="chip" data-value="mortgages" onclick="toggleChip(this)">Mortgages / property</div>
-                <div class="chip" data-value="insurance" onclick="toggleChip(this)">Insurance</div>
-                <div class="chip" data-value="budgeting" onclick="toggleChip(this)">Budgeting apps</div>
-              </div>
+              <div id="edit-chips-finance"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_brands">Brands you shop with regularly</label>
-              <div class="chip-group" data-field="brands" id="edit-chips-brands">
-                <div class="chip" data-value="hm" onclick="toggleChip(this)">H&amp;M</div>
-                <div class="chip" data-value="asos" onclick="toggleChip(this)">ASOS</div>
-                <div class="chip" data-value="amazon" onclick="toggleChip(this)">Amazon</div>
-                <div class="chip" data-value="tesco" onclick="toggleChip(this)">Tesco</div>
-                <div class="chip" data-value="marks_spencer" onclick="toggleChip(this)">Marks &amp; Spencer</div>
-                <div class="chip" data-value="john_lewis" onclick="toggleChip(this)">John Lewis</div>
-                <div class="chip" data-value="lloyds_barclays" onclick="toggleChip(this)">Lloyds / Barclays</div>
-                <div class="chip" data-value="zara" onclick="toggleChip(this)">Zara</div>
-                <div class="chip" data-value="boots" onclick="toggleChip(this)">Boots</div>
-                <div class="chip" data-value="apple" onclick="toggleChip(this)">Apple</div>
-              </div>
+              <div id="edit-chips-brands"></div>
             </div>
           </div>
 
@@ -1215,32 +1106,15 @@
             <h3 data-i18n="edit_availability">Availability preferences</h3>
             <div class="field" style="margin-top:0.75rem">
               <label data-i18n="edit_label_formats">Preferred study format</label>
-              <div class="chip-group" data-field="study_formats" id="edit-chips-formats">
-                <div class="chip" data-value="online_survey" onclick="toggleChip(this)">Online survey</div>
-                <div class="chip" data-value="video_call" onclick="toggleChip(this)">Video call</div>
-                <div class="chip" data-value="in_person" onclick="toggleChip(this)">In-person (local)</div>
-                <div class="chip" data-value="diary_study" onclick="toggleChip(this)">Diary / journal study</div>
-                <div class="chip" data-value="product_testing" onclick="toggleChip(this)">Product testing at home</div>
-              </div>
+              <div id="edit-chips-formats"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_times">Available times</label>
-              <div class="chip-group" data-field="available_times" id="edit-chips-times">
-                <div class="chip" data-value="weekday_mornings" onclick="toggleChip(this)">Weekday mornings</div>
-                <div class="chip" data-value="weekday_afternoons" onclick="toggleChip(this)">Weekday afternoons</div>
-                <div class="chip" data-value="weekday_evenings" onclick="toggleChip(this)">Weekday evenings</div>
-                <div class="chip" data-value="weekends" onclick="toggleChip(this)">Weekends</div>
-              </div>
+              <div id="edit-chips-times"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_maxlen">Maximum session length I'm comfortable with</label>
-              <div class="chip-group" data-field="max_session_length" data-single="true" id="edit-chips-maxlen">
-                <div class="chip" data-value="up_to_15" onclick="toggleChip(this)">Up to 15 mins</div>
-                <div class="chip" data-value="up_to_30" onclick="toggleChip(this)">Up to 30 mins</div>
-                <div class="chip" data-value="up_to_60" onclick="toggleChip(this)">Up to 60 mins</div>
-                <div class="chip" data-value="up_to_90" onclick="toggleChip(this)">Up to 90 mins</div>
-                <div class="chip" data-value="no_limit" onclick="toggleChip(this)">No limit</div>
-              </div>
+              <div id="edit-chips-maxlen"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_frequency">How often would you like to participate?</label>
@@ -1352,8 +1226,9 @@
   }
 
   // ─── HELPERS ─────────────────────────────────────────────
-  function getChipValues(fieldName) {
-    const group = document.querySelector(`[data-field="${fieldName}"]`);
+  function getChipValues(fieldName, scope) {
+    const root  = scope ? document.querySelector(scope) : document;
+    const group = root?.querySelector(`[data-field="${fieldName}"]`);
     if (!group) return [];
     return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
   }
@@ -1607,6 +1482,133 @@
     profileData: null,
     contribData: null
   };
+
+  // ─── CHIP OPTIONS (single source of truth) ──────────────
+  const CHIP_OPTIONS = {
+    living_situation: [
+      { value: 'own_home',               label: 'Own my home' },
+      { value: 'renting',                label: 'Renting' },
+      { value: 'with_family',            label: 'Living with family' },
+      { value: 'student_accommodation',  label: 'Student accommodation' }
+    ],
+    children: [
+      { value: 'no_children',    label: 'No children' },
+      { value: 'under_5',        label: 'Children under 5' },
+      { value: 'children_5_12', label: 'Children 5–12' },
+      { value: 'teenagers',      label: 'Teenagers' },
+      { value: 'adult_children', label: 'Adult children' }
+    ],
+    interests_lifestyle: [
+      { value: 'fashion',        label: 'Fashion & clothing' },
+      { value: 'beauty',         label: 'Beauty & skincare' },
+      { value: 'home',           label: 'Home & interiors' },
+      { value: 'food',           label: 'Food & cooking' },
+      { value: 'fitness',        label: 'Fitness & wellness' },
+      { value: 'sustainability', label: 'Sustainability' },
+      { value: 'pets',           label: 'Pets' },
+      { value: 'travel',         label: 'Travel' },
+      { value: 'gardening',      label: 'Gardening' }
+    ],
+    interests_tech: [
+      { value: 'smartphones',  label: 'Smartphones & apps' },
+      { value: 'gaming',       label: 'Gaming' },
+      { value: 'streaming',    label: 'Streaming & TV' },
+      { value: 'social_media', label: 'Social media' },
+      { value: 'podcasts',     label: 'Podcasts' },
+      { value: 'smart_home',   label: 'Smart home' }
+    ],
+    interests_finance: [
+      { value: 'online_banking', label: 'Online banking' },
+      { value: 'investing',      label: 'Investing / stocks' },
+      { value: 'crypto',         label: 'Crypto' },
+      { value: 'mortgages',      label: 'Mortgages / property' },
+      { value: 'insurance',      label: 'Insurance' },
+      { value: 'budgeting',      label: 'Budgeting apps' }
+    ],
+    brands: [
+      { value: 'hm',             label: 'H&M' },
+      { value: 'asos',           label: 'ASOS' },
+      { value: 'amazon',         label: 'Amazon' },
+      { value: 'tesco',          label: 'Tesco' },
+      { value: 'marks_spencer',  label: 'Marks & Spencer' },
+      { value: 'john_lewis',     label: 'John Lewis' },
+      { value: 'lloyds_barclays',label: 'Lloyds / Barclays' },
+      { value: 'zara',           label: 'Zara' },
+      { value: 'boots',          label: 'Boots' },
+      { value: 'apple',          label: 'Apple' }
+    ],
+    study_formats: [
+      { value: 'online_survey',    label: 'Online survey' },
+      { value: 'video_call',       label: 'Video call' },
+      { value: 'in_person',        label: 'In-person (local)' },
+      { value: 'diary_study',      label: 'Diary / journal study' },
+      { value: 'product_testing',  label: 'Product testing at home' }
+    ],
+    available_times: [
+      { value: 'weekday_mornings',   label: 'Weekday mornings' },
+      { value: 'weekday_afternoons', label: 'Weekday afternoons' },
+      { value: 'weekday_evenings',   label: 'Weekday evenings' },
+      { value: 'weekends',           label: 'Weekends' }
+    ],
+    max_session_length: [
+      { value: 'up_to_15', label: 'Up to 15 mins' },
+      { value: 'up_to_30', label: 'Up to 30 mins' },
+      { value: 'up_to_60', label: 'Up to 60 mins' },
+      { value: 'up_to_90', label: 'Up to 90 mins' },
+      { value: 'no_limit', label: 'No limit' }
+    ]
+  };
+
+  // Flat label map for interest rendering in profile tab
+  const INTEREST_LABELS = Object.fromEntries(
+    ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']
+      .flatMap(k => CHIP_OPTIONS[k].map(({ value, label }) => [value, label]))
+  );
+
+  function renderChipGroup(fieldName, opts) {
+    const single = fieldName === 'max_session_length' ? ' data-single="true"' : '';
+    const chips = opts.map(o =>
+      `<div class="chip" data-value="${esc(o.value)}" onclick="toggleChip(this)">${esc(o.label)}</div>`
+    ).join('');
+    return `<div class="chip-group" data-field="${esc(fieldName)}"${single}>${chips}</div>`;
+  }
+
+  function selectChips(containerId, values) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    values.forEach(v => {
+      const chip = container.querySelector(`[data-value="${v}"]`);
+      if (chip) chip.classList.add('selected');
+    });
+  }
+
+  function initChipGroups() {
+    // Onboarding step 2
+    document.getElementById('ob-chips-living').innerHTML   = renderChipGroup('living_situation', CHIP_OPTIONS.living_situation);
+    document.getElementById('ob-chips-children').innerHTML = renderChipGroup('children',         CHIP_OPTIONS.children);
+    // Onboarding step 3
+    document.getElementById('ob-chips-lifestyle').innerHTML = renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle);
+    document.getElementById('ob-chips-tech').innerHTML      = renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech);
+    document.getElementById('ob-chips-finance').innerHTML   = renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
+    document.getElementById('ob-chips-brands').innerHTML    = renderChipGroup('brands',              CHIP_OPTIONS.brands);
+    // Onboarding step 4 with pre-selected defaults
+    document.getElementById('ob-chips-formats').innerHTML  = renderChipGroup('study_formats',      CHIP_OPTIONS.study_formats);
+    document.getElementById('ob-chips-times').innerHTML    = renderChipGroup('available_times',    CHIP_OPTIONS.available_times);
+    document.getElementById('ob-chips-maxlen').innerHTML   = renderChipGroup('max_session_length', CHIP_OPTIONS.max_session_length);
+    selectChips('ob-chips-formats', ['online_survey', 'video_call']);
+    selectChips('ob-chips-times',   ['weekday_mornings', 'weekday_evenings', 'weekends']);
+    selectChips('ob-chips-maxlen',  ['up_to_60']);
+    // Edit form
+    document.getElementById('edit-chips-living').innerHTML    = renderChipGroup('living_situation',    CHIP_OPTIONS.living_situation);
+    document.getElementById('edit-chips-children').innerHTML  = renderChipGroup('children',            CHIP_OPTIONS.children);
+    document.getElementById('edit-chips-lifestyle').innerHTML = renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle);
+    document.getElementById('edit-chips-tech').innerHTML      = renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech);
+    document.getElementById('edit-chips-finance').innerHTML   = renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
+    document.getElementById('edit-chips-brands').innerHTML    = renderChipGroup('brands',              CHIP_OPTIONS.brands);
+    document.getElementById('edit-chips-formats').innerHTML   = renderChipGroup('study_formats',       CHIP_OPTIONS.study_formats);
+    document.getElementById('edit-chips-times').innerHTML     = renderChipGroup('available_times',     CHIP_OPTIONS.available_times);
+    document.getElementById('edit-chips-maxlen').innerHTML    = renderChipGroup('max_session_length',  CHIP_OPTIONS.max_session_length);
+  }
 
   // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
   const FORMAT_LABEL = {
@@ -2053,19 +2055,7 @@
     const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
     document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
 
-    // Interests & tags
-    const INTEREST_LABELS = {
-      fashion: 'Fashion & clothing', beauty: 'Beauty & skincare', home: 'Home & interiors',
-      food: 'Food & cooking', fitness: 'Fitness & wellness', sustainability: 'Sustainability',
-      pets: 'Pets', travel: 'Travel', gardening: 'Gardening',
-      smartphones: 'Smartphones & apps', gaming: 'Gaming', streaming: 'Streaming & TV',
-      social_media: 'Social media', podcasts: 'Podcasts', smart_home: 'Smart home',
-      online_banking: 'Online banking', investing: 'Investing / stocks', crypto: 'Crypto',
-      mortgages: 'Mortgages / property', insurance: 'Insurance', budgeting: 'Budgeting apps',
-      hm: 'H&M', asos: 'ASOS', amazon: 'Amazon', tesco: 'Tesco',
-      marks_spencer: 'Marks & Spencer', john_lewis: 'John Lewis',
-      lloyds_barclays: 'Lloyds / Barclays', zara: 'Zara', boots: 'Boots', apple: 'Apple',
-    };
+    // Interests & tags (INTEREST_LABELS is the module-level map from CHIP_OPTIONS)
     const tagsContainer = document.getElementById('profile-interests-tags');
     if (tagsContainer) {
       const allTags = [
@@ -2135,12 +2125,6 @@
   }
 
   // ─── PROFILE EDITING ────────────────────────────────────
-  function getEditChipValues(fieldName) {
-    const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
-    if (!group) return [];
-    return [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value);
-  }
-
   function setEditChips(fieldName, values) {
     const group = document.querySelector(`#profile-edit-form [data-field="${fieldName}"]`);
     if (!group) return;
@@ -2207,7 +2191,7 @@
     setLoading(btn, true);
 
     try {
-      const sessionLengths = getEditChipValues('max_session_length');
+      const sessionLengths = getChipValues('max_session_length', '#profile-edit-form');
 
       const [{ error: pErr }, { error: cErr }] = await Promise.all([
         db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', state.currentUser.id),
@@ -2218,14 +2202,14 @@
           city:                document.getElementById('edit-city').value.trim() || null,
           employment:          document.getElementById('edit-employment').value,
           income:              document.getElementById('edit-income').value || null,
-          living_situation:    getEditChipValues('living_situation'),
-          children:            getEditChipValues('children'),
-          interests_lifestyle: getEditChipValues('interests_lifestyle'),
-          interests_tech:      getEditChipValues('interests_tech'),
-          interests_finance:   getEditChipValues('interests_finance'),
-          brands:              getEditChipValues('brands'),
-          study_formats:       getEditChipValues('study_formats'),
-          available_times:     getEditChipValues('available_times'),
+          living_situation:    getChipValues('living_situation',    '#profile-edit-form'),
+          children:            getChipValues('children',            '#profile-edit-form'),
+          interests_lifestyle: getChipValues('interests_lifestyle', '#profile-edit-form'),
+          interests_tech:      getChipValues('interests_tech',      '#profile-edit-form'),
+          interests_finance:   getChipValues('interests_finance',   '#profile-edit-form'),
+          brands:              getChipValues('brands',              '#profile-edit-form'),
+          study_formats:       getChipValues('study_formats',       '#profile-edit-form'),
+          available_times:     getChipValues('available_times',     '#profile-edit-form'),
           max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
           frequency:           document.getElementById('edit-frequency').value,
           min_pay_per_hour:    parseInt(document.getElementById('edit-minpay').value, 10),
@@ -2756,6 +2740,7 @@
     }
   }
 
+  initChipGroups();
   setLang(localStorage.getItem('vetd_lang') || 'en');
 
   // ── MOBILE HAMBURGER NAV ────────────────────────────────
