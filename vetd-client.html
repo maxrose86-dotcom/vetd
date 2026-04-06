@@ -1462,6 +1462,25 @@ textarea{resize:vertical;min-height:90px}
 
       // Now accept the application
       await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true);
+
+      // Notify the client (current user) as confirmation
+      if (currentClientUser) {
+        const studyTitle = currentApplicantsStudyTitle || 'study';
+        const lang = localStorage.getItem('vetd_lang') || 'en';
+        const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
+        const formattedDate = new Date(isoDatetime).toLocaleString(locale, {
+          weekday: 'short', day: 'numeric', month: 'short',
+          hour: '2-digit', minute: '2-digit', hour12: false
+        });
+        await sendNotification(
+          currentClientUser.id,
+          'Session scheduled',
+          `Session for "${studyTitle}" scheduled for ${formattedDate}. The contributor has been notified.`,
+          null
+        );
+        loadNotifications();
+      }
+
       showToast(t('cl_session_scheduled'));
       closeScheduleModal();
     } catch(err) {
