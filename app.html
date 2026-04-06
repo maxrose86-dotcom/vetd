@@ -303,6 +303,8 @@
   .app-status-accepted { background: var(--green-light); color: var(--green-dark); }
   .app-status-rejected { background: var(--gray-100); color: var(--gray-400); }
   .app-status-completed { background: var(--blue-light); color: #1D4ED8; }
+  .app-status-in-progress { background: var(--green); color: #fff; }
+  .app-status-missed { background: var(--coral-light); color: var(--coral); }
   .app-schedule-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
   /* ── VIDEO CALL OVERLAY ── */
@@ -1953,12 +1955,61 @@
     });
   }
 
+  function getSessionStatus(app, durationMinutes) {
+    const now       = Date.now();
+    const status    = app.status;
+
+    if (status === 'rejected') return { phase: 'rejected',   label: t('status_rejected'),           sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+    if (status === 'pending')  return { phase: 'pending',    label: t('status_pending'),             sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+    if (status === 'completed') return { phase: 'completed', label: t('status_completed_awaiting'),  sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+
+    // accepted
+    if (!app.scheduled_at) return { phase: 'scheduled', label: t('status_accepted'), sublabel: t('waiting_schedule'), canJoin: false, showCountdown: false, countdownText: null };
+
+    const scheduled  = new Date(app.scheduled_at).getTime();
+    const dur        = ((durationMinutes || 60) + 30) * 60 * 1000; // session + 30 min buffer
+    const sessionEnd = scheduled + dur;
+    const openWindow = 15 * 60 * 1000;
+
+    if (now < scheduled - openWindow) {
+      return {
+        phase: 'scheduled', label: t('status_scheduled'),
+        sublabel: formatSessionTime(app.scheduled_at),
+        canJoin: false, showCountdown: true,
+        countdownText: sessionTimeUntil(app.scheduled_at)
+      };
+    }
+
+    if (now <= sessionEnd) {
+      const phase = now >= scheduled ? 'in_progress' : 'starting_soon';
+      return {
+        phase, label: t(phase === 'in_progress' ? 'status_in_progress' : 'status_starting_soon'),
+        sublabel: formatSessionTime(app.scheduled_at),
+        canJoin: true, showCountdown: false, countdownText: null
+      };
+    }
+
+    // Session window passed
+    if (app.joined_call_at) {
+      let approxMins = null;
+      if (app.last_call_activity) {
+        approxMins = Math.round((new Date(app.last_call_activity) - new Date(app.joined_call_at)) / 60000);
+      }
+      return {
+        phase: 'ended_joined', label: t('status_ended_joined'),
+        sublabel: approxMins && approxMins > 0 ? t('call_duration_approx').replace('{mins}', approxMins) : null,
+        canJoin: false, showCountdown: false, countdownText: null
+      };
+    }
+    return { phase: 'ended_missed', label: t('status_ended_missed'), sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+  }
+
   async function loadMyApplications() {
     if (!db || !state.currentUser) return;
     try {
       const { data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, studies(title, description, format, duration_minutes, pay_per_participant, companies(name))')
+        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, duration_minutes, pay_per_participant, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false });
       if (error) throw error;
@@ -2020,30 +2071,44 @@
 
       const metaParts = [companyName, format, duration ? duration + ' min' : null, pay].filter(Boolean);
 
-      let statusBadge, statusDetail;
-      if (a.status === 'pending') {
-        statusBadge  = `<span class="app-status app-status-pending">${t('status_pending')}</span>`;
+      const ss = getSessionStatus(a, study.duration_minutes || null);
+
+      const badgeCls = {
+        pending:       'app-status-pending',
+        scheduled:     'app-status-accepted',
+        starting_soon: 'app-status-pending',
+        in_progress:   'app-status-in-progress',
+        ended_joined:  'app-status-completed',
+        ended_missed:  'app-status-missed',
+        completed:     'app-status-completed',
+        rejected:      'app-status-rejected',
+      }[ss.phase] || 'app-status-pending';
+
+      const statusBadge = `<span class="app-status ${badgeCls}">${esc(ss.label)}</span>`;
+
+      let statusDetail = '';
+      if (ss.phase === 'pending') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
-      } else if (a.status === 'accepted') {
-        statusBadge = `<span class="app-status app-status-accepted">${t('status_accepted')}</span>`;
-        if (a.scheduled_at) {
-          const remaining = a.room_url ? callTimeRemaining(a.scheduled_at) : null;
-          const joinBtn   = a.room_url
-            ? `<button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}','${escAttr(a.id)}')" ${remaining !== null ? 'disabled' : ''}>${remaining !== null ? esc(remaining) : t('join_call')}</button>`
-            : '';
-          statusDetail = `<div class="app-schedule-row">
-            <span>${t('scheduled_for')} <strong>${esc(formatSessionTime(a.scheduled_at))}</strong></span>
-            <span class="session-card-time">${esc(sessionTimeUntil(a.scheduled_at))}</span>
-            ${joinBtn}
-          </div>`;
-        } else {
-          statusDetail = `<span style="font-style:italic">${t('waiting_schedule')}</span>`;
-        }
-      } else if (a.status === 'rejected') {
-        statusBadge  = `<span class="app-status app-status-rejected">${t('status_rejected')}</span>`;
+      } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
-      } else {
-        statusBadge  = `<span class="app-status app-status-completed">${t('status_completed')}</span>`;
+      } else if (ss.phase === 'scheduled' && ss.sublabel === t('waiting_schedule')) {
+        statusDetail = `<span style="font-style:italic">${esc(ss.sublabel)}</span>`;
+      } else if (ss.phase === 'scheduled' && ss.showCountdown) {
+        statusDetail = `<div class="app-schedule-row">
+          <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
+          <span class="session-card-time">${esc(ss.countdownText)}</span>
+        </div>`;
+      } else if (ss.canJoin && a.room_url) {
+        const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
+        statusDetail = `<div class="app-schedule-row">
+          <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
+          <button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}','${escAttr(a.id)}')">${esc(btnLabel)}</button>
+        </div>`;
+      } else if (ss.phase === 'ended_joined') {
+        statusDetail = `<span style="color:var(--green-dark);font-size:12px;font-weight:500">${t('you_participated')}${ss.sublabel ? ' · ' + esc(ss.sublabel) : ''}</span>`;
+      } else if (ss.phase === 'ended_missed') {
+        statusDetail = `<span style="color:var(--coral);font-size:12px;font-weight:500">${t('you_missed')}</span>`;
+      } else if (ss.phase === 'completed') {
         statusDetail = '';
       }
 
@@ -2068,21 +2133,34 @@
       container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300;padding:0.25rem 0 1rem">${t('no_upcoming')}</p>`;
       return;
     }
-    container.innerHTML = sessions.map(s => {
+    const visible = sessions.filter(s => {
+      const phase = getSessionStatus(s, (s.studies || {}).duration_minutes).phase;
+      return ['scheduled','starting_soon','in_progress'].includes(phase);
+    });
+
+    if (!visible.length) {
+      container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300;padding:0.25rem 0 1rem">${t('no_upcoming')}</p>`;
+      return;
+    }
+
+    container.innerHTML = visible.map(s => {
       const study   = s.studies || {};
       const company = study.companies || {};
       const title   = study.title || 'Study';
-      const remaining = s.room_url ? callTimeRemaining(s.scheduled_at) : null;
-      const btnText = remaining !== null ? esc(remaining) : t('join_call');
-      const joinBtn = s.room_url
-        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}','${escAttr(s.id)}')" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
-        : '';
+      const ss      = getSessionStatus(s, study.duration_minutes || null);
+      let joinBtn = '';
+      if (ss.canJoin && s.room_url) {
+        const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
+        joinBtn = `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}','${escAttr(s.id)}')">${esc(btnLabel)}</button>`;
+      } else if (s.room_url) {
+        joinBtn = `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" disabled>${esc(ss.countdownText || sessionTimeUntil(s.scheduled_at))}</button>`;
+      }
       return `
         <div class="session-card">
           <div class="session-card-info">
             <div class="session-card-title">${esc(title)}</div>
             <div class="session-card-meta">${company.name ? esc(company.name) + ' · ' : ''}${esc(formatSessionTime(s.scheduled_at))}</div>
-            <div class="session-card-time">${esc(sessionTimeUntil(s.scheduled_at))}</div>
+            <div class="session-card-time">${esc(ss.phase === 'in_progress' ? t('status_in_progress') : (ss.countdownText || sessionTimeUntil(s.scheduled_at)))}</div>
           </div>
           ${joinBtn}
         </div>`;
@@ -2990,6 +3068,18 @@ async function applyToStudy(studyId) {
       call_in_days: 'In {n} days',
       call_in_hours: 'In {n} hours',
       call_in_minutes: 'In {n} minutes',
+      status_scheduled: 'Scheduled',
+      status_starting_soon: 'Starting soon',
+      status_in_progress: 'Session in progress',
+      status_ended_joined: 'Session complete — awaiting review',
+      status_ended_missed: 'Missed session',
+      status_completed_awaiting: 'Completed — awaiting payment',
+      status_paid: 'Paid',
+      you_participated: '✓ You participated',
+      call_duration_approx: 'approx. {mins} minutes',
+      you_missed: 'You missed this session',
+      rejoin_call: 'Rejoin call',
+      session_ended: 'Session ended',
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
@@ -3161,6 +3251,18 @@ async function applyToStudy(studyId) {
       call_in_days: 'Om {n} dagar',
       call_in_hours: 'Om {n} timmar',
       call_in_minutes: 'Om {n} minuter',
+      status_scheduled: 'Schemalagd',
+      status_starting_soon: 'Börjar snart',
+      status_in_progress: 'Session pågår',
+      status_ended_joined: 'Session slutförd — väntar på granskning',
+      status_ended_missed: 'Missad session',
+      status_completed_awaiting: 'Slutförd — väntar på betalning',
+      status_paid: 'Betald',
+      you_participated: '✓ Du deltog',
+      call_duration_approx: 'ca {mins} minuter',
+      you_missed: 'Du missade denna session',
+      rejoin_call: 'Gå med igen',
+      session_ended: 'Sessionen avslutad',
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
