@@ -517,65 +517,27 @@ textarea{resize:vertical;min-height:90px}
         </div>
 
         <div class="stat-row">
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_active">Active studies</div><div class="stat-num">3</div><div class="stat-sub up">↑ 1 launched this week</div></div>
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_recruited">Participants recruited</div><div class="stat-num">47</div><div class="stat-sub up">↑ 12 this week</div></div>
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_rating">Avg contributor rating</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent quality</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_active">Active studies</div><div class="stat-num" id="stat-active-num">—</div><div class="stat-sub" id="stat-active-sub"> </div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_recruited">Participants recruited</div><div class="stat-num" id="stat-recruited-num">—</div><div class="stat-sub" id="stat-recruited-sub"> </div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_rating">Avg contributor rating</div><div class="stat-num" id="stat-rating-num">—</div><div class="stat-sub" id="stat-rating-sub"> </div></div>
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_spend">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
             <div class="sec-title" data-i18n="cl_dash_active_studies">Active studies</div>
-            <div class="study-row" style="margin-bottom:10px;cursor:default" onclick="showTab('studies', document.querySelector('.nav-item:nth-child(5)'))">
-              <div class="study-row-header">
-                <div class="study-title-group"><h3>Online shopping experience</h3><p>Video call · 60 mins</p></div>
-                <span class="badge badge-green">Live</span>
-              </div>
-              <div class="study-meta">
-                <span><strong>12</strong> / 20 filled</span>
-                <span><strong>4.8★</strong> avg rating</span>
-                <span>Closes <strong>Apr 7</strong></span>
-              </div>
-              <div class="prog-bar"><div class="prog-fill" style="width:60%;background:var(--green)"></div></div>
-            </div>
-            <div class="study-row" style="cursor:default">
-              <div class="study-row-header">
-                <div class="study-title-group"><h3>Sustainability perception survey</h3><p>Online survey · 15 mins</p></div>
-                <span class="badge badge-amber">Filling</span>
-              </div>
-              <div class="study-meta">
-                <span><strong>27</strong> / 100 filled</span>
-                <span><strong>4.6★</strong> avg rating</span>
-                <span>Closes <strong>Apr 14</strong></span>
-              </div>
-              <div class="prog-bar"><div class="prog-fill" style="width:27%;background:var(--amber)"></div></div>
+            <div id="dash-active-studies">
+              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</div>
             </div>
           </div>
 
           <div class="card" style="margin-bottom:0">
             <div class="sec-title" data-i18n="cl_dash_top_matches">Top contributor matches waiting</div>
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
-                <div class="avatar av-green" style="width:38px;height:38px;font-size:12px">SL</div>
-                <div style="flex:1">
-                  <div style="font-size:13px;font-weight:600">Sarah L.</div>
-                  <div style="font-size:11px;color:var(--amber);font-weight:600">4.8★ Elite</div>
-                </div>
-                <div style="font-size:13px;color:var(--blue);font-weight:600">99% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Sarah!')" data-i18n="cl_invite">Invite</button>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
-                <div class="avatar av-blue" style="width:38px;height:38px;font-size:12px">MK</div>
-                <div style="flex:1"><div style="font-size:13px;font-weight:600">Marcus K.</div><div style="font-size:11px;color:var(--blue);font-weight:600">4.4★ Verified</div></div>
-                <div style="font-size:13px;color:var(--blue);font-weight:600">94% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Marcus!')" data-i18n="cl_invite">Invite</button>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--gray-50);border-radius:var(--r-md)">
-                <div class="avatar av-purple" style="width:38px;height:38px;font-size:12px">PR</div>
-                <div style="flex:1"><div style="font-size:13px;font-weight:600">Priya R.</div><div style="font-size:11px;color:var(--green);font-weight:600">4.9★ Elite</div></div>
-                <div style="font-size:13px;color:var(--blue);font-weight:600">91% match</div>
-                <button class="btn-primary" style="padding:6px 14px;font-size:12px" onclick="showToast('Invitation sent to Priya!')" data-i18n="cl_invite">Invite</button>
-              </div>
+            <!-- TODO: Automatic matching is coming soon. Will surface contributors who match active study criteria. -->
+            <div style="text-align:center;padding:2rem;color:var(--gray-400)">
+              <div style="font-size:28px;margin-bottom:8px">🔍</div>
+              <div style="font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:4px">Automatic matching coming soon</div>
+              <div style="font-size:12px;font-weight:300">Contributors matched to your active studies will appear here. For now, browse contributors manually in the <a href="#" onclick="showTab('panel',document.querySelectorAll('.nav-item')[5]);return false;" style="color:var(--green)">Panel tab</a>.</div>
             </div>
           </div>
         </div>
@@ -584,11 +546,8 @@ textarea{resize:vertical;min-height:90px}
           <div class="sec-title" data-i18n="cl_dash_recent_activity">Recent activity</div>
           <table class="data-table">
             <thead><tr><th data-i18n="cl_th_contributor">Contributor</th><th data-i18n="cl_th_study">Study</th><th data-i18n="cl_th_status">Status</th><th data-i18n="cl_th_rating">Rating given</th><th data-i18n="cl_th_date">Date</th></tr></thead>
-            <tbody>
-              <tr><td><strong>Sarah L.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green" data-i18n="cl_badge_completed">Completed</span></td><td><span style="color:var(--amber)">★★★★★ 5.0</span></td><td>Mar 28</td></tr>
-              <tr><td><strong>Tom W.</strong></td><td>Online shopping experience</td><td><span class="badge badge-green" data-i18n="cl_badge_completed">Completed</span></td><td><span style="color:var(--amber)">★★★★☆ 4.0</span></td><td>Mar 27</td></tr>
-              <tr><td><strong>Aisha B.</strong></td><td>Sustainability survey</td><td><span class="badge badge-blue" data-i18n="cl_badge_in_progress">In progress</span></td><td>—</td><td>Mar 29</td></tr>
-              <tr><td><strong>Jamie R.</strong></td><td>Online shopping experience</td><td><span class="badge badge-coral" data-i18n="cl_badge_no_show">No-show</span></td><td><span style="color:var(--coral)">★☆☆☆☆ 1.0</span></td><td>Mar 26</td></tr>
+            <tbody id="dash-activity-body">
+              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -1905,6 +1864,155 @@ textarea{resize:vertical;min-height:90px}
     setTimeout(()=>t.classList.remove('show'), 2800);
   }
 
+  // ─── DASHBOARD STATS ────────────────────────────────────
+  const DASH_FORMAT_LABEL = {
+    video_call: 'Video call', in_person: 'In-person',
+    online_survey: 'Online survey', diary_study: 'Diary study', product_testing: 'Product testing'
+  };
+
+  async function loadDashboardStats() {
+    if (!db || !currentClientUser) return;
+    try {
+      // Fetch all studies for this client
+      const { data: studies, error: studyErr } = await db
+        .from('studies')
+        .select('id, title, status, spots, filled_spots, close_date, format, duration_minutes')
+        .eq('created_by', currentClientUser.id);
+      if (studyErr) throw studyErr;
+
+      const allStudies = studies || [];
+      const activeStudies = allStudies.filter(s => s.status === 'active' || s.status === 'paused');
+      const studyIds = allStudies.map(s => s.id);
+
+      const activeNumEl = document.getElementById('stat-active-num');
+      if (activeNumEl) activeNumEl.textContent = activeStudies.length;
+
+      renderDashActiveStudies(activeStudies);
+
+      if (!studyIds.length) {
+        const recruitedEl = document.getElementById('stat-recruited-num');
+        const ratingEl    = document.getElementById('stat-rating-num');
+        if (recruitedEl) recruitedEl.textContent = '0';
+        if (ratingEl)    ratingEl.textContent = '—';
+        renderDashActivity([], {});
+        return;
+      }
+
+      // Fetch applications with contributor + profile join for activity + recruited count
+      const { data: apps, error: appErr } = await db
+        .from('applications')
+        .select('id, study_id, status, updated_at, contributor_id, contributors(rating, profiles(first_name, last_name))')
+        .in('study_id', studyIds)
+        .order('updated_at', { ascending: false })
+        .limit(50);
+      if (appErr) throw appErr;
+
+      const allApps = apps || [];
+      const recruited = allApps.filter(a => a.status === 'accepted' || a.status === 'completed').length;
+      const recruitedEl = document.getElementById('stat-recruited-num');
+      if (recruitedEl) recruitedEl.textContent = recruited;
+
+      // Average rating from ratings table
+      const appIds = allApps.map(a => a.id);
+      let avgRatingText = '—';
+      if (appIds.length) {
+        const { data: ratings } = await db
+          .from('ratings')
+          .select('punctuality, engagement, quality, honesty, profile_fit')
+          .in('application_id', appIds);
+        if (ratings && ratings.length) {
+          const total = ratings.reduce((sum, r) =>
+            sum + (r.punctuality + r.engagement + r.quality + r.honesty + r.profile_fit) / 5, 0);
+          avgRatingText = (total / ratings.length).toFixed(1) + '★';
+        }
+      }
+      const ratingEl = document.getElementById('stat-rating-num');
+      if (ratingEl) ratingEl.textContent = avgRatingText;
+
+      // Build study title map for activity table
+      const studyMap = Object.fromEntries(allStudies.map(s => [s.id, s.title || 'Untitled study']));
+      renderDashActivity(allApps.slice(0, 10), studyMap);
+
+    } catch(err) {
+      console.error('loadDashboardStats error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+    }
+  }
+
+  function renderDashActiveStudies(studies) {
+    const container = document.getElementById('dash-active-studies');
+    if (!container) return;
+
+    if (!studies.length) {
+      container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No active studies — <a href="#" onclick="showTab('new-study',document.querySelectorAll('.nav-item')[3]);return false;" style="color:var(--green)">post your first study</a> to get started.</div>`;
+      return;
+    }
+
+    container.innerHTML = studies.slice(0, 3).map(s => {
+      const filled   = s.filled_spots || 0;
+      const spots    = s.spots || 1;
+      const pct      = Math.min(100, Math.round((filled / spots) * 100));
+      const fmtLabel = DASH_FORMAT_LABEL[s.format] || s.format || '';
+      const duration = s.duration_minutes ? `${s.duration_minutes} mins` : '';
+      const meta     = [fmtLabel, duration].filter(Boolean).join(' · ');
+      const closes   = s.close_date
+        ? new Date(s.close_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : '—';
+      const barColor = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--blue)';
+      return `
+        <div class="study-row" style="margin-bottom:10px;cursor:default">
+          <div class="study-row-header">
+            <div class="study-title-group"><h3>${esc(s.title || 'Untitled study')}</h3><p>${esc(meta)}</p></div>
+            <span class="badge badge-green">${t('cl_badge_live')}</span>
+          </div>
+          <div class="study-meta">
+            <span><strong>${filled}</strong> / ${spots} filled</span>
+            <span>${t('cl_closes')} <strong>${esc(closes)}</strong></span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderDashActivity(apps, studyMap) {
+    const tbody = document.getElementById('dash-activity-body');
+    if (!tbody) return;
+
+    if (!apps || !apps.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No activity yet.</td></tr>`;
+      return;
+    }
+
+    const STATUS_BADGE = {
+      completed: 'badge-green', accepted: 'badge-blue',
+      rejected:  'badge-coral', pending: 'badge-gray'
+    };
+
+    tbody.innerHTML = apps.map(a => {
+      const c    = a.contributors || {};
+      const p    = c.profiles    || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown';
+      const studyTitle  = (studyMap && studyMap[a.study_id]) || 'Study';
+      const status      = a.status || 'pending';
+      const badgeCls    = STATUS_BADGE[status] || 'badge-gray';
+      const statusLabel = status === 'completed' ? t('cl_badge_completed')
+                        : status === 'accepted'  ? t('cl_accepted')
+                        : status === 'rejected'  ? t('cl_rejected')
+                        : status;
+      const date        = a.updated_at
+        ? new Date(a.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : '';
+      const rating      = c.rating ? `<span style="color:var(--amber)">★ ${esc(Number(c.rating).toFixed(1))}</span>` : '—';
+      return `<tr>
+        <td><strong>${esc(name)}</strong></td>
+        <td>${esc(studyTitle)}</td>
+        <td><span class="badge ${badgeCls}">${esc(statusLabel)}</span></td>
+        <td>${rating}</td>
+        <td>${esc(date)}</td>
+      </tr>`;
+    }).join('');
+  }
+
   // ─── GO TO APP ──────────────────────────────────────────
   async function goApp() {
     ['landing','auth'].forEach(id => document.getElementById(id)?.classList.remove('active'));
@@ -1922,6 +2030,7 @@ textarea{resize:vertical;min-height:90px}
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);
     loadNotifications();
     loadClientBudget();
+    loadDashboardStats();
   }
 
   // ─── NOTIFICATIONS ────────────────────────────────────
