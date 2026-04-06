@@ -1287,6 +1287,9 @@
     if (str == null) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
   }
+  function escAttr(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 
   // ─── HELPERS ─────────────────────────────────────────────
   function getChipValues(fieldName, scope) {
@@ -2032,7 +2035,7 @@
         if (a.scheduled_at) {
           const remaining = a.room_url ? callTimeRemaining(a.scheduled_at) : null;
           const joinBtn   = a.room_url
-            ? `<button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}',${JSON.stringify(title)})" ${remaining !== null ? 'disabled' : ''}>${remaining !== null ? esc(remaining) : t('join_call')}</button>`
+            ? `<button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}')" ${remaining !== null ? 'disabled' : ''}>${remaining !== null ? esc(remaining) : t('join_call')}</button>`
             : '';
           statusDetail = `<div class="app-schedule-row">
             <span>${t('scheduled_for')} <strong>${esc(formatSessionTime(a.scheduled_at))}</strong></span>
@@ -2078,7 +2081,7 @@
       const remaining = s.room_url ? callTimeRemaining(s.scheduled_at) : null;
       const btnText = remaining !== null ? esc(remaining) : t('join_call');
       const joinBtn = s.room_url
-        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${esc(s.room_url)}',${JSON.stringify(title)})" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
+        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}')" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
         : '';
       return `
         <div class="session-card">
