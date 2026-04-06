@@ -263,7 +263,7 @@
 </style>
 <script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
 <script>
-  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  try { const _dsn = 'SENTRY_DSN_PLACEHOLDER'; if (typeof Sentry !== 'undefined' && _dsn && !_dsn.includes('PLACEHOLDER')) { Sentry.init({ dsn: _dsn, environment: location.hostname === 'localhost' ? 'development' : 'production' }); } } catch(e) {}
   window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
 </script>
 </head>
