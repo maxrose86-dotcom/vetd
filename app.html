@@ -1079,16 +1079,8 @@
 
           <div class="profile-section" style="grid-column:1/-1">
             <h3 data-i18n="prof_interests">My interests & tags</h3>
-            <div class="job-tags" style="margin-top:4px">
-              <span class="tag tag-green">Fashion & clothing</span>
-              <span class="tag tag-green">Beauty & skincare</span>
-              <span class="tag tag-blue">Smartphones & apps</span>
-              <span class="tag tag-blue">Online banking</span>
-              <span class="tag tag-amber">Food & cooking</span>
-              <span class="tag tag-amber">Fitness & wellness</span>
-              <span class="tag tag-gray">Travel</span>
-              <span class="tag tag-gray">Streaming & TV</span>
-              <span class="tag tag-gray">Home & interiors</span>
+            <div class="job-tags" id="profile-interests-tags" style="margin-top:4px">
+              <span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>
             </div>
           </div>
 
@@ -2123,6 +2115,44 @@
       const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
       const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
       document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
+
+      // ── Interests & tags ──
+      const INTEREST_LABELS = {
+        // lifestyle
+        fashion: 'Fashion & clothing', beauty: 'Beauty & skincare', home: 'Home & interiors',
+        food: 'Food & cooking', fitness: 'Fitness & wellness', sustainability: 'Sustainability',
+        pets: 'Pets', travel: 'Travel', gardening: 'Gardening',
+        // tech
+        smartphones: 'Smartphones & apps', gaming: 'Gaming', streaming: 'Streaming & TV',
+        social_media: 'Social media', podcasts: 'Podcasts', smart_home: 'Smart home',
+        // finance
+        online_banking: 'Online banking', investing: 'Investing / stocks', crypto: 'Crypto',
+        mortgages: 'Mortgages / property', insurance: 'Insurance', budgeting: 'Budgeting apps',
+        // brands
+        hm: 'H&M', asos: 'ASOS', amazon: 'Amazon', tesco: 'Tesco',
+        marks_spencer: 'Marks & Spencer', john_lewis: 'John Lewis',
+        lloyds_barclays: 'Lloyds / Barclays', zara: 'Zara', boots: 'Boots', apple: 'Apple',
+      };
+      const tagsContainer = document.getElementById('profile-interests-tags');
+      if (tagsContainer) {
+        const lifestyle = Array.isArray(contrib?.interests_lifestyle) ? contrib.interests_lifestyle : [];
+        const tech      = Array.isArray(contrib?.interests_tech)      ? contrib.interests_tech      : [];
+        const finance   = Array.isArray(contrib?.interests_finance)   ? contrib.interests_finance   : [];
+        const brands    = Array.isArray(contrib?.brands)              ? contrib.brands              : [];
+        const allTags = [
+          ...lifestyle.map(v => ({ v, cls: 'tag-green' })),
+          ...tech     .map(v => ({ v, cls: 'tag-blue'  })),
+          ...finance  .map(v => ({ v, cls: 'tag-amber' })),
+          ...brands   .map(v => ({ v, cls: 'tag-gray'  })),
+        ];
+        if (allTags.length) {
+          tagsContainer.innerHTML = allTags.map(({ v, cls }) =>
+            `<span class="tag ${esc(cls)}">${esc(INTEREST_LABELS[v] || v)}</span>`
+          ).join('');
+        } else {
+          tagsContainer.innerHTML = '<span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>';
+        }
+      }
 
       // ── Rating breakdown (async, non-blocking) ──
       loadRatingBreakdown();
