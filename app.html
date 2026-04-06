@@ -855,8 +855,8 @@
           <div class="notif-count-badge" id="notif-count-badge"></div>
           <div class="notif-panel" id="notif-panel">
             <div class="notif-panel-hd">
-              <span class="notif-panel-hd-title">Notifications</span>
-              <button class="notif-mark-all-btn" onclick="markAllRead()">Mark all as read</button>
+              <span class="notif-panel-hd-title" data-i18n="notif_title">Notifications</span>
+              <button class="notif-mark-all-btn" onclick="markAllRead()" data-i18n="notif_mark_all">Mark all as read</button>
             </div>
             <div class="notif-panel-body" id="notif-panel-body">
               <div class="notif-empty">No notifications yet</div>
@@ -1480,7 +1480,8 @@
     currentJob: null,
     currentStep: 1,
     profileData: null,
-    contribData: null
+    contribData: null,
+    notifications: null
   };
 
   // ─── CHIP OPTIONS (single source of truth) ──────────────
@@ -1711,13 +1712,15 @@
     if (!subset.length) {
       const isDashboard = containerId === 'dashboard-jobs';
       container.innerHTML = isDashboard
-        ? '<p style="color:var(--gray-400);font-size:13px;font-weight:300">No active studies right now — check back soon.</p>'
-        : '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No studies available</h3><p>There are no active studies right now. Check back soon.</p></div>';
+        ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
+        : `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p></div>`;
       return;
     }
-    container.innerHTML = subset.map(job => `
+    container.innerHTML = subset.map(job => {
+      const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
+      return `
       <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
-        ${job.featured ? '<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">★ Top match for you</div>' : ''}
+        ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : ''}
         <div class="job-header">
           <div class="job-company">
             <div class="company-badge">${esc(job.company)}</div>
@@ -1725,14 +1728,14 @@
           </div>
           <div class="job-pay">
             <div class="pay-amount">${fmtPay(job.pay)}</div>
-            <div class="pay-type">${esc(job.payType)}</div>
+            <div class="pay-type">${payTypeLabel}</div>
           </div>
         </div>
         <div class="job-desc">${esc(job.desc)}</div>
-        <div class="job-tags">${job.tags.map(t => `<span class="tag ${esc(t.cls)}">${esc(t.text)}</span>`).join('')}</div>
+        <div class="job-tags">${job.tags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
           <div>
-            <div class="job-meta">${esc(job.duration)} · ${job.spots - job.filled} spots left</div>
+            <div class="job-meta">${esc(job.duration)} · ${job.spots - job.filled} ${t('spots_left')}</div>
             <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
@@ -1740,11 +1743,11 @@
               <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
               <div class="match-pct">${job.match}%</div>
             </div>
-            ${state.appliedJobs.has(job.id) ? '<div class="applied-badge">Applied ✓</div>' : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">Apply</button>`}
+            ${state.appliedJobs.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
           </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   function filterJobs(type, btn) {
@@ -1766,7 +1769,7 @@
     document.getElementById('modal-title').textContent = state.currentJob.title;
     document.getElementById('modal-company-name').textContent = state.currentJob.company + ' · ' + state.currentJob.duration;
     document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentJob.pay)}</div><div class="modal-pay-sub">${state.currentJob.payType}</div>`;
-    document.getElementById('modal-tags').innerHTML = state.currentJob.tags.map(t => `<span class="tag ${t.cls}">${t.text}</span>`).join('');
+    document.getElementById('modal-tags').innerHTML = state.currentJob.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentJob.detail;
     document.getElementById('modal-match-reason').textContent = state.currentJob.matchReason;
     document.getElementById('apply-modal').classList.add('open');
@@ -1793,8 +1796,8 @@
 
   // ─── NAVIGATION ─────────────────────────────────────────
   function showTab(tab, btn) {
-    ['dashboard','jobs','profile'].forEach(t => {
-      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    ['dashboard','jobs','profile'].forEach(tabName => {
+      document.getElementById('tab-' + tabName).style.display = tabName === tab ? 'block' : 'none';
     });
     document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -1944,8 +1947,8 @@
   function computeTierDisplay(tier, studiesDone) {
     const tierLabel = tier === 'elite'   ? '★ Elite contributor'
                     : tier === 'premium' ? '⬡ Premium contributor'
-                    : studiesDone === 0  ? 'New member'
-                    : 'Standard member';
+                    : studiesDone === 0  ? t('new_member')
+                    : t('standard_member');
     const tierClass = tier === 'elite'   ? 'tier-badge tier-elite'
                     : tier === 'premium' ? 'tier-badge tier-blue'
                     : 'tier-badge';
@@ -1957,13 +1960,13 @@
     const { tierLabel, tierClass } = tierDisplay;
 
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const timeGreeting = hour < 12 ? t('good_morning') : hour < 18 ? t('good_afternoon') : t('good_evening');
     document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
 
     document.getElementById('dash-rating-desc').textContent =
       studiesDone > 0
-        ? `Based on ${studiesDone} completed ${studiesDone === 1 ? 'study' : 'studies'}`
-        : 'Complete your first study to earn a rating';
+        ? t('based_on_studies').replace('{count}', studiesDone).replace('{noun}', studiesDone === 1 ? t('study_singular') : t('study_plural'))
+        : t('complete_first_rating');
 
     const dashTier = document.getElementById('dash-tier-badge');
     dashTier.textContent = tierLabel;
@@ -1977,20 +1980,20 @@
       .join('');
 
     document.getElementById('dash-rating-pct').textContent =
-      rating === null  ? 'No ratings yet'
-      : rating >= 4.7  ? 'Top 5% of contributors'
-      : rating >= 4.5  ? 'Top 15% of contributors'
-      : `${rating.toFixed(1)} overall rating`;
+      rating === null  ? t('no_ratings_yet')
+      : rating >= 4.7  ? t('top_5_pct')
+      : rating >= 4.5  ? t('top_15_pct')
+      : `${rating.toFixed(1)} ${t('overall_rating')}`;
 
     document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
-    document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
+    document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? t('complete_first_study') : t('earnings_month');
 
     document.getElementById('stat-studies').textContent     = studiesDone;
-    document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? 'No studies yet' : `${studiesDone} completed`;
+    document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? t('no_studies_yet') : `${studiesDone} ${t('completed_count')}`;
 
     document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
-    document.getElementById('stat-completion-sub').textContent = completionRate === null ? 'No data yet'
-      : completionRate >= 90 ? 'Excellent' : completionRate >= 70 ? 'Good' : 'Keep it up';
+    document.getElementById('stat-completion-sub').textContent = completionRate === null ? t('no_data_yet')
+      : completionRate >= 90 ? t('excellent') : completionRate >= 70 ? t('good') : t('keep_it_up');
   }
 
   function updateProfileTab(profile, contrib, stats, tierDisplay, user) {
@@ -2016,7 +2019,7 @@
     const subtitleParts = [];
     if (location)    subtitleParts.push(location);
     if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
-    document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || 'New member';
+    document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || t('new_member');
 
     const profileTier = document.getElementById('profile-tier-badge');
     profileTier.textContent = tierLabel;
@@ -2066,7 +2069,7 @@
       ];
       tagsContainer.innerHTML = allTags.length
         ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(INTEREST_LABELS[v] || v)}</span>`).join('')
-        : '<span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>';
+        : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
     }
 
     return { fullName, initials };
@@ -2275,7 +2278,7 @@
     const section = document.getElementById('payment-history-section');
     if (!section) return;
     if (!payments.length) {
-      section.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">No payment history yet. Complete a study to start earning.</p>';
+      section.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300">${t('payment_none')}</p>`;
       return;
     }
 
@@ -2287,7 +2290,7 @@
     const renderRow = (p, isPaid) => {
       const d = p.paid_at || p.created_at;
       const date = d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
-      const statusLabel = esc(p.status.charAt(0).toUpperCase() + p.status.slice(1));
+      const statusLabel = esc(p.status === 'paid' ? t('payment_paid') : p.status === 'pending' ? t('payment_pending') : p.status.charAt(0).toUpperCase() + p.status.slice(1));
       const amtStyle = isPaid ? '' : 'color:var(--amber)';
       return `<div class="history-item">
         <div>
@@ -2300,11 +2303,11 @@
 
     let html = '';
     if (pending.length) {
-      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber);margin-bottom:8px">Pending (${pending.length})</div>`;
+      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber);margin-bottom:8px">${t('payment_pending')} (${pending.length})</div>`;
       html += pending.map(p => renderRow(p, false)).join('');
     }
     if (paid.length) {
-      if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">Paid (${paid.length})</div>`;
+      if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">${t('payment_paid')} (${paid.length})</div>`;
       html += paid.map(p => renderRow(p, true)).join('');
     }
     section.innerHTML = html;
@@ -2324,7 +2327,7 @@
       if (error) throw error;
 
       if (!data || !data.length) {
-        container.innerHTML = '<p style="font-size:13px;color:var(--gray-400);font-weight:300">Complete your first study to see your rating breakdown.</p>';
+        container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300">${t('rating_empty')}</p>`;
         return;
       }
 
@@ -2348,7 +2351,7 @@
             <div class="rb-bar"><div class="rb-fill" style="width:${pct}%"></div></div>
             <span class="rb-score">${score}</span>
           </div>`;
-      }).join('') + `<p style="font-size:11px;color:var(--gray-400);margin-top:10px;font-weight:300">Based on ${count} ${count === 1 ? 'rating' : 'ratings'}</p>`;
+      }).join('') + `<p style="font-size:11px;color:var(--gray-400);margin-top:10px;font-weight:300">${t('based_on_ratings').replace('{count}', count).replace('{noun}', count === 1 ? t('rating_singular') : t('rating_plural'))}</p>`;
     } catch(err) {
       console.warn('loadRatingBreakdown error:', err);
     }
@@ -2372,6 +2375,7 @@
   }
 
   function renderNotifications(notifs) {
+    state.notifications = notifs;
     const badge = document.getElementById('notif-count-badge');
     const body  = document.getElementById('notif-panel-body');
     const unreadCount = notifs.filter(n => !n.read).length;
@@ -2387,8 +2391,8 @@
     const dashList = document.getElementById('dash-notif-list');
 
     if (!notifs.length) {
-      body.innerHTML = '<div class="notif-empty">No notifications yet</div>';
-      if (dashList) dashList.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+      body.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
+      if (dashList) dashList.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
       return;
     }
 
@@ -2436,12 +2440,12 @@
   function timeAgo(iso) {
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1)  return 'just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1)  return t('just_now');
+    if (mins < 60) return `${mins}${t('time_m_ago')}`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24)  return `${hrs}h ago`;
+    if (hrs < 24)  return `${hrs}${t('time_h_ago')}`;
     const days = Math.floor(hrs / 24);
-    if (days < 7)  return `${days}d ago`;
+    if (days < 7)  return `${days}${t('time_d_ago')}`;
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
@@ -2599,6 +2603,49 @@
       edit_label_notes: "Anything else you'd like us to know?",
       edit_cancel: 'Cancel',
       edit_save: 'Save changes',
+      spots_left: 'spots left',
+      top_match: '★ Top match for you',
+      no_studies_dash: 'No active studies right now — check back soon.',
+      no_studies_browse: 'No studies available',
+      no_studies_browse_sub: 'There are no active studies right now. Check back soon.',
+      per_session: 'per session',
+      per_survey: 'per survey',
+      notif_title: 'Notifications',
+      notif_mark_all: 'Mark all as read',
+      notif_empty: 'No notifications yet',
+      just_now: 'just now',
+      time_m_ago: 'm ago',
+      time_h_ago: 'h ago',
+      time_d_ago: 'd ago',
+      good_morning: 'Good morning',
+      good_afternoon: 'Good afternoon',
+      good_evening: 'Good evening',
+      no_ratings_yet: 'No ratings yet',
+      top_5_pct: 'Top 5% of contributors',
+      top_15_pct: 'Top 15% of contributors',
+      overall_rating: 'overall rating',
+      complete_first_study: 'Complete a study to start earning',
+      earnings_month: '↑ earnings this month',
+      no_studies_yet: 'No studies yet',
+      completed_count: 'completed',
+      no_data_yet: 'No data yet',
+      excellent: 'Excellent',
+      good: 'Good',
+      keep_it_up: 'Keep it up',
+      new_member: 'New member',
+      standard_member: 'Standard member',
+      payment_none: 'No payment history yet. Complete a study to start earning.',
+      payment_pending: 'Pending',
+      payment_paid: 'Paid',
+      rating_empty: 'Complete your first study to see your rating breakdown.',
+      based_on_studies: 'Based on {count} completed {noun}',
+      complete_first_rating: 'Complete your first study to earn a rating',
+      study_singular: 'study',
+      study_plural: 'studies',
+      based_on_ratings: 'Based on {count} {noun}',
+      rating_singular: 'rating',
+      rating_plural: 'ratings',
+      no_interests: 'No interests selected yet — edit your profile to add some.',
     },
     sv: {
       landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
@@ -2687,6 +2734,49 @@
       edit_label_notes: 'Något annat du vill att vi ska veta?',
       edit_cancel: 'Avbryt',
       edit_save: 'Spara ändringar',
+      spots_left: 'platser kvar',
+      top_match: '★ Bästa matchning för dig',
+      no_studies_dash: 'Inga aktiva studier just nu — kolla tillbaka snart.',
+      no_studies_browse: 'Inga studier tillgängliga',
+      no_studies_browse_sub: 'Det finns inga aktiva studier just nu. Kolla tillbaka snart.',
+      per_session: 'per session',
+      per_survey: 'per enkät',
+      notif_title: 'Aviseringar',
+      notif_mark_all: 'Markera alla som lästa',
+      notif_empty: 'Inga aviseringar ännu',
+      just_now: 'just nu',
+      time_m_ago: 'm sedan',
+      time_h_ago: 'h sedan',
+      time_d_ago: 'd sedan',
+      good_morning: 'God morgon',
+      good_afternoon: 'God eftermiddag',
+      good_evening: 'God kväll',
+      no_ratings_yet: 'Inga betyg ännu',
+      top_5_pct: 'Topp 5% av deltagare',
+      top_15_pct: 'Topp 15% av deltagare',
+      overall_rating: 'övergripande betyg',
+      complete_first_study: 'Slutför en studie för att börja tjäna',
+      earnings_month: '↑ intäkter denna månad',
+      no_studies_yet: 'Inga studier ännu',
+      completed_count: 'slutförda',
+      no_data_yet: 'Ingen data ännu',
+      excellent: 'Utmärkt',
+      good: 'Bra',
+      keep_it_up: 'Fortsätt så',
+      new_member: 'Ny medlem',
+      standard_member: 'Standardmedlem',
+      payment_none: 'Ingen betalningshistorik ännu. Slutför en studie för att börja tjäna.',
+      payment_pending: 'Väntande',
+      payment_paid: 'Betald',
+      rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
+      based_on_studies: 'Baserat på {count} slutförda {noun}',
+      complete_first_rating: 'Slutför din första studie för att få ett betyg',
+      study_singular: 'studie',
+      study_plural: 'studier',
+      based_on_ratings: 'Baserat på {count} {noun}',
+      rating_singular: 'betyg',
+      rating_plural: 'betyg',
+      no_interests: 'Inga intressen valda ännu — redigera din profil för att lägga till.',
     }
   };
 
@@ -2699,6 +2789,11 @@
 
   function fmtPay(sek) {
     return sek != null ? `${sek} kr` : 'TBD';
+  }
+
+  function t(key) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    return (LANG[lang] && LANG[lang][key]) || (LANG.en && LANG.en[key]) || key;
   }
 
   function setLang(lang) {
@@ -2733,10 +2828,16 @@
       const k = el.dataset.i18nPh;
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
-    // Re-render job cards if already loaded
-    if (typeof renderJobs === 'function' && state.jobs && state.jobs.length) {
-      renderJobs('jobs-list', state.jobs);
-      renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
+    // Re-render dynamic content with updated language
+    renderJobs('jobs-list', state.jobs);
+    renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
+    if (state.notifications) renderNotifications(state.notifications);
+    if (state.contribData && state.currentUser) {
+      const stats       = computeUserStats(state.contribData);
+      const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
+      const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
+      updateDashboard(firstName, stats, tierDisplay);
+      updateProfileTab(state.profileData, state.contribData, stats, tierDisplay, state.currentUser);
     }
   }
 
