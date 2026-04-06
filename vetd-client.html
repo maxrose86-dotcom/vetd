@@ -1261,16 +1261,19 @@ textarea{resize:vertical;min-height:90px}
         return;
       }
 
-      const accepted  = data.filter(a => a.status === 'accepted').length;
-      const invited   = data.filter(a => a.status === 'invited').length;
-      const declined  = data.filter(a => a.status === 'declined').length;
-      const completed = data.filter(a => a.status === 'completed').length;
+      const accepted     = data.filter(a => a.status === 'accepted').length;
+      const scheduled    = data.filter(a => a.status === 'accepted' && a.scheduled_at).length;
+      const needsSchedul = accepted - scheduled;
+      const invited      = data.filter(a => a.status === 'invited').length;
+      const declined     = data.filter(a => a.status === 'declined').length;
+      const completed    = data.filter(a => a.status === 'completed').length;
       const parts = [];
-      if (invited   > 0) parts.push(`${invited} ${t('cl_invited')}`);
-      if (accepted  > 0) parts.push(`${accepted} ${t('cl_accepted').toLowerCase()}`);
-      if (completed > 0) parts.push(`${completed} ${t('cl_completed_short')}`);
-      if (declined  > 0) parts.push(`${declined} ${t('cl_declined_short')}`);
-      countEl.textContent = parts.length ? parts.join(' · ') : `${data.length} ${t('cl_participants_total')}`;
+      if (invited      > 0) parts.push(`${invited} ${t('cl_invited')}`);
+      if (scheduled    > 0) parts.push(`${scheduled} ${t('cl_scheduled_short')}`);
+      if (needsSchedul > 0) parts.push(`<span style="color:var(--amber)">${needsSchedul} ${t('cl_needs_scheduling')}</span>`);
+      if (completed    > 0) parts.push(`${completed} ${t('cl_completed_short')}`);
+      if (declined     > 0) parts.push(`${declined} ${t('cl_declined_short')}`);
+      countEl.innerHTML = parts.length ? parts.join(' · ') : `${data.length} ${t('cl_participants_total')}`;
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1295,23 +1298,32 @@ textarea{resize:vertical;min-height:90px}
             <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','pending')">${t('cl_schedule_and_confirm')}</button>
             <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
-          const schedDisplay = a.scheduled_at ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
+          const isScheduled = !!a.scheduled_at;
+          const statusPill = isScheduled
+            ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
+            : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+          const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
           let joinBtn = '';
-          if (a.room_url && a.scheduled_at) {
+          if (a.room_url && isScheduled) {
             const remaining = callTimeRemaining(a.scheduled_at);
             const btnText = remaining !== null ? esc(remaining) : t('cl_join_call');
             const btnDisabled = remaining !== null ? 'disabled' : '';
             joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}','${escAttr(a.id)}')" ${btnDisabled}>${btnText}</button>`;
           }
-          const scheduleBtn = !a.scheduled_at
+          const scheduleBtn = !isScheduled
             ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
+            : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','reschedule')">${t('cl_reschedule')}</button>`;
+          // Only show Mark completed when session time has passed or is imminent
+          const sessionPast = isScheduled && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000);
+          const completeBtn = sessionPast
+            ? `<button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`
             : '';
           actions = `
-            <span class="status-pill status-accepted">${t('cl_accepted')}</span>
+            ${statusPill}
             ${schedDisplay}
             ${joinBtn}
             ${scheduleBtn}
-            <button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`;
+            ${completeBtn}`;
         } else if (a.status === 'invited') {
           actions = `
             <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
@@ -1454,13 +1466,16 @@ textarea{resize:vertical;min-height:90px}
     _schedStudyId = studyId;
     _schedContributorId = contributorId;
     document.getElementById('schedule-modal-sub').textContent = contributorName + (studyTitle ? ' · ' + studyTitle : '');
-    // Adjust CTA label: if contributor already accepted, this is just scheduling — not accepting
+    // Adjust CTA label based on context
     const confirmBtn = document.getElementById('schedule-confirm-btn');
-    if (currentStatus === 'accepted') {
-      confirmBtn.textContent = t('cl_schedule_only');
-    } else {
-      confirmBtn.textContent = t('cl_schedule_accept');
-    }
+    const label = currentStatus === 'reschedule' ? t('cl_confirm_reschedule')
+                : currentStatus === 'accepted'   ? t('cl_schedule_only')
+                :                                  t('cl_schedule_accept');
+    confirmBtn.textContent = label;
+    confirmBtn.dataset.contextLabel = label; // preserved for finally block
+    // Update modal subtitle to reflect rescheduling context
+    const modalTitle = document.querySelector('#schedule-modal h2');
+    if (modalTitle) modalTitle.textContent = currentStatus === 'reschedule' ? t('cl_reschedule_title') : t('cl_schedule_title');
     // Default date to tomorrow, time to 10:00
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -1506,22 +1521,33 @@ textarea{resize:vertical;min-height:90px}
       const result = await res.json();
       if (result.error) throw new Error(result.error);
 
-      // Now accept the application (suppress generic notification — scheduling notification sent below)
+      // Now accept the application (suppress generic notification — we send targeted ones below)
       await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
 
-      // Notify the client (current user) as confirmation
+      const studyTitle = currentApplicantsStudyTitle || 'study';
+      const lang = localStorage.getItem('vetd_lang') || 'en';
+      const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
+      const formattedDate = new Date(isoDatetime).toLocaleString(locale, {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+
+      // Notify the contributor with the actual date/time
+      if (_schedContributorId) {
+        await sendNotification(
+          _schedContributorId,
+          'Session scheduled 📅',
+          `Your session for "${studyTitle}" is confirmed for ${formattedDate}. Join from the Vetd app.`,
+          null
+        );
+      }
+
+      // Notify the operator as confirmation
       if (currentClientUser) {
-        const studyTitle = currentApplicantsStudyTitle || 'study';
-        const lang = localStorage.getItem('vetd_lang') || 'en';
-        const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
-        const formattedDate = new Date(isoDatetime).toLocaleString(locale, {
-          weekday: 'short', day: 'numeric', month: 'short',
-          hour: '2-digit', minute: '2-digit', hour12: false
-        });
         await sendNotification(
           currentClientUser.id,
           'Session scheduled',
-          `Session for "${studyTitle}" scheduled for ${formattedDate}. The contributor has been notified.`,
+          `Session for "${studyTitle}" confirmed for ${formattedDate}.`,
           null
         );
         loadNotifications();
@@ -1535,7 +1561,9 @@ textarea{resize:vertical;min-height:90px}
       showToast('Could not schedule session — try again', true);
     } finally {
       btn.disabled = false;
-      btn.textContent = t('cl_schedule_accept');
+      // Restore context-aware label
+      btn.textContent = btn.dataset.contextLabel || t('cl_schedule_accept');
+      delete btn.dataset.contextLabel;
     }
   }
 
@@ -2079,17 +2107,22 @@ textarea{resize:vertical;min-height:90px}
         db.from('applications').select('contributor_id').eq('id', appId).single()
       ]);
       if (study?.pay_per_participant && app?.contributor_id) {
-        const amount      = study.pay_per_participant;
-        const platformFee = Math.round(amount * 0.2);
-        const { error: payErr } = await db.from('payments').insert({
-          application_id: appId,
-          contributor_id: app.contributor_id,
-          amount,
-          platform_fee:   platformFee,
-          status:         'pending',
-          created_at:     new Date().toISOString()
-        });
-        if (payErr) console.warn('Payment insert error:', payErr);
+        // Guard: only insert payment if none exists for this application
+        const { data: existingPay } = await db
+          .from('payments').select('id').eq('application_id', appId).maybeSingle();
+        if (!existingPay) {
+          const amount      = study.pay_per_participant;
+          const platformFee = Math.round(amount * 0.2);
+          const { error: payErr } = await db.from('payments').insert({
+            application_id: appId,
+            contributor_id: app.contributor_id,
+            amount,
+            platform_fee:   platformFee,
+            status:         'pending',
+            created_at:     new Date().toISOString()
+          });
+          if (payErr) console.warn('Payment insert error:', payErr);
+        }
       }
 
       showToast(t('cl_marked_completed'));
@@ -2663,6 +2696,13 @@ textarea{resize:vertical;min-height:90px}
       cl_schedule_and_confirm: 'Schedule & confirm',
       cl_schedule_session: 'Schedule session',
       cl_schedule_only: 'Schedule session',
+      cl_reschedule: 'Reschedule',
+      cl_reschedule_title: 'Reschedule session',
+      cl_confirm_reschedule: 'Confirm new time',
+      cl_scheduled_pill: 'Scheduled',
+      cl_scheduled_short: 'scheduled',
+      cl_accepted_needs_scheduling: 'Accepted — needs scheduling',
+      cl_needs_scheduling: 'need scheduling',
       cl_cancel_invitation: 'Cancel invitation',
       cl_invite_someone_else: 'Invite someone else',
       cl_accept: 'Accept',
@@ -2920,6 +2960,13 @@ textarea{resize:vertical;min-height:90px}
       cl_schedule_and_confirm: 'Schemalägg & bekräfta',
       cl_schedule_session: 'Schemalägg session',
       cl_schedule_only: 'Schemalägg session',
+      cl_reschedule: 'Omschemalägg',
+      cl_reschedule_title: 'Omschemalägg session',
+      cl_confirm_reschedule: 'Bekräfta ny tid',
+      cl_scheduled_pill: 'Schemalagd',
+      cl_scheduled_short: 'schemalagda',
+      cl_accepted_needs_scheduling: 'Accepterad — behöver schemaläggas',
+      cl_needs_scheduling: 'behöver schemaläggas',
       cl_cancel_invitation: 'Avbryt inbjudan',
       cl_invite_someone_else: 'Bjud in någon annan',
       cl_accept: 'Acceptera',
