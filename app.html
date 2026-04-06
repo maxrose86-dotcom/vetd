@@ -873,7 +873,7 @@
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Rating</span><span style="color:var(--gray-400)">No ratings yet</span></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)">Studies matched</span><span style="color:var(--green);font-weight:600">4 waiting</span></div>
           </div>
-          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()">Start browsing studies →</button>
+          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()">Complete your profile to receive invites →</button>
         </div>
       </div>
     </div>
@@ -887,7 +887,7 @@
       <a href="index.html" class="topbar-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green)">d</span></a>
       <div class="topbar-nav">
         <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
-        <button onclick="showTab('studies', this)" data-i18n="nav_browse">Browse studies</button>
+        <button onclick="showTab('studies', this)" data-i18n="nav_browse">Available opportunities</button>
         <button onclick="showTab('my-studies', this)" data-i18n="nav_my_studies">My Studies</button>
         <button onclick="showTab('profile', this)" data-i18n="nav_profile">My profile</button>
       </div>
@@ -917,7 +917,7 @@
     <!-- MOBILE NAV DROPDOWN -->
     <div id="mobile-nav">
       <button onclick="showTab('dashboard', document.querySelector('.topbar-nav button:nth-child(1)')); toggleMobileNav();" data-i18n="nav_dashboard">Dashboard</button>
-      <button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
+      <button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Available opportunities</button>
       <button onclick="showTab('my-studies', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_my_studies">My Studies</button>
       <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(4)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-top:1px solid var(--gray-100)">
@@ -993,7 +993,7 @@
       <!-- STUDIES TAB -->
       <div id="tab-studies" style="display:none">
         <div style="margin-bottom:1.5rem">
-          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Browse studies</h1>
+          <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Available opportunities</h1>
           <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
         </div>
         <div class="filter-bar">
@@ -1230,12 +1230,12 @@
       </div>
       <div class="modal-buttons">
         <button class="modal-close" onclick="closeModal()">Not now</button>
-        <button class="modal-apply" onclick="confirmApply()">Apply for this study →</button>
+        <button class="modal-apply" onclick="confirmApply()">Get considered → →</button>
       </div>
     </div>
     <div id="modal-confirmed" style="display:none;text-align:center;padding:1rem 0">
       <div class="confirm-icon">✓</div>
-      <h2>Application sent!</h2>
+      <h2>We'll review your profile</h2>
       <p style="color:var(--gray-400);margin:8px 0 1.5rem;font-size:14px;font-weight:300">The research team will review your profile and get back to you within 48 hours.</p>
       <button class="btn-primary" style="width:100%" onclick="closeModal()">Back to studies</button>
     </div>
@@ -2848,7 +2848,7 @@ async function applyToStudy(studyId) {
       ob_city_ph: 'e.g. Manchester',
       ob_gender_label: 'Gender',
       nav_dashboard: 'Dashboard',
-      nav_browse: 'Browse studies',
+      nav_browse: 'Available opportunities',
       nav_profile: 'My profile',
       nav_notifications: 'Notifications',
       sign_out: 'Sign out',
@@ -2856,7 +2856,7 @@ async function applyToStudy(studyId) {
       dash_studies: 'Studies done',
       dash_earned: 'Total earned',
       dash_rating: 'Your rating',
-      browse_title: 'Browse studies',
+      browse_title: 'Available opportunities',
       apply_btn: 'Apply',
       applied_badge: 'Applied ✓',
       filter_all: 'All studies',
@@ -2933,7 +2933,7 @@ async function applyToStudy(studyId) {
       notif_tpl_rating_received_title: 'New rating received',
       notif_tpl_rating_received_body: 'You received a {rating}★ rating for "{study_title}".',
       notif_tpl_welcome_title: 'Welcome to Vetd!',
-      notif_tpl_welcome_body: 'Your profile is live. Start browsing studies to find your first match.',
+      notif_tpl_welcome_body: 'Your profile is live. Complete your profile to receive invites and find your first match.',
       just_now: 'just now',
       time_m_ago: 'm ago',
       time_h_ago: 'h ago',
@@ -2979,10 +2979,10 @@ async function applyToStudy(studyId) {
       waiting_response: 'waiting for response',
       waiting_schedule: 'Accepted — waiting for the researcher to schedule your session',
       no_applications: "You haven't applied to any studies yet.",
-      browse_studies_btn: 'Browse studies',
+      browse_studies_btn: 'Available opportunities',
       scheduled_for: 'Scheduled for',
       upcoming_sessions: 'Upcoming sessions',
-      no_upcoming: 'No upcoming sessions — browse studies and apply to get matched.',
+      no_upcoming: 'No upcoming sessions — Available opportunities and apply to get matched.',
       join_call: 'Join call',
       leave_call: 'Leave call',
       opens_in: 'Opens in',
