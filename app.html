@@ -1934,7 +1934,7 @@
 
   function callTimeRemaining(isoStr) {
     const diff = new Date(isoStr) - Date.now();
-    if (diff <= 10 * 60 * 1000) return null;
+    if (diff <= 15 * 60 * 1000) return null;
     const totalMin = Math.floor(diff / 60000);
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
