@@ -1289,7 +1289,7 @@ textarea{resize:vertical;min-height:90px}
             const remaining = callTimeRemaining(a.scheduled_at);
             const btnText = remaining !== null ? esc(remaining) : t('cl_join_call');
             const btnDisabled = remaining !== null ? 'disabled' : '';
-            joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}')" ${btnDisabled}>${btnText}</button>`;
+            joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}','${escAttr(a.id)}')" ${btnDisabled}>${btnText}</button>`;
           }
           actions = `
             <span class="status-pill status-accepted">${t('cl_accepted')}</span>
@@ -1503,13 +1503,42 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ─── VIDEO CALL ──────────────────────────────────────────
-  function openVideoCall(roomUrl, studyTitle) {
+  let _callHeartbeatInterval = null;
+  let _callAppId = null;
+
+  function openVideoCall(roomUrl, studyTitle, applicationId) {
     document.getElementById('video-call-title').textContent = studyTitle || 'Video call';
     document.getElementById('daily-iframe').src = roomUrl;
     document.getElementById('video-call-overlay').classList.add('open');
+    _callAppId = applicationId || null;
+    if (_callAppId && db) {
+      try {
+        db.from('applications')
+          .update({ joined_call_at: new Date().toISOString() })
+          .eq('id', _callAppId).is('joined_call_at', null)
+          .then(() => {}).catch(e => console.warn('joined_call_at update failed:', e));
+      } catch(e) { console.warn('joined_call_at update failed:', e); }
+      _callHeartbeatInterval = setInterval(async () => {
+        try {
+          await db.from('applications')
+            .update({ last_call_activity: new Date().toISOString() })
+            .eq('id', _callAppId);
+        } catch(e) { console.warn('Heartbeat update failed:', e); }
+      }, 60000);
+    }
   }
 
-  function leaveCall() {
+  async function leaveCall() {
+    clearInterval(_callHeartbeatInterval);
+    _callHeartbeatInterval = null;
+    if (_callAppId && db) {
+      try {
+        await db.from('applications')
+          .update({ last_call_activity: new Date().toISOString() })
+          .eq('id', _callAppId);
+      } catch(e) { console.warn('Final heartbeat update failed:', e); }
+    }
+    _callAppId = null;
     document.getElementById('video-call-overlay').classList.remove('open');
     document.getElementById('daily-iframe').src = '';
   }

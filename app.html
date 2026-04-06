@@ -2035,7 +2035,7 @@
         if (a.scheduled_at) {
           const remaining = a.room_url ? callTimeRemaining(a.scheduled_at) : null;
           const joinBtn   = a.room_url
-            ? `<button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}')" ${remaining !== null ? 'disabled' : ''}>${remaining !== null ? esc(remaining) : t('join_call')}</button>`
+            ? `<button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}','${escAttr(a.id)}')" ${remaining !== null ? 'disabled' : ''}>${remaining !== null ? esc(remaining) : t('join_call')}</button>`
             : '';
           statusDetail = `<div class="app-schedule-row">
             <span>${t('scheduled_for')} <strong>${esc(formatSessionTime(a.scheduled_at))}</strong></span>
@@ -2081,7 +2081,7 @@
       const remaining = s.room_url ? callTimeRemaining(s.scheduled_at) : null;
       const btnText = remaining !== null ? esc(remaining) : t('join_call');
       const joinBtn = s.room_url
-        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}')" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
+        ? `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}','${escAttr(s.id)}')" ${remaining !== null ? 'disabled' : ''}>${btnText}</button>`
         : '';
       return `
         <div class="session-card">
@@ -2096,13 +2096,42 @@
   }
 
   // ─── VIDEO CALL ───────────────────────────────────────────
-  function openVideoCall(roomUrl, title) {
+  let _callHeartbeatInterval = null;
+  let _callAppId = null;
+
+  function openVideoCall(roomUrl, title, applicationId) {
     document.getElementById('video-call-title').textContent = title || 'Video call';
     document.getElementById('daily-iframe').src = roomUrl;
     document.getElementById('video-call-overlay').classList.add('open');
+    _callAppId = applicationId || null;
+    if (_callAppId && db) {
+      try {
+        db.from('applications')
+          .update({ joined_call_at: new Date().toISOString() })
+          .eq('id', _callAppId).is('joined_call_at', null)
+          .then(() => {}).catch(e => console.warn('joined_call_at update failed:', e));
+      } catch(e) { console.warn('joined_call_at update failed:', e); }
+      _callHeartbeatInterval = setInterval(async () => {
+        try {
+          await db.from('applications')
+            .update({ last_call_activity: new Date().toISOString() })
+            .eq('id', _callAppId);
+        } catch(e) { console.warn('Heartbeat update failed:', e); }
+      }, 60000);
+    }
   }
 
-  function leaveCall() {
+  async function leaveCall() {
+    clearInterval(_callHeartbeatInterval);
+    _callHeartbeatInterval = null;
+    if (_callAppId && db) {
+      try {
+        await db.from('applications')
+          .update({ last_call_activity: new Date().toISOString() })
+          .eq('id', _callAppId);
+      } catch(e) { console.warn('Final heartbeat update failed:', e); }
+    }
+    _callAppId = null;
     document.getElementById('video-call-overlay').classList.remove('open');
     document.getElementById('daily-iframe').src = '';
   }
