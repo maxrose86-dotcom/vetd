@@ -1309,6 +1309,8 @@ textarea{resize:vertical;min-height:90px}
             <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
             <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_accept')}</button>
             <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
+        } else if (a.status === 'declined') {
+          actions = `<span class="status-pill status-rejected">${t('cl_declined_by_contributor')}</span>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else {
@@ -2301,7 +2303,7 @@ textarea{resize:vertical;min-height:90px}
 
     const STATUS_BADGE = {
       completed: 'badge-green', accepted: 'badge-blue',
-      rejected:  'badge-coral', pending: 'badge-gray', invited: 'badge-blue'
+      rejected:  'badge-coral', pending: 'badge-gray', invited: 'badge-blue', declined: 'badge-gray'
     };
 
     tbody.innerHTML = apps.map(a => {
@@ -2315,6 +2317,7 @@ textarea{resize:vertical;min-height:90px}
                         : status === 'accepted'  ? t('cl_accepted')
                         : status === 'rejected'  ? t('cl_rejected')
                         : status === 'invited'   ? t('cl_invited_status')
+                        : status === 'declined'  ? t('cl_declined_by_contributor')
                         : status;
       const date        = a.updated_at
         ? new Date(a.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -2585,6 +2588,7 @@ textarea{resize:vertical;min-height:90px}
       cl_invite_contributors: '+ Invite contributors',
       cl_invited: 'invited',
       cl_invited_status: 'Invited',
+      cl_declined_by_contributor: 'Declined by contributor',
       cl_already_invited: 'Invited ✓',
       cl_contributor_invited: 'Contributor invited ✓',
       cl_already_invited_toast: 'Already invited to this study',
@@ -2826,6 +2830,7 @@ textarea{resize:vertical;min-height:90px}
       cl_invite_contributors: '+ Bjud in deltagare',
       cl_invited: 'inbjudna',
       cl_invited_status: 'Inbjuden',
+      cl_declined_by_contributor: 'Avböjd av deltagaren',
       cl_already_invited: 'Inbjuden ✓',
       cl_contributor_invited: 'Deltagare inbjuden ✓',
       cl_already_invited_toast: 'Redan inbjuden till denna studie',

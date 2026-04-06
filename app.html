@@ -1960,6 +1960,7 @@
     const status    = app.status;
 
     if (status === 'rejected') return { phase: 'rejected',   label: t('status_rejected'),           sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+    if (status === 'declined') return { phase: 'declined',   label: t('status_declined'),            sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'pending')  return { phase: 'pending',    label: t('status_pending'),             sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'invited')  return { phase: 'invited',    label: t('status_invited'),             sublabel: t('waiting_schedule_invited'), canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'completed') return { phase: 'completed', label: t('status_completed_awaiting'),  sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
@@ -2010,7 +2011,7 @@
     try {
       const { data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, duration_minutes, pay_per_participant, companies(name))')
+        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, duration_minutes, pay_per_participant, created_by, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false });
       if (error) throw error;
@@ -2028,6 +2029,50 @@
     }
   }
 
+  async function respondToInvitation(appId, response) {
+    // Disable both buttons immediately to prevent double-submission
+    ['accept','decline'].forEach(action => {
+      const btn = document.getElementById('invite-' + action + '-' + appId);
+      if (btn) { btn.disabled = true; }
+    });
+
+    try {
+      const { error } = await db
+        .from('applications')
+        .update({ status: response, updated_at: new Date().toISOString() })
+        .eq('id', appId)
+        .eq('contributor_id', state.currentUser.id); // safety: only own rows
+      if (error) throw error;
+
+      // Notify the client
+      const app = (state.myApplications || []).find(a => a.id === appId);
+      const study = app?.studies || {};
+      const clientUserId = study.created_by;
+      if (clientUserId && study.title) {
+        const titleKey = response === 'accepted' ? 'notif_invite_accepted_title' : 'notif_invite_declined_title';
+        const bodyKey  = response === 'accepted' ? 'notif_invite_accepted_body'  : 'notif_invite_declined_body';
+        await sendNotification(
+          clientUserId,
+          LANG.en[titleKey],
+          LANG.en[bodyKey].replace('{title}', study.title),
+          null
+        );
+      }
+
+      showToast(t(response === 'accepted' ? 'invite_accepted_toast' : 'invite_declined_toast'));
+      await loadMyApplications();
+    } catch(err) {
+      console.error('respondToInvitation error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast('Could not respond — please try again', true);
+      // Re-enable buttons on error
+      ['accept','decline'].forEach(action => {
+        const btn = document.getElementById('invite-' + action + '-' + appId);
+        if (btn) { btn.disabled = false; }
+      });
+    }
+  }
+
   function filterMyApps(filter, btn) {
     document.querySelectorAll('#tab-my-studies .filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -2039,7 +2084,7 @@
     if (!container) return;
     let apps = state.myApplications || [];
     if (filter === 'active') apps = apps.filter(a => ['pending','invited','accepted'].includes(a.status));
-    else if (filter === 'past')  apps = apps.filter(a => ['rejected','completed'].includes(a.status));
+    else if (filter === 'past')  apps = apps.filter(a => ['rejected','declined','completed'].includes(a.status));
 
     if (!state.myApplications.length) {
       container.innerHTML = `
@@ -2077,6 +2122,7 @@
       const badgeCls = {
         pending:       'app-status-pending',
         invited:       'app-status-accepted',
+        declined:      'app-status-rejected',
         scheduled:     'app-status-accepted',
         starting_soon: 'app-status-pending',
         in_progress:   'app-status-in-progress',
@@ -2090,7 +2136,14 @@
 
       let statusDetail = '';
       if (ss.phase === 'invited') {
-        statusDetail = `<span style="font-style:italic">${esc(ss.sublabel)}</span>`;
+        statusDetail = `
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font-style:italic;font-size:12px;color:var(--gray-400)">${esc(ss.sublabel)}</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button id="invite-accept-${esc(a.id)}" class="btn-join" style="padding:7px 16px;font-size:12px" onclick="respondToInvitation('${esc(a.id)}','accepted')">${t('invite_accept_btn')}</button>
+              <button id="invite-decline-${esc(a.id)}" style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="respondToInvitation('${esc(a.id)}','declined')">${t('invite_decline_btn')}</button>
+            </div>
+          </div>`;
       } else if (ss.phase === 'pending') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
       } else if (ss.phase === 'rejected') {
@@ -3060,10 +3113,19 @@ async function applyToStudy(studyId) {
       applied_on: 'Applied on',
       waiting_response: 'waiting for response',
       status_invited: 'Invited',
+      status_declined: 'Declined',
       waiting_schedule: 'Accepted — waiting for the researcher to schedule your session',
       waiting_schedule_invited: 'You\'ve been invited — waiting for the researcher to schedule your session',
       no_applications: 'You have no active invitations yet.',
       browse_studies_btn: 'View opportunities',
+      invite_accept_btn: 'Accept invitation',
+      invite_decline_btn: 'Decline',
+      invite_accepted_toast: 'Invitation accepted ✓',
+      invite_declined_toast: 'Invitation declined',
+      notif_invite_accepted_title: 'Invitation accepted',
+      notif_invite_accepted_body: '{title}: the contributor has accepted your invitation.',
+      notif_invite_declined_title: 'Invitation declined',
+      notif_invite_declined_body: '{title}: the contributor has declined your invitation.',
       scheduled_for: 'Scheduled for',
       upcoming_sessions: 'Upcoming sessions',
       no_upcoming: 'No upcoming sessions — Available opportunities and apply to get matched.',
@@ -3245,10 +3307,19 @@ async function applyToStudy(studyId) {
       applied_on: 'Ansökt den',
       waiting_response: 'väntar på svar',
       status_invited: 'Inbjuden',
+      status_declined: 'Avböjd',
       waiting_schedule: 'Accepterad — väntar på att forskaren schemalägger din session',
       waiting_schedule_invited: 'Du har blivit inbjuden — väntar på att forskaren schemalägger din session',
       no_applications: 'Du har inga aktiva inbjudningar ännu.',
       browse_studies_btn: 'Se möjligheter',
+      invite_accept_btn: 'Acceptera inbjudan',
+      invite_decline_btn: 'Avböj',
+      invite_accepted_toast: 'Inbjudan accepterad ✓',
+      invite_declined_toast: 'Inbjudan avböjd',
+      notif_invite_accepted_title: 'Inbjudan accepterad',
+      notif_invite_accepted_body: '{title}: deltagaren har accepterat din inbjudan.',
+      notif_invite_declined_title: 'Inbjudan avböjd',
+      notif_invite_declined_body: '{title}: deltagaren har avböjt din inbjudan.',
       scheduled_for: 'Schemalagd',
       upcoming_sessions: 'Kommande sessioner',
       no_upcoming: 'Inga kommande sessioner — bläddra bland studier och ansök för att bli matchad.',
