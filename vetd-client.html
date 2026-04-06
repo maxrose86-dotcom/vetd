@@ -1324,7 +1324,7 @@ textarea{resize:vertical;min-height:90px}
             <div class="applicant-av" style="background:${esc(avColors[ci])};color:${esc(avText[ci])}">${esc(initials)}</div>
             <div class="applicant-info">
               <div class="applicant-name">${esc(name)}</div>
-              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · Applied ${esc(appliedDate)}</div>
+              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? 'Invited' : 'Applied'} ${esc(appliedDate)}</div>
             </div>
             <div class="applicant-actions">${actions}</div>
           </div>`;
@@ -1337,16 +1337,21 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  async function updateApplication(appId, newStatus, studyId, contributorId, suppressToast = false) {
+  async function updateApplication(appId, newStatus, studyId, contributorId, suppressToast = false, suppressNotification = false) {
     const row = document.getElementById('approw-' + appId);
     const actionsEl = row?.querySelector('.applicant-actions');
     if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
 
     try {
-      const { error: updateErr } = await db
+      let query = db
         .from('applications')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', appId);
+      // When accepting, guard against overwriting a declined or completed row
+      if (newStatus === 'accepted') {
+        query = query.in('status', ['invited', 'pending', 'accepted']);
+      }
+      const { error: updateErr } = await query;
       if (updateErr) throw updateErr;
 
       // Fetch study title for notification
@@ -1362,8 +1367,8 @@ textarea{resize:vertical;min-height:90px}
         await db.from('studies').update({ filled_spots: newFilled }).eq('id', studyId);
       }
 
-      // Notify the contributor
-      if (contributorId && study) {
+      // Notify the contributor (suppressed when caller sends its own notification)
+      if (contributorId && study && !suppressNotification) {
         if (newStatus === 'accepted') {
           await sendNotification(
             contributorId,
@@ -1484,8 +1489,8 @@ textarea{resize:vertical;min-height:90px}
       const result = await res.json();
       if (result.error) throw new Error(result.error);
 
-      // Now accept the application
-      await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true);
+      // Now accept the application (suppress generic notification — scheduling notification sent below)
+      await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
 
       // Notify the client (current user) as confirmation
       if (currentClientUser) {
@@ -1773,17 +1778,20 @@ textarea{resize:vertical;min-height:90px}
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
 
     try {
-      // Mandatory duplicate check
+      // Mandatory duplicate check — distinguish declined from other existing rows
       const { data: existing } = await db
         .from('applications')
-        .select('id')
+        .select('id, status')
         .eq('study_id', studyId)
         .eq('contributor_id', contributorId)
         .maybeSingle();
 
       if (existing) {
-        showToast(t('cl_already_invited_toast'));
-        if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+        const msg = existing.status === 'declined'
+          ? t('cl_contributor_declined_toast')
+          : t('cl_already_invited_toast');
+        showToast(msg);
+        if (btn) { btn.textContent = existing.status === 'declined' ? t('cl_declined_by_contributor') : t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
         return;
       }
 
@@ -2592,6 +2600,7 @@ textarea{resize:vertical;min-height:90px}
       cl_already_invited: 'Invited ✓',
       cl_contributor_invited: 'Contributor invited ✓',
       cl_already_invited_toast: 'Already invited to this study',
+      cl_contributor_declined_toast: 'This contributor has declined the invitation',
       cl_invite_no_study: 'Open a study first to invite contributors',
       cl_notif_invited_title: 'You\'ve been invited to a study',
       cl_notif_invited_body: 'You\'ve been personally selected to participate in "{title}". Open Vetd to accept.',
@@ -2834,6 +2843,7 @@ textarea{resize:vertical;min-height:90px}
       cl_already_invited: 'Inbjuden ✓',
       cl_contributor_invited: 'Deltagare inbjuden ✓',
       cl_already_invited_toast: 'Redan inbjuden till denna studie',
+      cl_contributor_declined_toast: 'Deltagaren har avböjt inbjudan',
       cl_invite_no_study: 'Öppna en studie först för att bjuda in deltagare',
       cl_notif_invited_title: 'Du har blivit inbjuden till en studie',
       cl_notif_invited_body: 'Du har blivit personligen utvald för att delta i "{title}". Öppna Vetd för att acceptera.',

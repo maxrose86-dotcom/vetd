@@ -2030,6 +2030,12 @@
   }
 
   async function respondToInvitation(appId, response) {
+    // Strict allowlist — only these two transitions are permitted
+    if (response !== 'accepted' && response !== 'declined') {
+      console.error('respondToInvitation: invalid response', response);
+      return;
+    }
+
     // Disable both buttons immediately to prevent double-submission
     ['accept','decline'].forEach(action => {
       const btn = document.getElementById('invite-' + action + '-' + appId);
@@ -2037,12 +2043,23 @@
     });
 
     try {
-      const { error } = await db
+      // .eq('status', 'invited') prevents transitioning already-handled rows
+      // .select('id') lets us detect if 0 rows matched (stale UI / race condition)
+      const { data: updated, error } = await db
         .from('applications')
         .update({ status: response, updated_at: new Date().toISOString() })
         .eq('id', appId)
-        .eq('contributor_id', state.currentUser.id); // safety: only own rows
+        .eq('contributor_id', state.currentUser.id)
+        .eq('status', 'invited')
+        .select('id');
       if (error) throw error;
+
+      if (!updated || updated.length === 0) {
+        // Row was already transitioned (race condition or stale card)
+        showToast('This invitation has already been updated — reloading.', true);
+        await loadMyApplications();
+        return;
+      }
 
       // Notify the client
       const app = (state.myApplications || []).find(a => a.id === appId);
@@ -3128,7 +3145,7 @@ async function applyToStudy(studyId) {
       notif_invite_declined_body: '{title}: the contributor has declined your invitation.',
       scheduled_for: 'Scheduled for',
       upcoming_sessions: 'Upcoming sessions',
-      no_upcoming: 'No upcoming sessions — Available opportunities and apply to get matched.',
+      no_upcoming: 'No upcoming sessions yet.',
       join_call: 'Join call',
       leave_call: 'Leave call',
       opens_in: 'Opens in',
@@ -3322,7 +3339,7 @@ async function applyToStudy(studyId) {
       notif_invite_declined_body: '{title}: deltagaren har avböjt din inbjudan.',
       scheduled_for: 'Schemalagd',
       upcoming_sessions: 'Kommande sessioner',
-      no_upcoming: 'Inga kommande sessioner — bläddra bland studier och ansök för att bli matchad.',
+      no_upcoming: 'Inga kommande sessioner ännu.',
       join_call: 'Gå med i samtal',
       leave_call: 'Lämna samtal',
       opens_in: 'Öppnar om',
