@@ -261,6 +261,11 @@
   .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
   .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 </style>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
+</script>
 </head>
 <body>
 

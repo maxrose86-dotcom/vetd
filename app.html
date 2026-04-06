@@ -611,6 +611,11 @@
   .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
   .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 </style>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
+</script>
 </head>
 <body>
 
@@ -1368,6 +1373,7 @@
       return false;
     } catch (err) {
       console.error('Sign-up error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Sign-up failed', true);
       setLoading(btn, false);
       signupRateLimited = false;
@@ -1402,6 +1408,7 @@
       return true;
     } catch (err) {
       console.error('Step 2 save error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not save — try again', true);
       setLoading(btn, false);
       return false;
@@ -1431,6 +1438,7 @@
       return true;
     } catch (err) {
       console.error('Step 3 save error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not save — try again', true);
       setLoading(btn, false);
       return false;
@@ -1465,6 +1473,7 @@
       return true;
     } catch (err) {
       console.error('Step 4 save error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not save — try again', true);
       setLoading(btn, false);
       return false;
@@ -1828,6 +1837,7 @@
       const { data: { user } } = await db.auth.getUser();
       if (!user) return;
       state.currentUser = user;
+      if (window.Sentry) Sentry.setUser({ id: user.id, email: user.email });
       const { data, error } = await db
         .from('applications')
         .select('study_id')
@@ -1875,6 +1885,7 @@
       return true;
     } catch(err) {
       console.error('Apply error:', err.message, err);
+      if (window.Sentry) Sentry.captureException(err);
       // Roll back optimistic update
       state.appliedJobs.delete(studyId);
       renderJobs('jobs-list', state.jobs);
@@ -2115,6 +2126,7 @@
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
+      if (window.Sentry) Sentry.captureException(err);
     }
   }
 
@@ -2229,6 +2241,7 @@
       showToast('Profile updated ✓');
     } catch(err) {
       console.error('Save profile error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not save — try again', true);
       setLoading(btn, false);
     }
@@ -2894,6 +2907,7 @@
       window.location.href = 'login.html';
     } catch(err) {
       console.error('Delete account error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast('Could not delete account — contact support', true);
       btn.disabled = false; btn.textContent = 'Delete account';
     }

@@ -769,6 +769,11 @@ footer {
   .stats-grid { grid-template-columns: 1fr 1fr; }
 }
 </style>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
+</script>
 </head>
 <body>
 

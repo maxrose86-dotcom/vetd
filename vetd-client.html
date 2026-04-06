@@ -332,6 +332,11 @@ textarea{resize:vertical;min-height:90px}
 .notif-row-time{font-size:10px;color:var(--gray-400);margin-top:3px;font-family:monospace}
 .notif-empty{text-align:center;padding:2.5rem 1rem;color:var(--gray-400);font-size:13px}
 </style>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
+</script>
 </head>
 <body>
 
@@ -971,6 +976,7 @@ textarea{resize:vertical;min-height:90px}
       }
     } catch(err) {
       console.error('Sign-up error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Sign-up failed', true);
       btn.textContent = 'Create account →'; btn.disabled = false;
     }
@@ -1072,6 +1078,7 @@ textarea{resize:vertical;min-height:90px}
       }
     } catch(err) {
       console.error('Failed to load client profile:', err);
+      if (window.Sentry) Sentry.captureException(err);
     }
   }
 
@@ -1186,6 +1193,7 @@ textarea{resize:vertical;min-height:90px}
       }).join('');
     } catch(err) {
       console.error('Failed to load studies:', err);
+      if (window.Sentry) Sentry.captureException(err);
       list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
     }
   }
@@ -1281,6 +1289,7 @@ textarea{resize:vertical;min-height:90px}
       }).join('');
     } catch(err) {
       console.error('Load applicants error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       countEl.textContent = '';
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load applicants.</div>';
     }
@@ -1337,6 +1346,7 @@ textarea{resize:vertical;min-height:90px}
       await loadStudies();
     } catch(err) {
       console.error('Update application error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast('Could not update — try again', true);
       await loadApplicants(studyId); // restore buttons
     }
@@ -1443,6 +1453,7 @@ textarea{resize:vertical;min-height:90px}
       }, 1200);
     } catch(err) {
       console.error('Publish error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not publish — try again', true);
     } finally {
       btn.textContent = 'Publish study →'; btn.disabled = false;
@@ -1522,6 +1533,7 @@ textarea{resize:vertical;min-height:90px}
       }).join('');
     } catch(err) {
       console.error('Failed to load contributors:', err);
+      if (window.Sentry) Sentry.captureException(err);
       list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load contributors.</p>';
     }
   }
@@ -1638,6 +1650,7 @@ textarea{resize:vertical;min-height:90px}
 
     } catch(err) {
       console.error('[loadRateList] error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load participants.</div>';
     }
   }
@@ -1717,6 +1730,7 @@ textarea{resize:vertical;min-height:90px}
       const { error: rpcErr } = await db.rpc('recalc_contributor_rating', rpcParams);
       if (rpcErr) {
         console.error('[submitRating] recalc_contributor_rating failed:', rpcErr);
+        if (window.Sentry) Sentry.captureException(rpcErr);
         // Non-fatal — rating was saved; recalc can be re-run manually
       } else {
         console.log('[submitRating] recalc_contributor_rating succeeded');
@@ -1735,6 +1749,7 @@ textarea{resize:vertical;min-height:90px}
       await loadRateList();
     } catch(err) {
       console.error('submitRating error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast('Could not submit rating — try again', true);
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Submit rating →'; }
@@ -1779,6 +1794,7 @@ textarea{resize:vertical;min-height:90px}
       loadClientBudget();
     } catch(err) {
       console.error('markCompleted error:', err);
+      if (window.Sentry) Sentry.captureException(err);
       showToast('Could not update — try again', true);
     }
   }
@@ -1895,7 +1911,10 @@ textarea{resize:vertical;min-height:90px}
     if (db) {
       try {
         const { data: { user } } = await db.auth.getUser();
-        if (user) currentClientUser = user;
+        if (user) {
+          currentClientUser = user;
+          if (window.Sentry) Sentry.setUser({ id: user.id, email: user.email });
+        }
       } catch(e) {}
     }
     await Promise.all([loadClientProfile(), loadStudies(), loadContributors()]);

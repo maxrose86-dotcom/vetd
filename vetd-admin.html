@@ -272,6 +272,11 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   .tab{padding:1rem 0.75rem;padding-top:56px}
 }
 </style>
+<script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  Sentry.init({ dsn: 'SENTRY_DSN_PLACEHOLDER', environment: location.hostname === 'localhost' ? 'development' : 'production' });
+  window.addEventListener('unhandledrejection', function(e) { if (window.Sentry) Sentry.captureException(e.reason); });
+</script>
 </head>
 <body>
 
@@ -885,6 +890,7 @@ async function init() {
   if (!db) { showApp(); initUI(); return; }
   const { data: { session } } = await db.auth.getSession();
   if (!session) { showLogin(); return; }
+  if (window.Sentry) Sentry.setUser({ id: session.user.id, email: session.user.email });
 
   const { data: profile } = await db
     .from('profiles')
@@ -1211,6 +1217,7 @@ async function markAsPaid(paymentId) {
     loadPayouts();
   } catch(err) {
     console.error('markAsPaid error:', err);
+    if (window.Sentry) Sentry.captureException(err);
     showToast('Could not update payment', true);
   }
 }
