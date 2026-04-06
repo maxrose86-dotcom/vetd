@@ -279,6 +279,7 @@
   }
 
   /* ── JOB CARDS ── */
+  /* TODO: rename .job-* CSS classes to .study-* in future cleanup */
   .job-card {
     background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
     padding: 1.25rem 1.5rem; margin-bottom: 14px;
@@ -850,7 +851,7 @@
       <a href="index.html" class="topbar-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green)">d</span></a>
       <div class="topbar-nav">
         <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
-        <button onclick="showTab('jobs', this)" data-i18n="nav_browse">Browse studies</button>
+        <button onclick="showTab('studies', this)" data-i18n="nav_browse">Browse studies</button>
         <button onclick="showTab('profile', this)" data-i18n="nav_profile">My profile</button>
       </div>
       <div class="topbar-right">
@@ -879,7 +880,7 @@
     <!-- MOBILE NAV DROPDOWN -->
     <div id="mobile-nav">
       <button onclick="showTab('dashboard', document.querySelector('.topbar-nav button:nth-child(1)')); toggleMobileNav();" data-i18n="nav_dashboard">Dashboard</button>
-      <button onclick="showTab('jobs', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
+      <button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)')); toggleMobileNav();" data-i18n="nav_browse">Browse studies</button>
       <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-top:1px solid var(--gray-100)">
         <span style="font-size:12px;color:var(--gray-400);font-weight:400">Language:</span>
@@ -940,7 +941,7 @@
         </div>
 
         <div class="section-title">New matches for you</div>
-        <div id="dashboard-jobs"></div>
+        <div id="dashboard-studies"></div>
 
         <div class="section-title" style="margin-top:1.5rem">Recent notifications</div>
         <div id="dash-notif-list" style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden">
@@ -948,17 +949,17 @@
         </div>
       </div>
 
-      <!-- JOBS TAB -->
-      <div id="tab-jobs" style="display:none">
+      <!-- STUDIES TAB -->
+      <div id="tab-studies" style="display:none">
         <div style="margin-bottom:1.5rem">
           <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Browse studies</h1>
           <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
         </div>
         <div class="filter-bar">
-          <button class="filter-chip active" onclick="filterJobs('all', this)" data-i18n="filter_all">All studies</button>
-          <button class="filter-chip" onclick="filterJobs('matched', this)">Best matches</button>
-          <button class="filter-chip" onclick="filterJobs('online', this)" data-i18n="filter_online">Online only</button>
-          <button class="filter-chip" onclick="filterJobs('high-pay', this)">High pay</button>
+          <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
+          <button class="filter-chip" onclick="filterStudies('matched', this)">Best matches</button>
+          <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
+          <button class="filter-chip" onclick="filterStudies('high-pay', this)">High pay</button>
           <select class="filter-select filter-right">
             <option>Sort: Best match</option>
             <option>Sort: Highest pay</option>
@@ -966,7 +967,7 @@
             <option>Sort: Shortest</option>
           </select>
         </div>
-        <div id="jobs-list"></div>
+        <div id="studies-list"></div>
       </div>
 
       <!-- PROFILE TAB -->
@@ -1482,11 +1483,11 @@
 
   // ─── STATE ───────────────────────────────────────────────
   const state = {
-    jobs: [],
-    appliedJobs: new Set(),
+    studies: [],
+    appliedStudies: new Set(),
     currentUser: null,
     currentUserName: '',
-    currentJob: null,
+    currentStudy: null,
     currentStep: 1,
     profileData: null,
     contribData: null,
@@ -1620,7 +1621,7 @@
     document.getElementById('edit-chips-maxlen').innerHTML    = renderChipGroup('max_session_length',  CHIP_OPTIONS.max_session_length);
   }
 
-  // ─── LOAD JOBS FROM SUPABASE ─────────────────────────────
+  // ─── LOAD STUDIES FROM SUPABASE ──────────────────────────
   const FORMAT_LABEL = {
     video_call: 'Video call', in_person: 'In-person',
     online_survey: 'Online survey', diary_study: 'Diary study',
@@ -1641,7 +1642,7 @@
     parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
   };
 
-  async function loadJobs() {
+  async function loadStudies() {
     if (!db) return; // keep demo data
     try {
       const { data: studies, error } = await db
@@ -1653,11 +1654,11 @@
       if (error) throw error;
 
       if (!studies || studies.length === 0) {
-        state.jobs = [];
+        state.studies = [];
         return;
       }
 
-      state.jobs = studies.map(s => {
+      state.studies = studies.map(s => {
         const company    = s.companies?.name || 'Vetd client';
         const payRaw     = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
         // Legacy studies stored in GBP pence round to 0 after /100 — show TBD instead
@@ -1715,11 +1716,11 @@
   }
 
 
-  // ─── RENDER JOBS ────────────────────────────────────────
-  function renderJobs(containerId, subset) {
+  // ─── RENDER STUDIES ─────────────────────────────────────
+  function renderStudies(containerId, subset) {
     const container = document.getElementById(containerId);
     if (!subset.length) {
-      const isDashboard = containerId === 'dashboard-jobs';
+      const isDashboard = containerId === 'dashboard-studies';
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
         : `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p></div>`;
@@ -1752,50 +1753,50 @@
               <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
               <div class="match-pct">${job.match}%</div>
             </div>
-            ${state.appliedJobs.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
+            ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
           </div>
         </div>
       </div>
     `}).join('');
   }
 
-  function filterJobs(type, btn) {
+  function filterStudies(type, btn) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    let subset = state.jobs;
-    if (type === 'matched') subset = state.jobs.filter(j => j.match >= 90);
-    if (type === 'online') subset = state.jobs.filter(j => j.format === 'online');
-    if (type === 'high-pay') subset = state.jobs.filter(j => j.pay >= 40);
-    renderJobs('jobs-list', subset);
+    let subset = state.studies;
+    if (type === 'matched') subset = state.studies.filter(j => j.match >= 90);
+    if (type === 'online') subset = state.studies.filter(j => j.format === 'online');
+    if (type === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
+    renderStudies('studies-list', subset);
   }
 
   // ─── MODAL ──────────────────────────────────────────────
   function openModal(id) {
-    state.currentJob = state.jobs.find(j => j.id == id);
+    state.currentStudy = state.studies.find(j => j.id == id);
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
-    document.getElementById('modal-company-badge').textContent = state.currentJob.company;
-    document.getElementById('modal-title').textContent = state.currentJob.title;
-    document.getElementById('modal-company-name').textContent = state.currentJob.company + ' · ' + state.currentJob.duration;
-    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentJob.pay)}</div><div class="modal-pay-sub">${state.currentJob.payType}</div>`;
-    document.getElementById('modal-tags').innerHTML = state.currentJob.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
-    document.getElementById('modal-detail').textContent = state.currentJob.detail;
-    document.getElementById('modal-match-reason').textContent = state.currentJob.matchReason;
+    document.getElementById('modal-company-badge').textContent = state.currentStudy.company;
+    document.getElementById('modal-title').textContent = state.currentStudy.title;
+    document.getElementById('modal-company-name').textContent = state.currentStudy.company + ' · ' + state.currentStudy.duration;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}</div>`;
+    document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
+    document.getElementById('modal-detail').textContent = state.currentStudy.detail;
+    document.getElementById('modal-match-reason').textContent = state.currentStudy.matchReason;
     document.getElementById('apply-modal').classList.add('open');
   }
 
   function closeModal() {
     document.getElementById('apply-modal').classList.remove('open');
-    if (state.currentJob) {
-      renderJobs('jobs-list', state.jobs);
-      renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
+    if (state.currentStudy) {
+      renderStudies('studies-list', state.studies);
+      renderStudies('dashboard-studies', state.studies.slice(0, 2));
     }
   }
 
   async function confirmApply() {
-    if (!state.currentJob) return;
+    if (!state.currentStudy) return;
     document.getElementById('modal-pre-apply').style.display = 'none';
-    const ok = await applyToStudy(state.currentJob.id);
+    const ok = await applyToStudy(state.currentStudy.id);
     if (ok) {
       document.getElementById('modal-confirmed').style.display = 'block';
     }
@@ -1805,7 +1806,7 @@
 
   // ─── NAVIGATION ─────────────────────────────────────────
   function showTab(tab, btn) {
-    ['dashboard','jobs','profile'].forEach(tabName => {
+    ['dashboard','studies','profile'].forEach(tabName => {
       document.getElementById('tab-' + tabName).style.display = tabName === tab ? 'block' : 'none';
     });
     document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
@@ -1822,16 +1823,16 @@
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
-    await Promise.all([loadJobs(), loadAppliedJobs()]);
-    renderJobs('dashboard-jobs', state.jobs.slice(0,2));
-    renderJobs('jobs-list', state.jobs);
+    await Promise.all([loadStudies(), loadAppliedStudies()]);
+    renderStudies('dashboard-studies', state.studies.slice(0,2));
+    renderStudies('studies-list', state.studies);
     loadUserProfile();
     loadNotifications();
     loadPayments();
   }
 
   // ─── LOAD WHICH STUDIES THE USER HAS ALREADY APPLIED TO ──
-  async function loadAppliedJobs() {
+  async function loadAppliedStudies() {
     if (!db) return;
     try {
       const { data: { user } } = await db.auth.getUser();
@@ -1843,7 +1844,7 @@
         .select('study_id')
         .eq('contributor_id', user.id);
       if (error) throw error;
-      state.appliedJobs = new Set((data || []).map(a => a.study_id));
+      state.appliedStudies = new Set((data || []).map(a => a.study_id));
     } catch(err) {
       console.warn('Could not load applied studies:', err);
     }
@@ -1852,9 +1853,9 @@
   // ─── APPLY TO STUDY ───────────────────────────────────────
   async function applyToStudy(studyId) {
     // Optimistic UI update first
-    state.appliedJobs.add(studyId);
-    renderJobs('jobs-list', state.jobs);
-    renderJobs('dashboard-jobs', state.jobs.slice(0,2));
+    state.appliedStudies.add(studyId);
+    renderStudies('studies-list', state.studies);
+    renderStudies('dashboard-studies', state.studies.slice(0,2));
 
     if (!db || !state.currentUser) return true; // demo mode — treat as success
 
@@ -1884,9 +1885,9 @@
       console.error('Apply error:', err.message, err);
       if (window.Sentry) Sentry.captureException(err);
       // Roll back optimistic update
-      state.appliedJobs.delete(studyId);
-      renderJobs('jobs-list', state.jobs);
-      renderJobs('dashboard-jobs', state.jobs.slice(0,2));
+      state.appliedStudies.delete(studyId);
+      renderStudies('studies-list', state.studies);
+      renderStudies('dashboard-studies', state.studies.slice(0,2));
       showToast(err.message || 'Could not submit application — try again', true);
       return false;
     }
@@ -2918,8 +2919,8 @@
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
     // Re-render dynamic content with updated language
-    renderJobs('jobs-list', state.jobs);
-    renderJobs('dashboard-jobs', state.jobs.slice(0, 2));
+    renderStudies('studies-list', state.studies);
+    renderStudies('dashboard-studies', state.studies.slice(0, 2));
     if (state.notifications) renderNotifications(state.notifications);
     if (state.contribData && state.currentUser) {
       const stats       = computeUserStats(state.contribData);
