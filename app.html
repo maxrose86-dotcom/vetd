@@ -1928,6 +1928,172 @@
     if (e.target === this) closeModal();
   });
 
+  // ─── PROFILE HELPERS ────────────────────────────────────
+
+  function computeUserStats(contrib) {
+    const studiesDone    = contrib?.total_studies    ?? 0;
+    const totalEarned    = contrib?.total_earned     ?? 0;
+    const rating         = (studiesDone > 0 && contrib?.rating != null)          ? Number(contrib.rating)          : null;
+    const completionRate = (studiesDone > 0 && contrib?.completion_rate != null) ? Number(contrib.completion_rate) : null;
+    const tier           = contrib?.tier || 'standard';
+    return { studiesDone, totalEarned, rating, completionRate, tier };
+  }
+
+  function computeTierDisplay(tier, studiesDone) {
+    const tierLabel = tier === 'elite'   ? '★ Elite contributor'
+                    : tier === 'premium' ? '⬡ Premium contributor'
+                    : studiesDone === 0  ? 'New member'
+                    : 'Standard member';
+    const tierClass = tier === 'elite'   ? 'tier-badge tier-elite'
+                    : tier === 'premium' ? 'tier-badge tier-blue'
+                    : 'tier-badge';
+    return { tierLabel, tierClass };
+  }
+
+  function updateDashboard(firstName, stats, tierDisplay) {
+    const { studiesDone, totalEarned, rating, completionRate } = stats;
+    const { tierLabel, tierClass } = tierDisplay;
+
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
+
+    document.getElementById('dash-rating-desc').textContent =
+      studiesDone > 0
+        ? `Based on ${studiesDone} completed ${studiesDone === 1 ? 'study' : 'studies'}`
+        : 'Complete your first study to earn a rating';
+
+    const dashTier = document.getElementById('dash-tier-badge');
+    dashTier.textContent = tierLabel;
+    dashTier.className   = tierClass;
+
+    document.getElementById('dash-rating-num').textContent = rating !== null ? rating.toFixed(1) : '—';
+
+    const starsFilled = rating !== null ? Math.round(rating) : 0;
+    document.getElementById('dash-rating-stars').innerHTML = [1,2,3,4,5]
+      .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
+      .join('');
+
+    document.getElementById('dash-rating-pct').textContent =
+      rating === null  ? 'No ratings yet'
+      : rating >= 4.7  ? 'Top 5% of contributors'
+      : rating >= 4.5  ? 'Top 15% of contributors'
+      : `${rating.toFixed(1)} overall rating`;
+
+    document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
+    document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
+
+    document.getElementById('stat-studies').textContent     = studiesDone;
+    document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? 'No studies yet' : `${studiesDone} completed`;
+
+    document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
+    document.getElementById('stat-completion-sub').textContent = completionRate === null ? 'No data yet'
+      : completionRate >= 90 ? 'Excellent' : completionRate >= 70 ? 'Good' : 'Keep it up';
+  }
+
+  function updateProfileTab(profile, contrib, stats, tierDisplay, user) {
+    const { studiesDone, totalEarned, rating } = stats;
+    const { tierLabel, tierClass } = tierDisplay;
+
+    const firstName = profile?.first_name || user.user_metadata?.first_name || '';
+    const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
+    const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Member';
+    const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
+
+    const city     = contrib?.city    || null;
+    const country  = contrib?.country || null;
+    const location = [city, country].filter(Boolean).join(', ');
+    const createdAt   = profile?.created_at || user.created_at;
+    const memberSince = createdAt
+      ? new Date(createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      : null;
+
+    document.getElementById('profile-avatar-big').textContent = initials;
+    document.getElementById('profile-fullname').textContent   = fullName;
+
+    const subtitleParts = [];
+    if (location)    subtitleParts.push(location);
+    if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
+    document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || 'New member';
+
+    const profileTier = document.getElementById('profile-tier-badge');
+    profileTier.textContent = tierLabel;
+    profileTier.className   = tierClass;
+
+    const statsLineParts = [];
+    if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
+    statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
+    statsLineParts.push(`${totalEarned} kr earned`);
+    document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
+
+    // Personal detail rows
+    if (contrib?.date_of_birth) {
+      const dob   = new Date(contrib.date_of_birth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+      document.getElementById('profile-detail-age').textContent = age;
+    } else {
+      document.getElementById('profile-detail-age').textContent = '—';
+    }
+
+    const genderMap = { woman: 'Woman', man: 'Man', non_binary: 'Non-binary', self_describe: 'Self-described', prefer_not_to_say: 'Prefer not to say' };
+    document.getElementById('profile-detail-gender').textContent = genderMap[contrib?.gender] || '—';
+
+    document.getElementById('profile-detail-location').textContent = city || '—';
+
+    const employmentMap = { full_time: 'Full-time', part_time: 'Part-time', self_employed: 'Self-employed', student: 'Student', unemployed: 'Not employed', retired: 'Retired' };
+    document.getElementById('profile-detail-employment').textContent = employmentMap[contrib?.employment] || '—';
+
+    const childrenMap = { no_children: 'No children', under_5: 'Under 5', children_5_12: '5–12', teenagers: 'Teenagers', adult_children: 'Adult children' };
+    const childrenVals = Array.isArray(contrib?.children) ? contrib.children : [];
+    document.getElementById('profile-detail-children').textContent = childrenVals.length ? childrenVals.map(c => childrenMap[c] || c).join(', ') : '—';
+
+    const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
+    const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
+    document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
+
+    // Interests & tags
+    const INTEREST_LABELS = {
+      fashion: 'Fashion & clothing', beauty: 'Beauty & skincare', home: 'Home & interiors',
+      food: 'Food & cooking', fitness: 'Fitness & wellness', sustainability: 'Sustainability',
+      pets: 'Pets', travel: 'Travel', gardening: 'Gardening',
+      smartphones: 'Smartphones & apps', gaming: 'Gaming', streaming: 'Streaming & TV',
+      social_media: 'Social media', podcasts: 'Podcasts', smart_home: 'Smart home',
+      online_banking: 'Online banking', investing: 'Investing / stocks', crypto: 'Crypto',
+      mortgages: 'Mortgages / property', insurance: 'Insurance', budgeting: 'Budgeting apps',
+      hm: 'H&M', asos: 'ASOS', amazon: 'Amazon', tesco: 'Tesco',
+      marks_spencer: 'Marks & Spencer', john_lewis: 'John Lewis',
+      lloyds_barclays: 'Lloyds / Barclays', zara: 'Zara', boots: 'Boots', apple: 'Apple',
+    };
+    const tagsContainer = document.getElementById('profile-interests-tags');
+    if (tagsContainer) {
+      const allTags = [
+        ...(Array.isArray(contrib?.interests_lifestyle) ? contrib.interests_lifestyle : []).map(v => ({ v, cls: 'tag-green' })),
+        ...(Array.isArray(contrib?.interests_tech)      ? contrib.interests_tech      : []).map(v => ({ v, cls: 'tag-blue'  })),
+        ...(Array.isArray(contrib?.interests_finance)   ? contrib.interests_finance   : []).map(v => ({ v, cls: 'tag-amber' })),
+        ...(Array.isArray(contrib?.brands)              ? contrib.brands              : []).map(v => ({ v, cls: 'tag-gray'  })),
+      ];
+      tagsContainer.innerHTML = allTags.length
+        ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(INTEREST_LABELS[v] || v)}</span>`).join('')
+        : '<span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>';
+    }
+
+    return { fullName, initials };
+  }
+
+  function updateBankIDStatus(verified) {
+    const dashBadge = document.getElementById('dash-bankid-badge');
+    if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
+
+    const bankidStatus = document.getElementById('bankid-status');
+    if (bankidStatus) {
+      bankidStatus.innerHTML = verified
+        ? '<span class="bankid-verified-badge">✓ Verified</span>'
+        : '<button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>';
+    }
+  }
+
   // ─── LOAD USER PROFILE ──────────────────────────────────
   async function loadUserProfile() {
     if (!db) return;
@@ -1942,178 +2108,17 @@
       state.profileData = profile;
       state.contribData = contrib;
 
-      // ── Name & initials ──
-      const firstName = profile?.first_name || user.user_metadata?.first_name || '';
-      const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
-      const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Member';
-      const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
+      const stats       = computeUserStats(contrib);
+      const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
+      const firstName   = profile?.first_name || user.user_metadata?.first_name || '';
 
-      // ── Stats (safe defaults for new members) ──
-      const studiesDone    = contrib?.total_studies    ?? 0;
-      const totalEarned    = contrib?.total_earned    ?? 0;
-      const rating         = (studiesDone > 0 && contrib?.rating != null) ? Number(contrib.rating) : null;
-      const completionRate = (studiesDone > 0 && contrib?.completion_rate != null) ? Number(contrib.completion_rate) : null;
-      const tier           = contrib?.tier || 'standard';
-
-      // ── Location & member since ──
-      const city     = contrib?.city    || null;
-      const country  = contrib?.country || null;
-      const location = [city, country].filter(Boolean).join(', ');
-      const createdAt   = profile?.created_at || user.created_at;
-      const memberSince = createdAt
-        ? new Date(createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-        : null;
-
-      // ── Tier label & CSS class ──
-      const tierLabel = tier === 'elite'   ? '★ Elite contributor'
-                      : tier === 'premium' ? '⬡ Premium contributor'
-                      : studiesDone === 0  ? 'New member'
-                      : 'Standard member';
-      const tierClass = tier === 'elite'   ? 'tier-badge tier-elite'
-                      : tier === 'premium' ? 'tier-badge tier-blue'
-                      : 'tier-badge';
-
-      // ── Topbar avatar ──
+      const { fullName, initials } = updateProfileTab(profile, contrib, stats, tierDisplay, user);
       state.currentUserName = fullName;
       document.getElementById('topbar-avatar').textContent = initials;
 
-      // ── Dashboard greeting ──
-      const hour = new Date().getHours();
-      const timeGreeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-      document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
-
-      // ── Rating hero ──
-      document.getElementById('dash-rating-desc').textContent =
-        studiesDone > 0
-          ? `Based on ${studiesDone} completed ${studiesDone === 1 ? 'study' : 'studies'}`
-          : 'Complete your first study to earn a rating';
-
-      const dashTier = document.getElementById('dash-tier-badge');
-      dashTier.textContent = tierLabel;
-      dashTier.className   = tierClass;
-
-      document.getElementById('dash-rating-num').textContent = rating !== null ? rating.toFixed(1) : '—';
-
-      const starsFilled = rating !== null ? Math.round(rating) : 0;
-      document.getElementById('dash-rating-stars').innerHTML = [1,2,3,4,5]
-        .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
-        .join('');
-
-      document.getElementById('dash-rating-pct').textContent =
-        rating === null        ? 'No ratings yet'
-        : rating >= 4.7        ? 'Top 5% of contributors'
-        : rating >= 4.5        ? 'Top 15% of contributors'
-        : `${rating.toFixed(1)} overall rating`;
-
-      // ── Stat cards ──
-      document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
-      document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? 'Complete a study to start earning' : '↑ earnings this month';
-
-      document.getElementById('stat-studies').textContent     = studiesDone;
-      document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? 'No studies yet' : `${studiesDone} completed`;
-
-      document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
-      document.getElementById('stat-completion-sub').textContent = completionRate === null ? 'No data yet'
-        : completionRate >= 90 ? 'Excellent' : completionRate >= 70 ? 'Good' : 'Keep it up';
-
-      // ── Profile tab ──
-      document.getElementById('profile-avatar-big').textContent = initials;
-      document.getElementById('profile-fullname').textContent   = fullName;
-
-      const subtitleParts = [];
-      if (location)    subtitleParts.push(location);
-      if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
-      document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || 'New member';
-
-      const profileTier = document.getElementById('profile-tier-badge');
-      profileTier.textContent = tierLabel;
-      profileTier.className   = tierClass;
-
-      const statsLineParts = [];
-      if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
-      statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
-      statsLineParts.push(`${totalEarned} kr earned`);
-      document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
-
-      // ── Personal details ──
-      if (contrib?.date_of_birth) {
-        const dob   = new Date(contrib.date_of_birth);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
-        document.getElementById('profile-detail-age').textContent = age;
-      } else {
-        document.getElementById('profile-detail-age').textContent = '—';
-      }
-
-      const genderMap = { woman: 'Woman', man: 'Man', non_binary: 'Non-binary', self_describe: 'Self-described', prefer_not_to_say: 'Prefer not to say' };
-      document.getElementById('profile-detail-gender').textContent = genderMap[contrib?.gender] || '—';
-
-      document.getElementById('profile-detail-location').textContent = city || '—';
-
-      const employmentMap = { full_time: 'Full-time', part_time: 'Part-time', self_employed: 'Self-employed', student: 'Student', unemployed: 'Not employed', retired: 'Retired' };
-      document.getElementById('profile-detail-employment').textContent = employmentMap[contrib?.employment] || '—';
-
-      const childrenMap = { no_children: 'No children', under_5: 'Under 5', children_5_12: '5–12', teenagers: 'Teenagers', adult_children: 'Adult children' };
-      const childrenVals = Array.isArray(contrib?.children) ? contrib.children : [];
-      document.getElementById('profile-detail-children').textContent = childrenVals.length ? childrenVals.map(c => childrenMap[c] || c).join(', ') : '—';
-
-      const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
-      const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
-      document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
-
-      // ── Interests & tags ──
-      const INTEREST_LABELS = {
-        // lifestyle
-        fashion: 'Fashion & clothing', beauty: 'Beauty & skincare', home: 'Home & interiors',
-        food: 'Food & cooking', fitness: 'Fitness & wellness', sustainability: 'Sustainability',
-        pets: 'Pets', travel: 'Travel', gardening: 'Gardening',
-        // tech
-        smartphones: 'Smartphones & apps', gaming: 'Gaming', streaming: 'Streaming & TV',
-        social_media: 'Social media', podcasts: 'Podcasts', smart_home: 'Smart home',
-        // finance
-        online_banking: 'Online banking', investing: 'Investing / stocks', crypto: 'Crypto',
-        mortgages: 'Mortgages / property', insurance: 'Insurance', budgeting: 'Budgeting apps',
-        // brands
-        hm: 'H&M', asos: 'ASOS', amazon: 'Amazon', tesco: 'Tesco',
-        marks_spencer: 'Marks & Spencer', john_lewis: 'John Lewis',
-        lloyds_barclays: 'Lloyds / Barclays', zara: 'Zara', boots: 'Boots', apple: 'Apple',
-      };
-      const tagsContainer = document.getElementById('profile-interests-tags');
-      if (tagsContainer) {
-        const lifestyle = Array.isArray(contrib?.interests_lifestyle) ? contrib.interests_lifestyle : [];
-        const tech      = Array.isArray(contrib?.interests_tech)      ? contrib.interests_tech      : [];
-        const finance   = Array.isArray(contrib?.interests_finance)   ? contrib.interests_finance   : [];
-        const brands    = Array.isArray(contrib?.brands)              ? contrib.brands              : [];
-        const allTags = [
-          ...lifestyle.map(v => ({ v, cls: 'tag-green' })),
-          ...tech     .map(v => ({ v, cls: 'tag-blue'  })),
-          ...finance  .map(v => ({ v, cls: 'tag-amber' })),
-          ...brands   .map(v => ({ v, cls: 'tag-gray'  })),
-        ];
-        if (allTags.length) {
-          tagsContainer.innerHTML = allTags.map(({ v, cls }) =>
-            `<span class="tag ${esc(cls)}">${esc(INTEREST_LABELS[v] || v)}</span>`
-          ).join('');
-        } else {
-          tagsContainer.innerHTML = '<span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>';
-        }
-      }
-
-      // ── Rating breakdown (async, non-blocking) ──
+      updateDashboard(firstName, stats, tierDisplay);
+      updateBankIDStatus(contrib?.bankid_verified === true);
       loadRatingBreakdown();
-
-      // ── BankID verification status ──
-      const verified = contrib?.bankid_verified === true;
-      const dashBadge = document.getElementById('dash-bankid-badge');
-      if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
-
-      const bankidStatus = document.getElementById('bankid-status');
-      if (bankidStatus) {
-        bankidStatus.innerHTML = verified
-          ? '<span class="bankid-verified-badge">✓ Verified</span>'
-          : '<button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>';
-      }
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
