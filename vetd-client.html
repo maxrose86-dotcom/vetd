@@ -2830,8 +2830,8 @@ textarea{resize:vertical;min-height:90px}
   setLang(localStorage.getItem('vetd_lang') || 'en');
 
   // ─── COOKIE BANNER ─────────────────────────────────────
-  // cookie-banner lives after </script> in the DOM, so defer until DOMContentLoaded
-  // if the parser hasn't reached it yet (avoids null-deref that halts checkSession).
+  // cookie-banner is placed after the script block in the DOM, so defer until
+  // DOMContentLoaded if the parser hasn't reached it yet (avoids null-deref that halts checkSession).
   (function initCookieBanner() {
     const consent = localStorage.getItem('vetd_cookie_consent');
     if (consent) return;
