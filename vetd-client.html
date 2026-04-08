@@ -1647,7 +1647,7 @@ textarea{resize:vertical;min-height:90px}
         const appIds = acceptedApps.map(a => a.id);
         const { error: bulkErr } = await db
           .from('applications')
-          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null })
+          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null, day_before_reminder_sent_at: null })
           .in('id', appIds)
           .eq('status', 'accepted'); // guard against race where a row changed state since fetch
 
