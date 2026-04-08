@@ -2091,6 +2091,32 @@
     }
   }
 
+  async function cantAttend(appId, createdBy, studyTitle, scheduledAt) {
+    const storageKey = 'vetd_cant_attend_' + appId;
+    if (sessionStorage.getItem(storageKey)) return;
+    if (!confirm(t('cant_attend_confirm'))) return;
+
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
+    const formattedDate = scheduledAt
+      ? new Date(scheduledAt).toLocaleString(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+      : '';
+    const firstName = state.profileData?.first_name || 'A contributor';
+
+    if (createdBy) {
+      await sendNotification(
+        createdBy,
+        LANG.en.cant_attend_notif_title,
+        LANG.en.cant_attend_notif_body.replace('{name}', firstName).replace('{title}', studyTitle).replace('{date}', formattedDate),
+        null
+      );
+    }
+
+    sessionStorage.setItem(storageKey, '1');
+    const el = document.getElementById('cant-attend-' + appId);
+    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
+  }
+
   // Two-step inline decline confirmation — no modal
   function confirmDecline(appId) {
     const actionsEl = document.getElementById('invite-actions-' + appId);
@@ -2197,10 +2223,13 @@
           `<span style="font-size:11px;color:var(--gray-400)">${t('join_early_hint')}</span>`,
           sessionType === 'group' ? `<span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span>` : ''
         ].filter(Boolean).join('');
+        const cantAttendHtml = sessionStorage.getItem('vetd_cant_attend_' + a.id)
+          ? `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`
+          : `<button onclick="cantAttend('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
         statusDetail = `<div class="app-schedule-row">
           <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
           <span class="session-card-time">${esc(ss.countdownText)}</span>
-        </div><div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">${preJoinHints}</div>`;
+        </div><div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">${preJoinHints}</div><div id="cant-attend-${esc(a.id)}" style="margin-top:6px">${cantAttendHtml}</div>`;
       } else if (ss.canJoin && a.room_url) {
         const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
         const groupCtx = sessionType === 'group'
@@ -3179,6 +3208,11 @@ async function applyToStudy(studyId) {
       session_type_group: 'Group session',
       join_early_hint: 'You can join 15 minutes before start',
       group_session_context: 'You\'ll join a group discussion with other participants',
+      cant_attend_btn: "Can't make it?",
+      cant_attend_confirm: "This will notify the researcher that you can't attend. Continue?",
+      cant_attend_sent: 'Researcher notified',
+      cant_attend_notif_title: "Contributor can't attend",
+      cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
       waiting_schedule_invited: 'You\'ve been personally selected for this study',
       no_applications: 'You have no active invitations yet.',
       browse_studies_btn: 'View opportunities',
@@ -3382,6 +3416,11 @@ async function applyToStudy(studyId) {
       session_type_group: 'Gruppsession',
       join_early_hint: 'Du kan gå med 15 minuter innan start',
       group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',
+      cant_attend_btn: 'Kan inte delta?',
+      cant_attend_confirm: 'Detta meddelar forskaren att du inte kan delta. Fortsätta?',
+      cant_attend_sent: 'Forskaren har meddelats',
+      cant_attend_notif_title: 'Deltagaren kan inte delta',
+      cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
       waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
       no_applications: 'Du har inga aktiva inbjudningar ännu.',
       browse_studies_btn: 'Se möjligheter',
