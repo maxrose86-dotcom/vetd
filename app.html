@@ -1788,7 +1788,7 @@
     container.innerHTML = subset.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
       return `
-      <div class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
+      <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
         ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : ''}
         <div class="job-header">
           <div class="job-company">
@@ -1844,8 +1844,14 @@
   function closeModal() {
     document.getElementById('apply-modal').classList.remove('open');
     if (state.currentStudy) {
+      const currentIndex = state.studies.findIndex(j => j.id == state.currentStudy.id);
+      const nextStudy = state.studies[currentIndex + 1] || null;
       renderStudies('studies-list', state.studies);
       renderStudies('dashboard-studies', state.studies.slice(0, 2));
+      const targetEl = nextStudy
+        ? document.getElementById('study-card-' + nextStudy.id)
+        : document.getElementById('studies-list');
+      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
