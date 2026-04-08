@@ -1689,17 +1689,8 @@ textarea{resize:vertical;min-height:90px}
         const result = await res.json();
         if (result.error) throw new Error(result.error);
 
-        // Accept the application (suppress generic notification — we send a targeted one below)
+        // Accept the application (suppress generic notification — contributor notified by Edge Function)
         await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
-
-        // Notify the contributor with the actual date/time
-        if (_schedContributorId) {
-          const contribTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
-          const contribBody  = _schedIsReschedule
-            ? `Your session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
-            : `Your session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
-          await sendNotification(_schedContributorId, contribTitle, contribBody, null);
-        }
 
         // Notify the operator as confirmation
         if (currentClientUser) {
