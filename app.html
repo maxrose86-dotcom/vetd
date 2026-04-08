@@ -1808,6 +1808,7 @@
               ? `<div class="job-meta" style="color:var(--amber);font-weight:600">⚡ ${spotsLeft} ${t('spots_left')}</div>`
               : `<div class="job-meta">${esc(job.duration)} · ${spotsLeft} ${t('spots_left')}</div>
             <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>`; })()}
+            ${job.filled > 0 ? `<div style="font-size:11px;color:var(--gray-400);margin-top:4px">👥 ${job.filled} spots filled</div>` : ''}
           </div>
           <div style="display:flex;align-items:center;gap:12px">
             ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
