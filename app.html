@@ -2091,7 +2091,7 @@
     }
   }
 
-  async function cantAttend(appId, createdBy, studyTitle, scheduledAt) {
+  async function cantAttend(appId, createdBy, studyTitle, scheduledAt, studyId) {
     const storageKey = 'vetd_cant_attend_' + appId;
     if (sessionStorage.getItem(storageKey)) return;
     if (!confirm(t('cant_attend_confirm'))) return;
@@ -2102,13 +2102,14 @@
       ? new Date(scheduledAt).toLocaleString(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
       : '';
     const firstName = state.profileData?.first_name || 'A contributor';
+    const deepLink = studyId ? '#applicants/' + studyId + '/' + encodeURIComponent(studyTitle) : null;
 
     if (createdBy) {
       await sendNotification(
         createdBy,
         LANG.en.cant_attend_notif_title,
         LANG.en.cant_attend_notif_body.replace('{name}', firstName).replace('{title}', studyTitle).replace('{date}', formattedDate),
-        null
+        deepLink
       );
     }
 
@@ -2225,7 +2226,7 @@
         ].filter(Boolean).join('');
         const cantAttendHtml = sessionStorage.getItem('vetd_cant_attend_' + a.id)
           ? `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`
-          : `<button onclick="cantAttend('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
+          : `<button onclick="cantAttend('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
         statusDetail = `<div class="app-schedule-row">
           <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
           <span class="session-card-time">${esc(ss.countdownText)}</span>

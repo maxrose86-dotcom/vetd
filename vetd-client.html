@@ -2628,8 +2628,17 @@ textarea{resize:vertical;min-height:90px}
       await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', currentClientUser.id);
       loadNotifications();
     }
-    if (link) window.location.href = link;
-    else document.getElementById('notif-panel').classList.remove('open');
+    if (link && link.startsWith('#applicants/')) {
+      document.getElementById('notif-panel').classList.remove('open');
+      const parts = link.slice('#applicants/'.length).split('/');
+      const studyId    = parts[0];
+      const studyTitle = parts[1] ? decodeURIComponent(parts[1]) : '';
+      openApplicants(studyId, studyTitle);
+    } else if (link) {
+      window.location.href = link;
+    } else {
+      document.getElementById('notif-panel').classList.remove('open');
+    }
   }
 
   async function markAllRead() {
