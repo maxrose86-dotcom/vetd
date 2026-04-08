@@ -1001,7 +1001,6 @@
         </div>
         <div class="filter-bar">
           <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
-          <button class="filter-chip" onclick="filterStudies('matched', this)">Best matches</button>
           <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
           <button class="filter-chip" onclick="filterStudies('high-pay', this)">High pay</button>
           <select class="filter-select filter-right">
@@ -1769,6 +1768,18 @@
           detail:      s.description || 'No additional details provided.'
         };
       });
+
+      state.studies.sort((a, b) => {
+        const aAvail = a.spots > a.filled ? 10000 : 0;
+        const bAvail = b.spots > b.filled ? 10000 : 0;
+        const aRate  = (a.hourlyRate ?? 0) * 10;
+        const bRate  = (b.hourlyRate ?? 0) * 10;
+        const aLeft  = a.spots - a.filled;
+        const bLeft  = b.spots - b.filled;
+        const aScar  = (aLeft > 0 && aLeft <= 3) ? 50 : 0;
+        const bScar  = (bLeft > 0 && bLeft <= 3) ? 50 : 0;
+        return (bAvail + bRate + bScar) - (aAvail + aRate + aScar);
+      });
     } catch(err) {
       console.warn('Could not load studies:', err);
     }
@@ -1822,7 +1833,6 @@
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     let subset = state.studies;
-    if (type === 'matched') subset = state.studies.filter(j => j.match >= 90);
     if (type === 'online') subset = state.studies.filter(j => j.format === 'online');
     if (type === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
     renderStudies('studies-list', subset);
