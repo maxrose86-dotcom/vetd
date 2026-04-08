@@ -1259,7 +1259,7 @@ textarea{resize:vertical;min-height:90px}
 
       const { data, error } = await db
         .from('applications')
-        .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
+        .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
         .eq('study_id', studyId)
         .order('applied_at', { ascending: false });
 
@@ -1342,6 +1342,19 @@ textarea{resize:vertical;min-height:90px}
           const completeBtn = sessionPast
             ? `<button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`
             : '';
+          let attendanceBadge = '';
+          if (sessionPast) {
+            if (a.joined_call_at) {
+              let durText = '';
+              if (a.last_call_activity) {
+                const mins = Math.round((new Date(a.last_call_activity) - new Date(a.joined_call_at)) / 60000);
+                if (mins > 0) durText = ` (~${mins}m)`;
+              }
+              attendanceBadge = `<span style="font-size:11px;color:var(--green-dark,#059669);font-weight:500">Attended${durText}</span>`;
+            } else {
+              attendanceBadge = `<span style="font-size:11px;color:var(--gray-400);font-weight:500">No-show</span>`;
+            }
+          }
           let joinBtn = '';
           if (a.room_url && isScheduled) {
             const remaining = callTimeRemaining(a.scheduled_at);
@@ -1367,7 +1380,7 @@ textarea{resize:vertical;min-height:90px}
               ? `<span class="status-pill" style="${pillStyle}">${pillLabel}</span>`
               : `<span class="status-pill status-accepted">${pillLabel}</span>`;
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
-            actions = `${statusPill}${schedDisplay}${joinBtn}${completeBtn}`;
+            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${completeBtn}`;
           } else {
             // One-to-one: per-row schedule / reschedule buttons (unchanged)
             const statusPill = isScheduled
@@ -1377,7 +1390,7 @@ textarea{resize:vertical;min-height:90px}
             const scheduleBtn = !isScheduled
               ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
               : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','reschedule')">${t('cl_reschedule')}</button>`;
-            actions = `${statusPill}${schedDisplay}${joinBtn}${scheduleBtn}${completeBtn}`;
+            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${scheduleBtn}${completeBtn}`;
           }
         } else if (a.status === 'invited') {
           if (sessionType === 'group') {
@@ -1647,7 +1660,7 @@ textarea{resize:vertical;min-height:90px}
         const appIds = acceptedApps.map(a => a.id);
         const { error: bulkErr } = await db
           .from('applications')
-          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null, day_before_reminder_sent_at: null })
+          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null, day_before_reminder_sent_at: null, joined_call_at: null })
           .in('id', appIds)
           .eq('status', 'accepted'); // guard against race where a row changed state since fetch
 

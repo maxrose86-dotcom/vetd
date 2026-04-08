@@ -94,7 +94,7 @@ serve(async (req) => {
 
       const { error: updateError } = await supabase
         .from("applications")
-        .update({ scheduled_at, room_name: room.name, room_url: room.url, reminder_sent_at: null })
+        .update({ scheduled_at, room_name: room.name, room_url: room.url, reminder_sent_at: null, day_before_reminder_sent_at: null, joined_call_at: null })
         .eq("id", application_id);
       if (updateError) throw updateError;
 
