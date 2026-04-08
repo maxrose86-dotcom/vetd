@@ -1227,10 +1227,6 @@
       <p class="modal-sub" id="modal-company-name"></p>
       <div class="modal-tags" id="modal-tags"></div>
       <p class="modal-detail" id="modal-detail"></p>
-      <div style="background:var(--green-light);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.5rem">
-        <div style="font-size:12px;font-weight:600;color:var(--green-dark);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Why you're a match</div>
-        <div id="modal-match-reason" style="font-size:13px;color:var(--green-dark);line-height:1.5"></div>
-      </div>
       <div class="modal-buttons">
         <button class="modal-close" onclick="closeModal()">Not now</button>
         <button class="modal-apply" onclick="confirmApply()">Get considered → →</button>
@@ -1766,12 +1762,10 @@
           hourlyRate:  (pay > 0 && s.duration_minutes > 0) ? Math.round((pay / s.duration_minutes) * 60) : null,
           duration,
           tags,
-          match:       85,
           spots,
           filled,
           format:      FORMAT_FILTER[s.format] || 'online',
           featured:    false,
-          matchReason: 'This study is looking for participants that match your profile.',
           detail:      s.description || 'No additional details provided.'
         };
       });
@@ -1814,10 +1808,6 @@
             <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            <div class="job-match">
-              <div class="match-bar"><div class="match-fill" style="width:${job.match}%"></div></div>
-              <div class="match-pct">${job.match}%</div>
-            </div>
             ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
           </div>
         </div>
@@ -1846,7 +1836,6 @@
     document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
-    document.getElementById('modal-match-reason').textContent = state.currentStudy.matchReason;
     document.getElementById('apply-modal').classList.add('open');
   }
 
