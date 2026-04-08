@@ -1763,6 +1763,7 @@
           desc:        s.description || '',
           pay,
           payType:     s.format === 'online_survey' ? 'per survey' : 'per session',
+          hourlyRate:  (pay > 0 && s.duration_minutes > 0) ? Math.round((pay / s.duration_minutes) * 60) : null,
           duration,
           tags,
           match:       85,
@@ -1802,7 +1803,7 @@
           </div>
           <div class="job-pay">
             <div class="pay-amount">${fmtPay(job.pay)}</div>
-            <div class="pay-type">${payTypeLabel}</div>
+            <div class="pay-type">${payTypeLabel}${job.hourlyRate ? ` · ~${job.hourlyRate} kr/hr` : ''}</div>
           </div>
         </div>
         <div class="job-desc">${esc(job.desc)}</div>
@@ -1842,7 +1843,7 @@
     document.getElementById('modal-company-badge').textContent = state.currentStudy.company;
     document.getElementById('modal-title').textContent = state.currentStudy.title;
     document.getElementById('modal-company-name').textContent = state.currentStudy.company + ' · ' + state.currentStudy.duration;
-    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}</div>`;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
     document.getElementById('modal-match-reason').textContent = state.currentStudy.matchReason;
