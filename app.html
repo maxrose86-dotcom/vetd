@@ -1804,8 +1804,10 @@
         <div class="job-tags">${job.tags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
           <div>
-            <div class="job-meta">${esc(job.duration)} · ${job.spots - job.filled} ${t('spots_left')}</div>
-            <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>
+            ${(() => { const spotsLeft = job.spots - job.filled; return spotsLeft <= 3 && job.spots > 0
+              ? `<div class="job-meta" style="color:var(--amber);font-weight:600">⚡ ${spotsLeft} ${t('spots_left')}</div>`
+              : `<div class="job-meta">${esc(job.duration)} · ${spotsLeft} ${t('spots_left')}</div>
+            <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>`; })()}
           </div>
           <div style="display:flex;align-items:center;gap:12px">
             ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
