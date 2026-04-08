@@ -605,7 +605,7 @@ textarea{resize:vertical;min-height:90px}
                 <div class="field"><label data-i18n="cl_label_format">Study format</label>
                   <select id="b-format" onchange="updatePreview()">
                     <option value="video_call">Video call (1-on-1)</option>
-                    <option value="video_call">Focus group (online)</option>
+                    <option value="focus_group">Focus group (online)</option>
                     <option value="in_person">In-person interview</option>
                     <option value="online_survey">Online survey</option>
                     <option value="diary_study">Diary / journal study</option>
@@ -829,6 +829,7 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
     </div>
+    <div id="applicants-group-header" style="margin-bottom:12px"></div>
     <div id="applicants-list">
       <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
     </div>
@@ -1186,7 +1187,7 @@ textarea{resize:vertical;min-height:90px}
             <div class="study-row-header">
               <div class="study-title-group">
                 <h3>${esc(s.title || 'Untitled study')}</h3>
-                <p>${[s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
+                <p>${[DASH_FORMAT_LABEL[s.format] || s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
               </div>
               <span class="badge ${badgeCls}">${label}</span>
             </div>
@@ -1241,8 +1242,21 @@ textarea{resize:vertical;min-height:90px}
   async function loadApplicants(studyId) {
     const list = document.getElementById('applicants-list');
     const countEl = document.getElementById('applicants-count');
+    const groupHeaderEl = document.getElementById('applicants-group-header');
+    if (groupHeaderEl) groupHeaderEl.innerHTML = '';
 
     try {
+      // Fetch session_type for this study separately — all rows share the same study,
+      // so joining on every application row would be wasteful.
+      // Failure is an explicit error: do not silently default to one_to_one.
+      const { data: studyMeta, error: studyMetaErr } = await db
+        .from('studies')
+        .select('session_type')
+        .eq('id', studyId)
+        .single();
+      if (studyMetaErr || !studyMeta) throw studyMetaErr || new Error('Could not load study metadata');
+      const sessionType = studyMeta.session_type;
+
       const { data, error } = await db
         .from('applications')
         .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
@@ -1270,10 +1284,35 @@ textarea{resize:vertical;min-height:90px}
       const parts = [];
       if (invited      > 0) parts.push(`${invited} ${t('cl_invited')}`);
       if (scheduled    > 0) parts.push(`${scheduled} ${t('cl_scheduled_short')}`);
-      if (needsSchedul > 0) parts.push(`<span style="color:var(--amber)">${needsSchedul} ${t('cl_needs_scheduling')}</span>`);
+      // Suppress per-row amber count for group studies — the group header banner handles scheduling
+      if (needsSchedul > 0 && sessionType !== 'group') parts.push(`<span style="color:var(--amber)">${needsSchedul} ${t('cl_needs_scheduling')}</span>`);
       if (completed    > 0) parts.push(`${completed} ${t('cl_completed_short')}`);
       if (declined     > 0) parts.push(`${declined} ${t('cl_declined_short')}`);
       countEl.innerHTML = parts.length ? parts.join(' · ') : `${data.length} ${t('cl_participants_total')}`;
+
+      // Group header: scheduling action banner for group studies with accepted contributors
+      if (groupHeaderEl && sessionType === 'group') {
+        const acceptedRows = data.filter(a => a.status === 'accepted');
+        if (acceptedRows.length > 0) {
+          const anyScheduled = acceptedRows.some(a => !!a.scheduled_at);
+          const btnLabel = anyScheduled ? t('cl_reschedule_group_session') : t('cl_schedule_group_session');
+          const contribWord = acceptedRows.length === 1 ? t('cl_group_contributor') : t('cl_group_contributors');
+          const countStr = `${acceptedRows.length} ${contribWord}`;
+          const bannerKey = anyScheduled ? 'cl_group_banner_set' : 'cl_group_banner_pending';
+          const bannerText = t(bannerKey).replace('{count}', countStr);
+          groupHeaderEl.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--blue-light,#EFF6FF);border-radius:8px;gap:12px;flex-wrap:wrap">
+              <span style="font-size:13px;color:var(--blue-dark,#1D4ED8)">${esc(bannerText)}</span>
+              <button class="btn-accept" style="white-space:nowrap;font-size:12px;padding:6px 14px"
+                onclick="openGroupScheduleModal('${esc(studyId)}',${acceptedRows.length},${anyScheduled})">${esc(btnLabel)}</button>
+            </div>`;
+        }
+      }
+
+      // True when the group has at least one already-scheduled accepted row.
+      // Used inside the map to distinguish "waiting" from "accepted late" pill states.
+      const anyGroupScheduled = sessionType === 'group' &&
+        data.some(a => a.status === 'accepted' && !!a.scheduled_at);
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
@@ -1299,10 +1338,10 @@ textarea{resize:vertical;min-height:90px}
             <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
-          const statusPill = isScheduled
-            ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
-            : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
-          const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
+          const sessionPast = isScheduled && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000);
+          const completeBtn = sessionPast
+            ? `<button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`
+            : '';
           let joinBtn = '';
           if (a.room_url && isScheduled) {
             const remaining = callTimeRemaining(a.scheduled_at);
@@ -1310,25 +1349,49 @@ textarea{resize:vertical;min-height:90px}
             const btnDisabled = remaining !== null ? 'disabled' : '';
             joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}','${escAttr(a.id)}')" ${btnDisabled}>${btnText}</button>`;
           }
-          const scheduleBtn = !isScheduled
-            ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
-            : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','reschedule')">${t('cl_reschedule')}</button>`;
-          // Only show Mark completed when session time has passed or is imminent
-          const sessionPast = isScheduled && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000);
-          const completeBtn = sessionPast
-            ? `<button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`
-            : '';
-          actions = `
-            ${statusPill}
-            ${schedDisplay}
-            ${joinBtn}
-            ${scheduleBtn}
-            ${completeBtn}`;
+
+          if (sessionType === 'group') {
+            // Group study: scheduling is managed at the header banner level.
+            // No per-row schedule/reschedule buttons — those are intentional gaps.
+            // Three pill states:
+            //   scheduled            → blue "Scheduled" pill
+            //   unscheduled, no group session yet → neutral "waiting for group scheduling"
+            //   unscheduled, group already set    → amber "Accepted after group was scheduled"
+            const pillLabel = isScheduled
+              ? t('cl_scheduled_pill')
+              : anyGroupScheduled ? t('cl_added_after_group') : t('cl_group_accepted_pending');
+            const pillStyle = isScheduled
+              ? 'background:#EFF6FF;color:#1D4ED8'
+              : anyGroupScheduled ? '' : '';
+            const statusPill = isScheduled
+              ? `<span class="status-pill" style="${pillStyle}">${pillLabel}</span>`
+              : `<span class="status-pill status-accepted">${pillLabel}</span>`;
+            const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
+            actions = `${statusPill}${schedDisplay}${joinBtn}${completeBtn}`;
+          } else {
+            // One-to-one: per-row schedule / reschedule buttons (unchanged)
+            const statusPill = isScheduled
+              ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
+              : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+            const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
+            const scheduleBtn = !isScheduled
+              ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
+              : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','reschedule')">${t('cl_reschedule')}</button>`;
+            actions = `${statusPill}${schedDisplay}${joinBtn}${scheduleBtn}${completeBtn}`;
+          }
         } else if (a.status === 'invited') {
-          actions = `
-            <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','invited')">${t('cl_schedule_and_confirm')}</button>
-            <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
+          if (sessionType === 'group') {
+            // Group: don't offer per-row Schedule & confirm — wait for acceptance,
+            // then use the header-level group scheduling action.
+            actions = `
+              <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
+              <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
+          } else {
+            actions = `
+              <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
+              <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','invited')">${t('cl_schedule_and_confirm')}</button>
+              <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
+          }
         } else if (a.status === 'declined') {
           actions = `
             <span class="status-pill status-rejected">${t('cl_declined_by_contributor')}</span>
@@ -1428,6 +1491,8 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── SCHEDULE MODAL ─────────────────────────────────────
   let _schedAppId = null, _schedStudyId = null, _schedContributorId = null;
+  let _schedSessionType = 'one_to_one'; // 'one_to_one' | 'group'
+  let _schedIsReschedule = false;
 
   function formatScheduledTime(isoStr) {
     const d = new Date(isoStr);
@@ -1462,6 +1527,8 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, currentStatus) {
+    _schedSessionType = 'one_to_one'; // always 1-on-1 when called per-row
+    _schedIsReschedule = currentStatus === 'reschedule';
     _schedAppId = appId;
     _schedStudyId = studyId;
     _schedContributorId = contributorId;
@@ -1487,6 +1554,37 @@ textarea{resize:vertical;min-height:90px}
   function closeScheduleModal() {
     document.getElementById('schedule-modal').classList.remove('open');
     _schedAppId = null; _schedStudyId = null; _schedContributorId = null;
+    _schedSessionType = 'one_to_one';
+    _schedIsReschedule = false;
+  }
+
+  function openGroupScheduleModal(studyId, acceptedCount, isReschedule) {
+    _schedSessionType = 'group';
+    _schedIsReschedule = !!isReschedule;
+    _schedStudyId = studyId;
+    _schedAppId = null;
+    _schedContributorId = null;
+
+    const studyTitle = currentApplicantsStudyTitle || '';
+    const contribWord = acceptedCount === 1 ? t('cl_group_contributor') : t('cl_group_contributors');
+    const countStr = `${acceptedCount} ${contribWord}`;
+    const subKey = isReschedule ? 'cl_group_modal_sub_reschedule' : 'cl_group_modal_sub_schedule';
+    document.getElementById('schedule-modal-sub').textContent =
+      t(subKey).replace('{count}', countStr) + (studyTitle ? ' · ' + studyTitle : '');
+
+    const confirmBtn = document.getElementById('schedule-confirm-btn');
+    const label = isReschedule ? t('cl_reschedule_group_session') : t('cl_schedule_group_session');
+    confirmBtn.textContent = label;
+    confirmBtn.dataset.contextLabel = label;
+
+    const modalTitle = document.querySelector('#schedule-modal h2');
+    if (modalTitle) modalTitle.textContent = isReschedule ? t('cl_group_reschedule_title') : t('cl_group_schedule_title');
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('schedule-date').value = tomorrow.toISOString().slice(0, 10);
+    document.getElementById('schedule-time').value = '10:00';
+    document.getElementById('schedule-modal').classList.add('open');
   }
 
   document.getElementById('schedule-modal').addEventListener('click', function(e) {
@@ -1510,20 +1608,6 @@ textarea{resize:vertical;min-height:90px}
 
     try {
       const { data: { session } } = await db.auth.getSession();
-      const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + session.access_token,
-        },
-        body: JSON.stringify({ application_id: _schedAppId, scheduled_at: isoDatetime })
-      });
-      const result = await res.json();
-      if (result.error) throw new Error(result.error);
-
-      // Now accept the application (suppress generic notification — we send targeted ones below)
-      await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
-
       const studyTitle = currentApplicantsStudyTitle || 'study';
       const lang = localStorage.getItem('vetd_lang') || 'en';
       const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
@@ -1532,36 +1616,110 @@ textarea{resize:vertical;min-height:90px}
         hour: '2-digit', minute: '2-digit', hour12: false
       });
 
-      // Notify the contributor with the actual date/time
-      if (_schedContributorId) {
-        await sendNotification(
-          _schedContributorId,
-          'Session scheduled 📅',
-          `Your session for "${studyTitle}" is confirmed for ${formattedDate}. Join from the Vetd app.`,
-          null
-        );
-      }
+      if (_schedSessionType === 'group') {
+        // ── GROUP PATH ──────────────────────────────────────────────────────
+        // Fetch accepted apps FIRST — guard for zero before creating any Daily room
+        const { data: acceptedApps, error: fetchErr } = await db
+          .from('applications')
+          .select('id, contributor_id')
+          .eq('study_id', _schedStudyId)
+          .eq('status', 'accepted');
+        if (fetchErr) throw fetchErr;
 
-      // Notify the operator as confirmation
-      if (currentClientUser) {
-        await sendNotification(
-          currentClientUser.id,
-          'Session scheduled',
-          `Session for "${studyTitle}" confirmed for ${formattedDate}.`,
-          null
-        );
-        loadNotifications();
-      }
+        if (!acceptedApps || acceptedApps.length === 0) {
+          showToast(t('cl_no_accepted_to_schedule'), true);
+          closeScheduleModal();
+          return;
+        }
 
-      showToast(t('cl_session_scheduled'));
-      closeScheduleModal();
+        // Create one shared Daily room — spots and session_type verified server-side from DB
+        const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({ study_id: _schedStudyId, scheduled_at: isoDatetime })
+        });
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+
+        const { room_url, room_name } = result;
+
+        // Bulk update: same time and room for every accepted contributor
+        const appIds = acceptedApps.map(a => a.id);
+        const { error: bulkErr } = await db
+          .from('applications')
+          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null })
+          .in('id', appIds)
+          .eq('status', 'accepted'); // guard against race where a row changed state since fetch
+
+        // No rollback on failure — a second clearing update could wipe a valid existing schedule.
+        // Surface the error and let the operator retry; the Daily room expires naturally via its exp.
+        if (bulkErr) throw bulkErr;
+
+        // Notify each contributor
+        const groupContribTitle = _schedIsReschedule ? 'Group session rescheduled 📅' : 'Group session scheduled 📅';
+        const groupContribBody  = _schedIsReschedule
+          ? `Your group session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
+          : `Your group session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
+        for (const app of acceptedApps) {
+          await sendNotification(app.contributor_id, groupContribTitle, groupContribBody, null);
+        }
+
+        // Operator confirmation
+        if (currentClientUser) {
+          const groupOpTitle = _schedIsReschedule ? 'Group session rescheduled' : 'Group session scheduled';
+          const groupOpBody  = _schedIsReschedule
+            ? `Group session for "${studyTitle}" rescheduled to ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`
+            : `Group session for "${studyTitle}" confirmed for ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`;
+          await sendNotification(currentClientUser.id, groupOpTitle, groupOpBody, null);
+          loadNotifications();
+        }
+
+        showToast(t('cl_group_session_scheduled'));
+        const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
+        closeScheduleModal();
+        await loadApplicants(savedStudyId);
+
+      } else {
+        // ── ONE-TO-ONE PATH (unchanged) ─────────────────────────────────────
+        const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({ application_id: _schedAppId, scheduled_at: isoDatetime, is_reschedule: _schedIsReschedule })
+        });
+        const result = await res.json();
+        if (result.error) throw new Error(result.error);
+
+        // Accept the application (suppress generic notification — we send a targeted one below)
+        await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
+
+        // Notify the contributor with the actual date/time
+        if (_schedContributorId) {
+          const contribTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
+          const contribBody  = _schedIsReschedule
+            ? `Your session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
+            : `Your session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
+          await sendNotification(_schedContributorId, contribTitle, contribBody, null);
+        }
+
+        // Notify the operator as confirmation
+        if (currentClientUser) {
+          const opTitle = _schedIsReschedule ? 'Session rescheduled' : 'Session scheduled';
+          const opBody  = _schedIsReschedule
+            ? `Session for "${studyTitle}" rescheduled to ${formattedDate}.`
+            : `Session for "${studyTitle}" confirmed for ${formattedDate}.`;
+          await sendNotification(currentClientUser.id, opTitle, opBody, null);
+          loadNotifications();
+        }
+
+        showToast(t('cl_session_scheduled'));
+        closeScheduleModal();
+      }
     } catch(err) {
       console.error('Schedule session error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast('Could not schedule session — try again', true);
     } finally {
       btn.disabled = false;
-      // Restore context-aware label
       btn.textContent = btn.dataset.contextLabel || t('cl_schedule_accept');
       delete btn.dataset.contextLabel;
     }
@@ -1619,7 +1777,8 @@ textarea{resize:vertical;min-height:90px}
     const desc   = document.getElementById('b-desc').value.trim();
     const spotsRaw = document.getElementById('b-spots').value;
     const payRaw   = document.getElementById('b-pay').value;
-    const format = document.getElementById('b-format').value;
+    const format      = document.getElementById('b-format').value;
+    const sessionType = format === 'focus_group' ? 'group' : 'one_to_one';
 
     // Validation before DB insert
     if (!title) { showToast('Please enter a study title', true); return; }
@@ -1680,6 +1839,7 @@ textarea{resize:vertical;min-height:90px}
         title,
         description:          desc || null,
         format,
+        session_type:         sessionType,
         duration_minutes:     durationMins,
         spots,
         pay_per_participant:  pay,
@@ -2242,7 +2402,7 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── DASHBOARD STATS ────────────────────────────────────
   const DASH_FORMAT_LABEL = {
-    video_call: 'Video call', in_person: 'In-person',
+    video_call: 'Video call', focus_group: 'Focus group', in_person: 'In-person',
     online_survey: 'Online survey', diary_study: 'Diary study', product_testing: 'Product testing'
   };
 
@@ -2507,10 +2667,12 @@ textarea{resize:vertical;min-height:90px}
     if (!db) return;
     try {
       await db.rpc('insert_notification', {
-        p_user_id: userId,
-        p_title:   title,
-        p_body:    body,
-        p_link:    link || null
+        p_user_id:    userId,
+        p_title:      title,
+        p_body:       body,
+        p_link:       link || null,
+        p_notif_type: null,
+        p_params:     {},
       });
     } catch(err) {
       console.warn('sendNotification error:', err);
@@ -2743,6 +2905,20 @@ textarea{resize:vertical;min-height:90px}
       cl_join_call: 'Join call',
       cl_leave_call: 'Leave call',
       cl_session_scheduled: 'Session scheduled & applicant accepted ✓',
+      cl_group_session_scheduled: 'Group session scheduled ✓',
+      cl_schedule_group_session: 'Schedule group session',
+      cl_reschedule_group_session: 'Reschedule group session',
+      cl_group_schedule_title: 'Schedule group session',
+      cl_group_reschedule_title: 'Reschedule group session',
+      cl_added_after_group: 'Accepted after group was scheduled',
+      cl_group_accepted_pending: 'Accepted — waiting for group scheduling',
+      cl_no_accepted_to_schedule: 'No accepted contributors to schedule yet',
+      cl_group_contributor: 'contributor',
+      cl_group_contributors: 'contributors',
+      cl_group_banner_set: 'Group session set — {count} scheduled',
+      cl_group_banner_pending: '{count} accepted — set a shared session time',
+      cl_group_modal_sub_schedule: 'Setting a shared time for {count}',
+      cl_group_modal_sub_reschedule: 'Rescheduling for {count}',
       // Dynamic
       cl_no_studies: 'No studies yet',
       cl_no_studies_sub: 'Post your first study to start recruiting contributors.',
@@ -3007,6 +3183,20 @@ textarea{resize:vertical;min-height:90px}
       cl_join_call: 'Gå med i samtal',
       cl_leave_call: 'Lämna samtal',
       cl_session_scheduled: 'Session schemalagd & sökande accepterad ✓',
+      cl_group_session_scheduled: 'Gruppsession schemalagd ✓',
+      cl_schedule_group_session: 'Schemalägg gruppsession',
+      cl_reschedule_group_session: 'Omschemalägg gruppsession',
+      cl_group_schedule_title: 'Schemalägg gruppsession',
+      cl_group_reschedule_title: 'Omschemalägg gruppsession',
+      cl_added_after_group: 'Accepterad efter att gruppsessionen schemalades',
+      cl_group_accepted_pending: 'Accepterad — väntar på gruppsessionsschema',
+      cl_no_accepted_to_schedule: 'Inga accepterade deltagare att schemalägga ännu',
+      cl_group_contributor: 'deltagare',
+      cl_group_contributors: 'deltagare',
+      cl_group_banner_set: 'Gruppsession inlagd — {count} schemalagda',
+      cl_group_banner_pending: '{count} accepterade — ange en gemensam sessionstid',
+      cl_group_modal_sub_schedule: 'Anger en gemensam tid för {count}',
+      cl_group_modal_sub_reschedule: 'Omschemaläggning för {count}',
       // Dynamic
       cl_no_studies: 'Inga studier ännu',
       cl_no_studies_sub: 'Publicera din första studie för att börja rekrytera deltagare.',

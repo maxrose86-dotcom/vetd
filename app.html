@@ -1687,12 +1687,12 @@
 
   // ─── LOAD STUDIES FROM SUPABASE ──────────────────────────
   const FORMAT_LABEL = {
-    video_call: 'Video call', in_person: 'In-person',
+    video_call: 'Video call', focus_group: 'Focus group', in_person: 'In-person',
     online_survey: 'Online survey', diary_study: 'Diary study',
     product_testing: 'Product testing'
   };
   const FORMAT_FILTER = {
-    video_call: 'online', online_survey: 'online',
+    video_call: 'online', focus_group: 'online', online_survey: 'online',
     diary_study: 'online', product_testing: 'online', in_person: 'in-person'
   };
   const AGE_LABEL = {
@@ -2012,7 +2012,7 @@
     try {
       const { data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, duration_minutes, pay_per_participant, created_by, companies(name))')
+        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false });
       if (error) throw error;
@@ -2091,6 +2091,25 @@
     }
   }
 
+  // Two-step inline decline confirmation — no modal
+  function confirmDecline(appId) {
+    const actionsEl = document.getElementById('invite-actions-' + appId);
+    if (!actionsEl) return;
+    // Stash original HTML so cancelDecline can restore without a network round-trip
+    actionsEl.dataset.originalHtml = actionsEl.innerHTML;
+    actionsEl.innerHTML = `
+      <span style="font-size:12px;color:var(--gray-500,#6B7280);font-weight:500;align-self:center;line-height:1.4">${t('decline_confirm_prompt')}</span>
+      <button style="padding:6px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--coral,#F87171);border-radius:8px;color:var(--coral,#F87171);cursor:pointer;font-family:var(--sans)" onclick="respondToInvitation('${esc(appId)}','declined')">${t('decline_confirm_yes')}</button>
+      <button style="padding:6px 12px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="cancelDecline('${esc(appId)}')">${t('decline_confirm_cancel')}</button>`;
+  }
+
+  function cancelDecline(appId) {
+    const actionsEl = document.getElementById('invite-actions-' + appId);
+    if (!actionsEl || !actionsEl.dataset.originalHtml) return;
+    actionsEl.innerHTML = actionsEl.dataset.originalHtml;
+    delete actionsEl.dataset.originalHtml;
+  }
+
   function filterMyApps(filter, btn) {
     document.querySelectorAll('#tab-my-studies .filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -2127,13 +2146,15 @@
       const title       = study.title || 'Study';
       const companyName = company.name || '';
       const format      = study.format || '';
+      const sessionType = study.session_type || 'one_to_one';
       const duration    = study.duration_minutes || null;
       const pay         = study.pay_per_participant != null ? formatCurrency(study.pay_per_participant) : null;
       const appliedDate = a.applied_at
         ? new Date(a.applied_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' })
         : '';
 
-      const metaParts = [companyName, format, duration ? duration + ' min' : null, pay].filter(Boolean);
+      const formatLabel = sessionType === 'group' ? t('session_type_group') : (FORMAT_LABEL[format] || format);
+      const metaParts = [companyName, formatLabel, duration ? duration + ' min' : null, pay].filter(Boolean);
 
       const ss = getSessionStatus(a, study.duration_minutes || null);
 
@@ -2157,9 +2178,9 @@
         statusDetail = `
           <div style="display:flex;flex-direction:column;gap:10px">
             <span style="font-size:12px;color:var(--blue-dark);font-weight:500">${t('invite_context_line')}</span>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div id="invite-actions-${esc(a.id)}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
               <button id="invite-accept-${esc(a.id)}" class="btn-join" style="padding:7px 16px;font-size:12px" onclick="respondToInvitation('${esc(a.id)}','accepted')">${t('invite_accept_btn')}</button>
-              <button id="invite-decline-${esc(a.id)}" style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="respondToInvitation('${esc(a.id)}','declined')">${t('invite_decline_btn')}</button>
+              <button id="invite-decline-${esc(a.id)}" style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="confirmDecline('${esc(a.id)}')">${t('invite_decline_btn')}</button>
             </div>
           </div>`;
       } else if (ss.phase === 'declined') {
@@ -2169,18 +2190,26 @@
       } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'scheduled' && ss.sublabel === t('waiting_schedule')) {
-        statusDetail = `<span style="font-style:italic">${esc(ss.sublabel)}</span>`;
+        const waitCopy = sessionType === 'group' ? t('waiting_schedule_group') : ss.sublabel;
+        statusDetail = `<span style="font-style:italic">${esc(waitCopy)}</span>`;
       } else if (ss.phase === 'scheduled' && ss.showCountdown) {
+        const preJoinHints = [
+          `<span style="font-size:11px;color:var(--gray-400)">${t('join_early_hint')}</span>`,
+          sessionType === 'group' ? `<span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span>` : ''
+        ].filter(Boolean).join('');
         statusDetail = `<div class="app-schedule-row">
           <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
           <span class="session-card-time">${esc(ss.countdownText)}</span>
-        </div>`;
+        </div><div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">${preJoinHints}</div>`;
       } else if (ss.canJoin && a.room_url) {
         const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
+        const groupCtx = sessionType === 'group'
+          ? `<div style="margin-top:4px"><span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span></div>`
+          : '';
         statusDetail = `<div class="app-schedule-row">
           <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
           <button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}','${escAttr(a.id)}')">${esc(btnLabel)}</button>
-        </div>`;
+        </div>${groupCtx}`;
       } else if (ss.phase === 'ended_joined') {
         statusDetail = `<span style="color:var(--green-dark);font-size:12px;font-weight:500">${t('you_participated')}${ss.sublabel ? ' · ' + esc(ss.sublabel) : ''}</span>`;
       } else if (ss.phase === 'ended_missed') {
@@ -2221,10 +2250,13 @@
     }
 
     container.innerHTML = visible.map(s => {
-      const study   = s.studies || {};
-      const company = study.companies || {};
-      const title   = study.title || 'Study';
-      const ss      = getSessionStatus(s, study.duration_minutes || null);
+      const study       = s.studies || {};
+      const company     = study.companies || {};
+      const title       = study.title || 'Study';
+      const sessionType = study.session_type || 'one_to_one';
+      const duration    = study.duration_minutes || null;
+      const pay         = study.pay_per_participant != null ? formatCurrency(study.pay_per_participant) : null;
+      const ss          = getSessionStatus(s, study.duration_minutes || null);
       let joinBtn = '';
       if (ss.canJoin && s.room_url) {
         const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
@@ -2232,11 +2264,17 @@
       } else if (s.room_url) {
         joinBtn = `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" disabled>${esc(ss.countdownText || sessionTimeUntil(s.scheduled_at))}</button>`;
       }
+      const sessionTypePart = sessionType === 'group' ? t('session_type_group') : '';
+      const metaParts = [company.name, sessionTypePart, duration ? duration + ' min' : null, pay, formatSessionTime(s.scheduled_at)].filter(Boolean);
+      const preJoinHintLine = ss.phase === 'scheduled' && ss.showCountdown
+        ? `<div style="font-size:11px;color:var(--gray-400);margin-top:2px">${t('join_early_hint')}${sessionType === 'group' ? ' · ' + t('group_session_context') : ''}</div>`
+        : '';
       return `
         <div class="session-card">
           <div class="session-card-info">
             <div class="session-card-title">${esc(title)}</div>
-            <div class="session-card-meta">${company.name ? esc(company.name) + ' · ' : ''}${esc(formatSessionTime(s.scheduled_at))}</div>
+            <div class="session-card-meta">${metaParts.map(esc).join(' · ')}</div>
+            ${preJoinHintLine}
             <div class="session-card-time">${esc(ss.phase === 'in_progress' ? t('status_in_progress') : (ss.countdownText || sessionTimeUntil(s.scheduled_at)))}</div>
           </div>
           ${joinBtn}
@@ -2886,10 +2924,12 @@ async function applyToStudy(studyId) {
     if (!db) return;
     try {
       await db.rpc('insert_notification', {
-        p_user_id: userId,
-        p_title:   title,
-        p_body:    body,
-        p_link:    link || null
+        p_user_id:    userId,
+        p_title:      title,
+        p_body:       body,
+        p_link:       link || null,
+        p_notif_type: null,
+        p_params:     {},
       });
     } catch(err) {
       console.warn('sendNotification error:', err);
@@ -2912,13 +2952,13 @@ async function applyToStudy(studyId) {
       });
 
       await db.rpc('insert_notification', {
-        p_user_id: userId,
-        p_title:   fallbackTitle,
-        p_body:    fallbackBody,
-        p_link:    link || null
+        p_user_id:    userId,
+        p_title:      fallbackTitle,
+        p_body:       fallbackBody,
+        p_link:       link || null,
+        p_notif_type: notifType || null,
+        p_params:     params   || {},
       });
-
-      // When the RPC is updated to accept notif_type/params, pass them directly instead.
     } catch(err) {
       console.warn('sendStructuredNotification error:', err);
       if (window.Sentry) Sentry.captureException(err);
@@ -3135,6 +3175,10 @@ async function applyToStudy(studyId) {
       status_invited: 'Invited',
       status_declined: 'Declined',
       waiting_schedule: 'You accepted — the study team will send you a session time shortly',
+      waiting_schedule_group: 'You accepted — the study team will send a group session time shortly',
+      session_type_group: 'Group session',
+      join_early_hint: 'You can join 15 minutes before start',
+      group_session_context: 'You\'ll join a group discussion with other participants',
       waiting_schedule_invited: 'You\'ve been personally selected for this study',
       no_applications: 'You have no active invitations yet.',
       browse_studies_btn: 'View opportunities',
@@ -3144,6 +3188,9 @@ async function applyToStudy(studyId) {
       invite_accepted_toast: 'Invitation accepted ✓',
       invite_declined_toast: 'Invitation declined',
       invite_you_declined: 'You declined this invitation',
+      decline_confirm_prompt: 'Are you sure? Declining can\'t be undone.',
+      decline_confirm_yes: 'Yes, decline',
+      decline_confirm_cancel: 'Keep invitation',
       notif_invite_accepted_title: 'Invitation accepted',
       notif_invite_accepted_body: '{title}: a contributor has confirmed their participation.',
       notif_invite_declined_title: 'Invitation declined',
@@ -3331,6 +3378,10 @@ async function applyToStudy(studyId) {
       status_invited: 'Inbjuden',
       status_declined: 'Avböjd',
       waiting_schedule: 'Du accepterade — studieansvariga skickar en sessionstid till dig inom kort',
+      waiting_schedule_group: 'Du accepterade — studieansvariga skickar en gruppsessionstid till dig inom kort',
+      session_type_group: 'Gruppsession',
+      join_early_hint: 'Du kan gå med 15 minuter innan start',
+      group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',
       waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
       no_applications: 'Du har inga aktiva inbjudningar ännu.',
       browse_studies_btn: 'Se möjligheter',
@@ -3340,6 +3391,9 @@ async function applyToStudy(studyId) {
       invite_accepted_toast: 'Inbjudan accepterad ✓',
       invite_declined_toast: 'Inbjudan avböjd',
       invite_you_declined: 'Du avböjde den här inbjudan',
+      decline_confirm_prompt: 'Är du säker? Avböjning går inte att ångra.',
+      decline_confirm_yes: 'Ja, avböj',
+      decline_confirm_cancel: 'Behåll inbjudan',
       notif_invite_accepted_title: 'Inbjudan accepterad',
       notif_invite_accepted_body: '{title}: en deltagare har bekräftat sitt deltagande.',
       notif_invite_declined_title: 'Inbjudan avböjd',
