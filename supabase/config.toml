@@ -15,3 +15,15 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/send-reminders/deno.json"
 entrypoint = "./functions/send-reminders/index.ts"
+
+[functions.send-day-before-reminders]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-day-before-reminders/deno.json"
+entrypoint = "./functions/send-day-before-reminders/index.ts"
+
+[functions.get-metrics]
+enabled = true
+verify_jwt = false
+import_map = "./functions/get-metrics/deno.json"
+entrypoint = "./functions/get-metrics/index.ts"

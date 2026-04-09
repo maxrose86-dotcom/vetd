@@ -539,6 +539,11 @@ textarea{resize:vertical;min-height:90px}
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_spend">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
         </div>
 
+        <div class="card" id="pending-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">New applications <span id="pending-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="pending-queue-list"></div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
             <div class="sec-title" data-i18n="cl_dash_active_studies">Active studies</div>
@@ -2479,6 +2484,68 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
+  async function loadPendingApplications() {
+    if (!db || !currentClientUser) return;
+    const card    = document.getElementById('pending-queue-card');
+    const list    = document.getElementById('pending-queue-list');
+    const countEl = document.getElementById('pending-queue-count');
+    if (!card || !list) return;
+    try {
+      // Fetch study ids for this operator first (same pattern as loadDashboardStats)
+      const { data: studies, error: sErr } = await db
+        .from('studies')
+        .select('id, title')
+        .eq('created_by', currentClientUser.id);
+      if (sErr) throw sErr;
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) { card.style.display = 'none'; return; }
+
+      const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
+
+      const { data: pending, error: pErr } = await db
+        .from('applications')
+        .select('id, study_id, contributor_id, applied_at, contributors(profiles(first_name, last_name))')
+        .eq('status', 'pending')
+        .in('study_id', studyIds)
+        .order('applied_at', { ascending: false });
+      if (pErr) throw pErr;
+
+      const rows = pending || [];
+      if (!rows.length) { card.style.display = 'none'; return; }
+
+      card.style.display = 'block';
+      countEl.textContent = `(${rows.length})`;
+      list.innerHTML = rows.map(a => {
+        const p    = a.contributors?.profiles || {};
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const date = a.applied_at
+          ? new Date(a.applied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : '—';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)" id="pq-row-${esc(a.id)}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500">${esc(name)}</div>
+            <div style="font-size:12px;color:var(--gray-400)">${esc(studyTitleMap[a.study_id] || '—')} · ${esc(date)}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button class="btn-accept" style="font-size:12px;padding:5px 12px"
+              onclick="handlePendingAction('${esc(a.id)}','accepted','${esc(a.study_id)}','${esc(a.contributor_id)}')">Accept</button>
+            <button class="btn-reject" style="font-size:12px;padding:5px 12px"
+              onclick="handlePendingAction('${esc(a.id)}','rejected','${esc(a.study_id)}','${esc(a.contributor_id)}')">Reject</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('loadPendingApplications error:', err);
+    }
+  }
+
+  async function handlePendingAction(appId, status, studyId, contributorId) {
+    const row = document.getElementById('pq-row-' + appId);
+    if (row) row.innerHTML = `<span style="font-size:12px;color:var(--gray-400);padding:10px 0;display:block">${t('cl_saving') || 'Saving…'}</span>`;
+    await updateApplication(appId, status, studyId, contributorId);
+    await loadPendingApplications();
+  }
+
   function renderDashActiveStudies(studies) {
     const container = document.getElementById('dash-active-studies');
     if (!container) return;
@@ -2573,6 +2640,7 @@ textarea{resize:vertical;min-height:90px}
     loadNotifications();
     loadClientBudget();
     loadDashboardStats();
+    loadPendingApplications();
     setInterval(refreshJoinCallButtons, 30000);
   }
 
@@ -3307,6 +3375,51 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
+  // ─── DEEP LINK HANDLER ─────────────────────────────────
+  // Reads ?study_id= and ?application_id= set by vetd-admin.html Schedule links.
+  // Called after goApp() so the app shell is fully initialised before opening modals.
+  async function handleDeepLink() {
+    const params  = new URLSearchParams(window.location.search);
+    const studyId = params.get('study_id');
+    const appId   = params.get('application_id');
+    if (!studyId) return;
+
+    // Clean params from URL immediately so refresh doesn't re-trigger
+    window.history.replaceState({}, '', window.location.pathname);
+
+    // Fetch title so the modal header is correct
+    let title = '';
+    try {
+      const { data: study } = await db.from('studies').select('title').eq('id', studyId).single();
+      title = study?.title || '';
+    } catch(e) { /* non-fatal — modal still opens with blank title */ }
+
+    // Open the applicants modal (loads and renders all applicants for this study)
+    await openApplicants(studyId, title);
+
+    // Locate the applicant row, scroll to it, and auto-open the scheduling modal
+    if (appId) {
+      const row = document.getElementById('approw-' + appId);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Trigger the existing Schedule button for this row.
+        // The button's onclick already contains openScheduleModal(...) with all required args
+        // (contributorId, contributorName, studyTitle, status) baked in by loadApplicants.
+        // If the row has no schedule button (already scheduled, completed, etc.) nothing happens.
+        const schedBtn = row.querySelector('button[onclick*="openScheduleModal"]');
+        if (schedBtn) {
+          schedBtn.click();
+        } else {
+          // Row exists but is not in a schedulable state — highlight it so the operator sees it
+          row.style.transition = 'background 0.4s';
+          row.style.background = 'rgba(234,179,8,0.12)';
+          setTimeout(() => { row.style.background = ''; }, 2500);
+        }
+      }
+    }
+  }
+
   // ─── SESSION CHECK ──────────────────────────────────────
   (async function checkSession() {
     // Detect email confirmation redirect from Supabase
@@ -3333,7 +3446,7 @@ textarea{resize:vertical;min-height:90px}
     if (!db) return;
     try {
       const { data: { session } } = await db.auth.getSession();
-      if (session) await goApp();
+      if (session) { await goApp(); await handleDeepLink(); }
     } catch(e) { console.warn('Session check failed:', e); }
   })();
 

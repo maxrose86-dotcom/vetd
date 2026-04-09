@@ -1553,6 +1553,27 @@
     notifications: null
   };
 
+  // ─── EVENT LOGGING ───────────────────────────────────────
+  const SESSION_ID = sessionStorage.getItem('vetd_sid') || (() => {
+    const id = crypto.randomUUID(); sessionStorage.setItem('vetd_sid', id); return id;
+  })();
+
+  async function logEvent(name, studyId) {
+    if (!db) { console.warn('[logEvent] db not initialized'); return; }
+    const payload = {
+      event_name: name,
+      study_id: studyId ?? null,
+      session_id: SESSION_ID,
+    };
+    console.log('[logEvent] inserting:', payload);
+    const { error } = await db.from('event_logs').insert(payload);
+    if (error) {
+      console.error('[logEvent] insert failed:', error.message, error.details, error.hint, error.code);
+    } else {
+      console.log('[logEvent] insert ok:', payload.event_name);
+    }
+  }
+
   // ─── CHIP OPTIONS (single source of truth) ──────────────
   const CHIP_OPTIONS = {
     living_situation: [
@@ -1839,7 +1860,7 @@
   }
 
   // ─── MODAL ──────────────────────────────────────────────
-  function openModal(id) {
+  async function openModal(id) {
     state.currentStudy = state.studies.find(j => j.id == id);
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
@@ -1850,6 +1871,7 @@
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
     document.getElementById('apply-modal').classList.add('open');
+    await logEvent('study_page_view', state.currentStudy.id);
   }
 
   function closeModal() {
@@ -1868,6 +1890,7 @@
 
  async function confirmApply() {
   if (!state.currentStudy) return;
+  await logEvent('apply_cta_click', state.currentStudy.id);
   await applyToStudy(state.currentStudy.id);
 }
 
@@ -1908,6 +1931,19 @@
       if (!user) return;
       state.currentUser = user;
       if (window.Sentry) Sentry.setUser({ id: user.id, email: user.email });
+
+      // Ensure profiles + contributors rows exist.
+      // Normal signup creates them via DB trigger; manually confirmed test accounts may not have them.
+      // ignoreDuplicates: true makes this a no-op if rows already exist.
+      await db.from('profiles').upsert(
+        { id: user.id, first_name: user.user_metadata?.first_name ?? null, last_name: user.user_metadata?.last_name ?? null },
+        { onConflict: 'id', ignoreDuplicates: true }
+      );
+      await db.from('contributors').upsert(
+        { id: user.id },
+        { onConflict: 'id', ignoreDuplicates: true }
+      );
+
       const { data, error } = await db
         .from('applications')
         .select('study_id')
@@ -2365,7 +2401,34 @@
   // ─── APPLY TO STUDY ───────────────────────────────────────
 // ─── APPLY TO STUDY ───────────────────────────────────────
 async function applyToStudy(studyId) {
+  if (!db || !state.currentUser) {
+    showToast(t('apply_err_auth') || 'Not signed in — please refresh.', true);
+    return false;
+  }
+  if (state.appliedStudies.has(studyId)) return false;
+
+  const { error } = await db.from('applications').insert({
+    study_id:       studyId,
+    contributor_id: state.currentUser.id,
+    status:         'pending',
+    applied_at:     new Date().toISOString(),
+  });
+
+  if (error) {
+    if (error.code === '23505') {
+      // Duplicate constraint — treat as success
+      state.appliedStudies.add(studyId);
+    } else {
+      console.error('Application insert failed:', error);
+      showToast('Something went wrong — please try again.', true);
+      return false;
+    }
+  } else {
+    state.appliedStudies.add(studyId);
+  }
+
   showToast('Thanks — Vetd will review your profile and invite you to relevant studies.');
+  logEvent('application_intent_submitted', studyId); // fire-and-forget — must not block closeModal
   closeModal();
   return true;
 }

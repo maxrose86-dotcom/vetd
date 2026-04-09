@@ -440,6 +440,14 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     </div>
   </div>
 
+  <div class="card" id="unscheduled-card" style="display:none;margin-bottom:14px">
+    <div class="card-title">Accepted, not scheduled <span id="unscheduled-count" style="color:var(--amber);font-family:var(--mono)"></span></div>
+    <table class="tbl">
+      <thead><tr><th>Contributor</th><th>Study</th><th>Applied</th><th></th></tr></thead>
+      <tbody id="unscheduled-body"></tbody>
+    </table>
+  </div>
+
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Recent flag alerts</div>
@@ -908,6 +916,7 @@ async function init() {
   showApp();
   initUI();
   loadDashboardStats();
+  loadUnscheduledQueue();
   loadContributors();
   loadPayouts();
 }
@@ -950,6 +959,7 @@ async function handleAdminLogin() {
     showApp();
     initUI();
     loadDashboardStats();
+    loadUnscheduledQueue();
     loadContributors();
     loadPayouts();
   } catch(err) {
@@ -1066,6 +1076,51 @@ async function loadDashboardStats() {
 
   } catch(err) {
     console.warn('Could not load dashboard stats:', err);
+  }
+}
+
+// ─── UNSCHEDULED QUEUE ───────────────────────────────────────
+async function loadUnscheduledQueue() {
+  if (!db) return;
+  const card  = document.getElementById('unscheduled-card');
+  const tbody = document.getElementById('unscheduled-body');
+  const count = document.getElementById('unscheduled-count');
+  if (!card || !tbody) return;
+  try {
+    const { data, error } = await db
+      .from('applications')
+      .select('id, study_id, contributor_id, applied_at, contributors(profiles(first_name, last_name)), studies(title)')
+      .eq('status', 'accepted')
+      .is('scheduled_at', null)
+      .order('applied_at', { ascending: true })
+      .limit(25);
+    if (error) throw error;
+
+    const rows = data || [];
+    if (!rows.length) { card.style.display = 'none'; return; }
+
+    card.style.display = 'block';
+    count.textContent  = `· ${rows.length}`;
+    tbody.innerHTML = rows.map(a => {
+      const p    = a.contributors?.profiles || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown';
+      const title = a.studies?.title || '—';
+      const date  = a.applied_at
+        ? new Date(a.applied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : '—';
+      return `<tr>
+        <td style="color:var(--text)">${esc(name)}</td>
+        <td>${esc(title)}</td>
+        <td style="font-family:var(--mono);color:var(--text3)">${esc(date)}</td>
+        <td style="text-align:right">
+          <a href="vetd-client.html?study_id=${esc(a.study_id)}&application_id=${esc(a.id)}" target="_blank"
+             style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25);text-decoration:none;font-family:var(--mono)"
+             title="Open operator portal to schedule ${esc(name)} for ${esc(title)}">Schedule →</a>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(err) {
+    console.warn('loadUnscheduledQueue error:', err);
   }
 }
 

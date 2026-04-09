@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vetd Internal</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; color: #111827; min-height: 100vh; }
+    .page { max-width: 820px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 2rem; color: #111827; }
+    h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; margin-bottom: 1rem; }
+
+    /* login */
+    #login-view { max-width: 360px; margin: 4rem auto; }
+    #login-view h1 { text-align: center; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 5px; color: #374151; }
+    .field input { width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; }
+    .field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .btn { width: 100%; padding: 10px; background: #111827; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .login-err { margin-top: 10px; font-size: 13px; color: #ef4444; text-align: center; }
+
+    /* metrics */
+    #metrics-view { display: none; }
+    .section { margin-bottom: 2.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem 1rem; }
+    .card-label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+    .card-total { font-size: 32px; font-weight: 700; color: #111827; line-height: 1; }
+    .card-7d { font-size: 13px; color: #3b82f6; font-weight: 600; margin-top: 6px; }
+    .card-7d span { font-weight: 400; color: #6b7280; }
+
+    .rates { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .rate-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.5rem; text-align: center; }
+    .rate-pct { font-size: 48px; font-weight: 800; color: #111827; line-height: 1; }
+    .rate-label { font-size: 13px; color: #6b7280; margin-top: 8px; }
+
+    #status { font-size: 14px; color: #6b7280; padding: 3rem 0; text-align: center; }
+    #error-msg { font-size: 14px; color: #ef4444; padding: 3rem 0; text-align: center; }
+
+    .signout { font-size: 12px; color: #9ca3af; background: none; border: none; cursor: pointer; float: right; margin-top: 4px; }
+    .signout:hover { color: #6b7280; }
+
+    @media (max-width: 480px) { .rates { grid-template-columns: 1fr; } .rate-pct { font-size: 36px; } }
+  </style>
+</head>
+<body>
+
+<div id="login-view" class="page">
+  <h1>Vetd Internal</h1>
+  <div style="height:1.5rem"></div>
+  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div>
+  <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div>
+  <button class="btn" id="login-btn" onclick="signIn()">Sign in</button>
+  <div class="login-err" id="login-err"></div>
+</div>
+
+<div id="metrics-view" class="page">
+  <button class="signout" onclick="signOut()">Sign out</button>
+  <h1>Vetd Metrics</h1>
+  <div id="status">Loading...</div>
+  <div id="error-msg" style="display:none"></div>
+
+  <div id="metrics-content" style="display:none">
+    <div class="section">
+      <h2>Funnel</h2>
+      <div class="grid">
+        <div class="card">
+          <div class="card-label">Contributors</div>
+          <div class="card-total" id="m-contributors-total">—</div>
+          <div class="card-7d" id="m-contributors-7d">— <span>last 7d</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Applications</div>
+          <div class="card-total" id="m-applications-total">—</div>
+          <div class="card-7d" id="m-applications-7d">— <span>last 7d</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Sessions scheduled</div>
+          <div class="card-total" id="m-scheduled-total">—</div>
+          <div class="card-7d" id="m-scheduled-7d">— <span>occurred last 7d</span></div>
+        </div>
+        <div class="card">
+          <div class="card-label">Sessions completed</div>
+          <div class="card-total" id="m-completed-total">—</div>
+          <div class="card-7d" id="m-completed-7d">— <span>last 7d</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Conversion</h2>
+      <div class="rates">
+        <div class="rate-card">
+          <div class="rate-pct" id="m-apply-sched">—</div>
+          <div class="rate-label">Apply → Scheduled</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-pct" id="m-sched-comp">—</div>
+          <div class="rate-label">Scheduled → Completed</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL  = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
+
+  let db = null;
+  try {
+    if (window.supabase && window.supabase.createClient) {
+      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    }
+  } catch(e) { console.warn('Supabase not loaded'); }
+
+  (async function checkSession() {
+    if (!db) { document.getElementById('login-view').style.display = 'block'; return; }
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        showMetrics();
+      } else {
+        document.getElementById('login-view').style.display = 'block';
+      }
+    } catch(e) {
+      console.warn('Session check failed:', e);
+      document.getElementById('login-view').style.display = 'block';
+    }
+  })();
+
+  async function signIn() {
+    if (!db) return;
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn      = document.getElementById('login-btn');
+    const errEl    = document.getElementById('login-err');
+    errEl.textContent = '';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) {
+      errEl.textContent = error.message;
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+      return;
+    }
+    document.getElementById('login-view').style.display = 'none';
+    showMetrics();
+  }
+
+  async function signOut() {
+    if (db) await db.auth.signOut();
+    location.reload();
+  }
+
+  async function showMetrics() {
+    document.getElementById('metrics-view').style.display = 'block';
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) { location.reload(); return; }
+
+      const { data, error: invokeError } = await db.functions.invoke('get-metrics');
+      if (invokeError) throw invokeError;
+
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('metrics-content').style.display = 'block';
+
+      set('m-contributors-total', data.contributors_total ?? '—');
+      set('m-contributors-7d',    data.contributors_7d   ?? '—', 'last 7d');
+      set('m-applications-total', data.applications_total ?? '—');
+      set('m-applications-7d',    data.applications_7d   ?? '—', 'last 7d');
+      set('m-scheduled-total',    data.scheduled_total   ?? '—');
+      set('m-scheduled-7d',       data.scheduled_7d      ?? '—', 'occurred last 7d');
+      set('m-completed-total',    data.completed_total   ?? '—');
+      set('m-completed-7d',       data.completed_7d      ?? '—', 'last 7d');
+
+      document.getElementById('m-apply-sched').textContent =
+        data.apply_to_sched_rate != null ? data.apply_to_sched_rate + '%' : '—';
+      document.getElementById('m-sched-comp').textContent =
+        data.sched_to_comp_rate != null ? data.sched_to_comp_rate + '%' : '—';
+
+    } catch (err) {
+      document.getElementById('status').style.display = 'none';
+      const errEl = document.getElementById('error-msg');
+      errEl.style.display = 'block';
+      errEl.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  function set(id, val, suffix) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (suffix) {
+      el.innerHTML = val + ' <span>' + suffix + '</span>';
+    } else {
+      el.textContent = val;
+    }
+  }
+
+</script>
+</body>
+</html>
