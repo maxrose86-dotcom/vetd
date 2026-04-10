@@ -323,13 +323,16 @@ textarea{resize:vertical;min-height:90px}
 .notif-bell{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:none;font-size:15px;transition:background 0.15s;position:relative;flex-shrink:0}
 .notif-bell:hover{background:var(--gray-100)}
 .notif-count-badge{position:absolute;top:-1px;right:-1px;min-width:17px;height:17px;background:var(--coral);color:#fff;border-radius:100px;font-size:9px;font-weight:700;display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff;font-family:monospace;line-height:1}
-.notif-panel{position:absolute;top:calc(100% + 10px);left:0;width:320px;background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);z-index:600;display:none;overflow:hidden}
-.notif-panel.open{display:block;animation:fadeUp 0.18s ease}
+.notif-panel{position:absolute;left:0;width:320px;background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.12),0 2px 8px rgba(0,0,0,0.06);z-index:600;display:none;overflow:hidden}
+.notif-panel.open{display:block}
+.notif-panel.down{top:calc(100% + 8px);bottom:auto;animation:fadeUp 0.18s ease}
+.notif-panel.up{bottom:calc(100% + 8px);top:auto;animation:fadeDown 0.18s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .notif-panel-hd{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--gray-100)}
 .notif-panel-hd-title{font-size:13px;font-weight:600;color:var(--gray-900)}
 .notif-mark-all-btn{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-family:var(--sans);padding:0}
 .notif-mark-all-btn:hover{text-decoration:underline}
-.notif-panel-body{max-height:360px;overflow-y:auto}
+.notif-panel-body{max-height:min(360px,calc(100vh - 120px));overflow-y:auto}
 .notif-row{display:flex;gap:10px;padding:11px 16px;border-bottom:1px solid var(--gray-100);cursor:pointer;transition:background 0.1s;align-items:flex-start}
 .notif-row:last-child{border-bottom:none}
 .notif-row:hover{background:var(--gray-50)}
@@ -542,6 +545,11 @@ textarea{resize:vertical;min-height:90px}
         <div class="card" id="pending-queue-card" style="margin-bottom:1.5rem;display:none">
           <div class="sec-title">New applications <span id="pending-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
           <div id="pending-queue-list"></div>
+        </div>
+
+        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="unscheduled-queue-list"></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
@@ -1696,6 +1704,7 @@ textarea{resize:vertical;min-height:90px}
         const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
         closeScheduleModal();
         await loadApplicants(savedStudyId);
+        loadUnscheduledApplications();
 
       } else {
         // ── ONE-TO-ONE PATH (unchanged) ─────────────────────────────────────
@@ -1722,6 +1731,7 @@ textarea{resize:vertical;min-height:90px}
 
         showToast(t('cl_session_scheduled'));
         closeScheduleModal();
+        loadUnscheduledApplications();
       }
     } catch(err) {
       console.error('Schedule session error:', err);
@@ -2546,6 +2556,58 @@ textarea{resize:vertical;min-height:90px}
     await loadPendingApplications();
   }
 
+  async function loadUnscheduledApplications() {
+    if (!db || !currentClientUser) return;
+    const card    = document.getElementById('unscheduled-queue-card');
+    const list    = document.getElementById('unscheduled-queue-list');
+    const countEl = document.getElementById('unscheduled-queue-count');
+    if (!card || !list) return;
+    try {
+      const { data: studies, error: sErr } = await db
+        .from('studies')
+        .select('id, title')
+        .eq('created_by', currentClientUser.id);
+      if (sErr) throw sErr;
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) { card.style.display = 'none'; return; }
+
+      const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
+
+      const { data: rows, error: rErr } = await db
+        .from('applications')
+        .select('id, study_id, contributor_id, applied_at, contributors(profiles(first_name, last_name))')
+        .eq('status', 'accepted')
+        .is('scheduled_at', null)
+        .in('study_id', studyIds)
+        .order('applied_at', { ascending: true });
+      if (rErr) throw rErr;
+
+      const data = rows || [];
+      if (!data.length) { card.style.display = 'none'; return; }
+
+      card.style.display = 'block';
+      countEl.textContent = `(${data.length})`;
+      list.innerHTML = data.map(a => {
+        const p     = a.contributors?.profiles || {};
+        const name  = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const title = studyTitleMap[a.study_id] || '—';
+        const date  = a.applied_at
+          ? new Date(a.applied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : '—';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500">${esc(name)}</div>
+            <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(date)}</div>
+          </div>
+          <button class="btn-accept" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            onclick="openScheduleModal('${esc(a.id)}','${esc(a.study_id)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(title)}','accepted')">${t('cl_schedule_session') || 'Schedule'}</button>
+        </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('loadUnscheduledApplications error:', err);
+    }
+  }
+
   function renderDashActiveStudies(studies) {
     const container = document.getElementById('dash-active-studies');
     if (!container) return;
@@ -2641,6 +2703,7 @@ textarea{resize:vertical;min-height:90px}
     loadClientBudget();
     loadDashboardStats();
     loadPendingApplications();
+    loadUnscheduledApplications();
     setInterval(refreshJoinCallButtons, 30000);
   }
 
@@ -2700,8 +2763,31 @@ textarea{resize:vertical;min-height:90px}
     `).join('');
   }
 
+  function positionNotifications(panel, trigger) {
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const estimatedHeight = 320;
+    panel.classList.remove('up', 'down');
+    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+      panel.classList.add('up');
+    } else {
+      panel.classList.add('down');
+    }
+    panel.style.maxHeight = (Math.max(spaceAbove, spaceBelow) - 20) + 'px';
+  }
+
   function toggleNotifPanel() {
-    document.getElementById('notif-panel').classList.toggle('open');
+    const panel   = document.getElementById('notif-panel');
+    const trigger = document.getElementById('notif-bell');
+    const isOpen  = panel.classList.contains('open');
+    if (isOpen) {
+      panel.classList.remove('open', 'up', 'down');
+      panel.style.maxHeight = '';
+    } else {
+      panel.classList.add('open');
+      requestAnimationFrame(() => positionNotifications(panel, trigger));
+    }
   }
 
   async function handleNotifClick(notifId, link) {
@@ -2765,7 +2851,16 @@ textarea{resize:vertical;min-height:90px}
     const wrap = document.getElementById('notif-wrap');
     if (wrap && !wrap.contains(e.target)) {
       const panel = document.getElementById('notif-panel');
-      if (panel) panel.classList.remove('open');
+      if (panel) { panel.classList.remove('open', 'up', 'down'); panel.style.maxHeight = ''; }
+    }
+  });
+
+  // Reposition on resize if open
+  window.addEventListener('resize', () => {
+    const panel   = document.getElementById('notif-panel');
+    const trigger = document.getElementById('notif-bell');
+    if (panel && trigger && panel.classList.contains('open')) {
+      positionNotifications(panel, trigger);
     }
   });
 
