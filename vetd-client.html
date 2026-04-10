@@ -553,6 +553,11 @@ textarea{resize:vertical;min-height:90px}
           <div id="unscheduled-queue-list"></div>
         </div>
 
+        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
+          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
+          <div id="upcoming-sessions-list"></div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
             <div class="sec-title" data-i18n="cl_dash_active_studies">Active studies</div>
@@ -1744,6 +1749,7 @@ textarea{resize:vertical;min-height:90px}
         closeScheduleModal();
         await loadApplicants(savedStudyId);
         await loadUnscheduledApplications();
+        loadUpcomingSessions();
 
       } else {
         // ── ONE-TO-ONE PATH ─────────────────────────────────────────────────
@@ -1785,6 +1791,7 @@ textarea{resize:vertical;min-height:90px}
         document.querySelector(`[data-app-id="${_schedAppId}"]`)?.remove();
         closeScheduleModal();
         await loadUnscheduledApplications();
+        loadUpcomingSessions();
       }
     } catch(err) {
       console.error('Schedule session error:', err);
@@ -2661,6 +2668,62 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
+  async function loadUpcomingSessions() {
+    if (!db || !currentClientUser) return;
+    const card = document.getElementById('upcoming-sessions-card');
+    const list = document.getElementById('upcoming-sessions-list');
+    if (!card || !list) return;
+    try {
+      const { data: studies, error: sErr } = await db
+        .from('studies')
+        .select('id, title')
+        .eq('created_by', currentClientUser.id);
+      if (sErr) throw sErr;
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) {
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No sessions in the next 24 hours.</div>`;
+        return;
+      }
+      const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
+
+      const now   = new Date().toISOString();
+      const in24h = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: rows, error: rErr } = await db
+        .from('applications')
+        .select('id, study_id, contributor_id, scheduled_at, contributors(profiles(first_name, last_name))')
+        .eq('status', 'accepted')
+        .gte('scheduled_at', now)
+        .lte('scheduled_at', in24h)
+        .in('study_id', studyIds)
+        .order('scheduled_at', { ascending: true });
+      if (rErr) throw rErr;
+
+      const data = rows || [];
+      if (!data.length) {
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No sessions in the next 24 hours.</div>`;
+        return;
+      }
+
+      list.innerHTML = data.map(a => {
+        const p     = a.contributors?.profiles || {};
+        const name  = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const title = studyTitleMap[a.study_id] || '—';
+        const time  = formatScheduledTime(a.scheduled_at);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500">${esc(name)}</div>
+            <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
+          </div>
+          <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            onclick="openApplicants('${esc(a.study_id)}','${escAttr(title)}')">${t('cl_open') || 'Open'}</button>
+        </div>`;
+      }).join('');
+    } catch(err) {
+      console.error('loadUpcomingSessions error:', err);
+    }
+  }
+
   function renderDashActiveStudies(studies) {
     const container = document.getElementById('dash-active-studies');
     if (!container) return;
@@ -2757,6 +2820,7 @@ textarea{resize:vertical;min-height:90px}
     loadDashboardStats();
     loadPendingApplications();
     loadUnscheduledApplications();
+    loadUpcomingSessions();
     setInterval(refreshJoinCallButtons, 30000);
   }
 
