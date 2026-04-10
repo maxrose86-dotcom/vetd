@@ -1519,6 +1519,7 @@ textarea{resize:vertical;min-height:90px}
   let _schedAppId = null, _schedStudyId = null, _schedContributorId = null;
   let _schedSessionType = 'one_to_one'; // 'one_to_one' | 'group'
   let _schedIsReschedule = false;
+  let _schedCurrentStatus = null; // original status at modal open ('pending','invited','accepted','reschedule')
 
   function formatScheduledTime(isoStr) {
     const d = new Date(isoStr);
@@ -1555,6 +1556,7 @@ textarea{resize:vertical;min-height:90px}
   function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, currentStatus) {
     _schedSessionType = 'one_to_one'; // always 1-on-1 when called per-row
     _schedIsReschedule = currentStatus === 'reschedule';
+    _schedCurrentStatus = currentStatus;
     _schedAppId = appId;
     _schedStudyId = studyId;
     _schedContributorId = contributorId;
@@ -1582,6 +1584,7 @@ textarea{resize:vertical;min-height:90px}
     _schedAppId = null; _schedStudyId = null; _schedContributorId = null;
     _schedSessionType = 'one_to_one';
     _schedIsReschedule = false;
+    _schedCurrentStatus = null;
   }
 
   function openGroupScheduleModal(studyId, acceptedCount, isReschedule) {
@@ -1704,10 +1707,10 @@ textarea{resize:vertical;min-height:90px}
         const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
         closeScheduleModal();
         await loadApplicants(savedStudyId);
-        loadUnscheduledApplications();
+        await loadUnscheduledApplications();
 
       } else {
-        // ── ONE-TO-ONE PATH (unchanged) ─────────────────────────────────────
+        // ── ONE-TO-ONE PATH ─────────────────────────────────────────────────
         const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
@@ -1716,8 +1719,21 @@ textarea{resize:vertical;min-height:90px}
         const result = await res.json();
         if (result.error) throw new Error(result.error);
 
-        // Accept the application (suppress generic notification — contributor notified by Edge Function)
-        await updateApplication(_schedAppId, 'accepted', _schedStudyId, _schedContributorId, true, true);
+        const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
+
+        // If the application was pending/invited, promote it to accepted now.
+        // If it was already accepted (scheduled from queue or from applicants panel),
+        // skip updateApplication entirely — the status hasn't changed, and calling it
+        // would double-increment filled_spots and obscure whether scheduled_at is visible
+        // to a subsequent loadUnscheduledApplications query.
+        const needsAccept = _schedCurrentStatus === 'pending' || _schedCurrentStatus === 'invited';
+        if (needsAccept) {
+          await updateApplication(_schedAppId, 'accepted', savedStudyId, _schedContributorId, true, true);
+        } else {
+          // Application already accepted — just refresh the views that updateApplication would have refreshed
+          await loadApplicants(savedStudyId);
+          await loadStudies();
+        }
 
         // Notify the operator as confirmation
         if (currentClientUser) {
@@ -1725,13 +1741,13 @@ textarea{resize:vertical;min-height:90px}
           const opBody  = _schedIsReschedule
             ? `Session for "${studyTitle}" rescheduled to ${formattedDate}.`
             : `Session for "${studyTitle}" confirmed for ${formattedDate}.`;
-          await sendNotification(currentClientUser.id, opTitle, opBody, '#applicants/' + _schedStudyId + '/' + encodeURIComponent(studyTitle));
+          await sendNotification(currentClientUser.id, opTitle, opBody, '#applicants/' + savedStudyId + '/' + encodeURIComponent(studyTitle));
           loadNotifications();
         }
 
         showToast(t('cl_session_scheduled'));
         closeScheduleModal();
-        loadUnscheduledApplications();
+        await loadUnscheduledApplications();
       }
     } catch(err) {
       console.error('Schedule session error:', err);
