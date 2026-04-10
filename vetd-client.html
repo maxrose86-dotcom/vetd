@@ -197,6 +197,7 @@ textarea{resize:vertical;min-height:90px}
 
 /* APPLICANTS MODAL */
 .applicants-modal{max-width:680px}
+.pipeline-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:10px;padding-top:14px;border-top:1px solid var(--gray-100)}
 .applicant-row{display:flex;align-items:center;gap:1rem;padding:12px 0;border-bottom:1px solid var(--gray-100)}
 .applicant-row:last-child{border-bottom:none}
 .applicant-av{width:42px;height:42px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--green-dark);flex-shrink:0}
@@ -842,9 +843,19 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
     </div>
-    <div id="applicants-group-header" style="margin-bottom:12px"></div>
-    <div id="applicants-list">
-      <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
+    <div id="pipeline-applicants">
+      <div id="applicants-list">
+        <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
+      </div>
+    </div>
+    <div id="applicants-group-header"></div>
+    <div id="pipeline-selected" style="display:none">
+      <div class="pipeline-label">Selected</div>
+      <div id="selected-list"></div>
+    </div>
+    <div id="pipeline-scheduled" style="display:none">
+      <div class="pipeline-label">Scheduled</div>
+      <div id="scheduled-list"></div>
     </div>
   </div>
 </div>
@@ -1243,6 +1254,11 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('applicants-count').textContent = t('cl_loading');
     document.getElementById('applicants-list').innerHTML =
       `<div style="text-align:center;padding:2rem;color:var(--gray-400)">${t('cl_loading_applicants')}</div>`;
+    document.getElementById('applicants-group-header').innerHTML = '';
+    document.getElementById('selected-list').innerHTML = '';
+    document.getElementById('scheduled-list').innerHTML = '';
+    document.getElementById('pipeline-selected').style.display = 'none';
+    document.getElementById('pipeline-scheduled').style.display = 'none';
     document.getElementById('applicants-modal').classList.add('open');
     await loadApplicants(studyId);
   }
@@ -1330,7 +1346,7 @@ textarea{resize:vertical;min-height:90px}
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
 
-      list.innerHTML = data.map((a, i) => {
+      const renderRow = (a, i) => {
         const c       = a.contributors || {};
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
@@ -1439,7 +1455,26 @@ textarea{resize:vertical;min-height:90px}
             </div>
             <div class="applicant-actions">${actions}</div>
           </div>`;
-      }).join('');
+      };
+
+      // Split into pipeline sections
+      const applicantRows  = data.filter(a => ['pending', 'invited', 'declined'].includes(a.status));
+      const selectedRows   = data.filter(a => a.status === 'accepted' && !a.scheduled_at);
+      const scheduledRows  = data.filter(a => !!a.scheduled_at);
+
+      list.innerHTML = applicantRows.map(renderRow).join('');
+
+      const selectedList      = document.getElementById('selected-list');
+      const scheduledList     = document.getElementById('scheduled-list');
+      const pipelineSelected  = document.getElementById('pipeline-selected');
+      const pipelineScheduled = document.getElementById('pipeline-scheduled');
+
+      selectedList.innerHTML = selectedRows.map(renderRow).join('');
+      pipelineSelected.style.display = selectedRows.length > 0 ? 'block' : 'none';
+
+      scheduledList.innerHTML = scheduledRows.map(renderRow).join('');
+      pipelineScheduled.style.display = scheduledRows.length > 0 ? 'block' : 'none';
+
     } catch(err) {
       console.error('Load applicants error:', err);
       if (window.Sentry) Sentry.captureException(err);
