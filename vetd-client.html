@@ -1554,7 +1554,6 @@ textarea{resize:vertical;min-height:90px}
   }
 
   function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, currentStatus) {
-    console.log('[vetd:sched] openScheduleModal — appId:', appId, 'studyId:', studyId, 'currentStatus:', currentStatus);
     _schedSessionType = 'one_to_one'; // always 1-on-1 when called per-row
     _schedIsReschedule = currentStatus === 'reschedule';
     _schedCurrentStatus = currentStatus;
@@ -1622,7 +1621,6 @@ textarea{resize:vertical;min-height:90px}
   });
 
   async function scheduleAndAccept() {
-    console.log('[vetd:sched] scheduleAndAccept called — appId:', _schedAppId, 'studyId:', _schedStudyId, 'currentStatus:', _schedCurrentStatus, 'sessionType:', _schedSessionType);
     const dateVal = document.getElementById('schedule-date').value;
     const timeVal = document.getElementById('schedule-time').value;
     if (!dateVal || !timeVal) { showToast('Please select a date and time', true); return; }
@@ -1722,7 +1720,6 @@ textarea{resize:vertical;min-height:90px}
         if (!res.ok) { const text = await res.text(); throw new Error('create-daily-room failed: ' + text); }
         const result = await res.json();
         if (result.error) throw new Error(result.error);
-        console.log('[vetd:sched] edge fn success — room_url:', result.room_url, 'appId:', _schedAppId);
 
         const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
 
@@ -1731,7 +1728,6 @@ textarea{resize:vertical;min-height:90px}
         // skip updateApplication entirely — the status hasn't changed, and calling it
         // would double-increment filled_spots.
         const needsAccept = _schedCurrentStatus === 'pending' || _schedCurrentStatus === 'invited';
-        console.log('[vetd:sched] needsAccept:', needsAccept, '— about to refresh views');
         if (needsAccept) {
           await updateApplication(_schedAppId, 'accepted', savedStudyId, _schedContributorId, true, true);
         } else {
@@ -1752,7 +1748,6 @@ textarea{resize:vertical;min-height:90px}
 
         showToast(t('cl_session_scheduled'));
         closeScheduleModal();
-        console.log('[vetd:sched] calling loadUnscheduledApplications — savedStudyId:', savedStudyId);
         await loadUnscheduledApplications();
       }
     } catch(err) {
@@ -2580,11 +2575,10 @@ textarea{resize:vertical;min-height:90px}
 
   async function loadUnscheduledApplications() {
     if (!db || !currentClientUser) return;
-    console.log('[vetd:queue] loadUnscheduledApplications start');
     const card    = document.getElementById('unscheduled-queue-card');
     const list    = document.getElementById('unscheduled-queue-list');
     const countEl = document.getElementById('unscheduled-queue-count');
-    if (!card || !list) { console.warn('[vetd:queue] card or list element missing'); return; }
+    if (!card || !list) return;
     try {
       const { data: studies, error: sErr } = await db
         .from('studies')
@@ -2606,7 +2600,6 @@ textarea{resize:vertical;min-height:90px}
       if (rErr) throw rErr;
 
       const data = rows || [];
-      console.log('[vetd:queue] rows returned:', data.length, data.map(r => r.id));
       if (!data.length) { card.style.display = 'none'; return; }
 
       card.style.display = 'block';
