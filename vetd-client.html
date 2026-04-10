@@ -1666,9 +1666,10 @@ textarea{resize:vertical;min-height:90px}
         // Create one shared Daily room — spots and session_type verified server-side from DB
         const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON },
           body: JSON.stringify({ study_id: _schedStudyId, scheduled_at: isoDatetime })
         });
+        if (!res.ok) { const text = await res.text(); throw new Error('create-daily-room failed: ' + text); }
         const result = await res.json();
         if (result.error) throw new Error(result.error);
 
@@ -1715,9 +1716,10 @@ textarea{resize:vertical;min-height:90px}
         // ── ONE-TO-ONE PATH ─────────────────────────────────────────────────
         const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON },
           body: JSON.stringify({ application_id: _schedAppId, scheduled_at: isoDatetime, is_reschedule: _schedIsReschedule })
         });
+        if (!res.ok) { const text = await res.text(); throw new Error('create-daily-room failed: ' + text); }
         const result = await res.json();
         if (result.error) throw new Error(result.error);
         console.log('[vetd:sched] edge fn success — room_url:', result.room_url, 'appId:', _schedAppId);
