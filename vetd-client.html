@@ -1696,7 +1696,7 @@ textarea{resize:vertical;min-height:90px}
           const groupOpBody  = _schedIsReschedule
             ? `Group session for "${studyTitle}" rescheduled to ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`
             : `Group session for "${studyTitle}" confirmed for ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`;
-          await sendNotification(currentClientUser.id, groupOpTitle, groupOpBody, null);
+          await sendNotification(currentClientUser.id, groupOpTitle, groupOpBody, '#applicants/' + _schedStudyId + '/' + encodeURIComponent(studyTitle));
           loadNotifications();
         }
 
@@ -1725,7 +1725,7 @@ textarea{resize:vertical;min-height:90px}
           const opBody  = _schedIsReschedule
             ? `Session for "${studyTitle}" rescheduled to ${formattedDate}.`
             : `Session for "${studyTitle}" confirmed for ${formattedDate}.`;
-          await sendNotification(currentClientUser.id, opTitle, opBody, null);
+          await sendNotification(currentClientUser.id, opTitle, opBody, '#applicants/' + _schedStudyId + '/' + encodeURIComponent(studyTitle));
           loadNotifications();
         }
 
