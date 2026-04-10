@@ -2751,9 +2751,7 @@ textarea{resize:vertical;min-height:90px}
       return;
     }
 
-    body.innerHTML = notifs.map(n => {
-      console.log('[vetd] notif-row', { id: n.id.slice(0, 8), link: n.link });
-      return `
+    body.innerHTML = notifs.map(n => `
       <div class="notif-row ${n.read ? '' : 'unread'}" data-id="${escAttr(n.id)}" data-link="${escAttr(n.link || '')}">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
@@ -2761,8 +2759,8 @@ textarea{resize:vertical;min-height:90px}
           <div class="notif-row-body">${esc(n.body)}</div>
           <div class="notif-row-time">${timeAgo(n.created_at)}</div>
         </div>
-      </div>`;
-    }).join('');
+      </div>
+    `).join('');
   }
 
   function positionNotifications(panel, trigger) {
@@ -2793,14 +2791,12 @@ textarea{resize:vertical;min-height:90px}
   }
 
   async function handleNotifClick(notifId, link) {
-    console.log('[vetd] notif-click', { notifId: notifId.slice(0, 8), link });
     if (db && currentClientUser) {
       await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', currentClientUser.id);
       loadNotifications();
     }
     const cleanLink = (link || '').trim();
     if (cleanLink.startsWith('#applicants/')) {
-      console.log('[vetd] opening applicants', cleanLink);
       document.getElementById('notif-panel').classList.remove('open');
       const parts = cleanLink.slice('#applicants/'.length).split('/');
       const studyId    = parts[0];
@@ -2809,7 +2805,6 @@ textarea{resize:vertical;min-height:90px}
     } else if (cleanLink) {
       window.location.href = cleanLink;
     } else {
-      console.warn('[vetd] notification has no link (id:', notifId, ')');
       document.getElementById('notif-panel').classList.remove('open');
     }
   }
@@ -2838,23 +2833,31 @@ textarea{resize:vertical;min-height:90px}
 
   async function sendNotification(userId, title, body, link) {
     if (!db) return;
-    console.log('[vetd] sendNotif', { userId, title, link });
-    // insert_notification is SECURITY DEFINER — it bypasses RLS so the operator
-    // can create notifications for contributors. The notifications table has no
-    // client-side INSERT policy, so direct insert is not an option.
-    // The GRANT covers exactly 4 params: (uuid, text, text, text).
-    // Do NOT add p_notif_type or p_params — they break function resolution for
-    // the authenticated role even though edge functions (service role) tolerate them.
     try {
-      const { error } = await db.rpc('insert_notification', {
-        p_user_id: userId,
-        p_title:   title,
-        p_body:    body,
-        p_link:    link || null,
-      });
-      if (error) throw error;
+      // Self-notifications: direct insert gives us direct column control.
+      // Requires the notifications_insert_own RLS policy (user_id = auth.uid()).
+      // Cross-user (e.g. operator → contributor): SECURITY DEFINER RPC bypasses RLS.
+      // Use exactly 4 params — the GRANT on insert_notification covers (uuid,text,text,text).
+      if (currentClientUser && userId === currentClientUser.id) {
+        const { error } = await db.from('notifications').insert({
+          user_id: userId,
+          title,
+          body,
+          link:    link || null,
+          read:    false,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await db.rpc('insert_notification', {
+          p_user_id: userId,
+          p_title:   title,
+          p_body:    body,
+          p_link:    link || null,
+        });
+        if (error) throw error;
+      }
     } catch(err) {
-      console.warn('[vetd] sendNotification failed:', err.message || err);
+      console.warn('[vetd] sendNotification error:', err.message || err);
     }
   }
 
