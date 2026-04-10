@@ -426,6 +426,40 @@
     padding: 1.25rem;
   }
   .profile-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 1rem; }
+
+  /* ── BOOST CARD ── */
+  .boost-card {
+    background: linear-gradient(135deg, #f0fdf8 0%, #f0f9ff 100%);
+    border: 1px solid var(--green);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .boost-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+  .boost-title { font-size: 15px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
+  .boost-sub { font-size: 13px; color: var(--gray-400); font-weight: 300; }
+  .boost-progress-label { font-size: 13px; font-weight: 700; color: var(--green-dark); white-space: nowrap; }
+  .boost-progress-track { height: 6px; background: var(--gray-200); border-radius: 100px; overflow: hidden; }
+  .boost-progress-fill { height: 100%; background: linear-gradient(90deg, var(--green), var(--green-dark)); border-radius: 100px; transition: width 0.4s ease; }
+  .boost-section { border-top: 1px solid rgba(0,196,122,0.2); }
+  .boost-section-hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; cursor: pointer; gap: 1rem; user-select: none; }
+  .boost-section-hd:hover .boost-section-title { color: var(--green-dark); }
+  .boost-section-title { font-size: 14px; font-weight: 500; color: var(--gray-900); }
+  .boost-section-hint { font-size: 12px; color: var(--gray-400); margin-left: 8px; font-weight: 300; }
+  .boost-chevron { font-size: 20px; color: var(--gray-400); transition: transform 0.2s; line-height: 1; flex-shrink: 0; display: inline-block; }
+  .boost-chevron.open { transform: rotate(90deg); }
+  .boost-section-body { padding-bottom: 12px; }
+  .boost-save-btn {
+    padding: 8px 22px;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    font-family: var(--sans); margin-top: 10px;
+    transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(0,196,122,0.3);
+  }
+  .boost-save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,196,122,0.4); }
+  .boost-save-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
   .profile-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
   .profile-row:last-child { border-bottom: none; }
   .profile-row-label { color: var(--gray-400); }
@@ -810,10 +844,6 @@
           <label>Finance & banking</label>
           <div id="ob-chips-finance"></div>
         </div>
-        <div class="field">
-          <label>Which brands do you shop with regularly?</label>
-          <div id="ob-chips-brands"></div>
-        </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(3)">← Back</button>
           <button class="btn-next" onclick="nextStep(3)">Continue →</button>
@@ -837,26 +867,6 @@
         <div class="field">
           <label>Maximum session length I'm comfortable with</label>
           <div id="ob-chips-maxlen"></div>
-        </div>
-        <div class="field">
-          <label>How often would you like to participate?</label>
-          <select id="frequency">
-            <option value="once_a_month">Once a month</option>
-            <option value="2_3_per_month">2–3 times a month</option>
-            <option value="weekly">Weekly</option>
-            <option value="as_often_as_possible">As often as possible</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Minimum pay you'd accept (per hour equivalent)</label>
-          <div style="margin-top:8px">
-            <input type="range" min="50" max="1500" value="250" id="minpay" oninput="document.getElementById('payval').textContent=this.value+' kr'">
-            <div class="range-labels"><span>50 kr</span><span id="payval" style="color:var(--green);font-weight:600">250 kr</span><span>1 500 kr</span></div>
-          </div>
-        </div>
-        <div class="field">
-          <label>Anything else you'd like us to know?</label>
-          <textarea id="additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(4)">← Back</button>
@@ -1044,6 +1054,8 @@
           </div>
           <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()" data-i18n="prof_edit_btn">Edit profile</button>
         </div>
+
+        <div id="profile-boost-card" style="display:none"></div>
 
         <div class="profile-grid" id="profile-grid">
           <div class="profile-section">
@@ -1488,7 +1500,6 @@
         interests_lifestyle: getChipValues('interests_lifestyle'),
         interests_tech:      getChipValues('interests_tech'),
         interests_finance:   getChipValues('interests_finance'),
-        brands:              getChipValues('brands'),
         onboarding_step:     4
       }).eq('id', user.id);
 
@@ -1517,13 +1528,10 @@
       const sessionLengths = getChipValues('max_session_length');
 
       const { error } = await db.from('contributors').update({
-        study_formats:      getChipValues('study_formats'),
-        available_times:    getChipValues('available_times'),
-        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
-        frequency:          document.getElementById('frequency').value,
-        min_pay_per_hour:   parseInt(document.getElementById('minpay').value, 10),
-        additional_notes:   document.getElementById('additional_notes').value.trim() || null,
-        onboarding_step:    5,
+        study_formats:       getChipValues('study_formats'),
+        available_times:     getChipValues('available_times'),
+        max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
+        onboarding_step:     5,
         onboarding_complete: true
       }).eq('id', user.id);
 
@@ -1577,91 +1585,110 @@
   // ─── CHIP OPTIONS (single source of truth) ──────────────
   const CHIP_OPTIONS = {
     living_situation: [
-      { value: 'own_home',               label: 'Own my home' },
-      { value: 'renting',                label: 'Renting' },
-      { value: 'with_family',            label: 'Living with family' },
-      { value: 'student_accommodation',  label: 'Student accommodation' }
+      { value: 'own_home',               label: 'Own my home',           labelSv: 'Äger min bostad' },
+      { value: 'renting',                label: 'Renting',               labelSv: 'Hyr' },
+      { value: 'with_family',            label: 'Living with family',    labelSv: 'Bor med familj' },
+      { value: 'student_accommodation',  label: 'Student accommodation', labelSv: 'Studentboende' }
     ],
     children: [
-      { value: 'no_children',    label: 'No children' },
-      { value: 'under_5',        label: 'Children under 5' },
-      { value: 'children_5_12', label: 'Children 5–12' },
-      { value: 'teenagers',      label: 'Teenagers' },
-      { value: 'adult_children', label: 'Adult children' }
+      { value: 'no_children',    label: 'No children',       labelSv: 'Inga barn' },
+      { value: 'under_5',        label: 'Children under 5',  labelSv: 'Barn under 5 år' },
+      { value: 'children_5_12',  label: 'Children 5–12',     labelSv: 'Barn 5–12 år' },
+      { value: 'teenagers',      label: 'Teenagers',         labelSv: 'Tonåringar' },
+      { value: 'adult_children', label: 'Adult children',    labelSv: 'Vuxna barn' }
     ],
     interests_lifestyle: [
-      { value: 'fashion',        label: 'Fashion & clothing' },
-      { value: 'beauty',         label: 'Beauty & skincare' },
-      { value: 'home',           label: 'Home & interiors' },
-      { value: 'food',           label: 'Food & cooking' },
-      { value: 'fitness',        label: 'Fitness & wellness' },
-      { value: 'sustainability', label: 'Sustainability' },
-      { value: 'pets',           label: 'Pets' },
-      { value: 'travel',         label: 'Travel' },
-      { value: 'gardening',      label: 'Gardening' }
+      { value: 'fashion',        label: 'Fashion & clothing',  labelSv: 'Mode & kläder' },
+      { value: 'beauty',         label: 'Beauty & skincare',   labelSv: 'Skönhet & hudvård' },
+      { value: 'home',           label: 'Home & interiors',    labelSv: 'Hem & inredning' },
+      { value: 'food',           label: 'Food & cooking',      labelSv: 'Mat & matlagning' },
+      { value: 'fitness',        label: 'Fitness & wellness',  labelSv: 'Träning & hälsa' },
+      { value: 'sustainability', label: 'Sustainability',      labelSv: 'Hållbarhet' },
+      { value: 'pets',           label: 'Pets',                labelSv: 'Husdjur' },
+      { value: 'travel',         label: 'Travel',              labelSv: 'Resor' },
+      { value: 'gardening',      label: 'Gardening',           labelSv: 'Trädgård' }
     ],
     interests_tech: [
-      { value: 'smartphones',  label: 'Smartphones & apps' },
-      { value: 'gaming',       label: 'Gaming' },
-      { value: 'streaming',    label: 'Streaming & TV' },
-      { value: 'social_media', label: 'Social media' },
-      { value: 'podcasts',     label: 'Podcasts' },
-      { value: 'smart_home',   label: 'Smart home' }
+      { value: 'smartphones',  label: 'Smartphones & apps', labelSv: 'Smartphones & appar' },
+      { value: 'gaming',       label: 'Gaming',             labelSv: 'Gaming' },
+      { value: 'streaming',    label: 'Streaming & TV',     labelSv: 'Streaming & TV' },
+      { value: 'social_media', label: 'Social media',       labelSv: 'Sociala medier' },
+      { value: 'podcasts',     label: 'Podcasts',           labelSv: 'Poddar' },
+      { value: 'smart_home',   label: 'Smart home',         labelSv: 'Smart hem' }
     ],
     interests_finance: [
-      { value: 'online_banking', label: 'Online banking' },
-      { value: 'investing',      label: 'Investing / stocks' },
-      { value: 'crypto',         label: 'Crypto' },
-      { value: 'mortgages',      label: 'Mortgages / property' },
-      { value: 'insurance',      label: 'Insurance' },
-      { value: 'budgeting',      label: 'Budgeting apps' }
+      { value: 'online_banking', label: 'Online banking',        labelSv: 'Internetbank' },
+      { value: 'investing',      label: 'Investing / stocks',    labelSv: 'Investering / aktier' },
+      { value: 'crypto',         label: 'Crypto',                labelSv: 'Krypto' },
+      { value: 'mortgages',      label: 'Mortgages / property',  labelSv: 'Bolån / fastigheter' },
+      { value: 'insurance',      label: 'Insurance',             labelSv: 'Försäkring' },
+      { value: 'budgeting',      label: 'Budgeting apps',        labelSv: 'Budgetappar' }
     ],
     brands: [
-      { value: 'hm',             label: 'H&M' },
-      { value: 'asos',           label: 'ASOS' },
-      { value: 'amazon',         label: 'Amazon' },
-      { value: 'tesco',          label: 'Tesco' },
-      { value: 'marks_spencer',  label: 'Marks & Spencer' },
-      { value: 'john_lewis',     label: 'John Lewis' },
-      { value: 'lloyds_barclays',label: 'Lloyds / Barclays' },
-      { value: 'zara',           label: 'Zara' },
-      { value: 'boots',          label: 'Boots' },
-      { value: 'apple',          label: 'Apple' }
+      { value: 'hm',              label: 'H&M',              labelSv: 'H&M' },
+      { value: 'asos',            label: 'ASOS',             labelSv: 'ASOS' },
+      { value: 'amazon',          label: 'Amazon',           labelSv: 'Amazon' },
+      { value: 'tesco',           label: 'Tesco',            labelSv: 'Tesco' },
+      { value: 'marks_spencer',   label: 'Marks & Spencer',  labelSv: 'Marks & Spencer' },
+      { value: 'john_lewis',      label: 'John Lewis',       labelSv: 'John Lewis' },
+      { value: 'lloyds_barclays', label: 'Lloyds / Barclays',labelSv: 'Lloyds / Barclays' },
+      { value: 'zara',            label: 'Zara',             labelSv: 'Zara' },
+      { value: 'boots',           label: 'Boots',            labelSv: 'Boots' },
+      { value: 'apple',           label: 'Apple',            labelSv: 'Apple' }
     ],
     study_formats: [
-      { value: 'online_survey',    label: 'Online survey' },
-      { value: 'video_call',       label: 'Video call' },
-      { value: 'in_person',        label: 'In-person (local)' },
-      { value: 'diary_study',      label: 'Diary / journal study' },
-      { value: 'product_testing',  label: 'Product testing at home' }
+      { value: 'online_survey',   label: 'Online survey',             labelSv: 'Onlineundersökning' },
+      { value: 'video_call',      label: 'Video call',                labelSv: 'Videosamtal' },
+      { value: 'in_person',       label: 'In-person (local)',         labelSv: 'På plats (lokalt)' },
+      { value: 'diary_study',     label: 'Diary / journal study',     labelSv: 'Dagbok / journalstudie' },
+      { value: 'product_testing', label: 'Product testing at home',   labelSv: 'Produkttest hemma' }
     ],
     available_times: [
-      { value: 'weekday_mornings',   label: 'Weekday mornings' },
-      { value: 'weekday_afternoons', label: 'Weekday afternoons' },
-      { value: 'weekday_evenings',   label: 'Weekday evenings' },
-      { value: 'weekends',           label: 'Weekends' }
+      { value: 'weekday_mornings',   label: 'Weekday mornings',    labelSv: 'Vardagsmorgnar' },
+      { value: 'weekday_afternoons', label: 'Weekday afternoons',  labelSv: 'Vardagseftermiddagar' },
+      { value: 'weekday_evenings',   label: 'Weekday evenings',    labelSv: 'Vardagskvällar' },
+      { value: 'weekends',           label: 'Weekends',            labelSv: 'Helger' }
     ],
     max_session_length: [
-      { value: 'up_to_15', label: 'Up to 15 mins' },
-      { value: 'up_to_30', label: 'Up to 30 mins' },
-      { value: 'up_to_60', label: 'Up to 60 mins' },
-      { value: 'up_to_90', label: 'Up to 90 mins' },
-      { value: 'no_limit', label: 'No limit' }
+      { value: 'up_to_15', label: 'Up to 15 mins', labelSv: 'Upp till 15 min' },
+      { value: 'up_to_30', label: 'Up to 30 mins', labelSv: 'Upp till 30 min' },
+      { value: 'up_to_60', label: 'Up to 60 mins', labelSv: 'Upp till 60 min' },
+      { value: 'up_to_90', label: 'Up to 90 mins', labelSv: 'Upp till 90 min' },
+      { value: 'no_limit', label: 'No limit',       labelSv: 'Ingen begränsning' }
     ]
   };
 
-  // Flat label map for interest rendering in profile tab
-  const INTEREST_LABELS = Object.fromEntries(
-    ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']
-      .flatMap(k => CHIP_OPTIONS[k].map(({ value, label }) => [value, label]))
-  );
+  // Lang-aware label lookup for interest chips in profile view
+  function getInterestLabel(value) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    for (const k of ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']) {
+      const opt = CHIP_OPTIONS[k].find(o => o.value === value);
+      if (opt) return (lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label;
+    }
+    return value;
+  }
 
   function renderChipGroup(fieldName, opts) {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
     const single = fieldName === 'max_session_length' ? ' data-single="true"' : '';
-    const chips = opts.map(o =>
-      `<div class="chip" data-value="${esc(o.value)}" onclick="toggleChip(this)">${esc(o.label)}</div>`
-    ).join('');
+    const chips = opts.map(o => {
+      const label = (lang === 'sv' && o.labelSv) ? o.labelSv : o.label;
+      return `<div class="chip" data-value="${esc(o.value)}" onclick="toggleChip(this)">${esc(label)}</div>`;
+    }).join('');
     return `<div class="chip-group" data-field="${esc(fieldName)}"${single}>${chips}</div>`;
+  }
+
+  // Update text of all already-rendered chips in place — no re-render, selection state preserved
+  function updateChipLabels() {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const labelMap = {};
+    Object.values(CHIP_OPTIONS).forEach(opts => {
+      opts.forEach(o => { labelMap[o.value] = (lang === 'sv' && o.labelSv) ? o.labelSv : o.label; });
+    });
+    document.querySelectorAll('.chip[data-value]').forEach(chip => {
+      const lbl = labelMap[chip.dataset.value];
+      if (lbl) chip.textContent = lbl;
+    });
   }
 
   function selectChips(containerId, values) {
@@ -1681,7 +1708,6 @@
     document.getElementById('ob-chips-lifestyle').innerHTML = renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle);
     document.getElementById('ob-chips-tech').innerHTML      = renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech);
     document.getElementById('ob-chips-finance').innerHTML   = renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
-    document.getElementById('ob-chips-brands').innerHTML    = renderChipGroup('brands',              CHIP_OPTIONS.brands);
     // Onboarding step 4 with pre-selected defaults
     document.getElementById('ob-chips-formats').innerHTML  = renderChipGroup('study_formats',      CHIP_OPTIONS.study_formats);
     document.getElementById('ob-chips-times').innerHTML    = renderChipGroup('available_times',    CHIP_OPTIONS.available_times);
@@ -2607,7 +2633,7 @@ async function applyToStudy(studyId) {
     const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
     document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
 
-    // Interests & tags (INTEREST_LABELS is the module-level map from CHIP_OPTIONS)
+    // Interests & tags
     const tagsContainer = document.getElementById('profile-interests-tags');
     if (tagsContainer) {
       const allTags = [
@@ -2617,7 +2643,7 @@ async function applyToStudy(studyId) {
         ...(Array.isArray(contrib?.brands)              ? contrib.brands              : []).map(v => ({ v, cls: 'tag-gray'  })),
       ];
       tagsContainer.innerHTML = allTags.length
-        ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(INTEREST_LABELS[v] || v)}</span>`).join('')
+        ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
         : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
     }
 
@@ -2661,6 +2687,7 @@ async function applyToStudy(studyId) {
       updateDashboard(firstName, stats, tierDisplay);
       updateBankIDStatus(contrib?.bankid_verified === true);
       loadRatingBreakdown();
+      renderBoostCard();
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
@@ -2675,6 +2702,147 @@ async function applyToStudy(studyId) {
   }
   function closeBankIDModal() {
     document.getElementById('bankid-modal').style.display = 'none';
+  }
+
+  // ─── BOOST CARD ─────────────────────────────────────────
+  const BOOST_SECTIONS = [
+    {
+      key:      'topics',
+      type:     'chips',
+      dbFields: { interests_lifestyle: 'interests_lifestyle', interests_tech: 'interests_tech', interests_finance: 'interests_finance' },
+      isComplete: c =>
+        (Array.isArray(c?.interests_lifestyle) && c.interests_lifestyle.length > 0) ||
+        (Array.isArray(c?.interests_tech)       && c.interests_tech.length > 0)      ||
+        (Array.isArray(c?.interests_finance)    && c.interests_finance.length > 0),
+    },
+    {
+      key:      'bio',
+      type:     'textarea',
+      dbField:  'additional_notes',
+      isComplete: c => !!(c?.additional_notes?.trim()),
+    },
+  ];
+
+  function renderBoostCard() {
+    const card = document.getElementById('profile-boost-card');
+    if (!card) return;
+    const contrib = state.contribData;
+    const incomplete = BOOST_SECTIONS.filter(s => !s.isComplete(contrib));
+    if (incomplete.length === 0) { card.style.display = 'none'; return; }
+
+    const sectionsHtml = incomplete.map(s => {
+      let bodyHtml = '';
+      if (s.type === 'chips') {
+        bodyHtml =
+          renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle) +
+          renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech) +
+          renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
+      } else {
+        const existing = esc(contrib?.additional_notes || '');
+        const ph = esc(t('boost_bio_placeholder'));
+        bodyHtml = `<textarea id="boost-ta-bio" style="width:100%;padding:10px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;resize:vertical;min-height:80px;outline:none;box-sizing:border-box" placeholder="${ph}" maxlength="1000">${existing}</textarea>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:6px;font-weight:300">${t('boost_bio_note')}</div>`;
+      }
+      return `
+        <div class="boost-section">
+          <div class="boost-section-hd" onclick="toggleBoostSection('${s.key}')">
+            <div>
+              <span class="boost-section-title">${t('boost_section_' + s.key)}</span>
+              <span class="boost-section-hint"> — ${t('boost_section_' + s.key + '_hint')}</span>
+            </div>
+            <span class="boost-chevron" id="boost-chev-${s.key}">›</span>
+          </div>
+          <div class="boost-section-body" id="boost-body-${s.key}" style="display:none">
+            ${bodyHtml}
+            <button class="boost-save-btn" onclick="saveBoostSection('${s.key}')">${t('boost_save')}</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    card.className = 'boost-card';
+    card.innerHTML = `
+      <div class="boost-header">
+        <div>
+          <div class="boost-title">${t('boost_card_title')}</div>
+        </div>
+      </div>
+      <div style="margin-top:0.75rem">${sectionsHtml}</div>`;
+    card.style.display = 'block';
+
+    // Pre-select chips that were already saved
+    if (!BOOST_SECTIONS.find(s => s.key === 'topics')?.isComplete(contrib)) {
+      const body = document.getElementById('boost-body-topics');
+      if (body) {
+        ['interests_lifestyle', 'interests_tech', 'interests_finance'].forEach(field => {
+          const saved = Array.isArray(contrib?.[field]) ? contrib[field] : [];
+          body.querySelectorAll(`[data-field="${field}"] .chip`).forEach(chip => {
+            chip.classList.toggle('selected', saved.includes(chip.dataset.value));
+          });
+        });
+      }
+    }
+  }
+
+  function toggleBoostSection(key) {
+    const body = document.getElementById('boost-body-' + key);
+    const chev = document.getElementById('boost-chev-' + key);
+    if (!body) return;
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (chev) chev.classList.toggle('open', !isOpen);
+  }
+
+  async function saveBoostSection(key) {
+    if (!db || !state.currentUser) return;
+    const section = BOOST_SECTIONS.find(s => s.key === key);
+    if (!section) return;
+
+    const btn = document.querySelector(`#boost-body-${key} .boost-save-btn`);
+    if (btn) setLoading(btn, true);
+
+    try {
+      let update = {};
+      if (section.type === 'chips') {
+        const body = document.getElementById('boost-body-' + key);
+        ['interests_lifestyle', 'interests_tech', 'interests_finance'].forEach(field => {
+          const group = body?.querySelector(`[data-field="${field}"]`);
+          update[field] = group ? [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value) : [];
+        });
+      } else {
+        update[section.dbField] = document.getElementById('boost-ta-bio')?.value.trim() || null;
+      }
+
+      const { error } = await db.from('contributors').update(update).eq('id', state.currentUser.id);
+      if (error) throw error;
+
+      // Patch local state
+      state.contribData = { ...(state.contribData || {}), ...update };
+
+      // Refresh interests tags in profile view if topics were saved
+      if (key === 'topics') {
+        const tagsContainer = document.getElementById('profile-interests-tags');
+        if (tagsContainer) {
+          const c = state.contribData;
+          const allTags = [
+            ...(Array.isArray(c?.interests_lifestyle) ? c.interests_lifestyle : []).map(v => ({ v, cls: 'tag-green' })),
+            ...(Array.isArray(c?.interests_tech)      ? c.interests_tech      : []).map(v => ({ v, cls: 'tag-blue'  })),
+            ...(Array.isArray(c?.interests_finance)   ? c.interests_finance   : []).map(v => ({ v, cls: 'tag-amber' })),
+            ...(Array.isArray(c?.brands)              ? c.brands              : []).map(v => ({ v, cls: 'tag-gray'  })),
+          ];
+          tagsContainer.innerHTML = allTags.length
+            ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
+            : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
+        }
+      }
+
+      showToast(t('boost_saved_ok') + ' ✓');
+      renderBoostCard();
+    } catch(err) {
+      console.error('Boost save error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(err.message || 'Could not save — try again', true);
+      if (btn) setLoading(btn, false);
+    }
   }
 
   // ─── PROFILE EDITING ────────────────────────────────────
@@ -3327,6 +3495,15 @@ async function applyToStudy(studyId) {
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
+      boost_card_title: 'Get better study matches',
+      boost_section_topics: 'Topics that match you',
+      boost_section_topics_hint: 'Lifestyle, tech & finance — helps us surface relevant studies',
+      boost_section_bio: 'Your background',
+      boost_section_bio_hint: 'Optional — helps with specialist and professional research',
+      boost_bio_placeholder: 'e.g. I work in healthcare, so medical research is a great fit…',
+      boost_bio_note: 'Not required — only used to find studies relevant to your background.',
+      boost_save: 'Save',
+      boost_saved_ok: 'Saved',
     },
     sv: {
       landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
@@ -3535,6 +3712,15 @@ async function applyToStudy(studyId) {
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
+      boost_card_title: 'Få bättre studiematchningar',
+      boost_section_topics: 'Ämnen som passar dig',
+      boost_section_topics_hint: 'Livsstil, teknik & ekonomi — hjälper oss hitta relevanta studier',
+      boost_section_bio: 'Din bakgrund',
+      boost_section_bio_hint: 'Valfritt — hjälper vid specialist- och yrkesinriktad forskning',
+      boost_bio_placeholder: 'T.ex. jag jobbar inom vård, så medicinsk forskning passar bra…',
+      boost_bio_note: 'Inte obligatoriskt — används bara för att hitta studier relevanta för dig.',
+      boost_save: 'Spara',
+      boost_saved_ok: 'Sparat',
     }
   };
 
@@ -3587,6 +3773,7 @@ async function applyToStudy(studyId) {
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
     // Re-render dynamic content with updated language
+    updateChipLabels();
     renderStudies('studies-list', state.studies);
     renderStudies('dashboard-studies', state.studies.slice(0, 2));
     if (state.notifications) renderNotifications(state.notifications);
@@ -3596,6 +3783,7 @@ async function applyToStudy(studyId) {
       const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
       updateDashboard(firstName, stats, tierDisplay);
       updateProfileTab(state.profileData, state.contribData, stats, tierDisplay, state.currentUser);
+      renderBoostCard();
     }
   }
 
