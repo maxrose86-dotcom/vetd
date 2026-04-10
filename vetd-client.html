@@ -2752,7 +2752,7 @@ textarea{resize:vertical;min-height:90px}
     }
 
     body.innerHTML = notifs.map(n => `
-      <div class="notif-row ${n.read ? '' : 'unread'}" onclick="handleNotifClick('${esc(n.id)}', '${esc(n.link || '')}')">
+      <div class="notif-row ${n.read ? '' : 'unread'}" data-id="${escAttr(n.id)}" data-link="${escAttr(n.link || '')}">
         <div class="notif-row-dot ${n.read ? 'read' : ''}"></div>
         <div class="notif-row-content">
           <div class="notif-row-title">${esc(n.title)}</div>
@@ -2804,6 +2804,7 @@ textarea{resize:vertical;min-height:90px}
     } else if (link) {
       window.location.href = link;
     } else {
+      console.log('[vetd] notification has no link — closing panel (id:', notifId, ')');
       document.getElementById('notif-panel').classList.remove('open');
     }
   }
@@ -2833,18 +2834,39 @@ textarea{resize:vertical;min-height:90px}
   async function sendNotification(userId, title, body, link) {
     if (!db) return;
     try {
-      await db.rpc('insert_notification', {
-        p_user_id:    userId,
-        p_title:      title,
-        p_body:       body,
-        p_link:       link || null,
-        p_notif_type: null,
-        p_params:     {},
-      });
+      // Self-notifications: use direct insert so the link column is reliably written.
+      // Cross-user notifications (e.g. to contributors) use the SECURITY DEFINER RPC.
+      if (currentClientUser && userId === currentClientUser.id) {
+        const { error } = await db.from('notifications').insert({
+          user_id: userId,
+          title,
+          body,
+          link: link || null,
+          read: false,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await db.rpc('insert_notification', {
+          p_user_id:    userId,
+          p_title:      title,
+          p_body:       body,
+          p_link:       link || null,
+          p_notif_type: null,
+          p_params:     {},
+        });
+        if (error) throw error;
+      }
     } catch(err) {
       console.warn('sendNotification error:', err);
     }
   }
+
+  // Notification row clicks — delegated so inline onclick string-escaping is not needed
+  document.getElementById('notif-panel-body').addEventListener('click', function(e) {
+    const row = e.target.closest('.notif-row[data-id]');
+    if (!row) return;
+    handleNotifClick(row.dataset.id, row.dataset.link || '');
+  });
 
   // Close notification panel when clicking outside
   document.addEventListener('click', function(e) {
