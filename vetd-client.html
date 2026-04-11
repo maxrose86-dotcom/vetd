@@ -195,8 +195,11 @@ textarea{resize:vertical;min-height:90px}
 .modal h2{font-family:var(--serif);font-size:26px;margin-bottom:6px}
 .modal-sub{font-size:13px;color:var(--gray-400);margin-bottom:1.5rem;font-weight:300}
 
-/* APPLICANTS MODAL */
-.applicants-modal{max-width:680px}
+/* Study workspace */
+.study-section{display:none}
+.study-section.active{display:block}
+.study-ws-back{padding:7px 14px;background:transparent;color:var(--gray-400);border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.15s;white-space:nowrap;flex-shrink:0}
+.study-ws-back:hover{border-color:var(--gray-700);color:var(--gray-700)}
 .pipeline-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:10px;padding-top:14px;border-top:1px solid var(--gray-100)}
 .applicant-row{display:flex;align-items:center;gap:1rem;padding:12px 0;border-bottom:1px solid var(--gray-100)}
 .applicant-row:last-child{border-bottom:none}
@@ -465,12 +468,13 @@ textarea{resize:vertical;min-height:90px}
       <div style="font-size:12px;color:var(--gray-400)" id="cl-mob-company">Your company</div>
     </div>
     <div style="padding:0.5rem 0.75rem">
-      <button class="nav-item active" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Dashboard</span></button>
-      <button class="nav-item" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
-      <button class="nav-item" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">My studies</span></button>
-      <button class="nav-item" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
-      <button class="nav-item" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span></button>
-      <button class="nav-item" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
+      <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
+      <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
+      <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
+      <button class="nav-item" data-tab="new-study" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
+      <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
+      <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
+      <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
     </div>
     <div style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)">
       <button onclick="signOut()" style="width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign out</button>
@@ -487,18 +491,22 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_overview">Overview</div>
-        <button class="nav-item active" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Dashboard</span></button>
-        <button class="nav-item" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
+        <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
+        <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_studies">Studies</div>
-        <button class="nav-item" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">My studies</span></button>
-        <button class="nav-item" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
+        <button class="nav-item" data-tab="studies" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
+        <button class="nav-item" data-tab="new-study" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
       </div>
       <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_panel">Panel</div>
-        <button class="nav-item" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Browse contributors</span><span class="nav-badge">3</span></button>
-        <button class="nav-item" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
+        <div class="nav-label" data-i18n="cl_nav_label_sessions">Sessions</div>
+        <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label" data-i18n="cl_nav_label_panel">Participants</div>
+        <button class="nav-item" data-tab="panel" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span><span class="nav-badge">3</span></button>
+        <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
       </div>
       <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -529,11 +537,69 @@ textarea{resize:vertical;min-height:90px}
     <!-- MAIN -->
     <div class="main-content">
 
+      <!-- STUDY WORKSPACE -->
+      <div class="tab-pane" id="tab-study">
+        <div class="page-topbar">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+            <button class="study-ws-back" onclick="closeApplicants()">← Back</button>
+            <div style="min-width:0;flex:1">
+              <h1 id="applicants-study-title" style="font-family:var(--serif);font-size:22px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Study</h1>
+              <p id="applicants-count" style="font-size:13px;color:var(--gray-400);font-weight:300;margin:2px 0 0"></p>
+            </div>
+          </div>
+          <span class="badge" id="study-ws-badge"></span>
+        </div>
+
+        <div class="filter-bar" id="study-ws-nav" style="margin-bottom:1.5rem">
+          <button class="fc" onclick="switchStudySection('overview',this)">Overview</button>
+          <button class="fc on" onclick="switchStudySection('applicants',this)">Applicants</button>
+          <button class="fc" onclick="switchStudySection('sessions',this)">Sessions</button>
+          <button class="fc" onclick="switchStudySection('settings',this)">Settings</button>
+        </div>
+
+        <!-- OVERVIEW -->
+        <div class="study-section" id="study-section-overview">
+          <div class="card" id="study-overview-content" style="min-height:120px">
+            <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</div>
+          </div>
+        </div>
+
+        <!-- APPLICANTS -->
+        <div class="study-section active" id="study-section-applicants">
+          <div id="pipeline-applicants">
+            <div id="applicants-list">
+              <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
+            </div>
+          </div>
+          <div id="applicants-group-header"></div>
+          <div id="pipeline-selected" style="display:none">
+            <div class="pipeline-label">Selected</div>
+            <div id="selected-list"></div>
+          </div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div class="study-section" id="study-section-sessions">
+          <div id="pipeline-scheduled">
+            <div id="scheduled-list">
+              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="study-section" id="study-section-settings">
+          <div id="study-settings-content" style="min-height:120px">
+            <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</div>
+          </div>
+        </div>
+      </div>
+
       <!-- DASHBOARD -->
       <div class="tab-pane active" id="tab-dashboard">
         <div class="page-topbar">
           <div class="page-title"><h1 id="dash-greeting">Welcome 👋</h1><p id="dash-subtitle">Research &amp; Insights</p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item:nth-child(6)'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
 
         <div class="stat-row">
@@ -546,16 +612,6 @@ textarea{resize:vertical;min-height:90px}
         <div class="card" id="pending-queue-card" style="margin-bottom:1.5rem;display:none">
           <div class="sec-title">New applications <span id="pending-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
           <div id="pending-queue-list"></div>
-        </div>
-
-        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
-          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
-          <div id="unscheduled-queue-list"></div>
-        </div>
-
-        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
-          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
-          <div id="upcoming-sessions-list"></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
@@ -572,7 +628,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="text-align:center;padding:2rem;color:var(--gray-400)">
               <div style="font-size:28px;margin-bottom:8px">🔍</div>
               <div style="font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:4px">Automatic matching coming soon</div>
-              <div style="font-size:12px;font-weight:300">Contributors matched to your active studies will appear here. For now, browse contributors manually in the <a href="#" onclick="showTab('panel',document.querySelectorAll('.nav-item')[5]);return false;" style="color:var(--green)">Panel tab</a>.</div>
+              <div style="font-size:12px;font-weight:300">Contributors matched to your active studies will appear here. For now, browse contributors manually in the <a href="#" onclick="showTab('panel',document.querySelector('.nav-item[data-tab="panel"]'));return false;" style="color:var(--green)">Participants tab</a>.</div>
             </div>
           </div>
         </div>
@@ -591,8 +647,8 @@ textarea{resize:vertical;min-height:90px}
       <!-- STUDIES -->
       <div class="tab-pane" id="tab-studies">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_my_studies">My studies</h1><p>3 active · 2 completed · 1 draft</p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])" data-i18n="cl_post_new_btn">＋ Post new study</button>
+          <div class="page-title"><h1 data-i18n="cl_my_studies">Studies</h1><p>3 active · 2 completed · 1 draft</p></div>
+          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
         <div class="filter-bar">
           <button class="fc on" onclick="fc(this)" data-i18n="cl_filter_all">All</button>
@@ -739,10 +795,25 @@ textarea{resize:vertical;min-height:90px}
         </div>
       </div>
 
+      <!-- SESSIONS -->
+      <div class="tab-pane" id="tab-sessions">
+        <div class="page-topbar">
+          <div class="page-title"><h1 data-i18n="cl_sessions_title">Sessions</h1><p data-i18n="cl_sessions_sub">Scheduling queue and upcoming calls</p></div>
+        </div>
+        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="unscheduled-queue-list"></div>
+        </div>
+        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
+          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
+          <div id="upcoming-sessions-list"></div>
+        </div>
+      </div>
+
       <!-- PANEL BROWSER -->
       <div class="tab-pane" id="tab-panel">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_browse_title">Browse contributors</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all contributors</p></div>
+          <div class="page-title"><h1 data-i18n="cl_browse_title">Participants</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all participants</p></div>
           <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')" data-i18n="cl_invite_top">Invite top 10</button>
         </div>
         <div class="filter-bar">
@@ -839,31 +910,7 @@ textarea{resize:vertical;min-height:90px}
 </div><!-- end app -->
 
 <!-- APPLICANTS MODAL -->
-<div class="modal-overlay" id="applicants-modal">
-  <div class="modal applicants-modal">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem">
-      <div>
-        <h2 id="applicants-study-title" style="font-size:20px;margin-bottom:3px" data-i18n="cl_participants_title">Participants</h2>
-        <p class="modal-sub" id="applicants-count" style="margin-bottom:0"></p>
-      </div>
-      <button onclick="closeApplicants()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:4px">×</button>
-    </div>
-    <div id="pipeline-applicants">
-      <div id="applicants-list">
-        <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
-      </div>
-    </div>
-    <div id="applicants-group-header"></div>
-    <div id="pipeline-selected" style="display:none">
-      <div class="pipeline-label">Selected</div>
-      <div id="selected-list"></div>
-    </div>
-    <div id="pipeline-scheduled" style="display:none">
-      <div class="pipeline-label">Scheduled</div>
-      <div id="scheduled-list"></div>
-    </div>
-  </div>
-</div>
+
 
 <!-- RATE MODAL -->
 <div class="modal-overlay" id="rate-modal">
@@ -1187,7 +1234,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:32px;margin-bottom:1rem">📋</div>
             <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${t('cl_no_studies')}</h3>
             <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub')}</p>
-            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_post_a_study')}</button>
+            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))">${t('cl_post_a_study')}</button>
           </div>`;
         return;
       }
@@ -1238,7 +1285,7 @@ textarea{resize:vertical;min-height:90px}
                 👥 ${counts.total === 0 ? t('cl_no_invitations_yet') : t(counts.total !== 1 ? 'cl_view_participants_plural' : 'cl_view_participants').replace('{count}', counts.total)}
               </button>
               ${status === 'active' || status === 'draft' ? `<button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${s.id}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>` : ''}
-              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelectorAll('.nav-item')[5])">${t('cl_continue_editing')}</button>` : ''}
+              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))">${t('cl_continue_editing')}</button>` : ''}
             </div>
           </div>`;
       }).join('');
@@ -1249,9 +1296,11 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  // ─── APPLICANTS MODAL ───────────────────────────────────
+  // ─── STUDY WORKSPACE ────────────────────────────────────
   let currentApplicantsStudyId = null;
   let currentApplicantsStudyTitle = null;
+  let _currentTab = 'dashboard';
+  let _studyBackTab = 'dashboard';
 
   // ─── INVITE CONTEXT ─────────────────────────────────────
   let currentInviteStudyId = null;
@@ -1268,18 +1317,23 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('selected-list').innerHTML = '';
     document.getElementById('scheduled-list').innerHTML = '';
     document.getElementById('pipeline-selected').style.display = 'none';
-    document.getElementById('pipeline-scheduled').style.display = 'none';
-    document.getElementById('applicants-modal').classList.add('open');
-    await loadApplicants(studyId);
+    document.getElementById('study-ws-badge').textContent = '';
+    document.getElementById('study-ws-badge').className = 'badge';
+    showTab('study', null);
+    switchStudySection('applicants');
+    await Promise.all([loadApplicants(studyId), loadStudyOverview(studyId)]);
   }
 
   function closeApplicants() {
-    document.getElementById('applicants-modal').classList.remove('open');
     currentApplicantsStudyId = null;
+    const back = _studyBackTab || 'dashboard';
+    const backBtn = document.querySelector(`.nav-item[data-tab="${back}"]`);
+    showTab(back, backBtn);
   }
 
   async function openApplicantsToRow(studyId, studyTitle, appId) {
     await openApplicants(studyId, studyTitle);
+    switchStudySection('applicants');
     requestAnimationFrame(() => {
       const row = document.getElementById('approw-' + appId);
       if (row) {
@@ -1495,8 +1549,9 @@ textarea{resize:vertical;min-height:90px}
       selectedList.innerHTML = selectedRows.map(renderRow).join('');
       pipelineSelected.style.display = selectedRows.length > 0 ? 'block' : 'none';
 
-      scheduledList.innerHTML = scheduledRows.map(renderRow).join('');
-      pipelineScheduled.style.display = scheduledRows.length > 0 ? 'block' : 'none';
+      scheduledList.innerHTML = scheduledRows.length
+        ? scheduledRows.map(renderRow).join('')
+        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>`;
 
     } catch(err) {
       console.error('Load applicants error:', err);
@@ -1568,10 +1623,7 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  // Close applicants modal on backdrop click
-  document.getElementById('applicants-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeApplicants();
-  });
+  // (applicants-modal removed — study workspace is now a full tab)
 
   // ─── SCHEDULE MODAL ─────────────────────────────────────
   let _schedAppId = null, _schedStudyId = null, _schedContributorId = null;
@@ -1910,7 +1962,7 @@ textarea{resize:vertical;min-height:90px}
 
     if (!db) {
       showToast(t('cl_study_published'));
-      setTimeout(() => showTab('studies', document.querySelectorAll('.nav-item')[4]), 1200);
+      setTimeout(() => showTab('studies', document.querySelector('.nav-item[data-tab="studies"]')), 1200);
       return;
     }
 
@@ -1958,7 +2010,7 @@ textarea{resize:vertical;min-height:90px}
       showToast(t('cl_study_published'));
       setTimeout(async () => {
         await loadStudies();
-        showTab('studies', document.querySelectorAll('.nav-item')[4]);
+        showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
       }, 1200);
     } catch(err) {
       console.error('Publish error:', err);
@@ -2071,7 +2123,7 @@ textarea{resize:vertical;min-height:90px}
     if (subEl) subEl.textContent = studyTitle
       ? t('cl_browse_for_study').replace('{title}', studyTitle)
       : t('cl_browse_sub');
-    const panelNavBtn = document.querySelector('.nav-item [data-i18n="cl_nav_browse"]')?.closest('.nav-item');
+    const panelNavBtn = document.querySelector('.nav-item[data-tab="panel"]');
     showTab('panel', panelNavBtn || null);
     loadContributors();
   }
@@ -2444,8 +2496,90 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('prev-match').textContent  = '~'+Math.max(50, Math.round(500 - spots*4 - pay*0.5));
   }
 
+  // ─── STUDY WORKSPACE HELPERS ────────────────────────────
+  function switchStudySection(section, btn) {
+    document.querySelectorAll('.study-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('study-section-' + section).classList.add('active');
+    const navBtns = document.querySelectorAll('#study-ws-nav .fc');
+    navBtns.forEach(b => b.classList.remove('on'));
+    const idx = ['overview','applicants','sessions','settings'].indexOf(section);
+    const target = btn || (idx >= 0 ? navBtns[idx] : null);
+    if (target) target.classList.add('on');
+  }
+
+  async function loadStudyOverview(studyId) {
+    const overviewEl  = document.getElementById('study-overview-content');
+    const settingsEl  = document.getElementById('study-settings-content');
+    const badgeEl     = document.getElementById('study-ws-badge');
+    if (!overviewEl) return;
+    try {
+      const { data: study, error } = await db
+        .from('studies')
+        .select('id, title, status, description, pay_per_participant, spots, filled_spots, session_type, session_duration')
+        .eq('id', studyId)
+        .single();
+      if (error || !study) throw error || new Error('Study not found');
+
+      if (badgeEl) {
+        badgeEl.textContent = study.status;
+        badgeEl.className = `badge badge-${study.status}`;
+      }
+
+      const pay = formatCurrency(study.pay_per_participant || 0);
+      const spots = study.spots || 0;
+      const filled = study.filled_spots || 0;
+      const labelStyle = 'font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:4px';
+      const valStyle   = 'font-size:20px;font-weight:600;color:var(--gray-700)';
+      overviewEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1rem;padding:1.25rem 1.5rem">
+          <div><div style="${labelStyle}">Pay</div><div style="${valStyle}">${esc(pay)}</div></div>
+          <div><div style="${labelStyle}">Spots</div><div style="${valStyle}">${filled}/${spots}</div></div>
+          <div><div style="${labelStyle}">Type</div><div style="${valStyle}">${esc(study.session_type === 'group' ? 'Group' : '1:1')}</div></div>
+          <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.session_duration || '–'))} min</div></div>
+        </div>`;
+
+      if (settingsEl) {
+        const isActive = study.status === 'active';
+        const isDraft  = study.status === 'draft';
+        const isPaused = study.status === 'paused';
+        settingsEl.innerHTML = `
+          <div style="padding:1.25rem 1.5rem">
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Study status</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              ${isDraft  ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Publish</button>` : ''}
+              ${isActive ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">Pause</button>` : ''}
+              ${isPaused ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Resume</button>` : ''}
+            </div>
+            ${study.description ? `<div style="margin-top:1rem;font-size:13px;color:var(--gray-500)">${esc(study.description)}</div>` : ''}
+          </div>`;
+      }
+    } catch(err) {
+      console.error('loadStudyOverview error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      if (overviewEl) overviewEl.innerHTML = '<div style="padding:1rem;color:var(--coral);font-size:13px">Could not load study details.</div>';
+    }
+  }
+
+  async function setStudyStatus(studyId, status) {
+    try {
+      const { error } = await db.from('studies').update({ status }).eq('id', studyId);
+      if (error) throw error;
+      showToast('Study updated');
+      await loadStudyOverview(studyId);
+      await loadStudies();
+    } catch(err) {
+      console.error('setStudyStatus error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast('Could not update study', true);
+    }
+  }
+
   // ─── NAVIGATION ─────────────────────────────────────────
   function showTab(id, btn) {
+    if (id === 'study') {
+      _studyBackTab = _currentTab;
+    }
+    _currentTab = id;
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     document.getElementById('tab-'+id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
@@ -2749,7 +2883,7 @@ textarea{resize:vertical;min-height:90px}
     if (!container) return;
 
     if (!studies.length) {
-      container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No active studies — <a href="#" onclick="showTab('new-study',document.querySelectorAll('.nav-item')[3]);return false;" style="color:var(--green)">post your first study</a> to get started.</div>`;
+      container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No active studies — <a href="#" onclick="showTab('new-study',document.querySelector('.nav-item[data-tab="new-study"]'));return false;" style="color:var(--green)">post your first study</a> to get started.</div>`;
       return;
     }
 
@@ -3035,13 +3169,17 @@ textarea{resize:vertical;min-height:90px}
       // Sidebar nav
       cl_nav_label_overview: 'Overview',
       cl_nav_label_studies: 'Studies',
-      cl_nav_label_panel: 'Panel',
-      cl_nav_overview: 'Dashboard',
-      cl_nav_studies: 'My studies',
-      cl_nav_browse: 'Browse contributors',
+      cl_nav_label_panel: 'Participants',
+      cl_nav_overview: 'Overview',
+      cl_nav_studies: 'Studies',
+      cl_nav_browse: 'Participants',
       cl_nav_analytics: 'Analytics',
       cl_nav_post: 'Post a study',
       cl_nav_rate: 'Rate participants',
+      cl_nav_label_sessions: 'Sessions',
+      cl_nav_sessions: 'Sessions',
+      cl_sessions_title: 'Sessions',
+      cl_sessions_sub: 'Scheduling queue and upcoming calls',
       cl_plan_name: 'Pro plan',
       cl_plan_detail: 'Unlimited studies · Priority panel',
       cl_plan_upgrade: '↑ Upgrade to Enterprise',
@@ -3071,7 +3209,7 @@ textarea{resize:vertical;min-height:90px}
       cl_badge_filling: 'Filling',
       cl_invite: 'Invite',
       // Studies tab
-      cl_my_studies: 'My studies',
+      cl_my_studies: 'Studies',
       cl_filter_all: 'All',
       cl_filter_active: 'Active',
       cl_filter_completed: 'Completed',
@@ -3132,8 +3270,8 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_fee: '+ Vetd fee (20%)',
       cl_preview_match: 'contributors match your criteria right now',
       // Browse contributors
-      cl_browse_title: 'Browse contributors',
-      cl_browse_sub: 'Browse all contributors',
+      cl_browse_title: 'Participants',
+      cl_browse_sub: 'Browse all participants',
       cl_browse_for_study: 'Inviting for: {title}',
       cl_invite_top: 'Invite top 10',
       cl_fc_all: 'All',
@@ -3313,13 +3451,17 @@ textarea{resize:vertical;min-height:90px}
       // Sidebar nav
       cl_nav_label_overview: 'Översikt',
       cl_nav_label_studies: 'Studier',
-      cl_nav_label_panel: 'Panel',
+      cl_nav_label_panel: 'Deltagare',
       cl_nav_overview: 'Översikt',
-      cl_nav_studies: 'Mina studier',
-      cl_nav_browse: 'Bläddra bland deltagare',
+      cl_nav_studies: 'Studier',
+      cl_nav_browse: 'Deltagare',
       cl_nav_analytics: 'Analys',
       cl_nav_post: 'Publicera studie',
       cl_nav_rate: 'Betygsätt deltagare',
+      cl_nav_label_sessions: 'Sessioner',
+      cl_nav_sessions: 'Sessioner',
+      cl_sessions_title: 'Sessioner',
+      cl_sessions_sub: 'Schemaläggningskö och kommande samtal',
       cl_plan_name: 'Pro-plan',
       cl_plan_detail: 'Obegränsat antal studier · Prioriterad panel',
       cl_plan_upgrade: '↑ Uppgradera till Enterprise',
@@ -3349,7 +3491,7 @@ textarea{resize:vertical;min-height:90px}
       cl_badge_filling: 'Fyller på',
       cl_invite: 'Bjud in',
       // Studies tab
-      cl_my_studies: 'Mina studier',
+      cl_my_studies: 'Studier',
       cl_filter_all: 'Alla',
       cl_filter_active: 'Aktiva',
       cl_filter_completed: 'Slutförda',
@@ -3410,7 +3552,7 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_fee: '+ Vetd-avgift (20%)',
       cl_preview_match: 'deltagare matchar dina kriterier just nu',
       // Browse contributors
-      cl_browse_title: 'Bläddra bland deltagare',
+      cl_browse_title: 'Deltagare',
       cl_browse_sub: 'Bläddra bland alla deltagare',
       cl_browse_for_study: 'Bjuder in till: {title}',
       cl_invite_top: 'Bjud in topp 10',
