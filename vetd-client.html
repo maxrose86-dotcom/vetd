@@ -2729,7 +2729,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
           <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            onclick="openApplicantsToRow('${esc(a.study_id)}','${escAttr(title)}','${esc(a.id)}')">${t('cl_open') || 'Open'}</button>
+            onclick="openApplicantsToRow('${esc(a.study_id)}','${escAttr(title)}','${esc(a.id)}')">Open</button>
         </div>`;
       }).join('');
     } catch(err) {
