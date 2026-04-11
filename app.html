@@ -1934,6 +1934,28 @@
   if (!state.currentStudy) return;
   await logEvent('apply_cta_click', state.currentStudy.id);
   const answers = collectScreenerAnswers();
+  // Validate required screener answers
+  if (Array.isArray(answers)) {
+    const area = document.getElementById('modal-screener-area');
+    // Clear previous errors
+    area.querySelectorAll('.sq-error').forEach(el => el.remove());
+    const questions = state.currentStudy.screeningQuestions;
+    let hasError = false;
+    answers.forEach((ans, i) => {
+      if (ans === '' || ans === null || ans === undefined) {
+        const wrapper = area.querySelector(`[data-sq-idx="${i}"]`);
+        if (wrapper) {
+          const err = document.createElement('div');
+          err.className = 'sq-error';
+          err.style.cssText = 'color:#e53e3e;font-size:12px;margin-top:4px';
+          err.textContent = 'Required';
+          wrapper.appendChild(err);
+        }
+        hasError = true;
+      }
+    });
+    if (hasError) return;
+  }
   await applyToStudy(state.currentStudy.id, answers);
 }
 
@@ -2498,7 +2520,7 @@ async function applyToStudy(studyId, answers = null) {
         input = `<input type="text" class="sq-text-input" data-idx="${i}" maxlength="200" placeholder="Your answer…"
           style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">`;
       }
-      return `<div style="margin-bottom:${i < questions.length - 1 ? '14px' : '0'}">${label}${input}</div>`;
+      return `<div data-sq-idx="${i}" style="margin-bottom:${i < questions.length - 1 ? '14px' : '0'}">${label}${input}</div>`;
     }).join('');
   }
 
