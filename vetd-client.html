@@ -2515,7 +2515,7 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { data: study, error } = await db
         .from('studies')
-        .select('id, title, status, description, pay_per_participant, spots, filled_spots, session_type, session_duration')
+        .select('id, title, status, description, pay_per_participant, spots, filled_spots, session_type, duration_minutes')
         .eq('id', studyId)
         .single();
       if (error || !study) throw error || new Error('Study not found');
@@ -2535,7 +2535,7 @@ textarea{resize:vertical;min-height:90px}
           <div><div style="${labelStyle}">Pay</div><div style="${valStyle}">${esc(pay)}</div></div>
           <div><div style="${labelStyle}">Spots</div><div style="${valStyle}">${filled}/${spots}</div></div>
           <div><div style="${labelStyle}">Type</div><div style="${valStyle}">${esc(study.session_type === 'group' ? 'Group' : '1:1')}</div></div>
-          <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.session_duration || '–'))} min</div></div>
+          <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.duration_minutes || '–'))} min</div></div>
         </div>`;
 
       if (settingsEl) {
@@ -2554,9 +2554,10 @@ textarea{resize:vertical;min-height:90px}
           </div>`;
       }
     } catch(err) {
-      console.error('loadStudyOverview error:', err);
+      console.error('loadStudyOverview error:', err?.message || err);
       if (window.Sentry) Sentry.captureException(err);
-      if (overviewEl) overviewEl.innerHTML = '<div style="padding:1rem;color:var(--coral);font-size:13px">Could not load study details.</div>';
+      if (overviewEl) overviewEl.innerHTML = `<div style="padding:1rem;color:var(--coral);font-size:13px">Could not load study details.</div>`;
+      if (settingsEl) settingsEl.innerHTML = '';
     }
   }
 
