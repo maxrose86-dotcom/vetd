@@ -472,8 +472,8 @@ textarea{resize:vertical;min-height:90px}
       <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
       <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
-      <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Contributors</span></button>
-      <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate contributors</span></button>
+      <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
+      <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
     </div>
     <div style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)">
       <button onclick="signOut()" style="width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign out</button>
@@ -502,9 +502,9 @@ textarea{resize:vertical;min-height:90px}
         <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
       </div>
       <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_panel">Contributors</div>
-        <button class="nav-item" data-tab="panel" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Contributors</span><span class="nav-badge">3</span></button>
-        <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate contributors</span></button>
+        <div class="nav-label" data-i18n="cl_nav_label_panel">Participants</div>
+        <button class="nav-item" data-tab="panel" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span><span class="nav-badge">3</span></button>
+        <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
       </div>
       <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -601,7 +601,7 @@ textarea{resize:vertical;min-height:90px}
 
         <div class="stat-row">
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_active">Active studies</div><div class="stat-num" id="stat-active-num">—</div><div class="stat-sub" id="stat-active-sub"> </div></div>
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_recruited">Contributors recruited</div><div class="stat-num" id="stat-recruited-num">—</div><div class="stat-sub" id="stat-recruited-sub"> </div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_recruited">Participants recruited</div><div class="stat-num" id="stat-recruited-num">—</div><div class="stat-sub" id="stat-recruited-sub"> </div></div>
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_rating">Avg contributor rating</div><div class="stat-num" id="stat-rating-num">—</div><div class="stat-sub" id="stat-rating-sub"> </div></div>
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_spend">Total spend</div><div class="stat-num" id="stat-budget-num">—</div><div class="stat-sub" id="stat-budget-sub"> </div></div>
         </div>
@@ -667,8 +667,8 @@ textarea{resize:vertical;min-height:90px}
                 </div>
               </div>
               <div class="field-row">
-                <div class="field"><label data-i18n="cl_label_spots">Number of contributors needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
-                <div class="field"><label data-i18n="cl_label_pay">Pay per contributor (kr)</label><input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label data-i18n="cl_label_spots">Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
+                <div class="field"><label data-i18n="cl_label_pay">Pay per participant (kr)</label><input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()"></div>
               </div>
               <div class="field-row">
                 <div class="field"><label data-i18n="cl_label_start">Study start date</label><input type="date" id="b-start"></div>
@@ -753,7 +753,7 @@ textarea{resize:vertical;min-height:90px}
               <span class="preview-tag">Online shopper</span>
               <span class="preview-tag">3.0★ and above</span>
             </div>
-            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_spots">Spots available</span><span class="preview-stat-val" id="prev-spots">10 contributors</span></div>
+            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_spots">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
             <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_budget">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
             <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_fee">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
             <div class="match-estimate">
@@ -782,7 +782,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- PANEL BROWSER -->
       <div class="tab-pane" id="tab-panel">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_browse_title">Contributors</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all contributors</p></div>
+          <div class="page-title"><h1 data-i18n="cl_browse_title">Participants</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all participants</p></div>
           <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')" data-i18n="cl_invite_top">Invite top 10</button>
         </div>
         <div class="filter-bar">
@@ -798,7 +798,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- RATE PARTICIPANTS -->
       <div class="tab-pane" id="tab-rate">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_rate_title">Rate contributors</h1><p id="rate-page-sub">Loading…</p></div>
+          <div class="page-title"><h1 data-i18n="cl_rate_title">Rate participants</h1><p id="rate-page-sub">Loading…</p></div>
         </div>
         <div style="background:var(--amber-light);border-radius:var(--r-md);padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:13px;color:var(--amber);font-weight:500" data-i18n="cl_rate_warning">
           ⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.
@@ -816,14 +816,14 @@ textarea{resize:vertical;min-height:90px}
 
         <div class="stat-row">
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_studies">Total studies run</div><div class="stat-num">8</div><div class="stat-sub">Since Jan 2026</div></div>
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_participants">Total contributors</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_participants">Total participants</div><div class="stat-num">174</div><div class="stat-sub up">↑ 38% vs last quarter</div></div>
           <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_total_invested">Total invested</div><div class="stat-num">78 200 kr</div><div class="stat-sub">incl. Vetd fees</div></div>
-          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_quality">Avg contributor quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
+          <div class="stat-card"><div class="stat-label" data-i18n="cl_stat_avg_quality">Avg participant quality</div><div class="stat-num">4.7★</div><div class="stat-sub up">Excellent</div></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title" data-i18n="cl_chart_per_month">Contributors per month</div>
+            <div class="sec-title" data-i18n="cl_chart_per_month">Participants per month</div>
             <div class="chart-bar-wrap">
               <div class="bar-col"><div class="bar-val">18</div><div class="bar-fill" style="height:35%"></div><div class="bar-label">Oct</div></div>
               <div class="bar-col"><div class="bar-val">22</div><div class="bar-fill" style="height:43%"></div><div class="bar-label">Nov</div></div>
@@ -834,7 +834,7 @@ textarea{resize:vertical;min-height:90px}
             </div>
           </div>
           <div class="card" style="margin-bottom:0">
-            <div class="sec-title" data-i18n="cl_chart_quality">Contributor quality distribution</div>
+            <div class="sec-title" data-i18n="cl_chart_quality">Participant quality distribution</div>
             <div style="display:flex;flex-direction:column;gap:10px;margin-top:0.5rem">
               <div style="display:flex;align-items:center;gap:10px;font-size:13px">
                 <span style="width:80px;color:var(--gray-400)">Elite 4.7–5.0</span>
@@ -863,7 +863,7 @@ textarea{resize:vertical;min-height:90px}
         <div class="card">
           <div class="sec-title" data-i18n="cl_perf_title">Study performance</div>
           <table class="data-table">
-            <thead><tr><th data-i18n="cl_perf_study">Study</th><th data-i18n="cl_perf_participants">Contributors</th><th data-i18n="cl_perf_completion">Completion</th><th data-i18n="cl_perf_rating">Avg rating</th><th data-i18n="cl_perf_cost">Cost</th></tr></thead>
+            <thead><tr><th data-i18n="cl_perf_study">Study</th><th data-i18n="cl_perf_participants">Participants</th><th data-i18n="cl_perf_completion">Completion</th><th data-i18n="cl_perf_rating">Avg rating</th><th data-i18n="cl_perf_cost">Cost</th></tr></thead>
             <tbody>
               <tr><td><strong>Online shopping experience</strong></td><td>12/20</td><td>100%</td><td><span style="color:var(--amber)">★ 4.8</span></td><td>5 400 kr</td></tr>
               <tr><td><strong>Gen Z style focus group</strong></td><td>8/8</td><td>100%</td><td><span style="color:var(--amber)">★ 4.9</span></td><td>4 000 kr</td></tr>
@@ -2313,7 +2313,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(err) {
       console.error('[loadRateList] error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load contributors.</div>';
+      list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--coral)">Could not load participants.</div>';
     }
   }
 
@@ -3137,13 +3137,13 @@ textarea{resize:vertical;min-height:90px}
       // Sidebar nav
       cl_nav_label_overview: 'Overview',
       cl_nav_label_studies: 'Studies',
-      cl_nav_label_panel: 'Contributors',
+      cl_nav_label_panel: 'Participants',
       cl_nav_overview: 'Overview',
       cl_nav_studies: 'Studies',
-      cl_nav_browse: 'Contributors',
+      cl_nav_browse: 'Participants',
       cl_nav_analytics: 'Analytics',
       cl_nav_post: 'Post a study',
-      cl_nav_rate: 'Rate contributors',
+      cl_nav_rate: 'Rate participants',
       cl_nav_label_sessions: 'Sessions',
       cl_nav_sessions: 'Sessions',
       cl_sessions_title: 'Sessions',
@@ -3159,7 +3159,7 @@ textarea{resize:vertical;min-height:90px}
       // Dashboard
       cl_post_new_btn: '＋ Post new study',
       cl_stat_active: 'Active studies',
-      cl_stat_recruited: 'Contributors recruited',
+      cl_stat_recruited: 'Participants recruited',
       cl_stat_avg_rating: 'Avg contributor rating',
       cl_stat_spend: 'Total spend',
       cl_dash_active_studies: 'Active studies',
@@ -3192,8 +3192,8 @@ textarea{resize:vertical;min-height:90px}
       cl_ph_desc: "Tell contributors what the study involves and what you're hoping to learn...",
       cl_label_format: 'Study format',
       cl_label_length: 'Session length',
-      cl_label_spots: 'Number of contributors needed',
-      cl_label_pay: 'Pay per contributor (kr)',
+      cl_label_spots: 'Number of participants needed',
+      cl_label_pay: 'Pay per participant (kr)',
       cl_label_start: 'Study start date',
       cl_label_close: 'Closing date',
       cl_section_targeting: 'Who are you looking for?',
@@ -3208,7 +3208,7 @@ textarea{resize:vertical;min-height:90px}
       cl_label_sq2: 'Screening question 2 (optional)',
       cl_ph_sq2: 'e.g. How often do you shop for clothes online?',
       cl_label_addreqs: 'Any other requirements or notes for Vetd?',
-      cl_ph_addreqs: 'e.g. Contributors must be comfortable on video call. We prefer people who can articulate their experiences clearly.',
+      cl_ph_addreqs: 'e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly.',
       cl_save_draft: 'Save as draft',
       cl_publish_btn: 'Publish study →',
       // Chips
@@ -3238,15 +3238,15 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_fee: '+ Vetd fee (20%)',
       cl_preview_match: 'contributors match your criteria right now',
       // Browse contributors
-      cl_browse_title: 'Contributors',
-      cl_browse_sub: 'Browse all contributors',
+      cl_browse_title: 'Participants',
+      cl_browse_sub: 'Browse all participants',
       cl_browse_for_study: 'Inviting for: {title}',
       cl_invite_top: 'Invite top 10',
       cl_fc_all: 'All',
       cl_fc_elite: 'Elite only',
       cl_fc_not_invited: 'Not yet invited',
       cl_fc_applied: 'Invited',
-      cl_invite_contributors: '+ Invite contributors',
+      cl_invite_contributors: '+ Invite participants',
       cl_invited: 'invited',
       cl_invited_status: 'Invited',
       cl_declined_by_contributor: 'Declined by contributor',
@@ -3258,7 +3258,7 @@ textarea{resize:vertical;min-height:90px}
       cl_notif_invited_title: 'You\'ve been invited to a study',
       cl_notif_invited_body: 'You\'ve been personally selected to participate in "{title}". Open Vetd to accept.',
       // Rate participants
-      cl_rate_title: 'Rate contributors',
+      cl_rate_title: 'Rate participants',
       cl_rate_warning: '⚡ Please rate within 72 hours. Your ratings help maintain quality for everyone on the platform.',
       cl_dim_punctuality: 'Punctuality',
       cl_dim_engagement: 'Engagement & participation',
@@ -3273,14 +3273,14 @@ textarea{resize:vertical;min-height:90px}
       cl_analytics_title: 'Analytics',
       cl_analytics_export: 'Export report',
       cl_stat_total_studies: 'Total studies run',
-      cl_stat_total_participants: 'Total contributors',
+      cl_stat_total_participants: 'Total participants',
       cl_stat_total_invested: 'Total invested',
-      cl_stat_avg_quality: 'Avg contributor quality',
-      cl_chart_per_month: 'Contributors per month',
-      cl_chart_quality: 'Contributor quality distribution',
+      cl_stat_avg_quality: 'Avg participant quality',
+      cl_chart_per_month: 'Participants per month',
+      cl_chart_quality: 'Participant quality distribution',
       cl_perf_title: 'Study performance',
       cl_perf_study: 'Study',
-      cl_perf_participants: 'Contributors',
+      cl_perf_participants: 'Participants',
       cl_perf_completion: 'Completion',
       cl_perf_rating: 'Avg rating',
       cl_perf_cost: 'Cost',
@@ -3389,11 +3389,11 @@ textarea{resize:vertical;min-height:90px}
       cl_rating_submitted: 'Rating submitted for {name}. Their score has been updated.',
       cl_marked_completed: 'Marked as completed ✓ — payment queued',
       cl_study_published: 'Study published! Contributors are being matched now.',
-      cl_no_rate_yet: 'No completed contributors to rate yet.',
-      cl_no_rate_yet_sub: 'No completed contributors to rate yet. Mark accepted contributors as completed first.',
-      cl_all_rated: 'All contributors have been rated.',
-      cl_awaiting_rating: '{count} contributor awaiting your rating',
-      cl_awaiting_rating_plural: '{count} contributors awaiting your rating',
+      cl_no_rate_yet: 'No completed participants to rate yet.',
+      cl_no_rate_yet_sub: 'No completed participants to rate yet. Mark accepted participants as completed first.',
+      cl_all_rated: 'All participants have been rated.',
+      cl_awaiting_rating: '{count} participant awaiting your rating',
+      cl_awaiting_rating_plural: '{count} participants awaiting your rating',
       cl_rate_now: 'Rate now →',
       cl_no_contributors: 'No contributors found yet.',
       cl_just_now: 'just now',
@@ -3407,7 +3407,7 @@ textarea{resize:vertical;min-height:90px}
       cl_no_payments: 'No payments yet',
       cl_pending_release: 'pending release',
       cl_payments_processed: 'payments processed',
-      cl_participants_suffix: 'contributors',
+      cl_participants_suffix: 'participants',
     },
     sv: {
       // Landing
