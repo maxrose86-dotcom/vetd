@@ -616,14 +616,14 @@ textarea{resize:vertical;min-height:90px}
       <!-- STUDIES -->
       <div class="tab-pane" id="tab-studies">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_my_studies">Studies</h1><p>3 active · 2 completed · 1 draft</p></div>
+          <div class="page-title"><h1 data-i18n="cl_my_studies">Studies</h1><p id="studies-subtitle"></p></div>
           <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
         <div class="filter-bar">
-          <button class="fc on" onclick="fc(this)" data-i18n="cl_filter_all">All</button>
-          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_active">Active</button>
-          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_completed">Completed</button>
-          <button class="fc" onclick="fc(this)" data-i18n="cl_filter_draft">Draft</button>
+          <button class="fc on" data-filter="active" onclick="setStudiesFilter('active',this)">Active</button>
+          <button class="fc" data-filter="draft" onclick="setStudiesFilter('draft',this)">Draft</button>
+          <button class="fc" data-filter="completed" onclick="setStudiesFilter('completed',this)">Completed</button>
+          <button class="fc" data-filter="all" onclick="setStudiesFilter('all',this)">All</button>
         </div>
 
         <div id="studies-list">
@@ -1141,6 +1141,9 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ─── LOAD STUDIES ───────────────────────────────────────
+  let _studiesCache = null;
+  let _studiesFilter = 'active';
+
   async function loadStudies() {
     const list = document.getElementById('studies-list');
     if (!list) return;
@@ -1155,7 +1158,7 @@ textarea{resize:vertical;min-height:90px}
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Fetch application counts + IDs for all studies in one query
+      // Fetch application counts for all studies in one query
       let appCountMap = {};
       let allAppRows  = [];
       if (studies && studies.length > 0) {
@@ -1190,72 +1193,110 @@ textarea{resize:vertical;min-height:90px}
         });
       }
 
-      if (!studies || studies.length === 0) {
-        list.innerHTML = `
-          <div style="text-align:center;padding:3rem;color:var(--gray-400)">
-            <div style="font-size:32px;margin-bottom:1rem">📋</div>
-            <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${t('cl_no_studies')}</h3>
-            <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub')}</p>
-            <button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))">${t('cl_post_a_study')}</button>
-          </div>`;
-        return;
-      }
-
-      list.innerHTML = studies.map(s => {
-        const filled   = s.filled_spots || 0;
-        const spots    = s.spots || 1;
-        const pct      = Math.min(100, Math.round((filled / spots) * 100));
-        const status   = s.status || 'draft';
-        const badgeCls = status === 'active'    ? 'badge-green'
-                       : status === 'paused'    ? 'badge-amber'
-                       : status === 'completed' ? 'badge-gray'
-                       : status === 'cancelled' ? 'badge-coral'
-                       : 'badge-gray';
-        const barColor = status === 'completed' ? 'var(--blue)'
-                       : status === 'active'    ? 'var(--green)' : 'var(--amber)';
-        const posted = s.created_at
-          ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
-          : '';
-        const closes = s.close_date
-          ? new Date(s.close_date).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
-          : '—';
-        const statusKeyMap = { active: 'cl_badge_live', paused: 'cl_badge_filling', completed: 'cl_badge_completed', cancelled: 'cl_badge_no_show', draft: 'cl_filter_draft' };
-        const label = statusKeyMap[status] ? t(statusKeyMap[status]) : (status.charAt(0).toUpperCase() + status.slice(1));
-        const counts    = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0 };
-        const payDisplay = s.pay_per_participant
-          ? `${formatCurrency(s.pay_per_participant)}/person`
-          : null;
-        return `
-          <div class="study-row" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
-            <div class="study-row-header">
-              <div class="study-title-group">
-                <h3>${esc(s.title || 'Untitled study')}</h3>
-                <p>${[DASH_FORMAT_LABEL[s.format] || s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
-              </div>
-              <span class="badge ${badgeCls}">${label}</span>
-            </div>
-            <div class="study-meta" style="margin-bottom:10px">
-              <span>${t('cl_spots')}: <strong>${filled} / ${spots}</strong></span>
-              ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
-              ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : (payDisplay && filled ? `<span>${t('cl_est_spend')}: <strong>${formatCurrency(filled * s.pay_per_participant)}</strong></span>` : '')}
-              <span>${t('cl_closes')}: <strong>${closes}</strong></span>
-              ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong>${counts.invited > 0 ? ` <span style="color:var(--blue-dark);font-size:11px">(${counts.invited} ${t('cl_awaiting_response')})</span>` : ''}${counts.accepted > 0 ? ` <span style="color:var(--green-dark);font-size:11px">(${counts.accepted} ${t('cl_accepted').toLowerCase()})</span>` : ''}</span>` : ''}
-            </div>
-            <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
-            <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
-              <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
-                👥 ${counts.total === 0 ? t('cl_no_invitations_yet') : t(counts.total !== 1 ? 'cl_view_participants_plural' : 'cl_view_participants').replace('{count}', counts.total)}
-              </button>
-              ${status === 'active' || status === 'draft' ? `<button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${s.id}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>` : ''}
-              ${status === 'draft' ? `<button class="btn-primary btn-green" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))">${t('cl_continue_editing')}</button>` : ''}
-            </div>
-          </div>`;
-      }).join('');
+      _studiesCache = { studies: studies || [], appCountMap, paymentSpendMap };
+      renderStudiesList();
     } catch(err) {
       console.error('Failed to load studies:', err);
       if (window.Sentry) Sentry.captureException(err);
-      list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
+      const list = document.getElementById('studies-list');
+      if (list) list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
     }
+  }
+
+  function setStudiesFilter(filter, btn) {
+    _studiesFilter = filter;
+    if (btn) fc(btn);
+    renderStudiesList();
+  }
+
+  function renderStudiesList() {
+    const list = document.getElementById('studies-list');
+    if (!list || !_studiesCache) return;
+    const { studies, appCountMap, paymentSpendMap } = _studiesCache;
+
+    // Update subtitle with live counts
+    const subEl = document.getElementById('studies-subtitle');
+    if (subEl) {
+      const activeCount    = studies.filter(s => s.status === 'active' || s.status === 'paused').length;
+      const draftCount     = studies.filter(s => s.status === 'draft').length;
+      const completedCount = studies.filter(s => s.status === 'completed').length;
+      const parts = [];
+      if (activeCount)    parts.push(`${activeCount} active`);
+      if (draftCount)     parts.push(`${draftCount} draft`);
+      if (completedCount) parts.push(`${completedCount} completed`);
+      subEl.textContent = parts.join(' · ') || '';
+    }
+
+    // Filter
+    const filtered = studies.filter(s => {
+      const st = s.status || 'draft';
+      if (_studiesFilter === 'active')    return st === 'active' || st === 'paused';
+      if (_studiesFilter === 'draft')     return st === 'draft';
+      if (_studiesFilter === 'completed') return st === 'completed';
+      if (_studiesFilter === 'all')       return st !== 'archived';
+      return st !== 'archived';
+    });
+
+    if (!filtered.length) {
+      const emptyMsgs = {
+        active: { text: t('cl_no_studies') || 'No active studies', sub: 'Post a new study to get started.', cta: true },
+        draft: { text: 'No draft studies', sub: '', cta: false },
+        completed: { text: 'No completed studies', sub: '', cta: false },
+        all: { text: t('cl_no_studies') || 'No studies yet', sub: t('cl_no_studies_sub') || '', cta: true },
+      };
+      const msg = emptyMsgs[_studiesFilter] || emptyMsgs.all;
+      list.innerHTML = `
+        <div style="text-align:center;padding:3rem;color:var(--gray-400)">
+          <div style="font-size:32px;margin-bottom:1rem">📋</div>
+          <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${msg.text}</h3>
+          ${msg.sub ? `<p style="font-size:14px;font-weight:300">${msg.sub}</p>` : ''}
+          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab=&quot;new-study&quot;]'))">${t('cl_post_a_study') || 'Post a study'}</button>` : ''}
+        </div>`;
+      return;
+    }
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    list.innerHTML = filtered.map(s => {
+      const filled   = s.filled_spots || 0;
+      const spots    = s.spots || 1;
+      const pct      = Math.min(100, Math.round((filled / spots) * 100));
+      const status   = s.status || 'draft';
+      const badgeCls = status === 'active' ? 'badge-green' : status === 'paused' ? 'badge-amber' : 'badge-gray';
+      const barColor = status === 'active' ? 'var(--green)' : status === 'paused' ? 'var(--amber)' : 'var(--gray-200)';
+      const statusLabel = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' }[status] || status;
+      const posted = s.created_at
+        ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+        : '';
+      const payDisplay = s.pay_per_participant ? `${formatCurrency(s.pay_per_participant)}/person` : null;
+      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0 };
+      const isOverdue = s.close_date && new Date(s.close_date) < today && status === 'active';
+
+      return `
+        <div class="study-row" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
+          <div class="study-row-header">
+            <div class="study-title-group">
+              <h3>${esc(s.title || 'Untitled study')}</h3>
+              <p>${[DASH_FORMAT_LABEL[s.format] || s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+              ${isOverdue ? `<span style="font-size:11px;color:var(--amber);font-weight:500">Past close date</span>` : ''}
+              <span class="badge ${badgeCls}">${statusLabel}</span>
+            </div>
+          </div>
+          <div class="study-meta" style="margin-bottom:10px">
+            <span>${t('cl_spots')}: <strong>${filled} / ${spots}</strong></span>
+            ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
+            ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : ''}
+            ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong></span>` : ''}
+          </div>
+          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
+          ${status === 'active' || status === 'draft' ? `
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${esc(s.id)}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>
+          </div>` : ''}
+        </div>`;
+    }).join('');
   }
 
   // ─── STUDY WORKSPACE ────────────────────────────────────
@@ -2514,18 +2555,24 @@ textarea{resize:vertical;min-height:90px}
         </div>`;
 
       if (settingsEl) {
-        const isActive = study.status === 'active';
-        const isDraft  = study.status === 'draft';
-        const isPaused = study.status === 'paused';
+        const isActive    = study.status === 'active';
+        const isDraft     = study.status === 'draft';
+        const isPaused    = study.status === 'paused';
+        const isCompleted = study.status === 'completed';
+        const isArchived  = study.status === 'archived';
         settingsEl.innerHTML = `
           <div style="padding:1.25rem 1.5rem">
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">Study status</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              ${isDraft  ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Publish</button>` : ''}
-              ${isActive ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">Pause</button>` : ''}
-              ${isPaused ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Resume</button>` : ''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
+              ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Publish</button>` : ''}
+              ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">Pause</button>` : ''}
+              ${isPaused     ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Resume</button>` : ''}
+              ${(isActive || isPaused) ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','completed')">Mark as completed</button>` : ''}
+              ${isCompleted  ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">Reopen</button>` : ''}
+              ${isArchived   ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">Unarchive</button>` : ''}
+              ${!isArchived  ? `<button class="btn-outline" style="color:var(--gray-400)" onclick="setStudyStatus('${esc(studyId)}','archived')">Archive</button>` : ''}
             </div>
-            ${study.description ? `<div style="margin-top:1rem;font-size:13px;color:var(--gray-500)">${esc(study.description)}</div>` : ''}
+            ${study.description ? `<div style="font-size:13px;color:var(--gray-500)">${esc(study.description)}</div>` : ''}
           </div>`;
       }
     } catch(err) {
