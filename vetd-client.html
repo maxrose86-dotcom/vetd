@@ -623,7 +623,7 @@ textarea{resize:vertical;min-height:90px}
           <button class="fc on" data-filter="active" onclick="setStudiesFilter('active',this)">Active</button>
           <button class="fc" data-filter="draft" onclick="setStudiesFilter('draft',this)">Draft</button>
           <button class="fc" data-filter="completed" onclick="setStudiesFilter('completed',this)">Completed</button>
-          <button class="fc" data-filter="all" onclick="setStudiesFilter('all',this)">All</button>
+          <button class="fc" data-filter="archived" onclick="setStudiesFilter('archived',this)">Archived</button>
         </div>
 
         <div id="studies-list">
@@ -1233,16 +1233,16 @@ textarea{resize:vertical;min-height:90px}
       if (_studiesFilter === 'active')    return st === 'active' || st === 'paused';
       if (_studiesFilter === 'draft')     return st === 'draft';
       if (_studiesFilter === 'completed') return st === 'completed';
-      if (_studiesFilter === 'all')       return st !== 'archived';
+      if (_studiesFilter === 'archived')  return st === 'archived';
       return st !== 'archived';
     });
 
     if (!filtered.length) {
       const emptyMsgs = {
-        active: { text: t('cl_no_studies') || 'No active studies', sub: 'Post a new study to get started.', cta: true },
-        draft: { text: 'No draft studies', sub: '', cta: false },
-        completed: { text: 'No completed studies', sub: '', cta: false },
-        all: { text: t('cl_no_studies') || 'No studies yet', sub: t('cl_no_studies_sub') || '', cta: true },
+        active:    { text: t('cl_no_studies') || 'No active studies',   sub: 'Post a new study to get started.', cta: true  },
+        draft:     { text: 'No draft studies',                           sub: '',                                 cta: false },
+        completed: { text: 'No completed studies',                       sub: '',                                 cta: false },
+        archived:  { text: 'No archived studies',                        sub: '',                                 cta: false },
       };
       const msg = emptyMsgs[_studiesFilter] || emptyMsgs.all;
       list.innerHTML = `
@@ -1291,7 +1291,11 @@ textarea{resize:vertical;min-height:90px}
             ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong></span>` : ''}
           </div>
           <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
-          ${status === 'active' || status === 'draft' ? `
+          ${status === 'draft' ? `
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <button class="btn-primary btn-green" onclick="event.stopPropagation();openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}','settings')">Review &amp; publish →</button>
+          </div>` : ''}
+          ${status === 'active' ? `
           <div style="display:flex;gap:10px;margin-top:12px">
             <button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${esc(s.id)}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>
           </div>` : ''}
