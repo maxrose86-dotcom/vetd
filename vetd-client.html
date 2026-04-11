@@ -471,7 +471,6 @@ textarea{resize:vertical;min-height:90px}
       <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
       <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
-      <button class="nav-item" data-tab="new-study" onclick="showTab('new-study',this);toggleClientNav()"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
       <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
       <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
       <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
@@ -497,7 +496,6 @@ textarea{resize:vertical;min-height:90px}
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_studies">Studies</div>
         <button class="nav-item" data-tab="studies" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
-        <button class="nav-item" data-tab="new-study" onclick="showTab('new-study',this)"><span class="nav-icon">＋</span><span data-i18n="cl_nav_post">Post a study</span></button>
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_sessions">Sessions</div>
@@ -599,7 +597,6 @@ textarea{resize:vertical;min-height:90px}
       <div class="tab-pane active" id="tab-dashboard">
         <div class="page-topbar">
           <div class="page-title"><h1 id="dash-greeting">Welcome 👋</h1><p id="dash-subtitle">Research &amp; Insights</p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
 
         <div class="stat-row">
@@ -614,33 +611,14 @@ textarea{resize:vertical;min-height:90px}
           <div id="pending-queue-list"></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem">
-          <div class="card" style="margin-bottom:0">
-            <div class="sec-title" data-i18n="cl_dash_active_studies">Active studies</div>
-            <div id="dash-active-studies">
-              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</div>
-            </div>
-          </div>
-
-          <div class="card" style="margin-bottom:0">
-            <div class="sec-title" data-i18n="cl_dash_top_matches">Top contributor matches waiting</div>
-            <!-- TODO: Automatic matching is coming soon. Will surface contributors who match active study criteria. -->
-            <div style="text-align:center;padding:2rem;color:var(--gray-400)">
-              <div style="font-size:28px;margin-bottom:8px">🔍</div>
-              <div style="font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:4px">Automatic matching coming soon</div>
-              <div style="font-size:12px;font-weight:300">Contributors matched to your active studies will appear here. For now, browse contributors manually in the <a href="#" onclick="showTab('panel',document.querySelector('.nav-item[data-tab="panel"]'));return false;" style="color:var(--green)">Participants tab</a>.</div>
-            </div>
-          </div>
+        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="unscheduled-queue-list"></div>
         </div>
 
-        <div class="card">
-          <div class="sec-title" data-i18n="cl_dash_recent_activity">Recent activity</div>
-          <table class="data-table">
-            <thead><tr><th data-i18n="cl_th_contributor">Contributor</th><th data-i18n="cl_th_study">Study</th><th data-i18n="cl_th_status">Status</th><th data-i18n="cl_th_rating">Rating given</th><th data-i18n="cl_th_date">Date</th></tr></thead>
-            <tbody id="dash-activity-body">
-              <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</td></tr>
-            </tbody>
-          </table>
+        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
+          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
+          <div id="upcoming-sessions-list"></div>
         </div>
       </div>
 
@@ -800,13 +778,8 @@ textarea{resize:vertical;min-height:90px}
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_sessions_title">Sessions</h1><p data-i18n="cl_sessions_sub">Scheduling queue and upcoming calls</p></div>
         </div>
-        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
-          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
-          <div id="unscheduled-queue-list"></div>
-        </div>
-        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
-          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
-          <div id="upcoming-sessions-list"></div>
+        <div style="text-align:center;padding:3rem;color:var(--gray-400);font-size:13px">
+          Your scheduling queue and upcoming sessions are on <a href="#" onclick="showTab('dashboard',document.querySelector('.nav-item[data-tab=&quot;dashboard&quot;]'));return false;" style="color:var(--green)">Overview</a>. Open a study to manage its sessions.
         </div>
       </div>
 
@@ -2669,14 +2642,11 @@ textarea{resize:vertical;min-height:90px}
       const activeNumEl = document.getElementById('stat-active-num');
       if (activeNumEl) activeNumEl.textContent = activeStudies.length;
 
-      renderDashActiveStudies(activeStudies);
-
       if (!studyIds.length) {
         const recruitedEl = document.getElementById('stat-recruited-num');
         const ratingEl    = document.getElementById('stat-rating-num');
         if (recruitedEl) recruitedEl.textContent = '0';
         if (ratingEl)    ratingEl.textContent = '—';
-        renderDashActivity([], {});
         return;
       }
 
@@ -2711,9 +2681,6 @@ textarea{resize:vertical;min-height:90px}
       const ratingEl = document.getElementById('stat-rating-num');
       if (ratingEl) ratingEl.textContent = avgRatingText;
 
-      // Build study title map for activity table
-      const studyMap = Object.fromEntries(allStudies.map(s => [s.id, s.title || 'Untitled study']));
-      renderDashActivity(allApps.slice(0, 10), studyMap);
 
     } catch(err) {
       console.error('loadDashboardStats error:', err);
@@ -2892,81 +2859,6 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
-  function renderDashActiveStudies(studies) {
-    const container = document.getElementById('dash-active-studies');
-    if (!container) return;
-
-    if (!studies.length) {
-      container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No active studies — <a href="#" onclick="showTab('new-study',document.querySelector('.nav-item[data-tab="new-study"]'));return false;" style="color:var(--green)">post your first study</a> to get started.</div>`;
-      return;
-    }
-
-    container.innerHTML = studies.slice(0, 3).map(s => {
-      const filled   = s.filled_spots || 0;
-      const spots    = s.spots || 1;
-      const pct      = Math.min(100, Math.round((filled / spots) * 100));
-      const fmtLabel = DASH_FORMAT_LABEL[s.format] || s.format || '';
-      const duration = s.duration_minutes ? `${s.duration_minutes} mins` : '';
-      const meta     = [fmtLabel, duration].filter(Boolean).join(' · ');
-      const closes   = s.close_date
-        ? new Date(s.close_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : '—';
-      const barColor = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--blue)';
-      return `
-        <div class="study-row" style="margin-bottom:10px" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
-          <div class="study-row-header">
-            <div class="study-title-group"><h3>${esc(s.title || 'Untitled study')}</h3><p>${esc(meta)}</p></div>
-            <span class="badge badge-green">${t('cl_badge_live')}</span>
-          </div>
-          <div class="study-meta">
-            <span><strong>${filled}</strong> / ${spots} filled</span>
-            <span>${t('cl_closes')} <strong>${esc(closes)}</strong></span>
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
-        </div>`;
-    }).join('');
-  }
-
-  function renderDashActivity(apps, studyMap) {
-    const tbody = document.getElementById('dash-activity-body');
-    if (!tbody) return;
-
-    if (!apps || !apps.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No activity yet.</td></tr>`;
-      return;
-    }
-
-    const STATUS_BADGE = {
-      completed: 'badge-green', accepted: 'badge-blue',
-      rejected:  'badge-coral', pending: 'badge-gray', invited: 'badge-blue', declined: 'badge-gray'
-    };
-
-    tbody.innerHTML = apps.map(a => {
-      const c    = a.contributors || {};
-      const p    = c.profiles    || {};
-      const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown';
-      const studyTitle  = (studyMap && studyMap[a.study_id]) || 'Study';
-      const status      = a.status || 'pending';
-      const badgeCls    = STATUS_BADGE[status] || 'badge-gray';
-      const statusLabel = status === 'completed' ? t('cl_badge_completed')
-                        : status === 'accepted'  ? t('cl_accepted')
-                        : status === 'rejected'  ? t('cl_rejected')
-                        : status === 'invited'   ? t('cl_invited_status')
-                        : status === 'declined'  ? t('cl_declined_by_contributor')
-                        : status;
-      const date        = a.updated_at
-        ? new Date(a.updated_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : '';
-      const rating      = c.rating ? `<span style="color:var(--amber)">★ ${esc(Number(c.rating).toFixed(1))}</span>` : '—';
-      return `<tr>
-        <td><strong>${esc(name)}</strong></td>
-        <td>${esc(studyTitle)}</td>
-        <td><span class="badge ${badgeCls}">${esc(statusLabel)}</span></td>
-        <td>${rating}</td>
-        <td>${esc(date)}</td>
-      </tr>`;
-    }).join('');
-  }
 
   // ─── GO TO APP ──────────────────────────────────────────
   async function goApp() {
