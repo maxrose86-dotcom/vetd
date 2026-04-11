@@ -1345,6 +1345,20 @@ textarea{resize:vertical;min-height:90px}
     });
   }
 
+  async function openStudySessionRow(studyId, studyTitle, appId) {
+    await openApplicants(studyId, studyTitle);
+    switchStudySection('sessions');
+    requestAnimationFrame(() => {
+      const row = document.getElementById('approw-' + appId);
+      if (row) {
+        row.scrollIntoView({ block: 'center' });
+        row.style.transition = 'background 0.4s';
+        row.style.background = 'rgba(234,179,8,0.12)';
+        setTimeout(() => { row.style.background = ''; }, 2500);
+      }
+    });
+  }
+
   async function loadApplicants(studyId) {
     const list = document.getElementById('applicants-list');
     const countEl = document.getElementById('applicants-count');
@@ -2870,7 +2884,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
           <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            onclick="openApplicantsToRow('${esc(a.study_id)}','${escAttr(title)}','${esc(a.id)}')">Open</button>
+            onclick="openStudySessionRow('${esc(a.study_id)}','${escAttr(title)}','${esc(a.id)}')">Open</button>
         </div>`;
       }).join('');
     } catch(err) {
