@@ -611,15 +611,6 @@ textarea{resize:vertical;min-height:90px}
           <div id="pending-queue-list"></div>
         </div>
 
-        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
-          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
-          <div id="unscheduled-queue-list"></div>
-        </div>
-
-        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
-          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
-          <div id="upcoming-sessions-list"></div>
-        </div>
       </div>
 
       <!-- STUDIES -->
@@ -778,8 +769,13 @@ textarea{resize:vertical;min-height:90px}
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_sessions_title">Sessions</h1><p data-i18n="cl_sessions_sub">Scheduling queue and upcoming calls</p></div>
         </div>
-        <div style="text-align:center;padding:3rem;color:var(--gray-400);font-size:13px">
-          Your scheduling queue and upcoming sessions are on <a href="#" onclick="showTab('dashboard',document.querySelector('.nav-item[data-tab=&quot;dashboard&quot;]'));return false;" style="color:var(--green)">Overview</a>. Open a study to manage its sessions.
+        <div class="card" id="unscheduled-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="unscheduled-queue-list"></div>
+        </div>
+        <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
+          <div class="sec-title">Upcoming sessions (next 24 hours)</div>
+          <div id="upcoming-sessions-list"></div>
         </div>
       </div>
 
