@@ -1212,7 +1212,7 @@ textarea{resize:vertical;min-height:90px}
           : null;
         const safeTitle = esc(s.title || 'Untitled study');
         return `
-          <div class="study-row">
+          <div class="study-row" onclick="openApplicants('${s.id}','${safeTitle}')">
             <div class="study-row-header">
               <div class="study-title-group">
                 <h3>${esc(s.title || 'Untitled study')}</h3>
@@ -2759,7 +2759,7 @@ textarea{resize:vertical;min-height:90px}
         : '—';
       const barColor = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--blue)';
       return `
-        <div class="study-row" style="margin-bottom:10px;cursor:default">
+        <div class="study-row" style="margin-bottom:10px" onclick="openApplicants('${esc(s.id)}','${esc(s.title||'Untitled study')}')">
           <div class="study-row-header">
             <div class="study-title-group"><h3>${esc(s.title || 'Untitled study')}</h3><p>${esc(meta)}</p></div>
             <span class="badge badge-green">${t('cl_badge_live')}</span>
