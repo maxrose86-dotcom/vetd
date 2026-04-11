@@ -1306,7 +1306,7 @@ textarea{resize:vertical;min-height:90px}
   let currentInviteStudyId = null;
   let currentInviteStudyTitle = null;
 
-  async function openApplicants(studyId, studyTitle) {
+  async function openApplicants(studyId, studyTitle, section = 'applicants') {
     currentApplicantsStudyId = studyId;
     currentApplicantsStudyTitle = studyTitle;
     document.getElementById('applicants-study-title').textContent = studyTitle;
@@ -1320,7 +1320,7 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('study-ws-badge').textContent = '';
     document.getElementById('study-ws-badge').className = 'badge';
     showTab('study', null);
-    switchStudySection('applicants');
+    switchStudySection(section);
     await Promise.all([loadApplicants(studyId), loadStudyOverview(studyId)]);
   }
 
@@ -1346,8 +1346,7 @@ textarea{resize:vertical;min-height:90px}
   }
 
   async function openStudySessionRow(studyId, studyTitle, appId) {
-    await openApplicants(studyId, studyTitle);
-    switchStudySection('sessions');
+    await openApplicants(studyId, studyTitle, 'sessions');
     requestAnimationFrame(() => {
       const row = document.getElementById('approw-' + appId);
       if (row) {
