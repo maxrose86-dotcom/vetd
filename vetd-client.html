@@ -1275,13 +1275,15 @@ textarea{resize:vertical;min-height:90px}
 
   async function openApplicantsToRow(studyId, studyTitle, appId) {
     await openApplicants(studyId, studyTitle);
-    const row = document.getElementById('approw-' + appId);
-    if (row) {
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      row.style.transition = 'background 0.4s';
-      row.style.background = 'rgba(234,179,8,0.12)';
-      setTimeout(() => { row.style.background = ''; }, 2500);
-    }
+    requestAnimationFrame(() => {
+      const row = document.getElementById('approw-' + appId);
+      if (row) {
+        row.scrollIntoView({ block: 'center' });
+        row.style.transition = 'background 0.4s';
+        row.style.background = 'rgba(234,179,8,0.12)';
+        setTimeout(() => { row.style.background = ''; }, 2500);
+      }
+    });
   }
 
   async function loadApplicants(studyId) {
