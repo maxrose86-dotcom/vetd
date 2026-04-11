@@ -89,11 +89,11 @@ body{font-family:var(--sans);background:var(--gray-50);color:var(--gray-900);min
 .btn-outline:hover{border-color:var(--gray-400);background:var(--gray-50)}
 
 /* STATS */
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.75rem}
-.stat-card{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-md);padding:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 4px 12px rgba(0,0,0,0.04);transition:box-shadow 0.2s,transform 0.2s}
-.stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06),0 8px 24px rgba(0,0,0,0.06);transform:translateY(-1px)}
-.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:8px;font-weight:500}
-.stat-num{font-family:var(--serif);font-size:32px;color:var(--gray-900)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
+.stat-card{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-md);padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.03);transition:box-shadow 0.2s}
+.stat-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:6px;font-weight:500}
+.stat-num{font-family:var(--serif);font-size:26px;color:var(--gray-500)}
 .stat-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
 .stat-sub.up{color:var(--green)}
 .stat-sub.warn{color:var(--amber)}
@@ -596,7 +596,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- DASHBOARD -->
       <div class="tab-pane active" id="tab-dashboard">
         <div class="page-topbar">
-          <div class="page-title"><h1 id="dash-greeting">Welcome 👋</h1><p id="dash-subtitle">Research &amp; Insights</p></div>
+          <div class="page-title"><h1 id="dash-greeting">Overview</h1><p id="dash-subtitle" style="min-height:1em"></p></div>
         </div>
 
         <div class="stat-row">
@@ -1122,11 +1122,6 @@ textarea{resize:vertical;min-height:90px}
       const firstName = profile?.first_name || user.user_metadata?.first_name || 'there';
       const lastName  = profile?.last_name  || user.user_metadata?.last_name  || '';
       const fullName  = [firstName, lastName].filter(w => w && w !== 'there').join(' ') || firstName;
-      const hour = new Date().getHours();
-      const greeting = hour < 12 ? t('cl_good_morning') : hour < 18 ? t('cl_good_afternoon') : t('cl_good_evening');
-
-      const greetEl = document.getElementById('dash-greeting');
-      if (greetEl) greetEl.textContent = `${greeting}, ${firstName} 👋`;
 
       const adminNameEl = document.getElementById('sidebar-admin-name');
       if (adminNameEl) adminNameEl.textContent = fullName;
@@ -1136,10 +1131,8 @@ textarea{resize:vertical;min-height:90px}
         const name = company?.name || '';
         const nameEl = document.getElementById('sidebar-company-name');
         const subEl  = document.getElementById('sidebar-company-sub');
-        const subtitleEl = document.getElementById('dash-subtitle');
         if (nameEl) nameEl.textContent = name;
         if (subEl)  subEl.textContent  = 'Research & Insights';
-        if (subtitleEl) subtitleEl.textContent = name ? `${name} · Research & Insights` : 'Research & Insights';
       }
     } catch(err) {
       console.error('Failed to load client profile:', err);
@@ -2698,7 +2691,16 @@ textarea{resize:vertical;min-height:90px}
         .eq('created_by', currentClientUser.id);
       if (sErr) throw sErr;
       const studyIds = (studies || []).map(s => s.id);
-      if (!studyIds.length) { card.style.display = 'none'; return; }
+      if (!studyIds.length) {
+        const subtitleEl = document.getElementById('dash-subtitle');
+        if (subtitleEl) subtitleEl.textContent = 'All caught up';
+        card.style.display = 'block';
+        card.style.border = '';
+        card.style.background = '';
+        countEl.textContent = '';
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No new applications right now</div>`;
+        return;
+      }
 
       const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
 
@@ -2711,10 +2713,23 @@ textarea{resize:vertical;min-height:90px}
       if (pErr) throw pErr;
 
       const rows = pending || [];
-      if (!rows.length) { card.style.display = 'none'; return; }
+      const subtitleEl = document.getElementById('dash-subtitle');
+
+      if (!rows.length) {
+        card.style.display = 'block';
+        card.style.border = '';
+        card.style.background = '';
+        countEl.textContent = '';
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No new applications right now</div>`;
+        if (subtitleEl) subtitleEl.textContent = 'All caught up';
+        return;
+      }
 
       card.style.display = 'block';
+      card.style.border = '1px solid var(--green)';
+      card.style.background = 'rgba(16,185,129,0.03)';
       countEl.textContent = `(${rows.length})`;
+      if (subtitleEl) subtitleEl.textContent = `You have ${rows.length} application${rows.length === 1 ? '' : 's'} waiting`;
       list.innerHTML = rows.map(a => {
         const p    = a.contributors?.profiles || {};
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
