@@ -460,6 +460,8 @@
   }
   .boost-save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,196,122,0.4); }
   .boost-save-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+  .pc-chip { padding:6px 16px; border:1.5px solid var(--gray-200); border-radius:100px; font-size:13px; font-family:var(--sans); cursor:pointer; background:#fff; color:var(--gray-600); transition:all 0.15s; }
+  .pc-chip.selected { border-color:var(--green); background:var(--green-light); color:var(--green-dark); font-weight:600; }
   .profile-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
   .profile-row:last-child { border-bottom: none; }
   .profile-row-label { color: var(--gray-400); }
@@ -990,6 +992,8 @@
             <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
           </div>
         </div>
+
+        <div id="profile-completion-card" style="display:none"></div>
 
         <div class="section-title" data-i18n="upcoming_sessions">Upcoming sessions</div>
         <div id="upcoming-sessions-list"></div>
@@ -2670,7 +2674,7 @@ async function applyToStudy(studyId) {
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level').eq('id', user.id).single()
       ]);
       state.profileData = profile;
       state.contribData = contrib;
@@ -2687,6 +2691,7 @@ async function applyToStudy(studyId) {
       updateBankIDStatus(contrib?.bankid_verified === true);
       loadRatingBreakdown();
       renderBoostCard();
+      renderProfileCompletionCard();
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
@@ -2838,6 +2843,108 @@ async function applyToStudy(studyId) {
       renderBoostCard();
     } catch(err) {
       console.error('Boost save error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(err.message || 'Could not save — try again', true);
+      if (btn) setLoading(btn, false);
+    }
+  }
+
+  // ─── PROFILE COMPLETION CARD ────────────────────────────
+  function renderProfileCompletionCard() {
+    const card = document.getElementById('profile-completion-card');
+    if (!card) return;
+    const c = state.contribData;
+    if (c?.job_title && c?.industry && c?.experience_level) { card.style.display = 'none'; return; }
+    if (localStorage.getItem('vetd_pc_skip') === '1')       { card.style.display = 'none'; return; }
+
+    card.className = 'boost-card';
+    card.style.display = 'block';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div class="boost-title">One quick question</div>
+          <div class="boost-sub">Help us match you to more relevant studies.</div>
+        </div>
+        <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:20px;color:var(--gray-400);cursor:pointer;line-height:1;padding:0;margin-left:8px;flex-shrink:0">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+          <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Job title</label>
+          <input id="pc-job-title" type="text" placeholder="e.g. Product manager" maxlength="80"
+            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Industry</label>
+          <select id="pc-industry"
+            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;box-sizing:border-box;-webkit-appearance:none">
+            <option value="">Select…</option>
+            <option>Technology</option>
+            <option>Finance &amp; banking</option>
+            <option>Healthcare</option>
+            <option>Retail &amp; e-commerce</option>
+            <option>Media &amp; entertainment</option>
+            <option>Education</option>
+            <option>Travel &amp; hospitality</option>
+            <option>Food &amp; beverage</option>
+            <option>Fashion &amp; beauty</option>
+            <option>Real estate</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:500;color:var(--gray-400);margin-bottom:7px">Experience level</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="pc-chip" data-value="junior"  onclick="togglePcChip(this)">Junior</button>
+          <button class="pc-chip" data-value="mid"     onclick="togglePcChip(this)">Mid-level</button>
+          <button class="pc-chip" data-value="senior"  onclick="togglePcChip(this)">Senior</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="saveProfileCompletion()" class="boost-save-btn">Save</button>
+        <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:13px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);padding:0">Skip</button>
+      </div>`;
+
+    if (c?.job_title) document.getElementById('pc-job-title').value = c.job_title;
+    if (c?.industry)  document.getElementById('pc-industry').value  = c.industry;
+    if (c?.experience_level) {
+      card.querySelectorAll('.pc-chip').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.value === c.experience_level);
+      });
+    }
+  }
+
+  function togglePcChip(btn) {
+    document.querySelectorAll('#profile-completion-card .pc-chip').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  }
+
+  function skipProfileCompletion() {
+    localStorage.setItem('vetd_pc_skip', '1');
+    const card = document.getElementById('profile-completion-card');
+    if (card) card.style.display = 'none';
+  }
+
+  async function saveProfileCompletion() {
+    if (!db || !state.currentUser) return;
+    const jobTitle = document.getElementById('pc-job-title')?.value.trim() || null;
+    const industry = document.getElementById('pc-industry')?.value || null;
+    const expChip  = document.querySelector('#profile-completion-card .pc-chip.selected');
+    const expLevel = expChip?.dataset.value || null;
+
+    const btn = document.querySelector('#profile-completion-card .boost-save-btn');
+    if (btn) setLoading(btn, true);
+
+    try {
+      const { error } = await db.from('contributors')
+        .update({ job_title: jobTitle, industry: industry, experience_level: expLevel })
+        .eq('id', state.currentUser.id);
+      if (error) throw error;
+      state.contribData = { ...(state.contribData || {}), job_title: jobTitle, industry: industry, experience_level: expLevel };
+      showToast('Profile updated ✓');
+      renderProfileCompletionCard();
+    } catch(err) {
+      console.error('Profile completion save error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || 'Could not save — try again', true);
       if (btn) setLoading(btn, false);
