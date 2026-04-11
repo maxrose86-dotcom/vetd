@@ -1035,28 +1035,24 @@ textarea{resize:vertical;min-height:90px}
   // rows if they don't exist yet. Safe to call multiple times — no-ops if rows exist.
   async function ensureClientRecords(user) {
     if (!db || !user) return;
-    try {
-      // Check if client row already exists (.maybeSingle returns null without error when no row found)
-      const { data: existing } = await db
-        .from('clients').select('id').eq('id', user.id).maybeSingle();
-      if (existing) return; // already set up
 
-      // Read company name from metadata (stored during sign-up)
-      const companyName = user.user_metadata?.company || 'My Company';
+    // Check if client row already exists (.maybeSingle returns null without error when no row found)
+    const { data: existing } = await db
+      .from('clients').select('id').eq('id', user.id).maybeSingle();
+    if (existing) return; // already set up
 
-      // Create company row
-      const { data: companyData, error: compErr } = await db
-        .from('companies').insert({ name: companyName }).select('id').single();
-      if (compErr) throw compErr;
+    // Read company name from metadata (stored during sign-up)
+    const companyName = user.user_metadata?.company || 'My Company';
 
-      // Create client row
-      const { error: clientErr } = await db
-        .from('clients').insert({ id: user.id, company_id: companyData.id });
-      if (clientErr) throw clientErr;
-    } catch(err) {
-      // Non-fatal — user can still use the app; log for debugging
-      console.warn('ensureClientRecords error:', err);
-    }
+    // Create company row
+    const { data: companyData, error: compErr } = await db
+      .from('companies').insert({ name: companyName }).select('id').single();
+    if (compErr) throw compErr;
+
+    // Create client row
+    const { error: clientErr } = await db
+      .from('clients').insert({ id: user.id, company_id: companyData.id });
+    if (clientErr) throw clientErr;
   }
 
   // ─── SIGN IN ────────────────────────────────────────────
@@ -1215,7 +1211,6 @@ textarea{resize:vertical;min-height:90px}
         const payDisplay = s.pay_per_participant
           ? `${formatCurrency(s.pay_per_participant)}/person`
           : null;
-        const safeTitle = esc(s.title || 'Untitled study');
         return `
           <div class="study-row" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
             <div class="study-row-header">
@@ -1234,7 +1229,7 @@ textarea{resize:vertical;min-height:90px}
             </div>
             <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
             <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
-              <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${s.id}','${safeTitle}')">
+              <button class="btn-outline" onclick="event.stopPropagation();openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
                 👥 ${counts.total === 0 ? t('cl_no_invitations_yet') : t(counts.total !== 1 ? 'cl_view_participants_plural' : 'cl_view_participants').replace('{count}', counts.total)}
               </button>
               ${status === 'active' || status === 'draft' ? `<button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${s.id}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>` : ''}
@@ -1927,12 +1922,13 @@ textarea{resize:vertical;min-height:90px}
         : parseInt(length) || null;
 
       // Fetch company_id for this client
-      const { data: clientRow } = await db
+      const { data: clientRow, error: clientErr } = await db
         .from('clients').select('company_id').eq('id', user.id).single();
+      if (clientErr || !clientRow?.company_id) throw new Error('Could not resolve your company. Please refresh and try again.');
 
       const { error } = await db.from('studies').insert({
         created_by:           user.id,
-        company_id:           clientRow?.company_id || null,
+        company_id:           clientRow.company_id,
         title,
         description:          desc || null,
         format,
