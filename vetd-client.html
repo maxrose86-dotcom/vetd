@@ -729,9 +729,13 @@ textarea{resize:vertical;min-height:90px}
             </div>
 
             <div class="section-group">
-              <h3 data-i18n="cl_section_screening">Additional screening</h3>
-              <div class="field"><label data-i18n="cl_label_sq1">Screening question 1 (optional)</label><input type="text" id="b-sq1" placeholder="e.g. Have you shopped with H&M online in the last 12 months?" data-i18n-ph="cl_ph_sq1"></div>
-              <div class="field"><label data-i18n="cl_label_sq2">Screening question 2 (optional)</label><input type="text" id="b-sq2" placeholder="e.g. How often do you shop for clothes online?" data-i18n-ph="cl_ph_sq2"></div>
+              <h3 data-i18n="cl_section_screening">Screening questions</h3>
+              <p style="font-size:13px;color:var(--gray-400);margin:0 0 12px;font-weight:300">Ask up to 3 short questions. Answers appear when reviewing applicants.</p>
+              <div id="screener-rows"></div>
+              <button type="button" id="add-screener-btn" onclick="addScreener()"
+                style="background:none;border:1.5px dashed var(--gray-200);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);width:100%;margin-bottom:12px">
+                + Add a question
+              </button>
               <div class="field"><label data-i18n="cl_label_addreqs">Any other requirements or notes for Vetd?</label><textarea id="b-addreqs" placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly." data-i18n-ph="cl_ph_addreqs"></textarea></div>
             </div>
 
@@ -1306,6 +1310,7 @@ textarea{resize:vertical;min-height:90px}
   // ─── STUDY WORKSPACE ────────────────────────────────────
   let currentApplicantsStudyId = null;
   let currentApplicantsStudyTitle = null;
+  let _studyScreeningQuestions = null;
   let _currentTab = 'dashboard';
   let _studyBackTab = 'dashboard';
 
@@ -1377,15 +1382,16 @@ textarea{resize:vertical;min-height:90px}
       // Failure is an explicit error: do not silently default to one_to_one.
       const { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type')
+        .select('session_type, screening_questions')
         .eq('id', studyId)
         .single();
       if (studyMetaErr || !studyMeta) throw studyMetaErr || new Error('Could not load study metadata');
       const sessionType = studyMeta.session_type;
+      _studyScreeningQuestions = studyMeta.screening_questions || null;
 
       const { data, error } = await db
         .from('applications')
-        .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
+        .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
         .eq('study_id', studyId)
         .order('applied_at', { ascending: false });
 
@@ -1549,6 +1555,7 @@ textarea{resize:vertical;min-height:90px}
             <div class="applicant-info">
               <div class="applicant-name">${esc(name)}</div>
               <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? 'Invited' : 'Applied'} ${esc(appliedDate)}</div>
+              ${renderScreeningAnswers(a.screening_answers, _studyScreeningQuestions)}
             </div>
             <div class="applicant-actions">${actions}</div>
           </div>`;
@@ -1963,9 +1970,14 @@ textarea{resize:vertical;min-height:90px}
     const pay    = Math.round(payNum);
     const start  = document.getElementById('b-start').value || null;
     const close  = document.getElementById('b-close').value || null;
-    const sq1    = document.getElementById('b-sq1').value.trim()      || null;
-    const sq2    = document.getElementById('b-sq2').value.trim()      || null;
     const addReq = document.getElementById('b-addreqs').value.trim()  || null;
+    const screeningQuestions = _screeners
+      .filter(q => q.text.trim())
+      .map(q => {
+        const out = { text: q.text.trim(), type: q.type };
+        if (q.type === 'choice') out.options = q.options.split(',').map(o => o.trim()).filter(Boolean);
+        return out;
+      });
 
     // Collect chip values
     // 'any' chips mean "no filter" — strip them and leave the field null if nothing specific remains
@@ -2021,12 +2033,12 @@ textarea{resize:vertical;min-height:90px}
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
         min_rating:           minRating,
-        screening_q1:         sq1,
-        screening_q2:         sq2,
+        screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      addReq
       });
       if (error) throw error;
 
+      _screeners = []; renderScreenerRows();
       showToast(t('cl_study_published'));
       setTimeout(async () => {
         await loadStudies();
@@ -2039,6 +2051,73 @@ textarea{resize:vertical;min-height:90px}
     } finally {
       btn.textContent = t('cl_publish_btn'); btn.disabled = false;
     }
+  }
+
+  // ─── SCREENER BUILDER ──────────────────────────────────
+  let _screeners = [];
+
+  function addScreener() {
+    if (_screeners.length >= 3) { showToast('Max 3 screening questions per study', true); return; }
+    _screeners.push({ text: '', type: 'yesno', options: '' });
+    renderScreenerRows();
+  }
+
+  function removeScreener(idx) {
+    _screeners.splice(idx, 1);
+    renderScreenerRows();
+  }
+
+  function syncScreener(idx, field, value) {
+    if (!_screeners[idx]) return;
+    _screeners[idx][field] = value;
+    if (field === 'type') {
+      const optRow = document.getElementById('sq-opts-' + idx);
+      if (optRow) optRow.style.display = value === 'choice' ? 'block' : 'none';
+    }
+  }
+
+  function renderScreenerRows() {
+    const container = document.getElementById('screener-rows');
+    const addBtn    = document.getElementById('add-screener-btn');
+    if (!container) return;
+    container.innerHTML = _screeners.map((q, i) => `
+      <div style="background:#f9fafb;border:1px solid var(--gray-200);border-radius:8px;padding:12px;margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--gray-400);flex-shrink:0;width:18px">Q${i+1}</span>
+          <input type="text" value="${escAttr(q.text)}" placeholder="e.g. Have you used mobile banking in the last 3 months?"
+            oninput="syncScreener(${i},'text',this.value)" maxlength="200"
+            style="flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none">
+          <select onchange="syncScreener(${i},'type',this.value)"
+            style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;flex-shrink:0">
+            <option value="yesno"  ${q.type==='yesno'  ? 'selected':''}>Yes / No</option>
+            <option value="choice" ${q.type==='choice' ? 'selected':''}>Multiple choice</option>
+            <option value="text"   ${q.type==='text'   ? 'selected':''}>Short text</option>
+          </select>
+          <button type="button" onclick="removeScreener(${i})"
+            style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0">×</button>
+        </div>
+        <div id="sq-opts-${i}" style="display:${q.type==='choice'?'block':'none'}">
+          <input type="text" value="${escAttr(q.options)}" placeholder="Options, comma-separated (e.g. Daily, Weekly, Never)"
+            oninput="syncScreener(${i},'options',this.value)" maxlength="500"
+            style="width:100%;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;box-sizing:border-box">
+        </div>
+      </div>`).join('');
+    if (addBtn) addBtn.style.display = _screeners.length >= 3 ? 'none' : 'block';
+  }
+
+  // ─── SCREENING ANSWER DISPLAY (APPLICANT REVIEW) ───────
+  function renderScreeningAnswers(answers, questions) {
+    if (!Array.isArray(answers) || !answers.length) return '';
+    if (!Array.isArray(questions) || !questions.length) return '';
+    const rows = questions.map((q, i) => {
+      const ans = answers[i];
+      if (ans === undefined || ans === null || String(ans).trim() === '') return '';
+      return `<div style="font-size:12px;margin-top:2px">
+        <span style="color:var(--gray-400)">${esc(q.text)}</span>
+        <span style="font-weight:500;color:var(--gray-700);margin-left:4px">→ ${esc(String(ans))}</span>
+      </div>`;
+    }).filter(Boolean);
+    return rows.length ? `<div style="margin-top:5px">${rows.join('')}</div>` : '';
   }
 
   // ─── LOAD CONTRIBUTORS ──────────────────────────────────

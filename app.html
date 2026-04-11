@@ -1242,6 +1242,7 @@
       <p class="modal-sub" id="modal-company-name"></p>
       <div class="modal-tags" id="modal-tags"></div>
       <p class="modal-detail" id="modal-detail"></p>
+      <div id="modal-screener-area" style="display:none;margin-bottom:1rem"></div>
       <div class="modal-buttons">
         <button class="modal-close" onclick="closeModal()">Not now</button>
         <button class="modal-apply" onclick="confirmApply()">Apply now</button>
@@ -1813,9 +1814,10 @@
           tags,
           spots,
           filled,
-          format:      FORMAT_FILTER[s.format] || 'online',
-          featured:    false,
-          detail:      s.description || 'No additional details provided.'
+          format:             FORMAT_FILTER[s.format] || 'online',
+          featured:           false,
+          detail:             s.description || 'No additional details provided.',
+          screeningQuestions: s.screening_questions || null
         };
       });
 
@@ -1899,6 +1901,17 @@
     document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
+    const sqArea = document.getElementById('modal-screener-area');
+    const sqList = state.currentStudy.screeningQuestions;
+    if (sqArea) {
+      if (Array.isArray(sqList) && sqList.length) {
+        sqArea.innerHTML = `<div style="border-top:1px solid var(--gray-100);padding-top:1rem">${renderScreenerInputs(sqList)}</div>`;
+        sqArea.style.display = 'block';
+      } else {
+        sqArea.innerHTML = '';
+        sqArea.style.display = 'none';
+      }
+    }
     document.getElementById('apply-modal').classList.add('open');
     await logEvent('study_page_view', state.currentStudy.id);
   }
@@ -1920,7 +1933,8 @@
  async function confirmApply() {
   if (!state.currentStudy) return;
   await logEvent('apply_cta_click', state.currentStudy.id);
-  await applyToStudy(state.currentStudy.id);
+  const answers = collectScreenerAnswers();
+  await applyToStudy(state.currentStudy.id, answers);
 }
 
   // ─── NAVIGATION ─────────────────────────────────────────
@@ -2429,19 +2443,22 @@
 
   // ─── APPLY TO STUDY ───────────────────────────────────────
 // ─── APPLY TO STUDY ───────────────────────────────────────
-async function applyToStudy(studyId) {
+async function applyToStudy(studyId, answers = null) {
   if (!db || !state.currentUser) {
     showToast(t('apply_err_auth') || 'Not signed in — please refresh.', true);
     return false;
   }
   if (state.appliedStudies.has(studyId)) return false;
 
-  const { error } = await db.from('applications').insert({
+  const insertRow = {
     study_id:       studyId,
     contributor_id: state.currentUser.id,
     status:         'pending',
     applied_at:     new Date().toISOString(),
-  });
+  };
+  if (Array.isArray(answers) && answers.some(a => a !== '')) insertRow.screening_answers = answers;
+
+  const { error } = await db.from('applications').insert(insertRow);
 
   if (error) {
     if (error.code === '23505') {
@@ -2461,6 +2478,43 @@ async function applyToStudy(studyId) {
   closeModal();
   return true;
 }
+
+  // ─── SCREENER HELPERS (CONTRIBUTOR APPLY FLOW) ─────────
+  function renderScreenerInputs(questions) {
+    return questions.map((q, i) => {
+      const label = `<div style="font-size:13px;font-weight:500;color:var(--gray-900);margin-bottom:7px">${esc(q.text)}</div>`;
+      let input = '';
+      if (q.type === 'yesno') {
+        input = `<div style="display:flex;gap:16px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="Yes"> Yes</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="No"> No</label>
+        </div>`;
+      } else if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
+        input = `<div style="display:flex;flex-wrap:wrap;gap:8px">` +
+          q.options.map(o => `<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer">
+            <input type="radio" name="sq-${i}" value="${escAttr(o)}"> ${esc(o)}
+          </label>`).join('') + `</div>`;
+      } else {
+        input = `<input type="text" class="sq-text-input" data-idx="${i}" maxlength="200" placeholder="Your answer…"
+          style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">`;
+      }
+      return `<div style="margin-bottom:${i < questions.length - 1 ? '14px' : '0'}">${label}${input}</div>`;
+    }).join('');
+  }
+
+  function collectScreenerAnswers() {
+    const area = document.getElementById('modal-screener-area');
+    if (!area || area.style.display === 'none') return null;
+    const questions = state.currentStudy?.screeningQuestions;
+    if (!Array.isArray(questions) || !questions.length) return null;
+    return questions.map((q, i) => {
+      if (q.type === 'text') {
+        return area.querySelector(`.sq-text-input[data-idx="${i}"]`)?.value.trim() || '';
+      }
+      const checked = area.querySelector(`input[name="sq-${i}"]:checked`);
+      return checked ? checked.value : '';
+    });
+  }
 
   // ─── STEP NAVIGATION (with Supabase saves) ─────────────
   async function nextStep(step) {
