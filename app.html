@@ -2855,15 +2855,16 @@ async function applyToStudy(studyId) {
     if (!card) return;
     const c = state.contribData;
     if (c?.job_title && c?.industry && c?.experience_level) { card.style.display = 'none'; return; }
-    if (localStorage.getItem('vetd_pc_skip') === '1')       { card.style.display = 'none'; return; }
+    const snoozed = localStorage.getItem('vetd_pc_snooze');
+    if (snoozed && Date.now() < parseInt(snoozed, 10) + 7 * 24 * 60 * 60 * 1000) { card.style.display = 'none'; return; }
 
     card.className = 'boost-card';
     card.style.display = 'block';
     card.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div>
-          <div class="boost-title">One quick question</div>
-          <div class="boost-sub">Help us match you to more relevant studies.</div>
+          <div class="boost-title">Complete your profile</div>
+          <div class="boost-sub">Add a few work details to get invited to more relevant studies.</div>
         </div>
         <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:20px;color:var(--gray-400);cursor:pointer;line-height:1;padding:0;margin-left:8px;flex-shrink:0">×</button>
       </div>
@@ -2871,11 +2872,13 @@ async function applyToStudy(studyId) {
         <div>
           <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Job title</label>
           <input id="pc-job-title" type="text" placeholder="e.g. Product manager" maxlength="80"
+            oninput="updatePcSaveBtn()"
             style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">
         </div>
         <div>
           <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Industry</label>
           <select id="pc-industry"
+            onchange="updatePcSaveBtn()"
             style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;box-sizing:border-box;-webkit-appearance:none">
             <option value="">Select…</option>
             <option>Technology</option>
@@ -2901,7 +2904,7 @@ async function applyToStudy(studyId) {
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
-        <button onclick="saveProfileCompletion()" class="boost-save-btn">Save</button>
+        <button id="pc-save-btn" onclick="saveProfileCompletion()" class="boost-save-btn" disabled>Save</button>
         <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:13px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);padding:0">Skip</button>
       </div>`;
 
@@ -2912,15 +2915,25 @@ async function applyToStudy(studyId) {
         btn.classList.toggle('selected', btn.dataset.value === c.experience_level);
       });
     }
+    updatePcSaveBtn();
+  }
+
+  function updatePcSaveBtn() {
+    const jobTitle = document.getElementById('pc-job-title')?.value.trim();
+    const industry = document.getElementById('pc-industry')?.value;
+    const expChip  = document.querySelector('#profile-completion-card .pc-chip.selected');
+    const btn      = document.getElementById('pc-save-btn');
+    if (btn) btn.disabled = !(jobTitle && industry && expChip);
   }
 
   function togglePcChip(btn) {
     document.querySelectorAll('#profile-completion-card .pc-chip').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
+    updatePcSaveBtn();
   }
 
   function skipProfileCompletion() {
-    localStorage.setItem('vetd_pc_skip', '1');
+    localStorage.setItem('vetd_pc_snooze', Date.now().toString());
     const card = document.getElementById('profile-completion-card');
     if (card) card.style.display = 'none';
   }
@@ -2931,8 +2944,9 @@ async function applyToStudy(studyId) {
     const industry = document.getElementById('pc-industry')?.value || null;
     const expChip  = document.querySelector('#profile-completion-card .pc-chip.selected');
     const expLevel = expChip?.dataset.value || null;
+    if (!jobTitle || !industry || !expLevel) return;
 
-    const btn = document.querySelector('#profile-completion-card .boost-save-btn');
+    const btn = document.getElementById('pc-save-btn');
     if (btn) setLoading(btn, true);
 
     try {
