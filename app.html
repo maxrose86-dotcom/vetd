@@ -1766,8 +1766,7 @@
 
       state.studies = studies.map(s => {
         const company    = s.companies?.name || 'Vetd client';
-        const payRaw     = s.pay_per_participant ? Math.round(s.pay_per_participant / 100) : 0;
-        // Legacy studies stored in GBP pence round to 0 after /100 — show TBD instead
+        const payRaw     = s.pay_per_participant || 0;
         const pay        = payRaw > 0 ? payRaw : null;
         const spots      = s.spots || 0;
         const filled     = s.filled_spots || 0;
@@ -3727,8 +3726,8 @@ async function applyToStudy(studyId) {
   // FUTURE: currency should be determined by user country from their profile.
   // When launching in multiple countries, add a currencies config and convert between them.
   // For now, hardcoded to SEK.
-  function formatCurrency(oere) {
-    return `${Math.round(oere / 100)} kr`;
+  function formatCurrency(kr) {
+    return `${Math.round(kr)} kr`;
   }
 
   function fmtPay(sek) {

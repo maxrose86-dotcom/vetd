@@ -952,8 +952,8 @@ textarea{resize:vertical;min-height:90px}
   // FUTURE: currency should be determined by user country from their profile.
   // When launching in multiple countries, add a currencies config and convert between them.
   // For now, hardcoded to SEK.
-  function formatCurrency(oere) {
-    return `${Math.round(oere / 100)} kr`;
+  function formatCurrency(kr) {
+    return `${Math.round(kr)} kr`;
   }
 
   // ─── XSS HELPER ─────────────────────────────────────────
@@ -1049,10 +1049,15 @@ textarea{resize:vertical;min-height:90px}
       .from('companies').insert({ name: companyName }).select('id').single();
     if (compErr) throw compErr;
 
-    // Create client row
+    // Create client row — if this fails, clean up the company we just created
+    // so that a retry doesn't insert a second orphaned company row.
     const { error: clientErr } = await db
       .from('clients').insert({ id: user.id, company_id: companyData.id });
-    if (clientErr) throw clientErr;
+    if (clientErr) {
+      const { error: cleanupErr } = await db.from('companies').delete().eq('id', companyData.id);
+      if (cleanupErr) console.warn('ensureClientRecords: company cleanup failed', cleanupErr);
+      throw clientErr;
+    }
   }
 
   // ─── SIGN IN ────────────────────────────────────────────

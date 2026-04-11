@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const DAILY_API_KEY = Deno.env.get("DAILY_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const VETD_APP_URL = Deno.env.get("VETD_APP_URL") || "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,7 +57,8 @@ serve(async (req) => {
           exp: Math.floor(expiryDate.getTime() / 1000),
           enable_chat: true, enable_screenshare: true,
           max_participants: maxParticipants,
-          enable_recording: false, start_audio_off: true, start_video_off: false
+          enable_recording: false, start_audio_off: true, start_video_off: false,
+          ...(VETD_APP_URL ? { redirect_on_meeting_exit: VETD_APP_URL } : {}),
         }})
       });
       if (!dailyRes.ok) { const errBody = await dailyRes.text(); throw new Error(`Daily API error: ${errBody}`); }
@@ -86,7 +88,8 @@ serve(async (req) => {
           exp: Math.floor(expiryDate.getTime() / 1000),
           enable_chat: true, enable_screenshare: true,
           max_participants: 2,
-          enable_recording: false, start_audio_off: true, start_video_off: false
+          enable_recording: false, start_audio_off: true, start_video_off: false,
+          ...(VETD_APP_URL ? { redirect_on_meeting_exit: VETD_APP_URL } : {}),
         }})
       });
       if (!dailyRes.ok) { const errBody = await dailyRes.text(); throw new Error(`Daily API error: ${errBody}`); }
