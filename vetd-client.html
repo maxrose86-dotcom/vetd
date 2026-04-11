@@ -965,6 +965,11 @@ textarea{resize:vertical;min-height:90px}
   function escAttr(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+  // escJS: safe for a single-quoted JS string inside a double-quoted HTML onclick attribute.
+  // Uses backslash-escaping for ' and \ (HTML parser passes \ through literally, unlike &#x27;).
+  function escJS(str) {
+    return String(str || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/&/g,'&amp;');
+  }
 
   // ─── AUTH SCREEN ────────────────────────────────────────
   function showAuthScreen(tab = 'signup') {
@@ -1212,7 +1217,7 @@ textarea{resize:vertical;min-height:90px}
           : null;
         const safeTitle = esc(s.title || 'Untitled study');
         return `
-          <div class="study-row" onclick="openApplicants('${s.id}','${safeTitle}')">
+          <div class="study-row" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
             <div class="study-row-header">
               <div class="study-title-group">
                 <h3>${esc(s.title || 'Untitled study')}</h3>
@@ -2759,7 +2764,7 @@ textarea{resize:vertical;min-height:90px}
         : '—';
       const barColor = pct >= 80 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--blue)';
       return `
-        <div class="study-row" style="margin-bottom:10px" onclick="openApplicants('${esc(s.id)}','${esc(s.title||'Untitled study')}')">
+        <div class="study-row" style="margin-bottom:10px" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
           <div class="study-row-header">
             <div class="study-title-group"><h3>${esc(s.title || 'Untitled study')}</h3><p>${esc(meta)}</p></div>
             <span class="badge badge-green">${t('cl_badge_live')}</span>
