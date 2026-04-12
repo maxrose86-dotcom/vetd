@@ -2209,11 +2209,28 @@ textarea{resize:vertical;min-height:90px}
     if (!db) { list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Connect Supabase to browse contributors.</p>'; return; }
 
     try {
-      const { data: contribs, error } = await db
+      // Attempt full select including profile fields added in 20260411_add_professional_profile.sql.
+      // If those columns are not yet in the DB, PostgREST returns a schema error — catch it and
+      // fall back to the safe baseline select so the page never hard-fails due to migration lag.
+      const FULL_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified, job_title, industry, experience_level';
+      const BASE_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified';
+
+      let { data: contribs, error } = await db
         .from('contributors')
-        .select('id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified, job_title, industry, experience_level')
+        .select(FULL_SELECT)
         .order('rating', { ascending: false, nullsLast: true })
         .limit(20);
+
+      if (error) {
+        // Schema lag: retry without the new profile columns.
+        console.warn('[Vetd] Full contributor select failed — falling back to base select. Run 20260411_add_professional_profile.sql to restore matching.', error.message);
+        ({ data: contribs, error } = await db
+          .from('contributors')
+          .select(BASE_SELECT)
+          .order('rating', { ascending: false, nullsLast: true })
+          .limit(20));
+      }
+
       if (error) throw error;
 
       const ids = (contribs || []).map(c => c.id);
