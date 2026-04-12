@@ -1398,8 +1398,8 @@ textarea{resize:vertical;min-height:90px}
       _studyScreeningQuestions = studyMeta.screening_questions || null;
 
       // Fetch applications. Fallback without screening_answers if column absent.
-      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, job_title, industry, experience_level, profiles(first_name, last_name))';
-      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, profiles(first_name, last_name))';
+      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times, bankid_verified, job_title, industry, experience_level, profiles(first_name, last_name))';
+      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times, bankid_verified, profiles(first_name, last_name))';
       let { data, error } = await db
         .from('applications')
         .select(APP_FULL)
@@ -2250,8 +2250,8 @@ textarea{resize:vertical;min-height:90px}
       // Attempt full select including profile fields added in 20260411_add_professional_profile.sql.
       // If those columns are not yet in the DB, PostgREST returns a schema error — catch it and
       // fall back to the safe baseline select so the page never hard-fails due to migration lag.
-      const FULL_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, job_title, industry, experience_level';
-      const BASE_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified';
+      const FULL_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times, bankid_verified, job_title, industry, experience_level';
+      const BASE_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times, bankid_verified';
 
       let { data: contribs, error } = await db
         .from('contributors')
