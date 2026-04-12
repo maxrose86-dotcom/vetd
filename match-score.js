@@ -28,6 +28,69 @@
     return [...new Set(values)];
   }
 
+  const INTEREST_DOMAIN_MAP = {
+    finance: 'finance',
+    banking: 'finance',
+    budgeting: 'finance',
+    budget: 'finance',
+    payments: 'finance',
+    payment: 'finance',
+    fintech: 'finance',
+    investing: 'finance',
+    insurance: 'finance',
+    loans: 'finance',
+    shopping: 'consumer',
+    beauty: 'consumer',
+    fashion: 'consumer',
+    retail: 'consumer',
+    groceries: 'consumer',
+    consumer: 'consumer',
+    health: 'health',
+    wellness: 'health',
+    parenting: 'health',
+    family: 'health',
+    fitness: 'health',
+    medical: 'health',
+    gaming: 'tech',
+    saas: 'tech',
+    software: 'tech',
+    apps: 'tech',
+    app: 'tech',
+    mobile: 'tech',
+    ai: 'tech',
+    gadgets: 'tech',
+    'developer tools': 'tech',
+  };
+
+  const DOMAIN_AFFINITY = {
+    finance:  { finance: 1, consumer: 0.35, health: 0.05, tech: 0.10 },
+    consumer: { consumer: 1, finance: 0.35, health: 0.25, tech: 0.05 },
+    health:   { health: 1, consumer: 0.25, finance: 0.05, tech: 0.05 },
+    tech:     { tech: 1, finance: 0.10, consumer: 0.05, health: 0.05 },
+  };
+
+  function getInterestDomains(interests) {
+    return uniqueList(
+      interests
+        .map((interest) => INTEREST_DOMAIN_MAP[interest])
+        .filter(Boolean)
+    );
+  }
+
+  function getDomainAffinity(studyInterests, contributorInterests) {
+    const studyDomains = getInterestDomains(studyInterests);
+    const contributorDomains = getInterestDomains(contributorInterests);
+    let best = 0;
+
+    for (const studyDomain of studyDomains) {
+      for (const contributorDomain of contributorDomains) {
+        best = Math.max(best, DOMAIN_AFFINITY[studyDomain]?.[contributorDomain] || 0);
+      }
+    }
+
+    return best;
+  }
+
   function getContributorInterests(contributor) {
     return uniqueList([
       ...normalizeList(contributor?.interests),
@@ -125,16 +188,35 @@
       reasons.push(`Available for ${getFormatLabel(study.format)}`);
     }
 
+    if (!availabilityMatch) {
+      return {
+        score: 0,
+        reasons: reasons.filter((reason) => typeof reason === 'string' && reason).slice(0, 4),
+      };
+    }
+
     let score = 0;
+    let qualityMultiplier = 1;
 
     if (studyInterests.length) {
       const interestRatio = interestMatches.length / studyInterests.length;
-      score += Math.round(interestRatio * 55);
+      const precision = interestMatches.length / Math.max(contributorInterests.length, 1);
+
       if (interestMatches.length > 0) {
+        score += Math.round((interestRatio * 60) + (precision * 20));
         reasons.push(
           interestMatches.length === 1
             ? 'Matches 1 target interest'
             : `Matches ${interestMatches.length} target interests`
+        );
+      } else {
+        const domainAffinity = getDomainAffinity(studyInterests, contributorInterests);
+        score += Math.round(domainAffinity * 15);
+        qualityMultiplier = domainAffinity > 0 ? domainAffinity : 0.05;
+        reasons.push(
+          domainAffinity >= 0.25
+            ? 'Adjacent interests'
+            : 'No target interest overlap'
         );
       }
     }
@@ -145,7 +227,7 @@
       const ratingFloor = Number.isNaN(minRating) ? 3 : clamp(minRating, 0, 5);
       const ratingSpan = Math.max(5 - ratingFloor, 0.1);
       const normalizedRating = clamp((rating - ratingFloor) / ratingSpan, 0, 1);
-      score += Math.round(normalizedRating * 30);
+      score += Math.round(normalizedRating * 15 * qualityMultiplier);
 
       if (!Number.isNaN(minRating) && rating >= minRating) {
         reasons.push(`Meets ${minRating.toFixed(1)}★ minimum rating`);
@@ -160,8 +242,8 @@
       0,
       Number(contributor.completed_studies ?? contributor.total_studies ?? 0) || 0
     );
-    const experienceRatio = clamp(completedStudies / 5, 0, 1);
-    score += Math.round(experienceRatio * 10);
+    const experienceRatio = clamp(completedStudies / 10, 0, 1);
+    score += Math.round(experienceRatio * 5 * qualityMultiplier);
     if (completedStudies >= 5) {
       reasons.push('Experienced participant');
     } else if (completedStudies > 0) {
@@ -169,7 +251,7 @@
     }
 
     return {
-      score: availabilityMatch ? clamp(Math.round(score), 0, 100) : 0,
+      score: clamp(Math.round(score), 0, 100),
       reasons: reasons.filter((reason) => typeof reason === 'string' && reason).slice(0, 4),
     };
   }
