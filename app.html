@@ -705,10 +705,10 @@
   <div style="position:relative;z-index:1;width:100%">
     <div class="landing-logo">Vet<span style="color:var(--green-mid)">d</span></div>
     <div class="landing-tag" data-i18n="landing_tag">Get paid. Get rated. Get better work.</div>
-    <div class="landing-headline"><span data-i18n="landing_headline_plain">Get paid. Get rated. Get</span> <em data-i18n="landing_headline_em">better opportunities.</em></div>
-    <div class="landing-sub" data-i18n="landing_sub">Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.</div>
+    <div class="landing-headline"><span data-i18n="landing_headline_plain">Get paid for research</span> <em data-i18n="landing_headline_em">sessions.</em></div>
+    <div class="landing-sub" data-i18n="landing_sub">Apply to paid studies that fit your profile. Get paid for showing up and sharing honest feedback.</div>
     <div>
-      <button class="btn-primary" onclick="startOnboarding()" data-i18n="landing_cta">Get started — it's free</button>
+      <button class="btn-primary" onclick="startOnboarding()" data-i18n="landing_cta">Create your profile</button>
       <button class="btn-secondary" onclick="window.location.href='login.html'" data-i18n="landing_signin">Sign in</button>
     </div>
     <div class="landing-trust">
@@ -1485,7 +1485,7 @@
     } catch (err) {
       console.error('Step 2 save error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       setLoading(btn, false);
       return false;
     }
@@ -1514,7 +1514,7 @@
     } catch (err) {
       console.error('Step 3 save error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       setLoading(btn, false);
       return false;
     }
@@ -1546,7 +1546,7 @@
     } catch (err) {
       console.error('Step 4 save error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       setLoading(btn, false);
       return false;
     }
@@ -2920,7 +2920,7 @@ async function applyToStudy(studyId, answers = null) {
     } catch(err) {
       console.error('Boost save error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       if (btn) setLoading(btn, false);
     }
   }
@@ -3036,7 +3036,7 @@ async function applyToStudy(studyId, answers = null) {
     } catch(err) {
       console.error('Profile completion save error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       if (btn) setLoading(btn, false);
     }
   }
@@ -3144,7 +3144,7 @@ async function applyToStudy(studyId, answers = null) {
     } catch(err) {
       console.error('Save profile error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(err.message || 'Could not save — try again', true);
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
       setLoading(btn, false);
     }
   }
@@ -3486,10 +3486,10 @@ async function applyToStudy(studyId, answers = null) {
   const LANG = {
     en: {
       landing_tag: 'Get paid. Get rated. Get better work.',
-      landing_headline_plain: 'Get paid. Get rated. Get',
-      landing_headline_em: 'better opportunities.',
-      landing_sub: 'Join vetted studies from leading brands. Earn money for your honest opinion. Build a reputation that opens doors.',
-      landing_cta: "Get started — it's free",
+      landing_headline_plain: 'Get paid for research',
+      landing_headline_em: 'sessions.',
+      landing_sub: 'Apply to paid studies that fit your profile. Get paid for showing up and sharing honest feedback.',
+      landing_cta: 'Create your profile',
       landing_signin: 'Sign in',
       trust_contributors: 'avg contributor score',
       trust_earned: 'avg annual earnings',

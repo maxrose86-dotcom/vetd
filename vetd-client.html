@@ -372,29 +372,12 @@ textarea{resize:vertical;min-height:90px}
 <div id="landing" class="screen active">
   <div class="lnd-eyebrow">Client portal</div>
   <a href="index.html" class="lnd-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green-mid)">d</span></a>
-  <div class="lnd-sub-logo">For companies For companies &amp; researchersamp; researchers</div>
+  <div class="lnd-sub-logo">For companies &amp; researchers</div>
   <div class="lnd-h1"><span data-i18n="cl_landing_h1_plain">Find people worth</span> <em data-i18n="cl_landing_h1_em">listening to.</em></div>
-  <div class="lnd-p" data-i18n="cl_landing_sub">Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.</div>
+  <div class="lnd-p" data-i18n="cl_landing_sub">Post a study, define your criteria, and get matched with qualified participants — typically within 48 hours.</div>
   <div>
     <button class="btn-cta" onclick="showAuthScreen('signup')" data-i18n="cl_cta">Post your first study</button>
     <button class="btn-ghost" onclick="showAuthScreen('login')" data-i18n="cl_signin">Sign in</button>
-  </div>
-  <div style="margin-top:3.5rem">
-    <div class="lnd-logos">Trusted by teams at</div>
-    <div class="logo-strip">
-      <div class="logo-pill">H&amp;M</div>
-      <div class="logo-pill">Lloyds Bank</div>
-      <div class="logo-pill">ASOS</div>
-      <div class="logo-pill">Boots</div>
-      <div class="logo-pill">Tesco</div>
-      <div class="logo-pill">Nike</div>
-    </div>
-  </div>
-  <div class="lnd-stats">
-    <div class="lnd-stat"><div class="lnd-stat-n">8,400+</div><div class="lnd-stat-l">Verified contributors</div></div>
-    <div class="lnd-stat"><div class="lnd-stat-n">48h</div><div class="lnd-stat-l">Average panel fill time</div></div>
-    <div class="lnd-stat"><div class="lnd-stat-n">4.8★</div><div class="lnd-stat-l">Average contributor quality</div></div>
-    <div class="lnd-stat"><div class="lnd-stat-n">92%</div><div class="lnd-stat-l">Completion rate</div></div>
   </div>
 </div>
 
@@ -471,7 +454,7 @@ textarea{resize:vertical;min-height:90px}
       <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
       <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
-      <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
+      <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadReadyToCompleteSessions();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
       <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
       <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
     </div>
@@ -499,7 +482,7 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_sessions">Sessions</div>
-        <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadUpcomingSessions()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
+        <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadReadyToCompleteSessions();loadUpcomingSessions()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_panel">Participants</div>
@@ -740,7 +723,6 @@ textarea{resize:vertical;min-height:90px}
             </div>
 
             <div style="display:flex;gap:12px">
-              <button class="btn-outline" onclick="showToast('Draft saved!')" data-i18n="cl_save_draft">Save as draft</button>
               <button class="btn-primary btn-green" onclick="publishStudy()" data-i18n="cl_publish_btn">Publish study →</button>
             </div>
           </div>
@@ -760,10 +742,6 @@ textarea{resize:vertical;min-height:90px}
             <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_spots">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
             <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_budget">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
             <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_fee">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
-            <div class="match-estimate">
-              <div class="match-est-n" id="prev-match">~340</div>
-              <div class="match-est-l" data-i18n="cl_preview_match">contributors match your criteria right now</div>
-            </div>
           </div>
         </div>
       </div>
@@ -777,6 +755,10 @@ textarea{resize:vertical;min-height:90px}
           <div class="sec-title">Accepted, not scheduled <span id="unscheduled-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
           <div id="unscheduled-queue-list"></div>
         </div>
+        <div class="card" id="completion-queue-card" style="margin-bottom:1.5rem;display:none">
+          <div class="sec-title">Ready to complete <span id="completion-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div id="completion-queue-list"></div>
+        </div>
         <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
           <div class="sec-title">Upcoming sessions (next 24 hours)</div>
           <div id="upcoming-sessions-list"></div>
@@ -786,8 +768,7 @@ textarea{resize:vertical;min-height:90px}
       <!-- PANEL BROWSER -->
       <div class="tab-pane" id="tab-panel">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_browse_title">Participants</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Browse all participants</p></div>
-          <button class="btn-outline" onclick="showToast('Invitations sent to all top matches!')" data-i18n="cl_invite_top">Invite top 10</button>
+          <div class="page-title"><h1 data-i18n="cl_browse_title">Participants</h1><p id="browse-study-subtitle" data-i18n="cl_browse_sub">Suggested participants</p></div>
         </div>
         <div class="filter-bar">
           <button class="fc on" data-filter="all" onclick="setContributorsFilter('all',this)" data-i18n="cl_fc_all">All matches</button>
@@ -1120,7 +1101,14 @@ textarea{resize:vertical;min-height:90px}
 
       const [{ data: profile }, { data: client }] = await Promise.all([
         db.from('profiles').select('first_name, last_name').eq('id', user.id).single(),
-        db.from('clients').select('company_id').eq('id', user.id).single()
+        (async () => {
+          let { data, error } = await db.from('clients').select('company_id').eq('id', user.id).single();
+          if (error) {
+            console.warn('[Vetd] clients.company_id select failed — falling back to select *. Run migration to add company_id column.', error.message);
+            ({ data, error } = await db.from('clients').select('*').eq('id', user.id).single());
+          }
+          return { data };
+        })()
       ]);
 
       const firstName = profile?.first_name || user.user_metadata?.first_name || 'there';
@@ -1168,15 +1156,17 @@ textarea{resize:vertical;min-height:90px}
       if (studies && studies.length > 0) {
         const { data: apps } = await db
           .from('applications')
-          .select('id, study_id, status')
+          .select('id, study_id, status, scheduled_at')
           .in('study_id', studies.map(s => s.id));
         allAppRows = apps || [];
         allAppRows.forEach(a => {
-          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0 };
+          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0 };
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
           if (a.status === 'invited')  appCountMap[a.study_id].invited++;
+          if (a.status === 'accepted' && a.scheduled_at) appCountMap[a.study_id].scheduled++;
+          if (a.status === 'accepted' && a.scheduled_at && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000)) appCountMap[a.study_id].ready_to_complete++;
         });
       }
 
@@ -1273,7 +1263,8 @@ textarea{resize:vertical;min-height:90px}
         ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
         : '';
       const payDisplay = s.pay_per_participant ? `${formatCurrency(s.pay_per_participant)}/person` : null;
-      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0 };
+      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0 };
+      const awaitingScheduling = Math.max(0, counts.accepted - counts.scheduled);
       const isOverdue = s.close_date && new Date(s.close_date) < today && status === 'active';
 
       return `
@@ -1293,6 +1284,8 @@ textarea{resize:vertical;min-height:90px}
             ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
             ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : ''}
             ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong></span>` : ''}
+            ${awaitingScheduling > 0 ? `<span style="color:var(--amber)">${awaitingScheduling} ${t('cl_needs_scheduling')}</span>` : ''}
+            ${counts.ready_to_complete > 0 ? `<span style="color:var(--blue-dark)">${counts.ready_to_complete} ${t('cl_ready_to_complete_short')}</span>` : ''}
           </div>
           <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
           ${status === 'draft' ? `
@@ -1388,14 +1381,14 @@ textarea{resize:vertical;min-height:90px}
       // (migration 20260411_add_screening_questions.sql not yet applied).
       let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type, screening_questions')
+        .select('session_type, screening_questions, title, description, target_interests, min_rating')
         .eq('id', studyId)
         .single();
       if (studyMetaErr) {
         console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
         ({ data: studyMeta, error: studyMetaErr } = await db
           .from('studies')
-          .select('session_type')
+          .select('session_type, title, description, target_interests, min_rating')
           .eq('id', studyId)
           .single());
       }
@@ -1404,8 +1397,8 @@ textarea{resize:vertical;min-height:90px}
       _studyScreeningQuestions = studyMeta.screening_questions || null;
 
       // Fetch applications. Fallback without screening_answers if column absent.
-      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))';
-      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))';
+      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, bankid_verified, job_title, industry, experience_level, profiles(first_name, last_name))';
+      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, bankid_verified, profiles(first_name, last_name))';
       let { data, error } = await db
         .from('applications')
         .select(APP_FULL)
@@ -1477,6 +1470,53 @@ textarea{resize:vertical;min-height:90px}
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
 
+      function summarizeApplicantDecision(study, appRow) {
+        const contributor = appRow.contributors || {};
+        const { score, reasons } = matchScore(study, contributor);
+        const fitKey = score >= 0.45 ? 'cl_fit_strong'
+          : score >= 0.2 ? 'cl_fit_possible'
+          : 'cl_fit_weak';
+
+        const summaryReasons = reasons.slice(0, 2);
+        const screeningCount = Array.isArray(_studyScreeningQuestions) ? _studyScreeningQuestions.length : 0;
+        const answeredCount = Array.isArray(appRow.screening_answers)
+          ? appRow.screening_answers.filter(v => v != null && String(v).trim() !== '').length
+          : 0;
+
+        let gap = '';
+        const rating = parseFloat(contributor.rating);
+        if (screeningCount > 0 && answeredCount < screeningCount) {
+          gap = t('cl_decision_gap_screening');
+        } else if (study.min_rating && !isNaN(rating) && rating < study.min_rating) {
+          gap = t('cl_decision_gap_rating').replace('{rating}', contributor.rating != null ? Number(contributor.rating).toFixed(1) : '—');
+        } else if (!contributor.total_studies) {
+          gap = t('cl_decision_gap_new');
+        } else if (!contributor.job_title && !contributor.industry) {
+          gap = t('cl_decision_gap_profile');
+        }
+
+        let nextAction = '';
+        if (appRow.status === 'pending') {
+          nextAction = score >= 0.45 ? t('cl_decision_next_schedule')
+            : score >= 0.2 ? t('cl_decision_next_review')
+            : t('cl_decision_next_decline');
+        } else if (appRow.status === 'invited') {
+          nextAction = t('cl_decision_next_wait');
+        } else if (appRow.status === 'accepted' && !appRow.scheduled_at) {
+          nextAction = t('cl_decision_next_schedule');
+        } else if (appRow.status === 'accepted' && appRow.scheduled_at) {
+          nextAction = t(new Date(appRow.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000)
+            ? 'cl_decision_next_complete'
+            : 'cl_decision_next_booked');
+        } else if (appRow.status === 'completed') {
+          nextAction = t('cl_decision_next_rate');
+        } else if (appRow.status === 'declined') {
+          nextAction = t('cl_decision_next_replace');
+        }
+
+        return { fitKey, summaryReasons, gap, nextAction };
+      }
+
       const renderRow = (a, i) => {
         const c       = a.contributors || {};
         const p       = c.profiles || {};
@@ -1490,6 +1530,7 @@ textarea{resize:vertical;min-height:90px}
         const appliedDate = a.applied_at
           ? new Date(a.applied_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
           : '';
+        const decision = summarizeApplicantDecision(studyMeta, a);
 
         let actions = '';
         if (a.status === 'pending') {
@@ -1530,10 +1571,14 @@ textarea{resize:vertical;min-height:90px}
             //   scheduled            → blue "Scheduled" pill
             //   unscheduled, no group session yet → neutral "waiting for group scheduling"
             //   unscheduled, group already set    → amber "Accepted after group was scheduled"
-            const pillLabel = isScheduled
+            const pillLabel = sessionPast
+              ? t('cl_ready_to_complete')
+              : isScheduled
               ? t('cl_scheduled_pill')
               : anyGroupScheduled ? t('cl_added_after_group') : t('cl_group_accepted_pending');
-            const pillStyle = isScheduled
+            const pillStyle = sessionPast
+              ? 'background:#DBEAFE;color:#1D4ED8'
+              : isScheduled
               ? 'background:#EFF6FF;color:#1D4ED8'
               : anyGroupScheduled ? '' : '';
             const statusPill = isScheduled
@@ -1543,7 +1588,9 @@ textarea{resize:vertical;min-height:90px}
             actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${completeBtn}`;
           } else {
             // One-to-one: per-row schedule / reschedule buttons (unchanged)
-            const statusPill = isScheduled
+            const statusPill = sessionPast
+              ? `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_ready_to_complete')}</span>`
+              : isScheduled
               ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
               : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
@@ -1582,7 +1629,17 @@ textarea{resize:vertical;min-height:90px}
             <div class="applicant-av" style="background:${esc(avColors[ci])};color:${esc(avText[ci])}">${esc(initials)}</div>
             <div class="applicant-info">
               <div class="applicant-name">${esc(name)}</div>
-              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? 'Invited' : 'Applied'} ${esc(appliedDate)}</div>
+              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
+                <span class="badge ${decision.fitKey === 'cl_fit_strong' ? 'badge-green' : decision.fitKey === 'cl_fit_possible' ? 'badge-blue' : 'badge-gray'}">${t(decision.fitKey)}</span>
+                ${decision.summaryReasons.map(reason => `<span style="font-size:11px;color:var(--gray-400)">${esc(reason)}</span>`).join(' · ')}
+              </div>
+              ${(decision.gap || decision.nextAction) ? `
+                <div style="margin-top:4px;font-size:11px;line-height:1.4;color:var(--gray-400)">
+                  ${decision.gap ? `<span>${esc(decision.gap)}</span>` : ''}
+                  ${decision.gap && decision.nextAction ? `<span> · </span>` : ''}
+                  ${decision.nextAction ? `<span style="color:var(--gray-700)">${esc(decision.nextAction)}</span>` : ''}
+                </div>` : ''}
               ${renderScreeningAnswers(a.screening_answers, _studyScreeningQuestions)}
             </div>
             <div class="applicant-actions">${actions}</div>
@@ -1606,7 +1663,7 @@ textarea{resize:vertical;min-height:90px}
 
       scheduledList.innerHTML = scheduledRows.length
         ? scheduledRows.map(renderRow).join('')
-        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>`;
+        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet. Accepted participants will appear here once scheduled.</div>`;
 
       const rowActionMap = {
         'schedule':      d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
@@ -1684,7 +1741,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(err) {
       console.error('Update application error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not update — try again', true);
+      showToast("We couldn't update this application. Try again.", true);
       await loadApplicants(studyId); // restore buttons
     }
   }
@@ -1885,6 +1942,7 @@ textarea{resize:vertical;min-height:90px}
         closeScheduleModal();
         await loadApplicants(savedStudyId);
         await loadUnscheduledApplications();
+        await loadReadyToCompleteSessions();
         loadUpcomingSessions();
 
       } else {
@@ -1927,6 +1985,7 @@ textarea{resize:vertical;min-height:90px}
         document.querySelector(`[data-app-id="${_schedAppId}"]`)?.remove();
         closeScheduleModal();
         await loadUnscheduledApplications();
+        await loadReadyToCompleteSessions();
         loadUpcomingSessions();
       }
     } catch(err) {
@@ -2050,8 +2109,12 @@ textarea{resize:vertical;min-height:90px}
         : parseInt(length) || null;
 
       // Fetch company_id for this client
-      const { data: clientRow, error: clientErr } = await db
+      let { data: clientRow, error: clientErr } = await db
         .from('clients').select('company_id').eq('id', user.id).single();
+      if (clientErr) {
+        console.warn('[Vetd] clients.company_id select failed — falling back to select *.', clientErr.message);
+        ({ data: clientRow, error: clientErr } = await db.from('clients').select('*').eq('id', user.id).single());
+      }
       if (clientErr || !clientRow?.company_id) throw new Error('Could not resolve your company. Please refresh and try again.');
 
       const { error } = await db.from('studies').insert({
@@ -2746,10 +2809,13 @@ textarea{resize:vertical;min-height:90px}
       await loadApplicants(studyId);
       await loadRateList();
       loadClientBudget();
+      await loadReadyToCompleteSessions();
+      await loadUnscheduledApplications();
+      loadUpcomingSessions();
     } catch(err) {
       console.error('markCompleted error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not update — try again', true);
+      showToast("We couldn't update this application. Try again.", true);
     }
   }
 
@@ -2800,7 +2866,6 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('prev-spots').textContent  = spots + ' ' + t('cl_participants_suffix');
     document.getElementById('prev-budget').textContent = (pay*spots) + ' kr';
     document.getElementById('prev-fee').textContent    = Math.round(pay*spots*0.2) + ' kr';
-    document.getElementById('prev-match').textContent  = '~'+Math.max(50, Math.round(500 - spots*4 - pay*0.5));
   }
 
   // ─── STUDY WORKSPACE HELPERS ────────────────────────────
@@ -2884,7 +2949,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(err) {
       console.error('setStudyStatus error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not update study', true);
+      showToast("We couldn't update the study. Try again.", true);
     }
   }
 
@@ -3223,6 +3288,62 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
+  async function loadReadyToCompleteSessions() {
+    if (!db || !currentClientUser) return;
+    const card = document.getElementById('completion-queue-card');
+    const list = document.getElementById('completion-queue-list');
+    const countEl = document.getElementById('completion-queue-count');
+    if (!card || !list) return;
+    try {
+      const { data: studies, error: sErr } = await db
+        .from('studies')
+        .select('id, title')
+        .eq('created_by', currentClientUser.id);
+      if (sErr) throw sErr;
+      const studyIds = (studies || []).map(s => s.id);
+      if (!studyIds.length) { card.style.display = 'none'; return; }
+
+      const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+      const { data: rows, error: rErr } = await db
+        .from('applications')
+        .select('id, study_id, contributor_id, scheduled_at, contributors(profiles(first_name, last_name))')
+        .eq('status', 'accepted')
+        .not('scheduled_at', 'is', null)
+        .lte('scheduled_at', cutoff)
+        .in('study_id', studyIds)
+        .order('scheduled_at', { ascending: true });
+      if (rErr) throw rErr;
+
+      const data = rows || [];
+      if (!data.length) { card.style.display = 'none'; return; }
+
+      card.style.display = 'block';
+      countEl.textContent = `(${data.length})`;
+      list.innerHTML = data.map(a => {
+        const p = a.contributors?.profiles || {};
+        const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const title = studyTitleMap[a.study_id] || '—';
+        const time = formatScheduledTime(a.scheduled_at);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:500">${esc(name)}</div>
+            <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
+          </div>
+          <button class="btn-complete" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_mark_completed')}</button>
+        </div>`;
+      }).join('');
+      wireActions(list, {
+        complete: d => markCompleted(d.appId, d.studyId),
+      });
+    } catch (err) {
+      console.error('loadReadyToCompleteSessions error:', err);
+      if (card) card.style.display = 'none';
+    }
+  }
+
 
   // ─── GO TO APP ──────────────────────────────────────────
   async function goApp() {
@@ -3244,6 +3365,7 @@ textarea{resize:vertical;min-height:90px}
     loadDashboardStats();
     loadPendingApplications();
     loadUnscheduledApplications();
+    loadReadyToCompleteSessions();
     loadUpcomingSessions();
     setInterval(refreshJoinCallButtons, 30000);
   }
@@ -3433,7 +3555,7 @@ textarea{resize:vertical;min-height:90px}
       // Landing
       cl_landing_h1_plain: 'Find people worth',
       cl_landing_h1_em: 'listening to.',
-      cl_landing_sub: 'Post a study, define your criteria, and get matched with rated, verified contributors — typically within 48 hours.',
+      cl_landing_sub: 'Post a study, define your criteria, and get matched with qualified participants — typically within 48 hours.',
       cl_cta: 'Post your first study',
       cl_signin: 'Sign in',
       // Sidebar nav
@@ -3467,7 +3589,7 @@ textarea{resize:vertical;min-height:90px}
       cl_dash_active_studies: 'Active studies',
       cl_dash_top_matches: 'Top contributor matches waiting',
       cl_dash_recent_activity: 'Recent activity',
-      cl_th_contributor: 'Contributor',
+      cl_th_contributor: 'Applicant',
       cl_th_study: 'Study',
       cl_th_status: 'Status',
       cl_th_rating: 'Rating given',
@@ -3541,7 +3663,7 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_match: 'contributors match your criteria right now',
       // Browse contributors
       cl_browse_title: 'Participants',
-      cl_browse_sub: 'Browse all participants',
+      cl_browse_sub: 'Suggested participants',
       cl_browse_for_study: 'Inviting for: {title}',
       cl_invite_top: 'Invite top 10',
       cl_fc_all: 'All',
@@ -3550,13 +3672,30 @@ textarea{resize:vertical;min-height:90px}
       cl_fc_applied: 'Invited',
       cl_invite_contributors: '+ Invite participants',
       cl_invited: 'invited',
-      cl_invited_status: 'Invited',
-      cl_declined_by_contributor: 'Declined by contributor',
+      cl_meta_invited: 'Invitation sent',
+      cl_meta_applied: 'Applied',
+      cl_fit_strong: 'Strong match',
+      cl_fit_possible: 'Possible match',
+      cl_fit_weak: 'Weak match',
+      cl_decision_gap_screening: 'Missing screening answers',
+      cl_decision_gap_rating: 'Below minimum rating ({rating})',
+      cl_decision_gap_new: 'No completed studies yet',
+      cl_decision_gap_profile: 'Limited profile detail',
+      cl_decision_next_schedule: 'Next: schedule if this looks right',
+      cl_decision_next_review: 'Next: review answers before deciding',
+      cl_decision_next_decline: 'Next: keep as backup or reject',
+      cl_decision_next_wait: 'Next: wait for response',
+      cl_decision_next_complete: 'Next: mark completed',
+      cl_decision_next_booked: 'Next: session booked',
+      cl_decision_next_rate: 'Next: rate participant',
+      cl_decision_next_replace: 'Next: invite someone else',
+      cl_invited_status: 'Invitation sent',
+      cl_declined_by_contributor: 'Invitation declined',
       cl_already_invited: 'Invited ✓',
-      cl_contributor_invited: 'Contributor invited ✓',
+      cl_contributor_invited: 'Invitation sent ✓',
       cl_already_invited_toast: 'Already invited to this study',
-      cl_contributor_declined_toast: 'This contributor has declined the invitation',
-      cl_invite_no_study: 'Open a study first to invite contributors',
+      cl_contributor_declined_toast: 'This participant declined the invitation',
+      cl_invite_no_study: 'Open a study first to invite participants',
       cl_notif_invited_title: 'You\'ve been invited to a study',
       cl_notif_invited_body: 'You\'ve been personally selected to participate in "{title}". Open Vetd to accept.',
       // Rate participants
@@ -3591,7 +3730,7 @@ textarea{resize:vertical;min-height:90px}
       cl_participants_title: 'Applicants',
       cl_participants_label: 'Applicants',
       cl_participants_total: 'applicants',
-      cl_no_applicants: 'No one has applied yet. Check back once your study is live.',
+      cl_no_applicants: 'No applications yet. Applications will appear here after your study is live.',
       cl_no_invitations_yet: 'No invitations sent yet',
       cl_view_participants: 'View {count} participant',
       cl_view_participants_plural: 'View {count} participants',
@@ -3606,8 +3745,10 @@ textarea{resize:vertical;min-height:90px}
       cl_confirm_reschedule: 'Confirm new time',
       cl_scheduled_pill: 'Scheduled',
       cl_scheduled_short: 'scheduled',
-      cl_accepted_needs_scheduling: 'Accepted — needs scheduling',
-      cl_needs_scheduling: 'need scheduling',
+      cl_ready_to_complete: 'Ready to complete',
+      cl_ready_to_complete_short: 'ready to complete',
+      cl_accepted_needs_scheduling: 'Accepted, not yet scheduled',
+      cl_needs_scheduling: 'awaiting scheduling',
       cl_cancel_invitation: 'Cancel invitation',
       cl_invite_someone_else: 'Invite someone else',
       cl_accept: 'Accept',
@@ -3655,20 +3796,20 @@ textarea{resize:vertical;min-height:90px}
       cl_group_reschedule_title: 'Reschedule group session',
       cl_added_after_group: 'Accepted after group was scheduled',
       cl_group_accepted_pending: 'Accepted — waiting for group scheduling',
-      cl_no_accepted_to_schedule: 'No accepted contributors to schedule yet',
-      cl_group_contributor: 'contributor',
-      cl_group_contributors: 'contributors',
+      cl_no_accepted_to_schedule: 'No accepted participants to schedule yet',
+      cl_group_contributor: 'participant',
+      cl_group_contributors: 'participants',
       cl_group_banner_set: 'Group session set — {count} scheduled',
       cl_group_banner_pending: '{count} accepted — set a shared session time',
       cl_group_modal_sub_schedule: 'Setting a shared time for {count}',
       cl_group_modal_sub_reschedule: 'Rescheduling for {count}',
       // Dynamic
-      cl_no_studies: 'No studies yet',
-      cl_no_studies_sub: 'Post your first study to start recruiting contributors.',
+      cl_no_studies: "You haven't posted any studies yet.",
+      cl_no_studies_sub: 'Post your first study to start recruiting participants.',
       cl_post_a_study: '＋ Post a study',
       cl_view_applicants: 'View {count} applicant',
       cl_view_applicants_plural: 'View {count} applicants',
-      cl_no_applications: 'No applications yet',
+      cl_no_applications: 'No applications yet for this study.',
       cl_continue_editing: 'Continue editing',
       cl_spots: 'Spots',
       cl_pay_label: 'Pay',
@@ -3690,14 +3831,14 @@ textarea{resize:vertical;min-height:90px}
       cl_rate_all_dims: 'Please rate all 5 dimensions before submitting',
       cl_rating_submitted: 'Rating submitted for {name}. Their score has been updated.',
       cl_marked_completed: 'Marked as completed ✓ — payment queued',
-      cl_study_published: 'Study published! Contributors are being matched now.',
+      cl_study_published: 'Study published. Matching participants now.',
       cl_no_rate_yet: 'No completed participants to rate yet.',
       cl_no_rate_yet_sub: 'No completed participants to rate yet. Mark accepted participants as completed first.',
       cl_all_rated: 'All participants have been rated.',
       cl_awaiting_rating: '{count} participant awaiting your rating',
       cl_awaiting_rating_plural: '{count} participants awaiting your rating',
       cl_rate_now: 'Rate now →',
-      cl_no_contributors: 'No contributors found yet.',
+      cl_no_contributors: 'No participants match this view yet.',
       cl_just_now: 'just now',
       cl_time_m_ago: 'm ago',
       cl_time_h_ago: 'h ago',
@@ -3823,7 +3964,7 @@ textarea{resize:vertical;min-height:90px}
       cl_preview_match: 'deltagare matchar dina kriterier just nu',
       // Browse contributors
       cl_browse_title: 'Deltagare',
-      cl_browse_sub: 'Bläddra bland alla deltagare',
+      cl_browse_sub: 'Föreslagna deltagare',
       cl_browse_for_study: 'Bjuder in till: {title}',
       cl_invite_top: 'Bjud in topp 10',
       cl_fc_all: 'Alla',
@@ -3832,10 +3973,27 @@ textarea{resize:vertical;min-height:90px}
       cl_fc_applied: 'Inbjudna',
       cl_invite_contributors: '+ Bjud in deltagare',
       cl_invited: 'inbjudna',
-      cl_invited_status: 'Inbjuden',
-      cl_declined_by_contributor: 'Avböjd av deltagaren',
+      cl_meta_invited: 'Inbjudan skickad',
+      cl_meta_applied: 'Ansökte',
+      cl_fit_strong: 'Stark match',
+      cl_fit_possible: 'Möjlig match',
+      cl_fit_weak: 'Svag match',
+      cl_decision_gap_screening: 'Saknade svar på urvalsfrågor',
+      cl_decision_gap_rating: 'Under minsta betyg ({rating})',
+      cl_decision_gap_new: 'Inga slutförda studier ännu',
+      cl_decision_gap_profile: 'Begränsad profilinformation',
+      cl_decision_next_schedule: 'Nästa steg: schemalägg om det ser rätt ut',
+      cl_decision_next_review: 'Nästa steg: granska svaren innan beslut',
+      cl_decision_next_decline: 'Nästa steg: behåll som reserv eller avvisa',
+      cl_decision_next_wait: 'Nästa steg: vänta på svar',
+      cl_decision_next_complete: 'Nästa steg: markera som slutförd',
+      cl_decision_next_booked: 'Nästa steg: session bokad',
+      cl_decision_next_rate: 'Nästa steg: betygsätt deltagaren',
+      cl_decision_next_replace: 'Nästa steg: bjud in någon annan',
+      cl_invited_status: 'Inbjudan skickad',
+      cl_declined_by_contributor: 'Inbjudan avböjd',
       cl_already_invited: 'Inbjuden ✓',
-      cl_contributor_invited: 'Deltagare inbjuden ✓',
+      cl_contributor_invited: 'Inbjudan skickad ✓',
       cl_already_invited_toast: 'Redan inbjuden till denna studie',
       cl_contributor_declined_toast: 'Deltagaren har avböjt inbjudan',
       cl_invite_no_study: 'Öppna en studie först för att bjuda in deltagare',
@@ -3888,8 +4046,10 @@ textarea{resize:vertical;min-height:90px}
       cl_confirm_reschedule: 'Bekräfta ny tid',
       cl_scheduled_pill: 'Schemalagd',
       cl_scheduled_short: 'schemalagda',
-      cl_accepted_needs_scheduling: 'Accepterad — behöver schemaläggas',
-      cl_needs_scheduling: 'behöver schemaläggas',
+      cl_ready_to_complete: 'Klar att slutföra',
+      cl_ready_to_complete_short: 'klara att slutföra',
+      cl_accepted_needs_scheduling: 'Accepterad, inte schemalagd ännu',
+      cl_needs_scheduling: 'väntar på schemaläggning',
       cl_cancel_invitation: 'Avbryt inbjudan',
       cl_invite_someone_else: 'Bjud in någon annan',
       cl_accept: 'Acceptera',

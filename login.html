@@ -448,7 +448,7 @@
       }
 
     } catch (err) {
-      errorEl.textContent = err.message || 'Sign in failed — check your email and password';
+      errorEl.textContent = err.message || "We couldn't sign you in. Check your email and password and try again.";
       errorEl.classList.add('show');
       btn.textContent = originalText;
       btn.disabled = false;
@@ -492,7 +492,7 @@
       btn.textContent = 'Sent!';
 
     } catch (err) {
-      errorEl.textContent = err.message || 'Something went wrong — try again';
+      errorEl.textContent = err.message || "We couldn't send the reset link. Try again.";
       errorEl.classList.add('show');
       btn.textContent = 'Send reset link';
       btn.disabled = false;
