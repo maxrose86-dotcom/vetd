@@ -1380,23 +1380,42 @@ textarea{resize:vertical;min-height:90px}
     if (groupHeaderEl) groupHeaderEl.innerHTML = '';
 
     try {
-      // Fetch session_type for this study separately — all rows share the same study,
-      // so joining on every application row would be wasteful.
-      // Failure is an explicit error: do not silently default to one_to_one.
-      const { data: studyMeta, error: studyMetaErr } = await db
+      // Fetch session_type + screening_questions for this study.
+      // Fallback to base select if screening_questions column doesn't exist yet
+      // (migration 20260411_add_screening_questions.sql not yet applied).
+      let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
         .select('session_type, screening_questions')
         .eq('id', studyId)
         .single();
+      if (studyMetaErr) {
+        console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
+        ({ data: studyMeta, error: studyMetaErr } = await db
+          .from('studies')
+          .select('session_type')
+          .eq('id', studyId)
+          .single());
+      }
       if (studyMetaErr || !studyMeta) throw studyMetaErr || new Error('Could not load study metadata');
       const sessionType = studyMeta.session_type;
       _studyScreeningQuestions = studyMeta.screening_questions || null;
 
-      const { data, error } = await db
+      // Fetch applications. Fallback without screening_answers if column absent.
+      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))';
+      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))';
+      let { data, error } = await db
         .from('applications')
-        .select('id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, profiles(first_name, last_name))')
+        .select(APP_FULL)
         .eq('study_id', studyId)
         .order('applied_at', { ascending: false });
+      if (error) {
+        console.warn('[Vetd] applications full select failed — falling back.', error.message);
+        ({ data, error } = await db
+          .from('applications')
+          .select(APP_BASE)
+          .eq('study_id', studyId)
+          .order('applied_at', { ascending: false }));
+      }
 
       if (error) throw error;
 
@@ -2355,7 +2374,7 @@ textarea{resize:vertical;min-height:90px}
             ${currentInviteStudyId
               ? (alreadyInvited.has(c.id)
                 ? `<button class="btn-outline" disabled style="white-space:nowrap;opacity:0.6;cursor:default">${t('cl_already_invited')}</button>`
-                : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" onclick="inviteContributor('${esc(currentInviteStudyId)}','${esc(c.id)}','${escAttr(dispName)}')">${t('cl_invite')}</button>`)
+                : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" onclick="inviteContributor('${esc(currentInviteStudyId)}','${esc(c.id)}','${escJS(dispName)}')">${t('cl_invite')}</button>`)
               : `<span style="font-size:12px;color:var(--gray-400);white-space:nowrap" title="${escAttr(t('cl_invite_no_study'))}">No active study</span>`
             }
           </div>
