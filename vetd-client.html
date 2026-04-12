@@ -1301,10 +1301,13 @@ textarea{resize:vertical;min-height:90px}
           </div>` : ''}
           ${status === 'active' ? `
           <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-outline" onclick="event.stopPropagation();openContributorBrowser('${esc(s.id)}','${escAttr(s.title||'')}')">${t('cl_invite_contributors')}</button>
+            <button class="btn-outline" data-action="browse" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}">${t('cl_invite_contributors')}</button>
           </div>` : ''}
         </div>`;
     }).join('');
+    wireActions(list, {
+      browse: d => openContributorBrowser(d.studyId, d.studyTitle),
+    });
   }
 
   // ─── STUDY WORKSPACE ────────────────────────────────────
@@ -1488,13 +1491,13 @@ textarea{resize:vertical;min-height:90px}
         let actions = '';
         if (a.status === 'pending') {
           actions = `
-            <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','pending')">${t('cl_schedule_and_confirm')}</button>
-            <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_reject')}</button>`;
+            <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="pending">${t('cl_schedule_and_confirm')}</button>
+            <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
           const sessionPast = isScheduled && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000);
           const completeBtn = sessionPast
-            ? `<button class="btn-complete" onclick="markCompleted('${esc(a.id)}','${esc(studyId)}')">${t('cl_mark_completed')}</button>`
+            ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_mark_completed')}</button>`
             : '';
           let attendanceBadge = '';
           if (sessionPast) {
@@ -1514,7 +1517,7 @@ textarea{resize:vertical;min-height:90px}
             const remaining = callTimeRemaining(a.scheduled_at);
             const btnText = remaining !== null ? esc(remaining) : t('cl_join_call');
             const btnDisabled = remaining !== null ? 'disabled' : '';
-            joinBtn = `<button class="btn-join-call" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${esc(a.room_url)}','${escAttr(currentApplicantsStudyTitle||'')}','${escAttr(a.id)}')" ${btnDisabled}>${btnText}</button>`;
+            joinBtn = `<button class="btn-join-call" data-action="video-call" data-scheduled-at="${esc(a.scheduled_at)}" data-room-url="${esc(a.room_url)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-app-id="${esc(a.id)}" ${btnDisabled}>${btnText}</button>`;
           }
 
           if (sessionType === 'group') {
@@ -1542,8 +1545,8 @@ textarea{resize:vertical;min-height:90px}
               : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
             const scheduleBtn = !isScheduled
-              ? `<button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','accepted')">${t('cl_schedule_session')}</button>`
-              : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','reschedule')">${t('cl_reschedule')}</button>`;
+              ? `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_schedule_session')}</button>`
+              : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
             actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${scheduleBtn}${completeBtn}`;
           }
         } else if (a.status === 'invited') {
@@ -1552,17 +1555,17 @@ textarea{resize:vertical;min-height:90px}
             // then use the header-level group scheduling action.
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-              <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_cancel_invitation')}</button>`;
           } else {
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-              <button class="btn-accept" onclick="openScheduleModal('${esc(a.id)}','${esc(studyId)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(currentApplicantsStudyTitle||'')}','invited')">${t('cl_schedule_and_confirm')}</button>
-              <button class="btn-reject" onclick="updateApplication('${esc(a.id)}','rejected','${esc(studyId)}','${esc(a.contributor_id)}')">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="invited">${t('cl_schedule_and_confirm')}</button>
+              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_cancel_invitation')}</button>`;
           }
         } else if (a.status === 'declined') {
           actions = `
             <span class="status-pill status-rejected">${t('cl_declined_by_contributor')}</span>
-            <button class="btn-outline" style="font-size:12px;padding:6px 12px" onclick="openContributorBrowser('${esc(studyId)}','${escAttr(currentApplicantsStudyTitle||'')}')">${t('cl_invite_someone_else')}</button>`;
+            <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_invite_someone_else')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else {
@@ -1601,6 +1604,17 @@ textarea{resize:vertical;min-height:90px}
       scheduledList.innerHTML = scheduledRows.length
         ? scheduledRows.map(renderRow).join('')
         : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>`;
+
+      const rowActionMap = {
+        'schedule':      d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
+        'update-status': d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
+        'video-call':    d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
+        'complete':      d => markCompleted(d.appId, d.studyId),
+        'browse':        d => openContributorBrowser(d.studyId, d.studyTitle),
+      };
+      wireActions(list, rowActionMap);
+      wireActions(selectedList, rowActionMap);
+      wireActions(scheduledList, rowActionMap);
 
     } catch(err) {
       console.error('Load applicants error:', err);
@@ -2374,7 +2388,7 @@ textarea{resize:vertical;min-height:90px}
             ${currentInviteStudyId
               ? (alreadyInvited.has(c.id)
                 ? `<button class="btn-outline" disabled style="white-space:nowrap;opacity:0.6;cursor:default">${t('cl_already_invited')}</button>`
-                : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" onclick="inviteContributor('${esc(currentInviteStudyId)}','${esc(c.id)}','${escJS(dispName)}')">${t('cl_invite')}</button>`)
+                : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" data-action="invite" data-study-id="${esc(currentInviteStudyId)}" data-contributor-id="${esc(c.id)}" data-name="${escAttr(dispName)}">${t('cl_invite')}</button>`)
               : `<span style="font-size:12px;color:var(--gray-400);white-space:nowrap" title="${escAttr(t('cl_invite_no_study'))}">No active study</span>`
             }
           </div>
@@ -2393,6 +2407,9 @@ textarea{resize:vertical;min-height:90px}
     } else {
       list.innerHTML = sorted.map(buildCard).join('');
     }
+    wireActions(list, {
+      invite: d => inviteContributor(d.studyId, d.contributorId, d.name),
+    });
   }
 
   function setContributorsFilter(filter, btn) {
@@ -2885,6 +2902,15 @@ textarea{resize:vertical;min-height:90px}
     btn.classList.add('on');
   }
 
+  // Bind data-action buttons inside a container to handler functions.
+  // Keeps user text out of inline JS — pass it via data-* attributes instead.
+  function wireActions(container, map) {
+    container.querySelectorAll('[data-action]').forEach(btn => {
+      const handler = map[btn.dataset.action];
+      if (handler) btn.addEventListener('click', e => { e.stopPropagation(); handler(btn.dataset); });
+    });
+  }
+
   function tc(el) {
     const isSingle   = !!el.closest('[data-single="true"]');
     const group      = el.closest('.chip-group');
@@ -3123,9 +3149,12 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(date)}</div>
           </div>
           <button class="btn-accept" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            onclick="openScheduleModal('${esc(a.id)}','${esc(a.study_id)}','${esc(a.contributor_id)}','${escAttr(name)}','${escAttr(title)}','accepted')">${t('cl_schedule_session') || 'Schedule'}</button>
+            data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(title)}" data-mode="accepted">${t('cl_schedule_session') || 'Schedule'}</button>
         </div>`;
       }).join('');
+      wireActions(list, {
+        schedule: d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
+      });
     } catch(err) {
       console.error('loadUnscheduledApplications error:', err);
     }
@@ -3179,9 +3208,12 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
           <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            onclick="openStudySessionRow('${esc(a.study_id)}','${escAttr(title)}','${esc(a.id)}')">Open</button>
+            data-action="open-session" data-study-id="${esc(a.study_id)}" data-study-title="${escAttr(title)}" data-app-id="${esc(a.id)}">Open</button>
         </div>`;
       }).join('');
+      wireActions(list, {
+        'open-session': d => openStudySessionRow(d.studyId, d.studyTitle, d.appId),
+      });
     } catch(err) {
       console.error('loadUpcomingSessions error:', err);
       if (list) list.innerHTML = `<div style="font-size:13px;color:var(--coral);padding:10px 0">Couldn't load upcoming sessions.</div>`;
