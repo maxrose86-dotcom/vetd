@@ -1461,8 +1461,11 @@ textarea{resize:vertical;min-height:90px}
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--blue-light,#EFF6FF);border-radius:8px;gap:12px;flex-wrap:wrap">
               <span style="font-size:13px;color:var(--blue-dark,#1D4ED8)">${esc(bannerText)}</span>
               <button class="btn-accept" style="white-space:nowrap;font-size:12px;padding:6px 14px"
-                onclick="openGroupScheduleModal('${esc(studyId)}',${acceptedRows.length},${anyScheduled})">${esc(btnLabel)}</button>
+                data-action="group-schedule" data-study-id="${esc(studyId)}" data-count="${acceptedRows.length}" data-any-scheduled="${anyScheduled}">${esc(btnLabel)}</button>
             </div>`;
+          wireActions(groupHeaderEl, {
+            'group-schedule': d => openGroupScheduleModal(d.studyId, Number(d.count), d.anyScheduled === 'true'),
+          });
         }
       }
 
