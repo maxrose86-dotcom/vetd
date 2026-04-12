@@ -6,6 +6,7 @@
 <title>Vetd — Admin &amp; Matching Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="match-score.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -538,21 +539,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 
     <div class="match-vis">
       <div class="card-title">Live match breakdown — Sarah L. vs H&M study</div>
-      <div id="match-breakdown">
-        <div class="score-bar-row"><span class="score-label">Demographics</span><div class="score-track"><div class="score-fill" style="width:98%;background:var(--green)"></div></div><span class="score-val">98</span><span class="weight-badge">×0.30</span></div>
-        <div class="score-bar-row"><span class="score-label">Interests & tags</span><div class="score-track"><div class="score-fill" style="width:95%;background:var(--green)"></div></div><span class="score-val">95</span><span class="weight-badge">×0.25</span></div>
-        <div class="score-bar-row"><span class="score-label">Quality rating</span><div class="score-track"><div class="score-fill" style="width:96%;background:var(--blue)"></div></div><span class="score-val">96</span><span class="weight-badge">×0.25</span></div>
-        <div class="score-bar-row"><span class="score-label">Availability</span><div class="score-track"><div class="score-fill" style="width:100%;background:var(--blue)"></div></div><span class="score-val">100</span><span class="weight-badge">×0.12</span></div>
-        <div class="score-bar-row"><span class="score-label">Freshness</span><div class="score-track"><div class="score-fill" style="width:90%;background:var(--purple)"></div></div><span class="score-val">90</span><span class="weight-badge">×0.08</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
-          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Fraud penalty multiplier</span>
-          <span style="font-family:var(--mono);color:var(--green);font-weight:500">×1.00 (clean)</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-          <span style="font-size:13px;color:var(--text2)">Final match score</span>
-          <span style="font-family:var(--serif);font-size:28px;color:var(--green)" id="final-score">99</span>
-        </div>
-      </div>
+      <div id="match-breakdown"></div>
 
       <div class="card-title" style="margin-top:1.25rem">Exclusion rules (auto-applied)</div>
       <div style="font-size:11px;font-family:var(--mono);line-height:2;color:var(--text2)">
@@ -569,14 +556,8 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   <div class="card">
     <div class="card-title">Top matches — H&M online shopping study (live)</div>
     <table class="tbl">
-      <thead><tr><th>#</th><th>Contributor</th><th>Demographics</th><th>Interests</th><th>Quality</th><th>Availability</th><th>Freshness</th><th>Fraud ×</th><th>Final score</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td style="color:var(--text3);font-family:var(--mono)">1</td><td><strong style="color:var(--text)">Sarah L.</strong></td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono);color:var(--green)">95</td><td style="font-family:var(--mono);color:var(--green)">96</td><td style="font-family:var(--mono)">100</td><td style="font-family:var(--mono)">90</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500;color:var(--green)">99</td><td><span class="badge bg">Invited</span></td></tr>
-        <tr><td style="color:var(--text3);font-family:var(--mono)">2</td><td><strong style="color:var(--text)">Priya R.</strong></td><td style="font-family:var(--mono);color:var(--green)">94</td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono);color:var(--green)">98</td><td style="font-family:var(--mono)">85</td><td style="font-family:var(--mono)">88</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500;color:var(--green)">97</td><td><span class="badge bb">Matched</span></td></tr>
-        <tr><td style="color:var(--text3);font-family:var(--mono)">3</td><td><strong style="color:var(--text)">Emma W.</strong></td><td style="font-family:var(--mono)">91</td><td style="font-family:var(--mono)">89</td><td style="font-family:var(--mono)">94</td><td style="font-family:var(--mono)">90</td><td style="font-family:var(--mono)">82</td><td style="font-family:var(--mono);color:var(--green)">×1.00</td><td style="font-family:var(--mono);font-weight:500">91</td><td><span class="badge bb">Matched</span></td></tr>
-        <tr><td style="color:var(--text3);font-family:var(--mono)">4</td><td><strong style="color:var(--text)">Aisha B.</strong></td><td style="font-family:var(--mono)">88</td><td style="font-family:var(--mono)">85</td><td style="font-family:var(--mono)">84</td><td style="font-family:var(--mono)">95</td><td style="font-family:var(--mono)">76</td><td style="font-family:var(--mono);color:var(--amber)">×0.95</td><td style="font-family:var(--mono);font-weight:500">82</td><td><span class="badge bc">Pending</span></td></tr>
-        <tr><td style="color:var(--text3);font-family:var(--mono)">5</td><td><strong style="color:var(--text)">Jamie R.</strong></td><td style="font-family:var(--mono)">72</td><td style="font-family:var(--mono)">70</td><td style="font-family:var(--mono)">42</td><td style="font-family:var(--mono)">80</td><td style="font-family:var(--mono)">60</td><td style="font-family:var(--mono);color:var(--coral)">×0.40</td><td style="font-family:var(--mono);font-weight:500;color:var(--coral)">29</td><td><span class="badge br">Suppressed</span></td></tr>
-      </tbody>
+      <thead><tr><th>#</th><th>Contributor</th><th>Reasons</th><th>Final score</th><th>Status</th></tr></thead>
+      <tbody id="admin-match-list"></tbody>
     </table>
   </div>
 </div>
@@ -1334,6 +1315,8 @@ function initUI() {
       if(m){feedPayouts+=parseInt(m[1]);const el=document.getElementById('feed-payouts');if(el)el.textContent=feedPayouts+' kr'}
     }
   },2800);
+
+  renderAdminMatchingView();
 }
 
 // Enter key on login
@@ -1344,16 +1327,78 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+const ADMIN_MATCH_STUDY = {
+  title: 'H&M online shopping study',
+  target_interests: ['fashion', 'online shopping', 'beauty'],
+  min_rating: 4.0,
+  format: 'video_call',
+};
+
+const ADMIN_MATCH_CONTRIBUTORS = [
+  { name: 'Sarah L.', rating: 4.9, completed_studies: 22, interests: ['fashion', 'beauty', 'online shopping'], study_formats: ['video_call', 'online_survey'], status: 'Invited' },
+  { name: 'Priya R.', rating: 4.8, completed_studies: 18, interests: ['beauty', 'online shopping', 'lifestyle'], study_formats: ['video_call', 'focus_group'], status: 'Matched' },
+  { name: 'Emma W.', rating: 4.6, completed_studies: 9, interests: ['fashion', 'shopping', 'lifestyle'], study_formats: ['video_call'], status: 'Matched' },
+  { name: 'Aisha B.', rating: 4.1, completed_studies: 6, interests: ['fashion', 'home', 'beauty'], study_formats: ['video_call', 'in_person'], status: 'Pending' },
+  { name: 'Jamie R.', rating: 3.7, completed_studies: 2, interests: ['finance', 'gaming'], study_formats: ['online_survey'], status: 'Suppressed' },
+];
+
+function renderAdminMatchingView() {
+  if (typeof matchScore !== 'function') return;
+
+  const scored = ADMIN_MATCH_CONTRIBUTORS
+    .map((contributor) => ({ contributor, ...matchScore(contributor, ADMIN_MATCH_STUDY) }))
+    .sort((a, b) => b.score - a.score);
+
+  const topMatch = scored[0];
+  const breakdownEl = document.getElementById('match-breakdown');
+  if (breakdownEl && topMatch) {
+    const reasonRows = topMatch.reasons.length
+      ? topMatch.reasons.map((reason) => `
+          <div class="score-bar-row">
+            <span class="score-label">Reason</span>
+            <span style="color:var(--text);font-size:12px">${esc(reason)}</span>
+          </div>`).join('')
+      : `
+          <div class="score-bar-row">
+            <span class="score-label">Reason</span>
+            <span style="color:var(--text2);font-size:12px">No strong structured overlap</span>
+          </div>`;
+
+    breakdownEl.innerHTML = `
+      <div class="score-bar-row"><span class="score-label">Study format</span><span style="color:var(--text);font-size:12px">${esc(ADMIN_MATCH_STUDY.format)}</span></div>
+      <div class="score-bar-row"><span class="score-label">Minimum rating</span><span style="color:var(--text);font-size:12px">${esc(String(ADMIN_MATCH_STUDY.min_rating))}★</span></div>
+      ${reasonRows}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <span style="font-size:13px;color:var(--text2)">Final match score</span>
+        <span style="font-family:var(--serif);font-size:28px;color:${topMatch.score >= 75 ? 'var(--green)' : topMatch.score >= 45 ? 'var(--amber)' : 'var(--coral)'}">${topMatch.score}</span>
+      </div>`;
+  }
+
+  const listEl = document.getElementById('admin-match-list');
+  if (listEl) {
+    listEl.innerHTML = scored.map(({ contributor, score, reasons }, index) => {
+      const badgeClass = score >= 75 ? 'bg' : score >= 45 ? 'ba' : 'br';
+      return `<tr>
+        <td style="color:var(--text3);font-family:var(--mono)">${index + 1}</td>
+        <td><strong style="color:var(--text)">${esc(contributor.name)}</strong></td>
+        <td style="color:var(--text2);font-size:12px">${esc((reasons.slice(0, 2).join(' · ')) || 'No clear fit signals')}</td>
+        <td style="font-family:var(--mono);font-weight:500;color:${score >= 75 ? 'var(--green)' : score >= 45 ? 'var(--amber)' : 'var(--coral)'}">${score}</td>
+        <td><span class="badge ${badgeClass}">${esc(contributor.status)}</span></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
 // Weight sliders
 function updateWeight(n,v){
   document.getElementById('w'+n+'-val').textContent=v+'%';
   document.getElementById('w'+n+'-disp').textContent=(v/100).toFixed(2);
-  const score=Math.min(99,Math.round(94+Math.random()*5));
-  document.getElementById('final-score').textContent=score;
+  renderAdminMatchingView();
 }
 
 // Test match
 function runTestMatch(){
+  renderAdminMatchingView();
   const rows=document.querySelectorAll('#t-engine .tbl tbody tr');
   rows.forEach((r,i)=>{
     setTimeout(()=>{r.style.background='rgba(75,158,245,0.05)';setTimeout(()=>r.style.background='',400)},i*150);

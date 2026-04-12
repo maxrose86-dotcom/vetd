@@ -6,6 +6,7 @@
 <title>Vetd — Client Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="match-score.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1381,14 +1382,14 @@ textarea{resize:vertical;min-height:90px}
       // (migration 20260411_add_screening_questions.sql not yet applied).
       let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type, screening_questions, title, description, target_interests, min_rating')
+        .select('session_type, screening_questions, title, description, target_interests, min_rating, format')
         .eq('id', studyId)
         .single();
       if (studyMetaErr) {
         console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
         ({ data: studyMeta, error: studyMetaErr } = await db
           .from('studies')
-          .select('session_type, title, description, target_interests, min_rating')
+          .select('session_type, title, description, target_interests, min_rating, format')
           .eq('id', studyId)
           .single());
       }
@@ -1397,8 +1398,8 @@ textarea{resize:vertical;min-height:90px}
       _studyScreeningQuestions = studyMeta.screening_questions || null;
 
       // Fetch applications. Fallback without screening_answers if column absent.
-      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, bankid_verified, job_title, industry, experience_level, profiles(first_name, last_name))';
-      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, bankid_verified, profiles(first_name, last_name))';
+      const APP_FULL = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, job_title, industry, experience_level, profiles(first_name, last_name))';
+      const APP_BASE = 'id, contributor_id, status, applied_at, scheduled_at, room_name, room_url, joined_call_at, last_call_activity, screening_answers, contributors(rating, tier, total_studies, city, country, date_of_birth, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, profiles(first_name, last_name))';
       let { data, error } = await db
         .from('applications')
         .select(APP_FULL)
@@ -1472,9 +1473,9 @@ textarea{resize:vertical;min-height:90px}
 
       function summarizeApplicantDecision(study, appRow) {
         const contributor = appRow.contributors || {};
-        const { score, reasons } = matchScore(study, contributor);
-        const fitKey = score >= 0.45 ? 'cl_fit_strong'
-          : score >= 0.2 ? 'cl_fit_possible'
+        const { score, reasons } = matchScore(contributor, study);
+        const fitKey = score >= 75 ? 'cl_fit_strong'
+          : score >= 45 ? 'cl_fit_possible'
           : 'cl_fit_weak';
 
         const summaryReasons = reasons.slice(0, 2);
@@ -1497,8 +1498,8 @@ textarea{resize:vertical;min-height:90px}
 
         let nextAction = '';
         if (appRow.status === 'pending') {
-          nextAction = score >= 0.45 ? t('cl_decision_next_schedule')
-            : score >= 0.2 ? t('cl_decision_next_review')
+          nextAction = score >= 75 ? t('cl_decision_next_schedule')
+            : score >= 45 ? t('cl_decision_next_review')
             : t('cl_decision_next_decline');
         } else if (appRow.status === 'invited') {
           nextAction = t('cl_decision_next_wait');
@@ -2237,74 +2238,6 @@ textarea{resize:vertical;min-height:90px}
     return rows.length ? `<div style="margin-top:4px">${rows.join('')}</div>` : '';
   }
 
-  // ─── MATCHING AGENT ─────────────────────────────────────
-  // Deterministic structured-signal scoring. No ML, no external calls.
-  // Priority: industry > interests tags > rating > reliability > job title > description overlap.
-  // score = 0–1. reasons[] drives the tooltip.
-  function matchScore(study, contributor) {
-    if (!study) return { score: 0, reasons: [] };
-
-    const reasons = [];
-    let score = 0;
-
-    // 1. Industry match — strongest structured signal (+0.35)
-    // contributor.industry vs study.target_interests + title words
-    if (contributor.industry) {
-      const indWords = contributor.industry.toLowerCase().split(/[\s,._\-/]+/).filter(w => w.length >= 3);
-      const studyAnchorText = [
-        study.title || '',
-        ...(Array.isArray(study.target_interests) ? study.target_interests : [])
-      ].join(' ').toLowerCase();
-      if (indWords.some(w => studyAnchorText.includes(w))) {
-        score += 0.35;
-        reasons.push('Industry match');
-      }
-    }
-
-    // 2. Explicit target_interests tag match — strong structured signal (+0.10 per tag, cap 0.30)
-    if (Array.isArray(study.target_interests) && study.target_interests.length) {
-      const contribInterests = new Set([
-        ...(Array.isArray(contributor.interests_lifestyle) ? contributor.interests_lifestyle : []),
-        ...(Array.isArray(contributor.interests_tech)      ? contributor.interests_tech      : [])
-      ].map(i => i.toLowerCase().replace(/_/g, ' ')));
-      let tagHits = 0;
-      for (const tag of study.target_interests) {
-        if (contribInterests.has(tag.toLowerCase().replace(/_/g, ' '))) tagHits++;
-      }
-      if (tagHits > 0) {
-        score += Math.min(tagHits * 0.10, 0.30);
-        reasons.push('Matching interests');
-      }
-    }
-
-    // 3. Rating bonus (+0.20 for ≥4.5, +0.10 for ≥4.0)
-    const rating = parseFloat(contributor.rating);
-    if (!isNaN(rating) && rating >= 4.5) { score += 0.20; reasons.push('High rating'); }
-    else if (!isNaN(rating) && rating >= 4.0) { score += 0.10; }
-
-    // 4. Reliability bonus — completed studies (+0.10 if ≥3 studies)
-    if ((contributor.total_studies || 0) >= 3) { score += 0.10; reasons.push('Experienced'); }
-
-    // 5. Job title keyword overlap vs study title only — light bonus (+0.05 per word, cap 0.10)
-    if (contributor.job_title) {
-      const titleWords = new Set((study.title || '').toLowerCase().split(/[\s,._\-/]+/).filter(w => w.length >= 4));
-      const jobWords   = contributor.job_title.toLowerCase().split(/[\s,._\-/]+/).filter(w => w.length >= 4);
-      const hits = jobWords.filter(w => titleWords.has(w)).length;
-      if (hits > 0) score += Math.min(hits * 0.05, 0.10);
-      // no reason label — too weak to surface
-    }
-
-    // 6. Free-text description overlap — very light (+0.05, no label)
-    // Included only to break ties, not to drive suggestions.
-    if (study.description && contributor.industry) {
-      const descLower = study.description.toLowerCase();
-      const indWords  = contributor.industry.toLowerCase().split(/[\s,._\-/]+/).filter(w => w.length >= 4);
-      if (indWords.some(w => descLower.includes(w))) score += 0.05;
-    }
-
-    return { score: Math.min(score, 1.0), reasons };
-  }
-
   // ─── LOAD CONTRIBUTORS ──────────────────────────────────
   const AV_COLORS = ['av-green','av-blue','av-amber','av-purple','av-coral'];
 
@@ -2317,8 +2250,8 @@ textarea{resize:vertical;min-height:90px}
       // Attempt full select including profile fields added in 20260411_add_professional_profile.sql.
       // If those columns are not yet in the DB, PostgREST returns a schema error — catch it and
       // fall back to the safe baseline select so the page never hard-fails due to migration lag.
-      const FULL_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified, job_title, industry, experience_level';
-      const BASE_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, bankid_verified';
+      const FULL_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified, job_title, industry, experience_level';
+      const BASE_SELECT = 'id, city, country, date_of_birth, rating, total_studies, tier, interests_lifestyle, interests_tech, study_formats, available_times, bankid_verified';
 
       let { data: contribs, error } = await db
         .from('contributors')
@@ -2364,7 +2297,7 @@ textarea{resize:vertical;min-height:90px}
 
       const scored = contribs.map((c, i) => {
         const { score, reasons } = currentInviteStudy
-          ? matchScore(currentInviteStudy, c)
+          ? matchScore(c, currentInviteStudy)
           : { score: 0, reasons: [] };
         return { c, i, score, reasons };
       });
