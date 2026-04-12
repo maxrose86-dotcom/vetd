@@ -2356,7 +2356,7 @@ textarea{resize:vertical;min-height:90px}
               ? (alreadyInvited.has(c.id)
                 ? `<button class="btn-outline" disabled style="white-space:nowrap;opacity:0.6;cursor:default">${t('cl_already_invited')}</button>`
                 : `<button class="btn-primary" style="white-space:nowrap" id="invite-btn-${esc(c.id)}" onclick="inviteContributor('${esc(currentInviteStudyId)}','${esc(c.id)}','${escAttr(dispName)}')">${t('cl_invite')}</button>`)
-              : `<button class="btn-outline" style="white-space:nowrap" onclick="showToast('${escAttr(t('cl_invite_no_study'))}')" disabled>${t('cl_invite')}</button>`
+              : `<span style="font-size:12px;color:var(--gray-400);white-space:nowrap" title="${escAttr(t('cl_invite_no_study'))}">No active study</span>`
             }
           </div>
         </div>`;
