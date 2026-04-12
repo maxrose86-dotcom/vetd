@@ -1346,28 +1346,37 @@ textarea{resize:vertical;min-height:90px}
   async function openApplicantsToRow(studyId, studyTitle, appId) {
     await openApplicants(studyId, studyTitle);
     switchStudySection('applicants');
-    requestAnimationFrame(() => {
-      const row = document.getElementById('approw-' + appId);
-      if (row) {
-        row.scrollIntoView({ block: 'center' });
-        row.style.transition = 'background 0.4s';
-        row.style.background = 'rgba(234,179,8,0.12)';
-        setTimeout(() => { row.style.background = ''; }, 2500);
-      }
-    });
+    requestAnimationFrame(() => highlightApplicantRow(appId));
   }
 
   async function openStudySessionRow(studyId, studyTitle, appId) {
     await openApplicants(studyId, studyTitle, 'sessions');
-    requestAnimationFrame(() => {
-      const row = document.getElementById('approw-' + appId);
-      if (row) {
-        row.scrollIntoView({ block: 'center' });
-        row.style.transition = 'background 0.4s';
-        row.style.background = 'rgba(234,179,8,0.12)';
-        setTimeout(() => { row.style.background = ''; }, 2500);
-      }
-    });
+    requestAnimationFrame(() => highlightApplicantRow(appId));
+  }
+
+  function highlightApplicantRow(appId) {
+    const row = document.getElementById('approw-' + appId);
+    if (!row) return null;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.style.transition = 'background 0.4s';
+    row.style.background = 'rgba(234,179,8,0.12)';
+    setTimeout(() => { row.style.background = ''; }, 2500);
+    return row;
+  }
+
+  function openRowScheduleAction(row) {
+    if (!row) return false;
+    const scheduleBtn = row.querySelector('[data-action="schedule"]');
+    if (!scheduleBtn) return false;
+    openScheduleModal(
+      scheduleBtn.dataset.appId,
+      scheduleBtn.dataset.studyId,
+      scheduleBtn.dataset.contributorId,
+      scheduleBtn.dataset.name,
+      scheduleBtn.dataset.studyTitle,
+      scheduleBtn.dataset.mode
+    );
+    return true;
   }
 
   async function loadApplicants(studyId) {
@@ -4198,42 +4207,53 @@ textarea{resize:vertical;min-height:90px}
     const params  = new URLSearchParams(window.location.search);
     const studyId = params.get('study_id');
     const appId   = params.get('application_id');
+    const section = params.get('section');
+    const view    = params.get('view');
     if (!studyId) return;
 
     // Clean params from URL immediately so refresh doesn't re-trigger
     window.history.replaceState({}, '', window.location.pathname);
 
-    // Fetch title so the modal header is correct
+    // Fetch study/app context so the destination view can match the admin intent.
     let title = '';
+    let app = null;
     try {
       const { data: study } = await db.from('studies').select('title').eq('id', studyId).single();
       title = study?.title || '';
+      if (appId) {
+        const { data } = await db
+          .from('applications')
+          .select('id, status, scheduled_at')
+          .eq('id', appId)
+          .eq('study_id', studyId)
+          .maybeSingle();
+        app = data || null;
+      }
     } catch(e) { /* non-fatal — modal still opens with blank title */ }
 
-    // Open the applicants modal (loads and renders all applicants for this study)
-    await openApplicants(studyId, title);
-
-    // Locate the applicant row, scroll to it, and auto-open the scheduling modal
-    if (appId) {
-      const row = document.getElementById('approw-' + appId);
-      if (row) {
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-        // Trigger the existing Schedule button for this row.
-        // The button's onclick already contains openScheduleModal(...) with all required args
-        // (contributorId, contributorName, studyTitle, status) baked in by loadApplicants.
-        // If the row has no schedule button (already scheduled, completed, etc.) nothing happens.
-        const schedBtn = row.querySelector('button[onclick*="openScheduleModal"]');
-        if (schedBtn) {
-          schedBtn.click();
-        } else {
-          // Row exists but is not in a schedulable state — highlight it so the operator sees it
-          row.style.transition = 'background 0.4s';
-          row.style.background = 'rgba(234,179,8,0.12)';
-          setTimeout(() => { row.style.background = ''; }, 2500);
-        }
-      }
+    if (view === 'browse') {
+      openContributorBrowser(studyId, title);
+      return;
     }
+
+    const targetSection = section || (
+      appId
+        ? ((app?.status === 'accepted' || app?.status === 'completed' || app?.scheduled_at) ? 'sessions' : 'applicants')
+        : 'applicants'
+    );
+    await openApplicants(studyId, title, targetSection);
+
+    if (!appId) return;
+
+    requestAnimationFrame(() => {
+      const row = highlightApplicantRow(appId);
+      if (!row) return;
+
+      // Accepted + unscheduled admin links should drop straight into booking.
+      if (app?.status === 'accepted' && !app?.scheduled_at) {
+        openRowScheduleAction(row);
+      }
+    });
   }
 
   // ─── SESSION CHECK ──────────────────────────────────────

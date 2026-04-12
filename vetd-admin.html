@@ -234,6 +234,19 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
 .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
 
+.critical-actions{display:flex;flex-direction:column;gap:10px}
+.critical-action-row{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--border)}
+.critical-action-row:last-child{border-bottom:none;padding-bottom:0}
+.critical-action-pri{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--mono);font-weight:600;flex-shrink:0}
+.critical-action-pri.crit-high{background:var(--coral-dim);color:var(--coral);border:1px solid rgba(232,80,58,0.25)}
+.critical-action-pri.crit-med{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25)}
+.critical-action-pri.crit-low{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25)}
+.critical-action-title{font-size:13px;color:var(--text);font-weight:600}
+.critical-action-why{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:3px;line-height:1.5}
+.critical-action-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;text-transform:uppercase;letter-spacing:0.06em}
+.critical-action-cta{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;background:var(--bg3);color:var(--text);border:1px solid var(--border2);text-decoration:none;font-family:var(--sans);white-space:nowrap}
+.critical-action-cta:hover{background:var(--bg4)}
+
 /* ── MOBILE RESPONSIVENESS ── */
 #adm-hamburger{
   display:none;position:fixed;top:12px;left:12px;z-index:1001;
@@ -412,6 +425,46 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
     <div class="stat r"><div class="stat-label" data-i18n="adm_stat_flags">Flags for review</div><div class="stat-num" id="stat-flags-count">—</div><div class="stat-sub danger" id="stat-flags-sub"> </div></div>
   </div>
 
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Critical Actions</div>
+    <div id="critical-actions-list" class="critical-actions" style="color:var(--text3);font-size:13px;font-family:var(--mono);padding:0.5rem 0">Loading…</div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Operator Shortcuts</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('studies-admin')">Open study queue</button>
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('engine')">View matching engine</button>
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('dashboard','unscheduled-card')">Scheduling queue</button>
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('dashboard','studies-attention-card')">Studies needing attention</button>
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('fraud')">Open fraud detection</button>
+      <button class="btn" style="justify-content:flex-start" onclick="runShortcut('disputes')">Review disputes</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Matching Health</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Avg strong / study</div>
+        <div id="mh-avg-strong" style="font-family:var(--serif);font-size:28px;color:var(--text);margin-top:2px">—</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Studies under 2 strong</div>
+        <div id="mh-low-strong" style="font-family:var(--serif);font-size:28px;color:var(--amber);margin-top:2px">—</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Avg top match</div>
+        <div id="mh-avg-top" style="font-family:var(--serif);font-size:28px;color:var(--blue);margin-top:2px">—</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">No possible matches</div>
+        <div id="mh-no-possible" style="font-family:var(--serif);font-size:28px;color:var(--coral);margin-top:2px">—</div>
+      </div>
+    </div>
+    <div id="mh-summary" style="font-size:11px;color:var(--text2);font-family:var(--mono)">Loading matching supply…</div>
+  </div>
+
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:1.5rem">
     <div class="card" style="margin-bottom:0">
       <div class="card-title">Contributor tier breakdown</div>
@@ -433,18 +486,40 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
       </div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <div class="card-title">Revenue (this month)</div>
-      <div id="dash-revenue" style="font-family:var(--serif);font-size:32px;color:var(--text);margin-bottom:4px">—</div>
-      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:1rem" id="dash-revenue-sub">Platform fees · this month</div>
-      <div class="mini-chart" id="rev-chart"></div>
-      <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Daily commission · last 14 days</div>
+      <div class="card-title">Business Metrics</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Booked value</div>
+          <div id="biz-booked" style="font-family:var(--serif);font-size:26px;color:var(--text);margin-top:2px">—</div>
+          <div id="biz-booked-sub" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">Accepted + completed study value</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Completed value</div>
+          <div id="biz-completed" style="font-family:var(--serif);font-size:26px;color:var(--green);margin-top:2px">—</div>
+          <div id="biz-completed-sub" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">Completed session value</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Pending release</div>
+          <div id="biz-pending" style="font-family:var(--serif);font-size:26px;color:var(--amber);margin-top:2px">—</div>
+          <div id="biz-pending-sub" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">Completed, not yet paid out</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em">Avg booked / active study</div>
+          <div id="biz-avg-study" style="font-family:var(--serif);font-size:26px;color:var(--blue);margin-top:2px">—</div>
+          <div id="biz-avg-study-sub" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">Across active studies</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Platform fees paid this month</div>
+        <div id="biz-fees-month" style="font-family:var(--mono);font-size:14px;color:var(--text)">—</div>
+      </div>
     </div>
   </div>
 
   <div class="card" id="unscheduled-card" style="display:none;margin-bottom:14px">
     <div class="card-title">Accepted, not scheduled <span id="unscheduled-count" style="color:var(--amber);font-family:var(--mono)"></span></div>
     <table class="tbl">
-      <thead><tr><th>Contributor</th><th>Study</th><th>Applied</th><th></th></tr></thead>
+      <thead><tr><th>Participant</th><th>Study</th><th>Risk</th><th></th></tr></thead>
       <tbody id="unscheduled-body"></tbody>
     </table>
   </div>
@@ -455,12 +530,12 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
       <div id="dash-flag-alerts" style="color:var(--text3);font-size:13px;font-family:var(--mono);padding:1rem 0;text-align:center">Loading…</div>
       <button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="go('fraud', document.querySelectorAll('.sb-item')[5])">Go to fraud detection →</button>
     </div>
-    <div class="card" style="margin-bottom:0">
+    <div class="card" id="studies-attention-card" style="margin-bottom:0">
       <div class="card-title">Studies needing attention</div>
       <table class="tbl">
-        <thead><tr><th>Study</th><th>Status</th><th>Fill</th></tr></thead>
+        <thead><tr><th>Study</th><th>Issue</th><th>Fill</th><th>Urgency</th><th>Action</th></tr></thead>
         <tbody id="studies-attention-body">
-          <tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">Loading…</td></tr>
+          <tr><td colspan="5" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">Loading…</td></tr>
         </tbody>
       </table>
     </div>
@@ -897,6 +972,7 @@ async function init() {
   showApp();
   initUI();
   loadDashboardStats();
+  loadCriticalActions();
   loadUnscheduledQueue();
   loadContributors();
   loadPayouts();
@@ -940,6 +1016,7 @@ async function handleAdminLogin() {
     showApp();
     initUI();
     loadDashboardStats();
+    loadCriticalActions();
     loadUnscheduledQueue();
     loadContributors();
     loadPayouts();
@@ -998,24 +1075,145 @@ async function loadDashboardStats() {
       if (val) val.textContent = count.toLocaleString();
     }
 
-    // ── Revenue (platform fees paid this calendar month) ────
+    // ── Business metrics ────────────────────────────────────
     const now        = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { data: studyValueRows } = await db
+      .from('studies')
+      .select('id, status, filled_spots, pay_per_participant')
+      .in('status', ['active', 'paused', 'completed']);
+    const studyValueMap = Object.fromEntries((studyValueRows || []).map(s => [s.id, s]));
+    const studyIds = (studyValueRows || []).map(s => s.id);
+
+    const { data: valueApps } = studyIds.length
+      ? await db
+          .from('applications')
+          .select('id, study_id, status')
+          .in('study_id', studyIds)
+      : { data: [] };
+
+    const bookedValue = (valueApps || []).reduce((sum, app) => {
+      if (app.status !== 'accepted' && app.status !== 'completed') return sum;
+      const study = studyValueMap[app.study_id];
+      return sum + (study?.pay_per_participant || 0);
+    }, 0);
+
+    const completedValue = (valueApps || []).reduce((sum, app) => {
+      if (app.status !== 'completed') return sum;
+      const study = studyValueMap[app.study_id];
+      return sum + (study?.pay_per_participant || 0);
+    }, 0);
+
     const { data: feeRows } = await db
       .from('payments')
-      .select('platform_fee')
-      .eq('status', 'paid')
-      .gte('paid_at', monthStart);
-    const revenueOere = (feeRows || []).reduce((s, p) => s + (p.platform_fee || 0), 0);
-    const revenueEl = document.getElementById('dash-revenue');
-    if (revenueEl) revenueEl.textContent = formatCurrency(revenueOere);
+      .select('amount, platform_fee, status, paid_at')
+      .in('status', ['pending', 'processing', 'paid']);
+    const paidRows = (feeRows || []).filter(p => p.status === 'paid');
+    const pendingRows = (feeRows || []).filter(p => p.status === 'pending' || p.status === 'processing');
+    const feesThisMonth = paidRows
+      .filter(p => p.paid_at && p.paid_at >= monthStart)
+      .reduce((sum, p) => sum + (p.platform_fee || 0), 0);
+    const pendingValue = pendingRows.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const avgBookedPerActiveStudy = activeStudies > 0 ? Math.round(bookedValue / activeStudies) : 0;
+
+    const bookedEl = document.getElementById('biz-booked');
+    const completedEl = document.getElementById('biz-completed');
+    const pendingEl = document.getElementById('biz-pending');
+    const avgStudyEl = document.getElementById('biz-avg-study');
+    const feesMonthEl = document.getElementById('biz-fees-month');
+    const bookedSubEl = document.getElementById('biz-booked-sub');
+    const completedSubEl = document.getElementById('biz-completed-sub');
+    const pendingSubEl = document.getElementById('biz-pending-sub');
+    const avgStudySubEl = document.getElementById('biz-avg-study-sub');
+    const bookedCount = (valueApps || []).filter(a => a.status === 'accepted' || a.status === 'completed').length;
+    const completedCount = (valueApps || []).filter(a => a.status === 'completed').length;
+
+    if (bookedEl) bookedEl.textContent = formatCurrency(bookedValue);
+    if (completedEl) completedEl.textContent = formatCurrency(completedValue);
+    if (pendingEl) pendingEl.textContent = formatCurrency(pendingValue);
+    if (avgStudyEl) avgStudyEl.textContent = formatCurrency(avgBookedPerActiveStudy);
+    if (feesMonthEl) feesMonthEl.textContent = formatCurrency(feesThisMonth);
+    if (bookedSubEl) bookedSubEl.textContent = `${bookedCount} booked participant${bookedCount === 1 ? '' : 's'}`;
+    if (completedSubEl) completedSubEl.textContent = `${completedCount} completed session${completedCount === 1 ? '' : 's'}`;
+    if (pendingSubEl) pendingSubEl.textContent = `${pendingRows.length} payout${pendingRows.length === 1 ? '' : 's'} awaiting release`;
+    if (avgStudySubEl) avgStudySubEl.textContent = activeStudies > 0 ? `Across ${activeStudies} active stud${activeStudies === 1 ? 'y' : 'ies'}` : 'No active studies';
 
     // ── Studies needing attention ───────────────────────────
     const { data: activeStudyRows } = await db
       .from('studies')
-      .select('id, title, spots, filled_spots, close_date, created_at')
+      .select('id, title, spots, filled_spots, close_date, created_at, format, target_interests, min_rating')
       .eq('status', 'active')
       .order('close_date', { ascending: true, nullsFirst: false });
+
+    const [{ data: unscheduledApps }, { data: contributorRows }] = await Promise.all([
+      db
+        .from('applications')
+        .select('id, study_id, applied_at')
+        .eq('status', 'accepted')
+        .is('scheduled_at', null)
+        .order('applied_at', { ascending: true }),
+      db
+        .from('contributors')
+        .select('rating, total_studies, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times'),
+    ]);
+
+    // ── Matching health ────────────────────────────────────
+    const mhAvgStrongEl = document.getElementById('mh-avg-strong');
+    const mhLowStrongEl = document.getElementById('mh-low-strong');
+    const mhAvgTopEl = document.getElementById('mh-avg-top');
+    const mhNoPossibleEl = document.getElementById('mh-no-possible');
+    const mhSummaryEl = document.getElementById('mh-summary');
+
+    if (mhAvgStrongEl && mhLowStrongEl && mhAvgTopEl && mhNoPossibleEl && mhSummaryEl) {
+      const studiesForHealth = activeStudyRows || [];
+      const contributorsForHealth = contributorRows || [];
+
+      if (!studiesForHealth.length || !contributorsForHealth.length) {
+        mhAvgStrongEl.textContent = '0';
+        mhLowStrongEl.textContent = '0';
+        mhAvgTopEl.textContent = '0';
+        mhNoPossibleEl.textContent = '0';
+        mhSummaryEl.textContent = 'Not enough live supply data to evaluate matching health.';
+      } else {
+        const perStudy = studiesForHealth.map((study) => {
+          const scores = contributorsForHealth
+            .map((contributor) => matchScore(contributor, study).score)
+            .sort((a, b) => b - a);
+          const strongCount = scores.filter((score) => score >= 75).length;
+          const possibleCount = scores.filter((score) => score >= 45).length;
+          return {
+            strongCount,
+            possibleCount,
+            topScore: scores[0] || 0,
+          };
+        });
+
+        const studyCount = perStudy.length;
+        const avgStrong = (perStudy.reduce((sum, row) => sum + row.strongCount, 0) / studyCount);
+        const lowStrong = perStudy.filter((row) => row.strongCount < 2).length;
+        const avgTop = Math.round(perStudy.reduce((sum, row) => sum + row.topScore, 0) / studyCount);
+        const noPossible = perStudy.filter((row) => row.possibleCount === 0).length;
+
+        mhAvgStrongEl.textContent = avgStrong.toFixed(1);
+        mhLowStrongEl.textContent = String(lowStrong);
+        mhAvgTopEl.textContent = String(avgTop);
+        mhNoPossibleEl.textContent = String(noPossible);
+
+        if (noPossible > 0) {
+          mhSummaryEl.textContent = `${noPossible} active stud${noPossible === 1 ? 'y has' : 'ies have'} no possible matches right now. Intervention needed.`;
+        } else if (lowStrong > 0) {
+          mhSummaryEl.textContent = `${lowStrong} active stud${lowStrong === 1 ? 'y has' : 'ies have'} thin strong-match supply. Review criteria before fill slips.`;
+        } else {
+          mhSummaryEl.textContent = 'Strong-match coverage looks healthy across active studies.';
+        }
+      }
+    }
+
+    const unscheduledMap = {};
+    (unscheduledApps || []).forEach((app) => {
+      if (!unscheduledMap[app.study_id]) unscheduledMap[app.study_id] = { count: 0, firstAppId: app.id };
+      unscheduledMap[app.study_id].count++;
+    });
 
     const tbody = document.getElementById('studies-attention-body');
     if (tbody) {
@@ -1027,25 +1225,73 @@ async function loadDashboardStats() {
           const hoursLeft = s.close_date
             ? (new Date(s.close_date) - now) / 36e5
             : null;
-          const isUrgent  = hoursLeft !== null && hoursLeft < 24 && pct < 0.9;
-          const isStalled = !isUrgent && pct < 0.3;
-          return { s, spots, filled, pct, hoursLeft, isUrgent, isStalled };
+          const unscheduled = unscheduledMap[s.id]?.count || 0;
+          const strongMatches = (contributorRows || []).reduce((count, contributor) => {
+            return count + (matchScore(contributor, s).score >= 75 ? 1 : 0);
+          }, 0);
+
+          let issue = '';
+          let why = '';
+          let actionLabel = 'Open study';
+          let href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}`;
+          let urgency = '<span class="badge ba">Watch</span>';
+          let priority = 0;
+
+          if (unscheduled > 0) {
+            issue = unscheduled === 1
+              ? 'Accepted participant not yet scheduled'
+              : `${unscheduled} accepted participants not yet scheduled`;
+            why = 'Accepted participants need booking before sessions can happen.';
+            actionLabel = 'Schedule participants';
+            if (unscheduledMap[s.id]?.firstAppId) {
+              href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&application_id=${encodeURIComponent(unscheduledMap[s.id].firstAppId)}&section=sessions`;
+            }
+            urgency = '<span class="badge br">High</span>';
+            priority = 3000 + unscheduled * 25;
+          } else if (hoursLeft !== null && hoursLeft <= 72 && pct < 0.75) {
+            issue = `Closes soon with low fill`;
+            why = `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left.`;
+            actionLabel = 'Send invites';
+            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+            urgency = '<span class="badge br">High</span>';
+            priority = 2000 + Math.max(0, 72 - hoursLeft) * 5 + Math.round((1 - pct) * 100);
+          } else if (pct < 0.35) {
+            issue = 'Low fill rate';
+            why = `${filled}/${spots} spots filled and recruitment is behind pace.`;
+            actionLabel = 'View candidates';
+            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+            urgency = '<span class="badge ba">Medium</span>';
+            priority = 1200 + Math.round((1 - pct) * 100);
+          } else if (strongMatches === 0) {
+            issue = 'No strong matches available';
+            why = 'No contributors currently score as a strong match for this study.';
+            actionLabel = 'Relax criteria';
+            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+            urgency = '<span class="badge bb">Needs review</span>';
+            priority = 900;
+          }
+
+          return { s, spots, filled, issue, why, actionLabel, href, urgency, priority };
         })
-        .filter(r => r.isUrgent || r.isStalled)
+        .filter(r => r.priority > 0)
+        .sort((a, b) => b.priority - a.priority || (a.s.title || '').localeCompare(b.s.title || ''))
         .slice(0, 5);
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">All studies are on track</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">All studies are on track</td></tr>';
       } else {
-        tbody.innerHTML = rows.map(({ s, spots, filled, hoursLeft, isUrgent }) => {
-          const badge  = isUrgent ? '<span class="badge br">Urgent</span>' : '<span class="badge ba">Stalled</span>';
-          const subTxt = isUrgent && hoursLeft !== null
-            ? `Closes in ${Math.round(hoursLeft)}h`
-            : 'Low fill rate';
-          return `<tr onclick="go('studies-admin', document.querySelectorAll('.sb-item')[4])">
-            <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${subTxt}</div></td>
-            <td>${badge}</td>
+        tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency }) => {
+          return `<tr>
+            <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong></td>
+            <td><div style="color:var(--text)">${esc(issue)}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(why)}</div></td>
             <td style="font-family:var(--mono)">${filled}/${spots}</td>
+            <td>${urgency}</td>
+            <td style="text-align:right">
+              <a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+                 style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25);text-decoration:none;font-family:var(--mono)">
+                ${esc(actionLabel)} →
+              </a>
+            </td>
           </tr>`;
         }).join('');
       }
@@ -1060,6 +1306,132 @@ async function loadDashboardStats() {
   }
 }
 
+// ─── CRITICAL ACTIONS ───────────────────────────────────────
+async function loadCriticalActions() {
+  if (!db) return;
+  const container = document.getElementById('critical-actions-list');
+  if (!container) return;
+
+  try {
+    const now = new Date();
+    const overdueCutoffIso = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
+
+    const [studyRes, unscheduledRes, overdueRes] = await Promise.all([
+      db
+        .from('studies')
+        .select('id, title, spots, filled_spots, close_date, status')
+        .eq('status', 'active'),
+      db
+        .from('applications')
+        .select('id, study_id, applied_at, contributors(profiles(first_name, last_name)), studies(title)')
+        .eq('status', 'accepted')
+        .is('scheduled_at', null)
+        .order('applied_at', { ascending: true })
+        .limit(20),
+      db
+        .from('applications')
+        .select('id, study_id, scheduled_at, contributors(profiles(first_name, last_name)), studies(title)')
+        .eq('status', 'accepted')
+        .lt('scheduled_at', overdueCutoffIso)
+        .order('scheduled_at', { ascending: true })
+        .limit(20),
+    ]);
+
+    if (studyRes.error) throw studyRes.error;
+    if (unscheduledRes.error) throw unscheduledRes.error;
+    if (overdueRes.error) throw overdueRes.error;
+
+    const actions = [];
+
+    (overdueRes.data || []).forEach((row) => {
+      const person = [row.contributors?.profiles?.first_name, row.contributors?.profiles?.last_name].filter(Boolean).join(' ') || 'Participant';
+      const studyTitle = row.studies?.title || 'Study';
+      const scheduledAt = row.scheduled_at ? new Date(row.scheduled_at) : null;
+      const hoursAgo = scheduledAt ? Math.max(1, Math.round((now - scheduledAt) / 36e5)) : null;
+      actions.push({
+        priority: 300000 - (scheduledAt ? scheduledAt.getTime() : 0),
+        level: 'high',
+        title: `${person} needs session outcome handling`,
+        why: hoursAgo != null
+          ? `${studyTitle} was scheduled ${hoursAgo}h ago. Payment and workflow closure are still blocked.`
+          : `${studyTitle} has a session time that passed and still needs outcome handling.`,
+        meta: 'Session time passed',
+        cta: 'Review sessions',
+        href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
+      });
+    });
+
+    (unscheduledRes.data || []).forEach((row) => {
+      const person = [row.contributors?.profiles?.first_name, row.contributors?.profiles?.last_name].filter(Boolean).join(' ') || 'Participant';
+      const studyTitle = row.studies?.title || 'Study';
+      const appliedAt = row.applied_at ? new Date(row.applied_at) : null;
+      const daysWaiting = appliedAt ? Math.max(0, Math.round((now - appliedAt) / 86400000)) : 0;
+      actions.push({
+        priority: 200000 - (appliedAt ? appliedAt.getTime() : 0),
+        level: daysWaiting >= 2 ? 'high' : 'med',
+        title: `${person} is accepted but not scheduled`,
+        why: `${studyTitle} cannot move forward until an accepted participant is booked.${daysWaiting >= 1 ? ` Waiting ${daysWaiting}d.` : ''}`,
+        meta: 'Accepted, not scheduled',
+        cta: 'Schedule now',
+        href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
+      });
+    });
+
+    (studyRes.data || []).forEach((study) => {
+      const spots = study.spots || 0;
+      if (spots <= 0) return;
+      const filled = study.filled_spots || 0;
+      const fillRate = filled / spots;
+      const closeAt = study.close_date ? new Date(study.close_date) : null;
+      const hoursLeft = closeAt ? (closeAt - now) / 36e5 : null;
+      const isUrgent = hoursLeft !== null && hoursLeft <= 72 && fillRate < 0.75;
+      const isStalled = hoursLeft !== null && hoursLeft <= 168 && fillRate < 0.35;
+      if (!isUrgent && !isStalled) return;
+
+      const urgencyBase = isUrgent ? 100000 : 50000;
+      const deadlineWeight = hoursLeft !== null ? Math.max(0, 72 - Math.max(hoursLeft, 0)) * 100 : 0;
+      const fillGapWeight = Math.round((1 - fillRate) * 1000);
+      actions.push({
+        priority: urgencyBase + deadlineWeight + fillGapWeight,
+        level: isUrgent ? 'high' : 'med',
+        title: `${study.title || 'Untitled study'} is underfilled`,
+        why: hoursLeft !== null
+          ? `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left before close.`
+          : `${filled}/${spots} spots filled and recruitment is behind pace.`,
+        meta: 'Fill risk',
+        cta: 'Open study',
+        href: `vetd-client.html?study_id=${encodeURIComponent(study.id)}&view=browse`,
+      });
+    });
+
+    const ranked = actions
+      .sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title))
+      .slice(0, 8);
+
+    if (!ranked.length) {
+      container.innerHTML = '<div style="padding:0.5rem 0;color:var(--text3);font-family:var(--mono)">No critical actions right now</div>';
+      return;
+    }
+
+    container.innerHTML = ranked.map((action, index) => {
+      const priClass = action.level === 'high' ? 'crit-high' : action.level === 'med' ? 'crit-med' : 'crit-low';
+      return `
+        <div class="critical-action-row">
+          <div class="critical-action-pri ${priClass}">#${index + 1}</div>
+          <div>
+            <div class="critical-action-title">${esc(action.title)}</div>
+            <div class="critical-action-why">${esc(action.why)}</div>
+            <div class="critical-action-meta">${esc(action.meta)}</div>
+          </div>
+          <a class="critical-action-cta" href="${esc(action.href)}" target="_blank" rel="noopener noreferrer">${esc(action.cta)} →</a>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    console.warn('loadCriticalActions error:', err);
+    container.innerHTML = '<div style="padding:0.5rem 0;color:var(--coral);font-family:var(--mono)">Could not load critical actions</div>';
+  }
+}
+
 // ─── UNSCHEDULED QUEUE ───────────────────────────────────────
 async function loadUnscheduledQueue() {
   if (!db) return;
@@ -1070,33 +1442,66 @@ async function loadUnscheduledQueue() {
   try {
     const { data, error } = await db
       .from('applications')
-      .select('id, study_id, contributor_id, applied_at, contributors(profiles(first_name, last_name)), studies(title)')
+      .select('id, study_id, contributor_id, applied_at, updated_at, contributors(profiles(first_name, last_name)), studies(title, close_date, spots, filled_spots))')
       .eq('status', 'accepted')
       .is('scheduled_at', null)
-      .order('applied_at', { ascending: true })
       .limit(25);
     if (error) throw error;
 
-    const rows = data || [];
+    const rows = (data || [])
+      .map(a => {
+        const acceptedAt = a.updated_at ? new Date(a.updated_at) : a.applied_at ? new Date(a.applied_at) : null;
+        const waitHours = acceptedAt ? (Date.now() - acceptedAt.getTime()) / 36e5 : 0;
+        const closeDate = a.studies?.close_date ? new Date(a.studies.close_date) : null;
+        const closeHours = closeDate ? (closeDate.getTime() - Date.now()) / 36e5 : null;
+        const spots = a.studies?.spots || 0;
+        const filled = a.studies?.filled_spots || 0;
+        const fillRate = spots > 0 ? filled / spots : 0;
+        const fullOnPaper = spots > 0 && filled >= spots;
+        const behind = closeHours !== null && closeHours <= 72 && fillRate < 0.75;
+        const overdue = waitHours >= 48;
+        const priority = (overdue ? 3000 : 0)
+          + (fullOnPaper ? 1200 : 0)
+          + (behind ? 900 : 0)
+          + Math.round(waitHours);
+        return { a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue, priority };
+      })
+      .sort((a, b) => b.priority - a.priority || (a.acceptedAt?.getTime() || 0) - (b.acceptedAt?.getTime() || 0));
     if (!rows.length) { card.style.display = 'none'; return; }
 
     card.style.display = 'block';
     count.textContent  = `· ${rows.length}`;
-    tbody.innerHTML = rows.map(a => {
+    tbody.innerHTML = rows.map(({ a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue }) => {
       const p    = a.contributors?.profiles || {};
       const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown';
-      const title = a.studies?.title || '—';
-      const date  = a.applied_at
-        ? new Date(a.applied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-        : '—';
+      const study = a.studies || {};
+      const title = study.title || '—';
+      const waitLabel = waitHours >= 24
+        ? `Waiting ${Math.max(1, Math.round(waitHours / 24))}d`
+        : `Waiting ${Math.max(1, Math.round(waitHours))}h`;
+      const closeLabel = closeHours !== null
+        ? (closeHours <= 24
+            ? `Closes in ${Math.max(1, Math.round(closeHours))}h`
+            : `Closes in ${Math.max(1, Math.round(closeHours / 24))}d`)
+        : '';
+      const riskParts = [waitLabel];
+      if (closeLabel) riskParts.push(closeLabel);
+      if (fullOnPaper) riskParts.push('All spots already filled');
+      else if (behind) riskParts.push('Study behind pace');
+      const riskBadge = overdue
+        ? '<span class="badge br">Overdue</span>'
+        : (fullOnPaper || behind)
+          ? '<span class="badge ba">High</span>'
+          : '<span class="badge bb">Watch</span>';
+      const ctaLabel = fullOnPaper ? 'Unblock study' : overdue ? 'Schedule now' : 'Book session';
       return `<tr>
-        <td style="color:var(--text)">${esc(name)}</td>
+        <td><span style="color:var(--text)">${esc(name)}</span><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(acceptedAt ? acceptedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Accepted')}</div></td>
         <td>${esc(title)}</td>
-        <td style="font-family:var(--mono);color:var(--text3)">${esc(date)}</td>
+        <td><div>${riskBadge}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">${esc(riskParts.join(' · '))}</div></td>
         <td style="text-align:right">
-          <a href="vetd-client.html?study_id=${esc(a.study_id)}&application_id=${esc(a.id)}" target="_blank"
+          <a href="vetd-client.html?study_id=${esc(a.study_id)}&application_id=${esc(a.id)}&section=sessions" target="_blank"
              style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25);text-decoration:none;font-family:var(--mono)"
-             title="Open operator portal to schedule ${esc(name)} for ${esc(title)}">Schedule →</a>
+             title="Open operator portal to schedule ${esc(name)} for ${esc(title)}">${esc(ctaLabel)} →</a>
         </td>
       </tr>`;
     }).join('');
@@ -1258,26 +1663,11 @@ async function markAsPaid(paymentId) {
   }
 }
 
-// ─── CLOCK & REVENUE CHART ────────────────────────────────────
+// ─── CLOCK ─────────────────────────────────────────────────────
 function initUI() {
   // Clock
   function tick(){const n=new Date();const el=document.getElementById('clock');if(el)el.textContent=n.toLocaleTimeString('en-GB')}
   tick();setInterval(tick,1000);
-
-  // Revenue chart
-  const revData=[820,1040,680,1200,950,1380,1100,1450,1280,1600,1740,1820,1950,2100];
-  const revChart=document.getElementById('rev-chart');
-  if(revChart){
-    const maxRev=Math.max(...revData);
-    revData.forEach(v=>{
-      const col=document.createElement('div');col.className='bar-col';
-      const bar=document.createElement('div');bar.className='mc-bar';
-      bar.style.height=(v/maxRev*100)+'%';
-      bar.style.background=v===revData[revData.length-1]?'var(--green)':'var(--blue)';
-      bar.style.opacity=v===revData[revData.length-1]?'1':'0.4';
-      col.appendChild(bar);revChart.appendChild(col);
-    });
-  }
 
   // Live feed
   let pauseFeed=false;
@@ -1412,6 +1802,16 @@ function go(id,btn){
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
   document.getElementById('t-'+id).classList.add('on');
   if(btn)btn.classList.add('on');
+}
+
+function runShortcut(tabId, sectionId){
+  const navBtn = document.querySelector(`.sidebar .sb-item[onclick*="go('${tabId}'"]`) || document.querySelector(`.sb-item[onclick*="go('${tabId}'"]`);
+  go(tabId, navBtn);
+  if (!sectionId) return;
+  requestAnimationFrame(() => {
+    const section = document.getElementById(sectionId);
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 }
 
 // Filter chips
