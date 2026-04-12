@@ -241,9 +241,17 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 .critical-action-pri.crit-high{background:var(--coral-dim);color:var(--coral);border:1px solid rgba(232,80,58,0.25)}
 .critical-action-pri.crit-med{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25)}
 .critical-action-pri.crit-low{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25)}
+.critical-action-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .critical-action-title{font-size:13px;color:var(--text);font-weight:600}
+.critical-action-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-family:var(--mono);font-weight:600;letter-spacing:0.03em}
+.critical-action-badge.type-outcome{background:var(--coral-dim);color:var(--coral)}
+.critical-action-badge.type-scheduling{background:var(--amber-dim);color:var(--amber)}
+.critical-action-badge.type-fill{background:var(--blue-dim);color:var(--blue)}
+.critical-action-badge.urg-high{background:rgba(232,80,58,0.10);color:var(--coral);border:1px solid rgba(232,80,58,0.18)}
+.critical-action-badge.urg-med{background:rgba(232,160,32,0.10);color:var(--amber);border:1px solid rgba(232,160,32,0.18)}
+.critical-action-badge.urg-low{background:rgba(75,158,245,0.10);color:var(--blue);border:1px solid rgba(75,158,245,0.18)}
 .critical-action-why{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:3px;line-height:1.5}
-.critical-action-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;text-transform:uppercase;letter-spacing:0.06em}
+.critical-action-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;letter-spacing:0.03em}
 .critical-action-cta{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;background:var(--bg3);color:var(--text);border:1px solid var(--border2);text-decoration:none;font-family:var(--sans);white-space:nowrap}
 .critical-action-cta:hover{background:var(--bg4)}
 
@@ -415,7 +423,15 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <div class="tab on" id="t-dashboard">
   <div class="ph">
     <div><h1 data-i18n="adm_dash_title">Admin Dashboard</h1><p>vetd.se · real-time overview · <span id="clock"></span></p></div>
-    <button class="btn btn-green" onclick="showToast('📊 Full report exported to admin@vetd.se')" data-i18n="adm_export">Export report</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);text-align:right;min-width:150px">
+        <div style="font-size:11px;color:var(--green);font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:0.06em">Live</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Updates every 45s</div>
+        <div id="admin-live-last" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px">Last updated: —</div>
+        <div id="admin-live-warning" style="display:none;font-size:10px;color:var(--amber);font-family:var(--mono);margin-top:3px">Update delayed · Retry next cycle</div>
+      </div>
+      <button class="btn btn-green" onclick="showToast('📊 Full report exported to admin@vetd.se')" data-i18n="adm_export">Export report</button>
+    </div>
   </div>
 
   <div class="stat-grid">
@@ -971,11 +987,10 @@ async function init() {
   document.getElementById('admin-name').textContent = adminDisplay;
   showApp();
   initUI();
-  loadDashboardStats();
-  loadCriticalActions();
-  loadUnscheduledQueue();
+  await runAdminRefreshCycle();
   loadContributors();
   loadPayouts();
+  startAdminAutoRefresh();
 }
 
 // ─── ADMIN LOGIN ──────────────────────────────────────────────
@@ -1015,11 +1030,10 @@ async function handleAdminLogin() {
     document.getElementById('admin-name').textContent = adminDisplay;
     showApp();
     initUI();
-    loadDashboardStats();
-    loadCriticalActions();
-    loadUnscheduledQueue();
+    await runAdminRefreshCycle();
     loadContributors();
     loadPayouts();
+    startAdminAutoRefresh();
   } catch(err) {
     errEl.textContent = err.message || 'Sign in failed — check your credentials';
     errEl.style.display = 'block';
@@ -1031,12 +1045,19 @@ async function handleAdminLogin() {
 // ─── SIGN OUT ─────────────────────────────────────────────────
 async function handleSignOut() {
   if (db) await db.auth.signOut();
+  if (window._adminAutoRefreshTimer) {
+    clearInterval(window._adminAutoRefreshTimer);
+    window._adminAutoRefreshTimer = null;
+  }
+  window._adminAutoRefreshStarted = false;
+  window._adminRefreshInFlight = false;
+  window._adminRefreshState = { lastSuccessAt: null, healthy: true };
   showLogin();
 }
 
 // ─── DASHBOARD STATS ─────────────────────────────────────────
 async function loadDashboardStats() {
-  if (!db) return;
+  if (!db) return false;
   try {
     // ── Top-row counts ──────────────────────────────────────
     const [r1, r2, r3, rElite, rVerified, rStandard, rRestricted] = await Promise.all([
@@ -1138,20 +1159,13 @@ async function loadDashboardStats() {
     if (pendingSubEl) pendingSubEl.textContent = `${pendingRows.length} payout${pendingRows.length === 1 ? '' : 's'} awaiting release`;
     if (avgStudySubEl) avgStudySubEl.textContent = activeStudies > 0 ? `Across ${activeStudies} active stud${activeStudies === 1 ? 'y' : 'ies'}` : 'No active studies';
 
-    // ── Studies needing attention ───────────────────────────
     const { data: activeStudyRows } = await db
       .from('studies')
       .select('id, title, spots, filled_spots, close_date, created_at, format, target_interests, min_rating')
       .eq('status', 'active')
       .order('close_date', { ascending: true, nullsFirst: false });
 
-    const [{ data: unscheduledApps }, { data: contributorRows }] = await Promise.all([
-      db
-        .from('applications')
-        .select('id, study_id, applied_at')
-        .eq('status', 'accepted')
-        .is('scheduled_at', null)
-        .order('applied_at', { ascending: true }),
+    const [{ data: contributorRows }] = await Promise.all([
       db
         .from('contributors')
         .select('rating, total_studies, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times'),
@@ -1209,108 +1223,142 @@ async function loadDashboardStats() {
       }
     }
 
+    // ── Flag alerts (no flags table yet — show placeholder) ─
+    const flagEl = document.getElementById('dash-flag-alerts');
+    if (flagEl) flagEl.textContent = 'No active flags';
+
+    return true;
+  } catch(err) {
+    console.warn('Could not load dashboard stats:', err);
+    return false;
+  }
+}
+
+async function loadStudyAttention() {
+  if (!db) return false;
+  const tbody = document.getElementById('studies-attention-body');
+  if (!tbody) return false;
+
+  try {
+    const now = new Date();
+    const [{ data: activeStudyRows, error: studyErr }, { data: unscheduledApps, error: unscheduledErr }, { data: contributorRows, error: contributorErr }] = await Promise.all([
+      db
+        .from('studies')
+        .select('id, title, spots, filled_spots, close_date, created_at, format, target_interests, min_rating')
+        .eq('status', 'active')
+        .order('close_date', { ascending: true, nullsFirst: false }),
+      db
+        .from('applications')
+        .select('id, study_id, applied_at')
+        .eq('status', 'accepted')
+        .is('scheduled_at', null)
+        .order('applied_at', { ascending: true }),
+      db
+        .from('contributors')
+        .select('rating, total_studies, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times'),
+    ]);
+
+    if (studyErr) throw studyErr;
+    if (unscheduledErr) throw unscheduledErr;
+    if (contributorErr) throw contributorErr;
+
     const unscheduledMap = {};
     (unscheduledApps || []).forEach((app) => {
       if (!unscheduledMap[app.study_id]) unscheduledMap[app.study_id] = { count: 0, firstAppId: app.id };
       unscheduledMap[app.study_id].count++;
     });
 
-    const tbody = document.getElementById('studies-attention-body');
-    if (tbody) {
-      const rows = (activeStudyRows || [])
-        .map(s => {
-          const spots  = s.spots || 0;
-          const filled = s.filled_spots || 0;
-          const pct    = spots > 0 ? filled / spots : 0;
-          const hoursLeft = s.close_date
-            ? (new Date(s.close_date) - now) / 36e5
-            : null;
-          const unscheduled = unscheduledMap[s.id]?.count || 0;
-          const strongMatches = (contributorRows || []).reduce((count, contributor) => {
-            return count + (matchScore(contributor, s).score >= 75 ? 1 : 0);
-          }, 0);
+    const rows = (activeStudyRows || [])
+      .map(s => {
+        const spots  = s.spots || 0;
+        const filled = s.filled_spots || 0;
+        const pct    = spots > 0 ? filled / spots : 0;
+        const hoursLeft = s.close_date
+          ? (new Date(s.close_date) - now) / 36e5
+          : null;
+        const unscheduled = unscheduledMap[s.id]?.count || 0;
+        const strongMatches = (contributorRows || []).reduce((count, contributor) => {
+          return count + (matchScore(contributor, s).score >= 75 ? 1 : 0);
+        }, 0);
 
-          let issue = '';
-          let why = '';
-          let actionLabel = 'Open study';
-          let href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}`;
-          let urgency = '<span class="badge ba">Watch</span>';
-          let priority = 0;
+        let issue = '';
+        let why = '';
+        let actionLabel = 'Open study';
+        let href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}`;
+        let urgency = '<span class="badge ba">Watch</span>';
+        let priority = 0;
 
-          if (unscheduled > 0) {
-            issue = unscheduled === 1
-              ? 'Accepted participant not yet scheduled'
-              : `${unscheduled} accepted participants not yet scheduled`;
-            why = 'Accepted participants need booking before sessions can happen.';
-            actionLabel = 'Schedule participants';
-            if (unscheduledMap[s.id]?.firstAppId) {
-              href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&application_id=${encodeURIComponent(unscheduledMap[s.id].firstAppId)}&section=sessions`;
-            }
-            urgency = '<span class="badge br">High</span>';
-            priority = 3000 + unscheduled * 25;
-          } else if (hoursLeft !== null && hoursLeft <= 72 && pct < 0.75) {
-            issue = `Closes soon with low fill`;
-            why = `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left.`;
-            actionLabel = 'Send invites';
-            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
-            urgency = '<span class="badge br">High</span>';
-            priority = 2000 + Math.max(0, 72 - hoursLeft) * 5 + Math.round((1 - pct) * 100);
-          } else if (pct < 0.35) {
-            issue = 'Low fill rate';
-            why = `${filled}/${spots} spots filled and recruitment is behind pace.`;
-            actionLabel = 'View candidates';
-            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
-            urgency = '<span class="badge ba">Medium</span>';
-            priority = 1200 + Math.round((1 - pct) * 100);
-          } else if (strongMatches === 0) {
-            issue = 'No strong matches available';
-            why = 'No contributors currently score as a strong match for this study.';
-            actionLabel = 'Relax criteria';
-            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
-            urgency = '<span class="badge bb">Needs review</span>';
-            priority = 900;
+        if (unscheduled > 0) {
+          issue = unscheduled === 1
+            ? 'Accepted participant not yet scheduled'
+            : `${unscheduled} accepted participants not yet scheduled`;
+          why = 'Accepted participants need booking before sessions can happen.';
+          actionLabel = 'Schedule participants';
+          if (unscheduledMap[s.id]?.firstAppId) {
+            href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&application_id=${encodeURIComponent(unscheduledMap[s.id].firstAppId)}&section=sessions`;
           }
+          urgency = '<span class="badge br">High</span>';
+          priority = 3000 + unscheduled * 25;
+        } else if (hoursLeft !== null && hoursLeft <= 72 && pct < 0.75) {
+          issue = 'Closes soon with low fill';
+          why = `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left.`;
+          actionLabel = 'Send invites';
+          href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+          urgency = '<span class="badge br">High</span>';
+          priority = 2000 + Math.max(0, 72 - hoursLeft) * 5 + Math.round((1 - pct) * 100);
+        } else if (pct < 0.35) {
+          issue = 'Low fill rate';
+          why = `${filled}/${spots} spots filled and recruitment is behind pace.`;
+          actionLabel = 'View candidates';
+          href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+          urgency = '<span class="badge ba">Medium</span>';
+          priority = 1200 + Math.round((1 - pct) * 100);
+        } else if (strongMatches === 0) {
+          issue = 'No strong matches available';
+          why = 'No contributors currently score as a strong match for this study.';
+          actionLabel = 'Relax criteria';
+          href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
+          urgency = '<span class="badge bb">Needs review</span>';
+          priority = 900;
+        }
 
-          return { s, spots, filled, issue, why, actionLabel, href, urgency, priority };
-        })
-        .filter(r => r.priority > 0)
-        .sort((a, b) => b.priority - a.priority || (a.s.title || '').localeCompare(b.s.title || ''))
-        .slice(0, 5);
+        return { s, spots, filled, issue, why, actionLabel, href, urgency, priority };
+      })
+      .filter(r => r.priority > 0)
+      .sort((a, b) => b.priority - a.priority || (a.s.title || '').localeCompare(b.s.title || ''))
+      .slice(0, 5);
 
-      if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">All studies are on track</td></tr>';
-      } else {
-        tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency }) => {
-          return `<tr>
-            <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong></td>
-            <td><div style="color:var(--text)">${esc(issue)}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(why)}</div></td>
-            <td style="font-family:var(--mono)">${filled}/${spots}</td>
-            <td>${urgency}</td>
-            <td style="text-align:right">
-              <a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
-                 style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25);text-decoration:none;font-family:var(--mono)">
-                ${esc(actionLabel)} →
-              </a>
-            </td>
-          </tr>`;
-        }).join('');
-      }
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);font-family:var(--mono);padding:1rem">All studies are on track</td></tr>';
+      return true;
     }
 
-    // ── Flag alerts (no flags table yet — show placeholder) ─
-    const flagEl = document.getElementById('dash-flag-alerts');
-    if (flagEl) flagEl.textContent = 'No active flags';
-
-  } catch(err) {
-    console.warn('Could not load dashboard stats:', err);
+    tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency }) => {
+      return `<tr>
+        <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong></td>
+        <td><div style="color:var(--text)">${esc(issue)}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(why)}</div></td>
+        <td style="font-family:var(--mono)">${filled}/${spots}</td>
+        <td>${urgency}</td>
+        <td style="text-align:right">
+          <a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+             style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25);text-decoration:none;font-family:var(--mono)">
+            ${esc(actionLabel)} →
+          </a>
+        </td>
+      </tr>`;
+    }).join('');
+    return true;
+  } catch (err) {
+    console.warn('Could not load study attention:', err);
+    return false;
   }
 }
 
 // ─── CRITICAL ACTIONS ───────────────────────────────────────
 async function loadCriticalActions() {
-  if (!db) return;
+  if (!db) return false;
   const container = document.getElementById('critical-actions-list');
-  if (!container) return;
+  if (!container) return false;
 
   try {
     const now = new Date();
@@ -1351,12 +1399,15 @@ async function loadCriticalActions() {
       actions.push({
         priority: 300000 - (scheduledAt ? scheduledAt.getTime() : 0),
         level: 'high',
-        title: `${person} needs session outcome handling`,
+        type: 'outcome',
+        typeLabel: 'Session outcome',
+        urgencyLabel: 'Immediate',
+        title: `${person} needs outcome confirmation`,
         why: hoursAgo != null
           ? `${studyTitle} was scheduled ${hoursAgo}h ago. Payment and workflow closure are still blocked.`
           : `${studyTitle} has a session time that passed and still needs outcome handling.`,
-        meta: 'Session time passed',
-        cta: 'Review sessions',
+        next: 'Confirm whether the session happened or reset it.',
+        cta: 'Handle outcome',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
       });
     });
@@ -1369,9 +1420,12 @@ async function loadCriticalActions() {
       actions.push({
         priority: 200000 - (appliedAt ? appliedAt.getTime() : 0),
         level: daysWaiting >= 2 ? 'high' : 'med',
+        type: 'scheduling',
+        typeLabel: 'Scheduling',
+        urgencyLabel: daysWaiting >= 2 ? 'Immediate' : 'Soon',
         title: `${person} is accepted but not scheduled`,
         why: `${studyTitle} cannot move forward until an accepted participant is booked.${daysWaiting >= 1 ? ` Waiting ${daysWaiting}d.` : ''}`,
-        meta: 'Accepted, not scheduled',
+        next: 'Book a session to move the study forward.',
         cta: 'Schedule now',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
       });
@@ -1394,12 +1448,15 @@ async function loadCriticalActions() {
       actions.push({
         priority: urgencyBase + deadlineWeight + fillGapWeight,
         level: isUrgent ? 'high' : 'med',
+        type: 'fill',
+        typeLabel: 'Fill risk',
+        urgencyLabel: isUrgent ? 'Immediate' : 'Soon',
         title: `${study.title || 'Untitled study'} is underfilled`,
         why: hoursLeft !== null
           ? `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left before close.`
           : `${filled}/${spots} spots filled and recruitment is behind pace.`,
-        meta: 'Fill risk',
-        cta: 'Open study',
+        next: 'Review candidates and send more invites.',
+        cta: 'View candidates',
         href: `vetd-client.html?study_id=${encodeURIComponent(study.id)}&view=browse`,
       });
     });
@@ -1410,35 +1467,43 @@ async function loadCriticalActions() {
 
     if (!ranked.length) {
       container.innerHTML = '<div style="padding:0.5rem 0;color:var(--text3);font-family:var(--mono)">No critical actions right now</div>';
-      return;
+      return true;
     }
 
     container.innerHTML = ranked.map((action, index) => {
       const priClass = action.level === 'high' ? 'crit-high' : action.level === 'med' ? 'crit-med' : 'crit-low';
+      const urgencyClass = action.level === 'high' ? 'urg-high' : action.level === 'med' ? 'urg-med' : 'urg-low';
+      const typeClass = action.type === 'outcome' ? 'type-outcome' : action.type === 'scheduling' ? 'type-scheduling' : 'type-fill';
+      const typeIcon = action.type === 'outcome' ? '●' : action.type === 'scheduling' ? '◌' : '▲';
       return `
         <div class="critical-action-row">
           <div class="critical-action-pri ${priClass}">#${index + 1}</div>
           <div>
-            <div class="critical-action-title">${esc(action.title)}</div>
+            <div class="critical-action-head">
+              <div class="critical-action-title">${esc(action.title)}</div>
+              <span class="critical-action-badge ${typeClass}">${typeIcon} ${esc(action.typeLabel)}</span>
+              <span class="critical-action-badge ${urgencyClass}">${esc(action.urgencyLabel)}</span>
+            </div>
             <div class="critical-action-why">${esc(action.why)}</div>
-            <div class="critical-action-meta">${esc(action.meta)}</div>
+            <div class="critical-action-meta">Next: ${esc(action.next)}</div>
           </div>
           <a class="critical-action-cta" href="${esc(action.href)}" target="_blank" rel="noopener noreferrer">${esc(action.cta)} →</a>
         </div>`;
     }).join('');
+    return true;
   } catch (err) {
     console.warn('loadCriticalActions error:', err);
-    container.innerHTML = '<div style="padding:0.5rem 0;color:var(--coral);font-family:var(--mono)">Could not load critical actions</div>';
+    return false;
   }
 }
 
 // ─── UNSCHEDULED QUEUE ───────────────────────────────────────
 async function loadUnscheduledQueue() {
-  if (!db) return;
+  if (!db) return false;
   const card  = document.getElementById('unscheduled-card');
   const tbody = document.getElementById('unscheduled-body');
   const count = document.getElementById('unscheduled-count');
-  if (!card || !tbody) return;
+  if (!card || !tbody) return false;
   try {
     const { data, error } = await db
       .from('applications')
@@ -1467,7 +1532,7 @@ async function loadUnscheduledQueue() {
         return { a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue, priority };
       })
       .sort((a, b) => b.priority - a.priority || (a.acceptedAt?.getTime() || 0) - (b.acceptedAt?.getTime() || 0));
-    if (!rows.length) { card.style.display = 'none'; return; }
+    if (!rows.length) { card.style.display = 'none'; return true; }
 
     card.style.display = 'block';
     count.textContent  = `· ${rows.length}`;
@@ -1505,8 +1570,10 @@ async function loadUnscheduledQueue() {
         </td>
       </tr>`;
     }).join('');
+    return true;
   } catch(err) {
     console.warn('loadUnscheduledQueue error:', err);
+    return false;
   }
 }
 
@@ -1802,6 +1869,55 @@ function go(id,btn){
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
   document.getElementById('t-'+id).classList.add('on');
   if(btn)btn.classList.add('on');
+}
+
+function formatAdminRefreshTime(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function renderAdminRefreshState() {
+  const state = window._adminRefreshState || { lastSuccessAt: null, healthy: true };
+  const lastEl = document.getElementById('admin-live-last');
+  const warningEl = document.getElementById('admin-live-warning');
+  if (lastEl) {
+    lastEl.textContent = state.lastSuccessAt
+      ? `Last updated: ${formatAdminRefreshTime(state.lastSuccessAt)}`
+      : 'Last updated: —';
+  }
+  if (warningEl) {
+    warningEl.style.display = state.healthy ? 'none' : 'block';
+  }
+}
+
+async function runAdminRefreshCycle() {
+  if (window._adminRefreshInFlight) return false;
+  window._adminRefreshInFlight = true;
+
+  try {
+    const results = await Promise.allSettled([
+      loadDashboardStats(),
+      loadCriticalActions(),
+      loadStudyAttention(),
+      loadUnscheduledQueue(),
+    ]);
+    const healthy = results.every(result => result.status === 'fulfilled' && result.value !== false);
+    const prevState = window._adminRefreshState || { lastSuccessAt: null, healthy: true };
+
+    window._adminRefreshState = healthy
+      ? { lastSuccessAt: new Date(), healthy: true }
+      : { lastSuccessAt: prevState.lastSuccessAt, healthy: false };
+
+    renderAdminRefreshState();
+    return healthy;
+  } finally {
+    window._adminRefreshInFlight = false;
+  }
+}
+
+function startAdminAutoRefresh() {
+  if (window._adminAutoRefreshStarted) return;
+  window._adminAutoRefreshStarted = true;
+  window._adminAutoRefreshTimer = setInterval(runAdminRefreshCycle, 45000);
 }
 
 function runShortcut(tabId, sectionId){
