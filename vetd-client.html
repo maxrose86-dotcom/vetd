@@ -756,7 +756,7 @@ textarea{resize:vertical;min-height:90px}
           <div id="unscheduled-queue-list"></div>
         </div>
         <div class="card" id="completion-queue-card" style="margin-bottom:1.5rem;display:none">
-          <div class="sec-title">Ready to complete <span id="completion-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
+          <div class="sec-title">Session time passed <span id="completion-queue-count" style="font-size:12px;color:var(--gray-400);font-weight:400"></span></div>
           <div id="completion-queue-list"></div>
         </div>
         <div class="card" id="upcoming-sessions-card" style="margin-bottom:1.5rem">
@@ -1543,6 +1543,9 @@ textarea{resize:vertical;min-height:90px}
           const completeBtn = sessionPast
             ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_mark_completed')}</button>`
             : '';
+          const noShowBtn = sessionPast
+            ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_did_not_happen')}</button>`
+            : '';
           let attendanceBadge = '';
           if (sessionPast) {
             if (a.joined_call_at) {
@@ -1572,7 +1575,7 @@ textarea{resize:vertical;min-height:90px}
             //   unscheduled, no group session yet → neutral "waiting for group scheduling"
             //   unscheduled, group already set    → amber "Accepted after group was scheduled"
             const pillLabel = sessionPast
-              ? t('cl_ready_to_complete')
+              ? t('cl_session_time_passed')
               : isScheduled
               ? t('cl_scheduled_pill')
               : anyGroupScheduled ? t('cl_added_after_group') : t('cl_group_accepted_pending');
@@ -1585,11 +1588,11 @@ textarea{resize:vertical;min-height:90px}
               ? `<span class="status-pill" style="${pillStyle}">${pillLabel}</span>`
               : `<span class="status-pill status-accepted">${pillLabel}</span>`;
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
-            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${completeBtn}`;
+            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${noShowBtn}${completeBtn}`;
           } else {
             // One-to-one: per-row schedule / reschedule buttons (unchanged)
             const statusPill = sessionPast
-              ? `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_ready_to_complete')}</span>`
+              ? `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_session_time_passed')}</span>`
               : isScheduled
               ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
               : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
@@ -1597,7 +1600,7 @@ textarea{resize:vertical;min-height:90px}
             const scheduleBtn = !isScheduled
               ? `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_schedule_session')}</button>`
               : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
-            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${scheduleBtn}${completeBtn}`;
+            actions = `${statusPill}${schedDisplay}${joinBtn}${attendanceBadge}${sessionPast ? noShowBtn : ''}${scheduleBtn}${completeBtn}`;
           }
         } else if (a.status === 'invited') {
           if (sessionType === 'group') {
@@ -1670,6 +1673,7 @@ textarea{resize:vertical;min-height:90px}
         'update-status': d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
         'video-call':    d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
         'complete':      d => markCompleted(d.appId, d.studyId),
+        'did-not-happen': d => markSessionDidNotHappen(d.appId, d.studyId),
         'browse':        d => openContributorBrowser(d.studyId, d.studyTitle),
       };
       wireActions(list, rowActionMap);
@@ -3331,16 +3335,49 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:14px;font-weight:500">${esc(name)}</div>
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
+          <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_did_not_happen')}</button>
           <button class="btn-complete" style="font-size:12px;padding:5px 12px;flex-shrink:0"
             data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_mark_completed')}</button>
         </div>`;
       }).join('');
       wireActions(list, {
+        'did-not-happen': d => markSessionDidNotHappen(d.appId, d.studyId),
         complete: d => markCompleted(d.appId, d.studyId),
       });
     } catch (err) {
       console.error('loadReadyToCompleteSessions error:', err);
       if (card) card.style.display = 'none';
+    }
+  }
+
+  async function markSessionDidNotHappen(appId, studyId) {
+    try {
+      const { error } = await db.from('applications')
+        .update({
+          scheduled_at: null,
+          room_url: null,
+          room_name: null,
+          joined_call_at: null,
+          last_call_activity: null,
+          reminder_sent_at: null,
+          day_before_reminder_sent_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appId)
+        .eq('status', 'accepted');
+      if (error) throw error;
+
+      showToast(t('cl_session_reset'));
+      if (currentApplicantsStudyId === studyId) await loadApplicants(studyId);
+      await loadStudies();
+      await loadUnscheduledApplications();
+      await loadReadyToCompleteSessions();
+      loadUpcomingSessions();
+    } catch (err) {
+      console.error('markSessionDidNotHappen error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast("We couldn't update this session. Try again.", true);
     }
   }
 
@@ -3745,8 +3782,10 @@ textarea{resize:vertical;min-height:90px}
       cl_confirm_reschedule: 'Confirm new time',
       cl_scheduled_pill: 'Scheduled',
       cl_scheduled_short: 'scheduled',
-      cl_ready_to_complete: 'Ready to complete',
-      cl_ready_to_complete_short: 'ready to complete',
+      cl_session_time_passed: 'Session time passed',
+      cl_ready_to_complete_short: 'session time passed',
+      cl_did_not_happen: 'Did not happen',
+      cl_session_reset: 'Session moved back to not scheduled',
       cl_accepted_needs_scheduling: 'Accepted, not yet scheduled',
       cl_needs_scheduling: 'awaiting scheduling',
       cl_cancel_invitation: 'Cancel invitation',
@@ -4046,8 +4085,10 @@ textarea{resize:vertical;min-height:90px}
       cl_confirm_reschedule: 'Bekräfta ny tid',
       cl_scheduled_pill: 'Schemalagd',
       cl_scheduled_short: 'schemalagda',
-      cl_ready_to_complete: 'Klar att slutföra',
-      cl_ready_to_complete_short: 'klara att slutföra',
+      cl_session_time_passed: 'Sessionstiden har passerat',
+      cl_ready_to_complete_short: 'sessionstid passerad',
+      cl_did_not_happen: 'Hände inte',
+      cl_session_reset: 'Sessionen flyttades tillbaka till ej schemalagd',
       cl_accepted_needs_scheduling: 'Accepterad, inte schemalagd ännu',
       cl_needs_scheduling: 'väntar på schemaläggning',
       cl_cancel_invitation: 'Avbryt inbjudan',
