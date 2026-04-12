@@ -2316,6 +2316,7 @@ textarea{resize:vertical;min-height:90px}
     if (!list || !_contributorsCache) return;
 
     const { scored, alreadyInvited, profileMap } = _contributorsCache;
+    const SUGGESTED_MIN_SCORE = 45;
 
     // Apply active filter
     let visible = scored;
@@ -2341,11 +2342,23 @@ textarea{resize:vertical;min-height:90px}
       ? [...visible].sort((a, b) => b.score - a.score)
       : visible;
 
-    // Suggested section: top 8 with score > 0, only in invite context
+    // Suggested section: top 8 meaningful matches only, only in invite context
     const suggested = currentInviteStudy
-      ? sorted.filter(x => x.score > 0).slice(0, 8)
+      ? sorted.filter(x => x.score >= SUGGESTED_MIN_SCORE).slice(0, 8)
       : [];
     const suggestedIds = new Set(suggested.map(x => x.c.id));
+
+    function fitMeta(score) {
+      if (score >= 75) return { label: t('cl_fit_strong'), cls: 'badge-green' };
+      if (score >= 45) return { label: t('cl_fit_possible'), cls: 'badge-blue' };
+      if (score > 0)   return { label: t('cl_fit_weak'), cls: 'badge-gray' };
+      return null;
+    }
+
+    function conciseReason(reasons) {
+      if (!Array.isArray(reasons) || reasons.length === 0) return '';
+      return reasons.find(r => !/^available for /i.test(r)) || reasons[0] || '';
+    }
 
     function buildCard({ c, i, score, reasons }) {
       const p         = profileMap[c.id] || {};
@@ -2367,11 +2380,13 @@ textarea{resize:vertical;min-height:90px}
         ...(Array.isArray(c.interests_lifestyle) ? c.interests_lifestyle : []),
         ...(Array.isArray(c.interests_tech)      ? c.interests_tech      : [])
       ].slice(0,3).map(tag => tag.replace(/_/g,' '));
+      const fit       = currentInviteStudy ? fitMeta(score) : null;
+      const reason    = currentInviteStudy && score >= SUGGESTED_MIN_SCORE ? conciseReason(reasons) : '';
       const bankidBadge = c.bankid_verified
         ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;margin-left:6px;vertical-align:middle">🔒 BankID</span>'
         : '';
-      const matchBadge = reasons.length
-        ? `<span class="badge badge-green" style="font-size:10px;padding:2px 8px;cursor:default" title="${escAttr(reasons.join(' · '))}">Suggested</span>`
+      const matchBadge = fit
+        ? `<span class="badge ${esc(fit.cls)}" style="font-size:10px;padding:2px 8px;cursor:default" title="${escAttr(reasons.join(' · '))}">${esc(fit.label)}</span>`
         : '';
 
       return `
@@ -2383,6 +2398,7 @@ textarea{resize:vertical;min-height:90px}
                 <div class="contrib-name">${esc(dispName)}${bankidBadge}</div>
                 <div class="contrib-meta">${esc([age ? `${age}y` : null, loc, `${studies} studies`].filter(Boolean).join(' · '))}</div>
                 <div class="star-row">★ ${esc(rating)} · <span class="badge ${esc(badgeCls)}">${esc(tierLabel)}</span>${matchBadge ? ' · ' + matchBadge : ''}</div>
+                ${reason ? `<div style="margin-top:4px;font-size:12px;color:var(--gray-700)">${esc(reason)}</div>` : ''}
               </div>
             </div>
             ${tags.length ? `<div class="tags-row">${tags.map(tag=>`<span class="tag tag-gray">${esc(tag)}</span>`).join('')}</div>` : ''}
