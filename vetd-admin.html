@@ -1310,6 +1310,14 @@ function renderResolutionConfidenceBadge(confidence) {
   return `<span class="badge ${cls}">${label}</span>`;
 }
 
+function buildMatchCountsByStudyId(studies, contributors) {
+  const map = {};
+  for (const study of (studies || [])) {
+    map[study.id] = getStudyMatchCounts(study, contributors);
+  }
+  return map;
+}
+
 // ────────────────────────────────────────────────────────────
 
 async function loadStudyAttention() {
@@ -1458,7 +1466,7 @@ async function loadCriticalActions() {
     const now = new Date();
     const overdueCutoffIso = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
 
-    const [studyRes, unscheduledRes, overdueRes] = await Promise.all([
+    const [studyRes, unscheduledRes, overdueRes, contributorRes] = await Promise.all([
       db
         .from('studies')
         .select('id, title, spots, filled_spots, close_date, status')
@@ -1477,11 +1485,16 @@ async function loadCriticalActions() {
         .lt('scheduled_at', overdueCutoffIso)
         .order('scheduled_at', { ascending: true })
         .limit(20),
+      db
+        .from('contributors')
+        .select('id, rating, total_studies, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times'),
     ]);
 
     if (studyRes.error) throw studyRes.error;
     if (unscheduledRes.error) throw unscheduledRes.error;
     if (overdueRes.error) throw overdueRes.error;
+    // Contributor fetch failure degrades gracefully — fill-risk rows fall back to operator_execution + medium
+    const contributorRows = contributorRes.error ? [] : (contributorRes.data || []);
 
     const actions = [];
 
@@ -1529,20 +1542,33 @@ async function loadCriticalActions() {
       });
     });
 
-    (studyRes.data || []).forEach((study) => {
+    // Identify fill-risk candidate studies first, then score only those.
+    const fillRiskStudies = (studyRes.data || []).filter((study) => {
       const spots = study.spots || 0;
-      if (spots <= 0) return;
+      if (spots <= 0) return false;
       const filled = study.filled_spots || 0;
       const fillRate = filled / spots;
       const closeAt = study.close_date ? new Date(study.close_date) : null;
       const hoursLeft = closeAt ? (closeAt - now) / 36e5 : null;
       const isUrgent = hoursLeft !== null && hoursLeft <= 72 && fillRate < 0.75;
       const isStalled = hoursLeft !== null && hoursLeft <= 168 && fillRate < 0.35;
-      if (!isUrgent && !isStalled) return;
+      return isUrgent || isStalled;
+    });
+    const matchCountsByStudyId = buildMatchCountsByStudyId(fillRiskStudies, contributorRows);
+
+    fillRiskStudies.forEach((study) => {
+      const spots = study.spots || 0;
+      const filled = study.filled_spots || 0;
+      const fillRate = filled / spots;
+      const closeAt = study.close_date ? new Date(study.close_date) : null;
+      const hoursLeft = closeAt ? (closeAt - now) / 36e5 : null;
+      const isUrgent = hoursLeft !== null && hoursLeft <= 72 && fillRate < 0.75;
 
       const urgencyBase = isUrgent ? 100000 : 50000;
       const deadlineWeight = hoursLeft !== null ? Math.max(0, 72 - Math.max(hoursLeft, 0)) * 100 : 0;
       const fillGapWeight = Math.round((1 - fillRate) * 1000);
+      const { strongMatchCount, possibleMatchCount, matchCountsAvailable } = matchCountsByStudyId[study.id];
+      const { causeClass, confidence } = classifyFillRiskStudy(possibleMatchCount, strongMatchCount, matchCountsAvailable);
       actions.push({
         priority: urgencyBase + deadlineWeight + fillGapWeight,
         level: isUrgent ? 'high' : 'med',
@@ -1556,6 +1582,7 @@ async function loadCriticalActions() {
         next: 'Review candidates and send more invites.',
         cta: 'View candidates',
         href: `vetd-client.html?study_id=${encodeURIComponent(study.id)}&view=browse`,
+        causeClass, confidence,
       });
     });
 
