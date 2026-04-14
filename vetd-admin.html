@@ -1318,6 +1318,198 @@ function buildMatchCountsByStudyId(studies, contributors) {
   return map;
 }
 
+// ─── ACTION EFFECTIVENESS TRACKER ───────────────────────────
+// v1: localStorage only. All storage ops are silent-fail safe.
+
+const ADMIN_ACTION_EVENTS_KEY = 'vetd_admin_action_events';
+
+function loadAdminActionEvents() {
+  try {
+    const raw = localStorage.getItem(ADMIN_ACTION_EVENTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveAdminActionEvents(events) {
+  try {
+    localStorage.setItem(ADMIN_ACTION_EVENTS_KEY, JSON.stringify(events));
+  } catch (e) {
+    // quota exceeded or storage unavailable — discard silently
+  }
+}
+
+function supersedeOlderActionEvents(events, queueType, targetId) {
+  return events.map(ev =>
+    ev.status === 'pending' && ev.queue_type === queueType && ev.target_id === targetId
+      ? { ...ev, status: 'superseded' }
+      : ev
+  );
+}
+
+function recordAdminActionEvent(event) {
+  try {
+    let events = loadAdminActionEvents();
+    events = supersedeOlderActionEvents(events, event.queue_type, event.target_id);
+    const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    events.push({
+      id,
+      created_at: new Date().toISOString(),
+      queue_type: event.queue_type,
+      action_type: event.action_type || null,
+      target_type: event.target_type || null,
+      target_id: event.target_id,
+      study_id: event.study_id || null,
+      application_id: event.application_id || null,
+      source_surface: event.source_surface || null,
+      cause_class: event.cause_class || null,
+      resolution_confidence: event.resolution_confidence || null,
+      status: 'pending',
+      checked_at: null,
+      resolved_at: null,
+      resolution_type: null,
+    });
+    saveAdminActionEvents(events);
+  } catch (e) {
+    // tracker must never throw into caller
+  }
+}
+
+function initAdminTracking() {
+  if (window._adminTrackingInitialized) return;
+  window._adminTrackingInitialized = true;
+  document.addEventListener('click', function (e) {
+    try {
+      const el = e.target.closest('[data-track-queue]');
+      if (!el) return;
+      const queueType = el.dataset.trackQueue;
+      const targetId  = el.dataset.trackTargetId;
+      if (!queueType || !targetId) return;
+      recordAdminActionEvent({
+        queue_type:            queueType,
+        action_type:           el.dataset.trackActionType  || null,
+        target_type:           queueType === 'fill_risk' ? 'study' : 'application',
+        target_id:             targetId,
+        study_id:              el.dataset.trackStudyId        || null,
+        application_id:        el.dataset.trackApplicationId  || null,
+        source_surface:        el.dataset.trackSurface        || null,
+        cause_class:           el.dataset.trackCauseClass     || null,
+        resolution_confidence: el.dataset.trackConfidence     || null,
+      });
+    } catch (e) { /* never break a click */ }
+  }, { passive: true });
+}
+
+async function checkAdminActionEffectiveness() {
+  if (!db) return;
+  let events = loadAdminActionEvents();
+  const pending = events.filter(ev => ev.status === 'pending');
+  if (!pending.length) return;
+
+  const now = new Date();
+  const byQueue = {};
+  for (const ev of pending) {
+    (byQueue[ev.queue_type] = byQueue[ev.queue_type] || []).push(ev);
+  }
+
+  const updates = {}; // event id → patch fields
+
+  // accepted_not_scheduled: resolved if scheduled_at set OR status changed; failed after 72h
+  if (byQueue['accepted_not_scheduled']?.length) {
+    const ids = [...new Set(byQueue['accepted_not_scheduled'].map(ev => ev.target_id).filter(Boolean))];
+    if (ids.length) {
+      try {
+        const { data } = await db.from('applications').select('id, status, scheduled_at').in('id', ids);
+        const appMap = {};
+        for (const row of (data || [])) appMap[row.id] = row;
+        for (const ev of byQueue['accepted_not_scheduled']) {
+          const row = appMap[ev.target_id];
+          const ageH = (now - new Date(ev.created_at)) / 36e5;
+          if (!row || row.scheduled_at != null || row.status !== 'accepted') {
+            updates[ev.id] = { status: 'resolved', resolved_at: now.toISOString(), checked_at: now.toISOString(),
+              resolution_type: !row ? 'not_found' : row.scheduled_at ? 'scheduled' : 'status_changed' };
+          } else if (ageH >= 72) {
+            updates[ev.id] = { status: 'failed', checked_at: now.toISOString() };
+          } else {
+            updates[ev.id] = { checked_at: now.toISOString() };
+          }
+        }
+      } catch (e) { /* skip queue on fetch error */ }
+    }
+  }
+
+  // overdue_session: resolved if no longer overdue; failed after 24h
+  if (byQueue['overdue_session']?.length) {
+    const ids = [...new Set(byQueue['overdue_session'].map(ev => ev.target_id).filter(Boolean))];
+    if (ids.length) {
+      try {
+        const overdueCutoff = new Date(now.getTime() - 15 * 60 * 1000);
+        const { data } = await db.from('applications').select('id, status, scheduled_at').in('id', ids);
+        const appMap = {};
+        for (const row of (data || [])) appMap[row.id] = row;
+        for (const ev of byQueue['overdue_session']) {
+          const row = appMap[ev.target_id];
+          const ageH = (now - new Date(ev.created_at)) / 36e5;
+          const stillOverdue = row && row.scheduled_at != null
+            && new Date(row.scheduled_at) < overdueCutoff && row.status === 'accepted';
+          if (!row || !stillOverdue) {
+            updates[ev.id] = { status: 'resolved', resolved_at: now.toISOString(), checked_at: now.toISOString(),
+              resolution_type: !row ? 'not_found' : row.status === 'completed' ? 'completed'
+                : row.scheduled_at == null ? 'rescheduled' : 'status_changed' };
+          } else if (ageH >= 24) {
+            updates[ev.id] = { status: 'failed', checked_at: now.toISOString() };
+          } else {
+            updates[ev.id] = { checked_at: now.toISOString() };
+          }
+        }
+      } catch (e) { /* skip queue on fetch error */ }
+    }
+  }
+
+  // fill_risk: resolved if study no longer qualifies; failed after 7d
+  if (byQueue['fill_risk']?.length) {
+    const ids = [...new Set(byQueue['fill_risk'].map(ev => ev.target_id).filter(Boolean))];
+    if (ids.length) {
+      try {
+        const { data } = await db.from('studies').select('id, spots, filled_spots, close_date, status').in('id', ids);
+        const studyMap = {};
+        for (const row of (data || [])) studyMap[row.id] = row;
+        for (const ev of byQueue['fill_risk']) {
+          const study = studyMap[ev.target_id];
+          const ageH = (now - new Date(ev.created_at)) / 36e5;
+          let stillFillRisk = false;
+          if (study && study.status === 'active') {
+            const spots = study.spots || 0;
+            const filled = study.filled_spots || 0;
+            const fillRate = spots > 0 ? filled / spots : 0;
+            const closeAt = study.close_date ? new Date(study.close_date) : null;
+            const hoursLeft = closeAt ? (closeAt - now) / 36e5 : null;
+            stillFillRisk = (hoursLeft !== null && hoursLeft <= 72 && fillRate < 0.75)
+                         || (hoursLeft !== null && hoursLeft <= 168 && fillRate < 0.35);
+          }
+          if (!study || !stillFillRisk) {
+            updates[ev.id] = { status: 'resolved', resolved_at: now.toISOString(), checked_at: now.toISOString(),
+              resolution_type: !study ? 'not_found' : study.status !== 'active' ? 'study_closed' : 'fill_improved' };
+          } else if (ageH >= 168) {
+            updates[ev.id] = { status: 'failed', checked_at: now.toISOString() };
+          } else {
+            updates[ev.id] = { checked_at: now.toISOString() };
+          }
+        }
+      } catch (e) { /* skip queue on fetch error */ }
+    }
+  }
+
+  if (Object.keys(updates).length) {
+    saveAdminActionEvents(events.map(ev => ev.id in updates ? { ...ev, ...updates[ev.id] } : ev));
+  }
+}
+
 // ────────────────────────────────────────────────────────────
 
 async function loadStudyAttention() {
@@ -1375,6 +1567,8 @@ async function loadStudyAttention() {
         let confidence = 'medium';
 
         let showBadges = true;
+        let trackQueue = 'fill_risk';
+        let trackTargetId = s.id;
 
         if (unscheduled > 0) {
           issue = unscheduled === 1
@@ -1389,6 +1583,8 @@ async function loadStudyAttention() {
           priority = 3000 + unscheduled * 25;
           // study-level view: no per-contributor data in this surface
           causeClass = 'operator_execution'; confidence = 'medium';
+          trackQueue = 'accepted_not_scheduled';
+          trackTargetId = unscheduledMap[s.id]?.firstAppId || s.id;
         } else if (hoursLeft !== null && hoursLeft <= 72 && pct < 0.75) {
           issue = 'Closes soon with low fill';
           why = `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left.`;
@@ -1419,7 +1615,7 @@ async function loadStudyAttention() {
           // showBadges remains true — branch only fires when matchCountsAvailable is true
         }
 
-        return { s, spots, filled, issue, why, actionLabel, href, urgency, priority, causeClass, confidence, showBadges };
+        return { s, spots, filled, issue, why, actionLabel, href, urgency, priority, causeClass, confidence, showBadges, trackQueue, trackTargetId };
       })
       .filter(r => r.priority > 0)
       .sort((a, b) => b.priority - a.priority || (a.s.title || '').localeCompare(b.s.title || ''))
@@ -1430,8 +1626,9 @@ async function loadStudyAttention() {
       return true;
     }
 
-    tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency, causeClass, confidence, showBadges }) => {
+    tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency, causeClass, confidence, showBadges, trackQueue, trackTargetId }) => {
       const badgeHtml = showBadges ? renderCauseClassBadge(causeClass) + renderResolutionConfidenceBadge(confidence) : '';
+      const trackActionType = trackQueue === 'accepted_not_scheduled' ? 'schedule_participants' : 'view_candidates';
       return `<tr>
         <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong></td>
         <td>
@@ -1443,6 +1640,10 @@ async function loadStudyAttention() {
         <td>${urgency}</td>
         <td style="text-align:right">
           <a href="${esc(href)}" target="_blank" rel="noopener noreferrer"
+             data-track-queue="${esc(trackQueue)}" data-track-action-type="${esc(trackActionType)}"
+             data-track-target-id="${esc(trackTargetId || s.id)}" data-track-study-id="${esc(s.id)}"
+             data-track-cause-class="${esc(causeClass || '')}" data-track-confidence="${esc(confidence || '')}"
+             data-track-surface="study_attention"
              style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(75,158,245,0.25);text-decoration:none;font-family:var(--mono)">
             ${esc(actionLabel)} →
           </a>
@@ -1518,6 +1719,7 @@ async function loadCriticalActions() {
         cta: 'Handle outcome',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
         causeClass, confidence,
+        studyId: row.study_id, applicationId: row.id,
       });
     });
 
@@ -1539,6 +1741,7 @@ async function loadCriticalActions() {
         cta: causeClass === 'contributor_blockage' ? 'Resolve scheduling' : 'Schedule now',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
         causeClass, confidence,
+        studyId: row.study_id, applicationId: row.id,
       });
     });
 
@@ -1583,6 +1786,7 @@ async function loadCriticalActions() {
         cta: 'View candidates',
         href: `vetd-client.html?study_id=${encodeURIComponent(study.id)}&view=browse`,
         causeClass, confidence,
+        studyId: study.id, applicationId: null,
       });
     });
 
@@ -1600,6 +1804,10 @@ async function loadCriticalActions() {
       const urgencyClass = action.level === 'high' ? 'urg-high' : action.level === 'med' ? 'urg-med' : 'urg-low';
       const typeClass = action.type === 'outcome' ? 'type-outcome' : action.type === 'scheduling' ? 'type-scheduling' : 'type-fill';
       const typeIcon = action.type === 'outcome' ? '●' : action.type === 'scheduling' ? '◌' : '▲';
+      const trackQueue = action.type === 'fill' ? 'fill_risk' : action.type === 'outcome' ? 'overdue_session' : 'accepted_not_scheduled';
+      const trackActionType = action.type === 'fill' ? 'view_candidates' : action.type === 'outcome' ? 'handle_outcome'
+        : action.cta === 'Resolve scheduling' ? 'resolve_scheduling' : 'schedule_now';
+      const trackTargetId = action.type === 'fill' ? (action.studyId || '') : (action.applicationId || '');
       return `
         <div class="critical-action-row">
           <div class="critical-action-pri ${priClass}">#${index + 1}</div>
@@ -1613,7 +1821,12 @@ async function loadCriticalActions() {
             <div class="critical-action-why">${esc(action.why)}</div>
             <div class="critical-action-meta">Next: ${esc(action.next)}</div>
           </div>
-          <a class="critical-action-cta" href="${esc(action.href)}" target="_blank" rel="noopener noreferrer">${esc(action.cta)} →</a>
+          <a class="critical-action-cta" href="${esc(action.href)}" target="_blank" rel="noopener noreferrer"
+             data-track-queue="${esc(trackQueue)}" data-track-action-type="${esc(trackActionType)}"
+             data-track-target-id="${esc(trackTargetId)}" data-track-study-id="${esc(action.studyId || '')}"
+             data-track-application-id="${esc(action.applicationId || '')}"
+             data-track-cause-class="${esc(action.causeClass || '')}" data-track-confidence="${esc(action.confidence || '')}"
+             data-track-surface="critical_actions">${esc(action.cta)} →</a>
         </div>`;
     }).join('');
     return true;
@@ -1689,6 +1902,10 @@ async function loadUnscheduledQueue() {
         : fullOnPaper ? 'Unblock study'
         : overdue ? 'Schedule now'
         : 'Book session';
+      const trackActionType = ctaLabel === 'Resolve scheduling' ? 'resolve_scheduling'
+        : ctaLabel === 'Unblock study' ? 'unblock_study'
+        : ctaLabel === 'Schedule now' ? 'schedule_now'
+        : 'book_session';
       return `<tr>
         <td><span style="color:var(--text)">${esc(name)}</span><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(acceptedAt ? acceptedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Accepted')}</div></td>
         <td>${esc(title)}</td>
@@ -1699,6 +1916,11 @@ async function loadUnscheduledQueue() {
         </td>
         <td style="text-align:right">
           <a href="vetd-client.html?study_id=${esc(a.study_id)}&application_id=${esc(a.id)}&section=sessions" target="_blank"
+             data-track-queue="accepted_not_scheduled" data-track-action-type="${esc(trackActionType)}"
+             data-track-target-id="${esc(a.id)}" data-track-study-id="${esc(a.study_id)}"
+             data-track-application-id="${esc(a.id)}"
+             data-track-cause-class="${esc(causeClass || '')}" data-track-confidence="${esc(confidence || '')}"
+             data-track-surface="unscheduled_queue"
              style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25);text-decoration:none;font-family:var(--mono)"
              title="Open operator portal to schedule ${esc(name)} for ${esc(title)}">${esc(ctaLabel)} →</a>
         </td>
@@ -1866,6 +2088,8 @@ async function markAsPaid(paymentId) {
 
 // ─── CLOCK ─────────────────────────────────────────────────────
 function initUI() {
+  initAdminTracking();
+
   // Clock
   function tick(){const n=new Date();const el=document.getElementById('clock');if(el)el.textContent=n.toLocaleTimeString('en-GB')}
   tick();setInterval(tick,1000);
@@ -2042,6 +2266,8 @@ async function runAdminRefreshCycle() {
       : { lastSuccessAt: prevState.lastSuccessAt, healthy: false };
 
     renderAdminRefreshState();
+    // Effectiveness checker runs after display — failure never affects health indicator
+    checkAdminActionEffectiveness().catch(() => {});
     return healthy;
   } finally {
     window._adminRefreshInFlight = false;
