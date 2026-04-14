@@ -1234,6 +1234,84 @@ async function loadDashboardStats() {
   }
 }
 
+// ─── ACTIONABILITY HELPERS ──────────────────────────────────
+
+// Only arrays containing at least one non-empty string count as explicit availability.
+// available_times values are chip-selected strings (e.g. 'weekday_mornings') — empty arrays
+// and arrays of non-string/blank values are treated as unset.
+function hasExplicitAvailability(contributor) {
+  if (!contributor) return false;
+  const at = contributor.available_times;
+  return Array.isArray(at) && at.some(v => typeof v === 'string' && v.trim() !== '');
+}
+
+// Thresholds mirror vetd-client.html: strong >= 75, possible >= 45 (vetd-client L1487/L2362)
+function getStudyMatchCounts(study, contributors) {
+  if (!Array.isArray(contributors) || contributors.length === 0) {
+    return { strongMatchCount: 0, possibleMatchCount: 0, matchCountsAvailable: false };
+  }
+  if (typeof window.matchScore !== 'function') {
+    return { strongMatchCount: 0, possibleMatchCount: 0, matchCountsAvailable: false };
+  }
+  let strongMatchCount = 0;
+  let possibleMatchCount = 0;
+  try {
+    for (const c of contributors) {
+      const { score } = window.matchScore(c, study);
+      if (score >= 75) strongMatchCount++;
+      if (score >= 45) possibleMatchCount++;
+    }
+  } catch (e) {
+    console.warn('[Vetd] matchScore threw during getStudyMatchCounts', e);
+    return { strongMatchCount: 0, possibleMatchCount: 0, matchCountsAvailable: false };
+  }
+  return { strongMatchCount, possibleMatchCount, matchCountsAvailable: true };
+}
+
+// row must have row.contributors (object or null) with optional available_times
+function classifyAcceptedNotScheduled(row) {
+  if (!row.contributors) return { causeClass: 'operator_execution', confidence: 'medium' };
+  if (!hasExplicitAvailability(row.contributors)) return { causeClass: 'contributor_blockage', confidence: 'medium' };
+  return { causeClass: 'operator_execution', confidence: 'medium' };
+}
+
+// row must have row.joined_call_at and row.last_call_activity
+function classifyOverdueSession(row) {
+  if (row.joined_call_at || row.last_call_activity) return { causeClass: 'operator_execution', confidence: 'high' };
+  return { causeClass: 'contributor_blockage', confidence: 'medium' };
+}
+
+// matchCountsAvailable must be true for supply_failure to fire; false → operator_execution, medium
+function classifyFillRiskStudy(possibleMatchCount, strongMatchCount, matchCountsAvailable = true) {
+  if (!matchCountsAvailable) return { causeClass: 'operator_execution', confidence: 'medium' };
+  if (possibleMatchCount === 0) return { causeClass: 'supply_failure', confidence: 'low' };
+  if (strongMatchCount === 0) return { causeClass: 'supply_failure', confidence: 'low' };
+  if (strongMatchCount < 2) return { causeClass: 'supply_failure', confidence: 'medium' };
+  return { causeClass: 'operator_execution', confidence: 'medium' };
+}
+
+function renderCauseClassBadge(causeClass) {
+  const map = {
+    operator_execution: ['ba', 'Operator execution'],
+    contributor_blockage: ['bp', 'Contributor blockage'],
+    supply_failure: ['br', 'Supply failure'],
+  };
+  const [cls, label] = map[causeClass] || ['bc', String(causeClass)];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function renderResolutionConfidenceBadge(confidence) {
+  const map = {
+    high:   ['bg', 'High confidence'],
+    medium: ['bb', 'Medium confidence'],
+    low:    ['br', 'Low confidence'],
+  };
+  const [cls, label] = map[confidence] || ['bc', String(confidence)];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ────────────────────────────────────────────────────────────
+
 async function loadStudyAttention() {
   if (!db) return false;
   const tbody = document.getElementById('studies-attention-body');
@@ -1277,9 +1355,7 @@ async function loadStudyAttention() {
           ? (new Date(s.close_date) - now) / 36e5
           : null;
         const unscheduled = unscheduledMap[s.id]?.count || 0;
-        const strongMatches = (contributorRows || []).reduce((count, contributor) => {
-          return count + (matchScore(contributor, s).score >= 75 ? 1 : 0);
-        }, 0);
+        const { strongMatchCount, possibleMatchCount, matchCountsAvailable } = getStudyMatchCounts(s, contributorRows);
 
         let issue = '';
         let why = '';
@@ -1287,6 +1363,10 @@ async function loadStudyAttention() {
         let href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}`;
         let urgency = '<span class="badge ba">Watch</span>';
         let priority = 0;
+        let causeClass = 'operator_execution';
+        let confidence = 'medium';
+
+        let showBadges = true;
 
         if (unscheduled > 0) {
           issue = unscheduled === 1
@@ -1299,6 +1379,8 @@ async function loadStudyAttention() {
           }
           urgency = '<span class="badge br">High</span>';
           priority = 3000 + unscheduled * 25;
+          // study-level view: no per-contributor data in this surface
+          causeClass = 'operator_execution'; confidence = 'medium';
         } else if (hoursLeft !== null && hoursLeft <= 72 && pct < 0.75) {
           issue = 'Closes soon with low fill';
           why = `${filled}/${spots} spots filled with ${Math.max(0, Math.round(hoursLeft))}h left.`;
@@ -1306,6 +1388,8 @@ async function loadStudyAttention() {
           href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
           urgency = '<span class="badge br">High</span>';
           priority = 2000 + Math.max(0, 72 - hoursLeft) * 5 + Math.round((1 - pct) * 100);
+          ({ causeClass, confidence } = classifyFillRiskStudy(possibleMatchCount, strongMatchCount, matchCountsAvailable));
+          showBadges = matchCountsAvailable;
         } else if (pct < 0.35) {
           issue = 'Low fill rate';
           why = `${filled}/${spots} spots filled and recruitment is behind pace.`;
@@ -1313,16 +1397,21 @@ async function loadStudyAttention() {
           href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
           urgency = '<span class="badge ba">Medium</span>';
           priority = 1200 + Math.round((1 - pct) * 100);
-        } else if (strongMatches === 0) {
+          ({ causeClass, confidence } = classifyFillRiskStudy(possibleMatchCount, strongMatchCount, matchCountsAvailable));
+          showBadges = matchCountsAvailable;
+        } else if (matchCountsAvailable && strongMatchCount === 0) {
           issue = 'No strong matches available';
           why = 'No contributors currently score as a strong match for this study.';
           actionLabel = 'Relax criteria';
           href = `vetd-client.html?study_id=${encodeURIComponent(s.id)}&view=browse`;
           urgency = '<span class="badge bb">Needs review</span>';
           priority = 900;
+          causeClass = 'supply_failure';
+          confidence = possibleMatchCount === 0 ? 'low' : 'medium';
+          // showBadges remains true — branch only fires when matchCountsAvailable is true
         }
 
-        return { s, spots, filled, issue, why, actionLabel, href, urgency, priority };
+        return { s, spots, filled, issue, why, actionLabel, href, urgency, priority, causeClass, confidence, showBadges };
       })
       .filter(r => r.priority > 0)
       .sort((a, b) => b.priority - a.priority || (a.s.title || '').localeCompare(b.s.title || ''))
@@ -1333,10 +1422,15 @@ async function loadStudyAttention() {
       return true;
     }
 
-    tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency }) => {
+    tbody.innerHTML = rows.map(({ s, spots, filled, issue, why, actionLabel, href, urgency, causeClass, confidence, showBadges }) => {
+      const badgeHtml = showBadges ? renderCauseClassBadge(causeClass) + renderResolutionConfidenceBadge(confidence) : '';
       return `<tr>
         <td><strong style="color:var(--text)">${esc(s.title || 'Untitled')}</strong></td>
-        <td><div style="color:var(--text)">${esc(issue)}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(why)}</div></td>
+        <td>
+          <div style="color:var(--text)">${esc(issue)}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(why)}</div>
+          ${badgeHtml ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${badgeHtml}</div>` : ''}
+        </td>
         <td style="font-family:var(--mono)">${filled}/${spots}</td>
         <td>${urgency}</td>
         <td style="text-align:right">
@@ -1371,14 +1465,14 @@ async function loadCriticalActions() {
         .eq('status', 'active'),
       db
         .from('applications')
-        .select('id, study_id, applied_at, contributors(profiles(first_name, last_name)), studies(title)')
+        .select('id, study_id, applied_at, contributors(profiles(first_name, last_name), available_times), studies(title)')
         .eq('status', 'accepted')
         .is('scheduled_at', null)
         .order('applied_at', { ascending: true })
         .limit(20),
       db
         .from('applications')
-        .select('id, study_id, scheduled_at, contributors(profiles(first_name, last_name)), studies(title)')
+        .select('id, study_id, scheduled_at, joined_call_at, last_call_activity, contributors(profiles(first_name, last_name)), studies(title)')
         .eq('status', 'accepted')
         .lt('scheduled_at', overdueCutoffIso)
         .order('scheduled_at', { ascending: true })
@@ -1396,6 +1490,7 @@ async function loadCriticalActions() {
       const studyTitle = row.studies?.title || 'Study';
       const scheduledAt = row.scheduled_at ? new Date(row.scheduled_at) : null;
       const hoursAgo = scheduledAt ? Math.max(1, Math.round((now - scheduledAt) / 36e5)) : null;
+      const { causeClass, confidence } = classifyOverdueSession(row);
       actions.push({
         priority: 300000 - (scheduledAt ? scheduledAt.getTime() : 0),
         level: 'high',
@@ -1409,6 +1504,7 @@ async function loadCriticalActions() {
         next: 'Confirm whether the session happened or reset it.',
         cta: 'Handle outcome',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
+        causeClass, confidence,
       });
     });
 
@@ -1417,6 +1513,7 @@ async function loadCriticalActions() {
       const studyTitle = row.studies?.title || 'Study';
       const appliedAt = row.applied_at ? new Date(row.applied_at) : null;
       const daysWaiting = appliedAt ? Math.max(0, Math.round((now - appliedAt) / 86400000)) : 0;
+      const { causeClass, confidence } = classifyAcceptedNotScheduled(row);
       actions.push({
         priority: 200000 - (appliedAt ? appliedAt.getTime() : 0),
         level: daysWaiting >= 2 ? 'high' : 'med',
@@ -1426,8 +1523,9 @@ async function loadCriticalActions() {
         title: `${person} is accepted but not scheduled`,
         why: `${studyTitle} cannot move forward until an accepted participant is booked.${daysWaiting >= 1 ? ` Waiting ${daysWaiting}d.` : ''}`,
         next: 'Book a session to move the study forward.',
-        cta: 'Schedule now',
+        cta: causeClass === 'contributor_blockage' ? 'Resolve scheduling' : 'Schedule now',
         href: `vetd-client.html?study_id=${encodeURIComponent(row.study_id)}&application_id=${encodeURIComponent(row.id)}&section=sessions`,
+        causeClass, confidence,
       });
     });
 
@@ -1483,6 +1581,7 @@ async function loadCriticalActions() {
               <div class="critical-action-title">${esc(action.title)}</div>
               <span class="critical-action-badge ${typeClass}">${typeIcon} ${esc(action.typeLabel)}</span>
               <span class="critical-action-badge ${urgencyClass}">${esc(action.urgencyLabel)}</span>
+              ${action.causeClass ? renderCauseClassBadge(action.causeClass) : ''}${action.confidence ? renderResolutionConfidenceBadge(action.confidence) : ''}
             </div>
             <div class="critical-action-why">${esc(action.why)}</div>
             <div class="critical-action-meta">Next: ${esc(action.next)}</div>
@@ -1507,7 +1606,7 @@ async function loadUnscheduledQueue() {
   try {
     const { data, error } = await db
       .from('applications')
-      .select('id, study_id, contributor_id, applied_at, updated_at, contributors(profiles(first_name, last_name)), studies(title, close_date, spots, filled_spots))')
+      .select('id, study_id, contributor_id, applied_at, updated_at, contributors(profiles(first_name, last_name), available_times), studies(title, close_date, spots, filled_spots))')
       .eq('status', 'accepted')
       .is('scheduled_at', null)
       .limit(25);
@@ -1529,14 +1628,15 @@ async function loadUnscheduledQueue() {
           + (fullOnPaper ? 1200 : 0)
           + (behind ? 900 : 0)
           + Math.round(waitHours);
-        return { a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue, priority };
+        const { causeClass, confidence } = classifyAcceptedNotScheduled(a);
+        return { a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue, priority, causeClass, confidence };
       })
       .sort((a, b) => b.priority - a.priority || (a.acceptedAt?.getTime() || 0) - (b.acceptedAt?.getTime() || 0));
     if (!rows.length) { card.style.display = 'none'; return true; }
 
     card.style.display = 'block';
     count.textContent  = `· ${rows.length}`;
-    tbody.innerHTML = rows.map(({ a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue }) => {
+    tbody.innerHTML = rows.map(({ a, acceptedAt, waitHours, closeHours, fullOnPaper, behind, overdue, causeClass, confidence }) => {
       const p    = a.contributors?.profiles || {};
       const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown';
       const study = a.studies || {};
@@ -1558,11 +1658,18 @@ async function loadUnscheduledQueue() {
         : (fullOnPaper || behind)
           ? '<span class="badge ba">High</span>'
           : '<span class="badge bb">Watch</span>';
-      const ctaLabel = fullOnPaper ? 'Unblock study' : overdue ? 'Schedule now' : 'Book session';
+      const ctaLabel = causeClass === 'contributor_blockage' ? 'Resolve scheduling'
+        : fullOnPaper ? 'Unblock study'
+        : overdue ? 'Schedule now'
+        : 'Book session';
       return `<tr>
         <td><span style="color:var(--text)">${esc(name)}</span><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${esc(acceptedAt ? acceptedAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Accepted')}</div></td>
         <td>${esc(title)}</td>
-        <td><div>${riskBadge}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">${esc(riskParts.join(' · '))}</div></td>
+        <td>
+          <div>${riskBadge}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">${esc(riskParts.join(' · '))}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">${renderCauseClassBadge(causeClass)}${renderResolutionConfidenceBadge(confidence)}</div>
+        </td>
         <td style="text-align:right">
           <a href="vetd-client.html?study_id=${esc(a.study_id)}&application_id=${esc(a.id)}&section=sessions" target="_blank"
              style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:500;background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.25);text-decoration:none;font-family:var(--mono)"
