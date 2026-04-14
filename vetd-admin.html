@@ -459,6 +459,12 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
 
   <div class="card" style="margin-bottom:14px">
+    <div class="card-title">Action Effectiveness</div>
+    <div id="action-effectiveness-body"></div>
+    <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">Based on actions from the last 14 days</div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
     <div class="card-title">Matching Health</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px">
@@ -1510,6 +1516,66 @@ async function checkAdminActionEffectiveness() {
   }
 }
 
+function getActionEffectivenessSummary(days = 14) {
+  try {
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const events = loadAdminActionEvents().filter(ev =>
+      ev.status !== 'superseded' && new Date(ev.created_at).getTime() >= cutoff
+    );
+    return ['accepted_not_scheduled', 'overdue_session', 'fill_risk'].map(queueType => {
+      const q = events.filter(ev => ev.queue_type === queueType);
+      const resolved = q.filter(ev => ev.status === 'resolved').length;
+      const failed   = q.filter(ev => ev.status === 'failed').length;
+      const pending  = q.filter(ev => ev.status === 'pending').length;
+      const checked  = resolved + failed;
+      return { queueType, resolved, failed, pending, checked, resolvedRate: checked > 0 ? resolved / checked : null };
+    });
+  } catch (e) {
+    return ['accepted_not_scheduled', 'overdue_session', 'fill_risk'].map(queueType =>
+      ({ queueType, resolved: 0, failed: 0, pending: 0, checked: 0, resolvedRate: null })
+    );
+  }
+}
+
+function renderActionEffectiveness() {
+  try {
+    const el = document.getElementById('action-effectiveness-body');
+    if (!el) return;
+    const labels = {
+      accepted_not_scheduled: 'Accepted not scheduled',
+      overdue_session:        'Overdue sessions',
+      fill_risk:              'Fill risk',
+    };
+    const rows = getActionEffectivenessSummary(14);
+    el.innerHTML = rows.map(({ queueType, checked, pending, resolvedRate }, i) => {
+      let primary, sub;
+      if (checked === 0) {
+        primary = `<span style="color:var(--text3)">No completed actions yet</span>`;
+        sub = '0 checked';
+      } else if (checked < 5) {
+        primary = `<span style="color:var(--amber)">Low signal</span>`;
+        sub = `${checked} checked`;
+      } else {
+        const pct = Math.round(resolvedRate * 100);
+        const color = pct >= 70 ? 'var(--green-mid)' : pct >= 40 ? 'var(--amber)' : 'var(--coral)';
+        primary = `<span style="color:${color};font-weight:600">${pct}% resolved</span>`;
+        sub = `${checked} checked`;
+      }
+      if (pending > 0) sub += ` · ${pending} in progress`;
+      const border = i < rows.length - 1 ? 'border-bottom:1px solid var(--border)' : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${border}">
+        <span style="font-size:12px;color:var(--text2);font-family:var(--sans)">${labels[queueType]}</span>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-family:var(--mono)">${primary}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px">${sub}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    // never break admin rendering
+  }
+}
+
 // ────────────────────────────────────────────────────────────
 
 async function loadStudyAttention() {
@@ -2266,8 +2332,11 @@ async function runAdminRefreshCycle() {
       : { lastSuccessAt: prevState.lastSuccessAt, healthy: false };
 
     renderAdminRefreshState();
-    // Effectiveness checker runs after display — failure never affects health indicator
-    checkAdminActionEffectiveness().catch(() => {});
+    renderActionEffectiveness();
+    // Effectiveness checker runs after display — re-renders card with updated statuses on completion
+    checkAdminActionEffectiveness()
+      .then(() => renderActionEffectiveness())
+      .catch(() => {});
     return healthy;
   } finally {
     window._adminRefreshInFlight = false;
