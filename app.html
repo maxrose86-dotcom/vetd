@@ -208,8 +208,10 @@
     position: sticky; top: 0; z-index: 100;
     box-shadow: 0 1px 12px rgba(0,0,0,0.06);
   }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .topbar-logo { font-family: var(--serif); font-size: 22px; }
   .topbar-logo span { color: var(--green); }
+  .topbar-identity { font-size: 11px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; white-space: nowrap; }
   .topbar-nav { display: flex; gap: 4px; }
   .topbar-nav button {
     padding: 7px 16px; border-radius: 100px; border: none; background: transparent;
@@ -899,7 +901,10 @@
 <div id="app" class="screen">
   <div class="app-shell">
     <div class="app-topbar">
-      <a href="index.html" class="topbar-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green)">d</span></a>
+      <div class="topbar-brand">
+        <a href="index.html" class="topbar-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green)">d</span></a>
+        <span class="topbar-identity">Contributor</span>
+      </div>
       <div class="topbar-nav">
         <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
         <button onclick="showTab('studies', this)" data-i18n="nav_browse">Available opportunities</button>
@@ -1433,13 +1438,16 @@
           data: {
             first_name: fname,
             last_name: lname,
-            role: 'contributor',
             referral_source: referral
           }
         }
       });
 
       if (error) throw error;
+
+      if (data.session && data.user) {
+        await ensureOwnProfileRole('contributor', data.user);
+      }
 
       // Show email confirmation message instead of advancing
       document.getElementById('email-confirm-msg').style.display = 'block';
@@ -1974,7 +1982,87 @@
     document.getElementById('lang-toggle').classList.add('light');
   }
 
+  function normalizePortalRole(role) {
+    return typeof role === 'string' ? role.trim().toLowerCase() : '';
+  }
+
+  async function ensureOwnProfileRole(expectedRole, userOverride = null) {
+    if (!db) return { ok: true, source: 'demo' };
+
+    const user = userOverride || (await db.auth.getUser()).data.user;
+    if (!user) return { ok: false, reason: 'unauthenticated' };
+
+    const { data: profile, error: profileErr } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileErr) throw profileErr;
+
+    const profileRole = normalizePortalRole(profile?.role);
+    if (profileRole) {
+      return { ok: profileRole === expectedRole, role: profileRole, source: 'profile' };
+    }
+
+    const { error: upsertErr } = await db.from('profiles').upsert(
+      { id: user.id, role: expectedRole },
+      { onConflict: 'id' }
+    );
+    if (upsertErr) throw upsertErr;
+
+    return { ok: true, role: expectedRole, source: 'created' };
+  }
+
+  async function redirectWrongContributorPortal(roleSource) {
+    const actualRole = normalizePortalRole(roleSource);
+    const target = actualRole === 'client'
+      ? 'login.html?intent=company&reason=wrong_portal'
+      : 'login.html?reason=missing_role';
+
+    if (db) {
+      try {
+        await db.auth.signOut();
+      } catch (err) {
+        console.warn('Contributor portal sign-out failed:', err);
+      }
+    }
+
+    window.location.replace(target);
+    return { ok: false, reason: 'wrong_portal' };
+  }
+
+  async function assertPortalRole(expectedRole) {
+    if (!db) return { ok: true, session: null, source: 'demo' };
+
+    const { data: { session }, error: sessionErr } = await db.auth.getSession();
+    if (sessionErr) throw sessionErr;
+    if (!session) return { ok: false, reason: 'unauthenticated' };
+
+    const user = session.user;
+    const { data: profile, error: profileErr } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileErr) throw profileErr;
+
+    const profileRole = normalizePortalRole(profile?.role);
+    if (!profileRole) {
+      return redirectWrongContributorPortal(profileRole);
+    }
+
+    return profileRole === expectedRole
+      ? { ok: true, session, source: 'profile' }
+      : redirectWrongContributorPortal(profileRole);
+  }
+
   async function goToApp() {
+    if (db) {
+      const roleCheck = await assertPortalRole('contributor');
+      if (!roleCheck.ok) return;
+    }
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
@@ -2032,6 +2120,36 @@
     return `${dayName}, ${datePart} ${at} ${timePart}`;
   }
 
+  function getContributorAvailabilitySlotCount() {
+    const availableTimes = state.contribData?.available_times;
+    if (!Array.isArray(availableTimes)) return 0;
+    return availableTimes.filter(v => typeof v === 'string' ? v.trim() : Boolean(v)).length;
+  }
+
+  function hasContributorAvailability() {
+    return getContributorAvailabilitySlotCount() >= 2;
+  }
+
+  function formatAcceptedWaitText(acceptedAt) {
+    if (!acceptedAt) return '';
+    const acceptedMs = new Date(acceptedAt).getTime();
+    if (Number.isNaN(acceptedMs)) return '';
+    const days = Math.max(0, Math.floor((Date.now() - acceptedMs) / 86400000));
+    if (days === 0) return t('accepted_today_unscheduled');
+    if (days === 1) return t('accepted_day_unscheduled');
+    return t('accepted_days_unscheduled').replace('{count}', days);
+  }
+
+  function openAvailabilityEditor() {
+    const profileBtn = document.querySelector('.topbar-nav button:nth-child(4)');
+    if (!profileBtn) return;
+    showTab('profile', profileBtn);
+    enterEditMode();
+    requestAnimationFrame(() => {
+      document.getElementById('edit-chips-times')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
   function sessionTimeUntil(isoStr) {
     const diff = new Date(isoStr) - Date.now();
     if (diff <= 0) return t('starting_now');
@@ -2077,7 +2195,12 @@
     if (status === 'completed') return { phase: 'completed', label: t('status_completed_awaiting'),  sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
 
     // accepted
-    if (!app.scheduled_at) return { phase: 'scheduled', label: t('status_accepted'), sublabel: t('waiting_schedule'), canJoin: false, showCountdown: false, countdownText: null };
+    if (!app.scheduled_at) {
+      const hasAvailability = hasContributorAvailability();
+      return hasAvailability
+        ? { phase: 'accepted_ready', label: t('status_accepted_ready'), sublabel: t('waiting_schedule_ready'), canJoin: false, showCountdown: false, countdownText: null }
+        : { phase: 'accepted_needs_availability', label: t('status_accepted_needs_availability'), sublabel: t('waiting_schedule_needs_availability'), canJoin: false, showCountdown: false, countdownText: null };
+    }
 
     const scheduled  = new Date(app.scheduled_at).getTime();
     const dur        = ((durationMinutes || 60) + 30) * 60 * 1000; // session + 30 min buffer
@@ -2122,7 +2245,7 @@
     try {
       const { data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
+        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false });
       if (error) throw error;
@@ -2294,11 +2417,16 @@
       const metaParts = [companyName, formatLabel, duration ? duration + ' min' : null, pay].filter(Boolean);
 
       const ss = getSessionStatus(a, study.duration_minutes || null);
+      const acceptedWaitText = a.status === 'accepted' && !a.scheduled_at
+        ? formatAcceptedWaitText(a.updated_at)
+        : '';
 
       const badgeCls = {
         pending:       'app-status-pending',
         invited:       'app-status-invited',
         declined:      'app-status-rejected',
+        accepted_needs_availability: 'app-status-accepted',
+        accepted_ready:'app-status-accepted',
         scheduled:     'app-status-accepted',
         starting_soon: 'app-status-pending',
         in_progress:   'app-status-in-progress',
@@ -2326,6 +2454,26 @@
         statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
       } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
+      } else if (ss.phase === 'accepted_needs_availability') {
+        const availabilitySlots = getContributorAvailabilitySlotCount();
+        const availabilityHint = availabilitySlots === 1
+          ? `<span style="font-size:11px;color:var(--gray-400)">${t('availability_needs_more_hint')}</span>`
+          : '';
+        statusDetail = `
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-style:italic">${esc(ss.sublabel)}</span>
+            ${acceptedWaitText ? `<span style="font-size:11px;color:var(--gray-400)">${esc(acceptedWaitText)}</span>` : ''}
+            ${availabilityHint}
+            <div>
+              <button class="btn-join" style="padding:7px 16px;font-size:12px" onclick="openAvailabilityEditor()">${t('set_availability_btn')}</button>
+            </div>
+          </div>`;
+      } else if (ss.phase === 'accepted_ready') {
+        statusDetail = `
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-style:italic">${esc(ss.sublabel)}</span>
+            ${acceptedWaitText ? `<span style="font-size:11px;color:var(--gray-400)">${esc(acceptedWaitText)}</span>` : ''}
+          </div>`;
       } else if (ss.phase === 'scheduled' && ss.sublabel === t('waiting_schedule')) {
         const waitCopy = sessionType === 'group' ? t('waiting_schedule_group') : ss.sublabel;
         statusDetail = `<span style="font-style:italic">${esc(waitCopy)}</span>`;
@@ -2768,6 +2916,10 @@ async function applyToStudy(studyId, answers = null) {
       loadRatingBreakdown();
       renderBoostCard();
       renderProfileCompletionCard();
+      if (state.myApplications.length) {
+        const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+        renderMyApplications(activeFilter);
+      }
 
     } catch(err) {
       console.error('Failed to load user profile:', err);
@@ -3457,17 +3609,11 @@ async function applyToStudy(studyId, answers = null) {
       return;
     }
 
-    // Check URL flag first (instant, no waiting)
-    if (searchParams.has('logged_in')) {
-      goToApp();
-      return;
-    }
-    // Then check Supabase session
     if (!db) return;
     try {
-      const { data: { session } } = await db.auth.getSession();
-      if (session) {
-        goToApp();
+      const roleCheck = await assertPortalRole('contributor');
+      if (roleCheck.ok) {
+        await goToApp();
       }
     } catch(e) {
       console.warn('Session check failed:', e);
@@ -3642,6 +3788,15 @@ async function applyToStudy(studyId, answers = null) {
       status_declined: 'Declined',
       waiting_schedule: 'You accepted — the study team will send you a session time shortly',
       waiting_schedule_group: 'You accepted — the study team will send a group session time shortly',
+      status_accepted_needs_availability: 'Accepted — add your availability to get scheduled',
+      waiting_schedule_needs_availability: 'Add your availability so the study team can book you.',
+      status_accepted_ready: 'Accepted — ready to be booked',
+      waiting_schedule_ready: 'You are ready to be booked when the study team picks a time.',
+      availability_needs_more_hint: 'Add more availability to increase your chances of being scheduled.',
+      accepted_today_unscheduled: 'Accepted today — not yet scheduled',
+      accepted_day_unscheduled: 'Accepted 1 day ago — not yet scheduled',
+      accepted_days_unscheduled: 'Accepted {count} days ago — not yet scheduled',
+      set_availability_btn: 'Set availability',
       session_type_group: 'Group session',
       join_early_hint: 'You can join 15 minutes before start',
       group_session_context: 'You\'ll join a group discussion with other participants',
@@ -3859,6 +4014,15 @@ async function applyToStudy(studyId, answers = null) {
       status_declined: 'Avböjd',
       waiting_schedule: 'Du accepterade — studieansvariga skickar en sessionstid till dig inom kort',
       waiting_schedule_group: 'Du accepterade — studieansvariga skickar en gruppsessionstid till dig inom kort',
+      status_accepted_needs_availability: 'Accepterad — lägg till din tillgänglighet för att bli schemalagd',
+      waiting_schedule_needs_availability: 'Lägg till din tillgänglighet så att studieteamet kan boka dig.',
+      status_accepted_ready: 'Accepterad — redo att bokas',
+      waiting_schedule_ready: 'Du är redo att bokas när studieteamet väljer en tid.',
+      availability_needs_more_hint: 'Lägg till mer tillgänglighet för att öka chansen att bli schemalagd.',
+      accepted_today_unscheduled: 'Accepterad idag — ännu inte schemalagd',
+      accepted_day_unscheduled: 'Accepterad för 1 dag sedan — ännu inte schemalagd',
+      accepted_days_unscheduled: 'Accepterad för {count} dagar sedan — ännu inte schemalagd',
+      set_availability_btn: 'Lägg till tillgänglighet',
       session_type_group: 'Gruppsession',
       join_early_hint: 'Du kan gå med 15 minuter innan start',
       group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',

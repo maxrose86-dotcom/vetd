@@ -203,6 +203,18 @@
   }
   .error-msg.show { display: block; }
 
+  .portal-message {
+    display: none;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-bottom: 1rem;
+  }
+  .portal-message.show { display: block; }
+
   .success-msg {
     background: var(--green-light);
     color: var(--green-dark);
@@ -228,8 +240,65 @@
   }
   .back-link:hover { color: var(--gray-700); }
 
+  .intent-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 1.5rem;
+  }
+
+  .intent-card {
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    background: #fff;
+    padding: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    font-family: var(--sans);
+  }
+
+  .intent-card:hover {
+    border-color: var(--green-mid);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  }
+
+  .intent-card-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+  }
+
+  .intent-card-copy {
+    display: block;
+    font-size: 13px;
+    color: var(--gray-400);
+    font-weight: 300;
+  }
+
+  .intent-switch {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--gray-400);
+    font-weight: 300;
+  }
+
+  .intent-switch a {
+    color: var(--green);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .intent-switch a:hover { text-decoration: underline; }
+
   @media (max-width: 480px) {
     .login-card { padding: 2rem 1.5rem; }
+    .intent-grid { grid-template-columns: 1fr; }
   }
 
   /* ── MOBILE RESPONSIVENESS ── */
@@ -276,7 +345,7 @@
 
 <div class="login-card">
   <a href="index.html" class="logo" style="text-decoration:none;color:inherit;display:block">Vet<span>d</span></a>
-  <div class="login-subtitle" data-i18n="login_welcome">Welcome back</div>
+  <div class="login-subtitle" id="login-subtitle" data-i18n="login_welcome">Welcome back</div>
 
   <!-- EMAIL CONFIRMED BANNER (shown after clicking confirmation link) -->
   <div id="confirmed-banner" style="display:none;background:#DCFFF0;border:1px solid #A7F3D0;border-radius:10px;padding:12px 16px;margin-bottom:1.25rem;align-items:center;gap:10px">
@@ -287,8 +356,36 @@
     </div>
   </div>
 
+  <div id="portal-message" class="portal-message"></div>
+
+  <!-- ROLE CHOOSER VIEW -->
+  <div class="view active" id="view-chooser">
+    <div style="text-align:center">
+      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px">Choose your sign-in</h2>
+      <p style="color:var(--gray-400);font-size:13px;font-weight:300">Start with the portal that matches your account type.</p>
+    </div>
+
+    <div class="intent-grid">
+      <button class="intent-card" onclick="chooseRole('contributor')">
+        <span class="intent-card-title">Contributor</span>
+        <span class="intent-card-copy">Join paid research sessions and manage your profile.</span>
+      </button>
+      <button class="intent-card" onclick="chooseRole('company')">
+        <span class="intent-card-title">Company</span>
+        <span class="intent-card-copy">Run studies, review applicants, and manage scheduling.</span>
+      </button>
+    </div>
+  </div>
+
   <!-- LOGIN VIEW -->
-  <div class="view active" id="view-login">
+  <div class="view" id="view-login">
+    <div class="back-link" onclick="showRoleChooser()">← Back</div>
+
+    <div style="margin-bottom:1.5rem">
+      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px" id="login-intent-title">Sign in</h2>
+      <p style="color:var(--gray-400);font-size:13px;font-weight:300" id="login-intent-subtitle">Sign in to your Vetd account.</p>
+    </div>
+
     <div class="error-msg" id="login-error"></div>
 
     <div class="field">
@@ -308,7 +405,11 @@
     <div class="divider">or</div>
 
     <div class="signup-link">
-      <span data-i18n="login_no_account">Don't have an account?</span> <a href="app.html" data-i18n="login_signup_link">Sign up free</a>
+      <span data-i18n="login_no_account">Don't have an account?</span> <a href="app.html" id="signup-link" data-i18n="login_signup_link">Sign up free</a>
+    </div>
+
+    <div class="intent-switch">
+      <a id="intent-switch-link" onclick="switchRoleIntent()"></a>
     </div>
   </div>
 
@@ -341,6 +442,7 @@
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
 
   let db = null;
+  let chosenRole = null;
   try {
     if (window.supabase && window.supabase.createClient) {
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -360,10 +462,138 @@
     });
   }
 
+  function normalizeIntent(intent) {
+    const normalized = typeof intent === 'string' ? intent.trim().toLowerCase() : '';
+    if (normalized === 'client') return 'company';
+    return normalized === 'contributor' || normalized === 'company' ? normalized : null;
+  }
+
+  function getIntentFromUrl() {
+    return normalizeIntent(new URLSearchParams(window.location.search).get('intent'));
+  }
+
+  function getChosenRole() {
+    return getIntentFromUrl() || chosenRole;
+  }
+
+  function syncIntentUrl(role) {
+    const params = new URLSearchParams(window.location.search);
+    const normalizedRole = normalizeIntent(role);
+    if (normalizedRole) {
+      params.set('intent', normalizedRole);
+    } else {
+      params.delete('intent');
+    }
+    const nextQuery = params.toString();
+    const nextUrl = nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname;
+    window.history.replaceState(null, '', nextUrl);
+  }
+
+  function updateIntentCopy() {
+    chosenRole = getChosenRole();
+    const isContributor = chosenRole === 'contributor';
+    const subtitle = document.getElementById('login-subtitle');
+    const titleEl = document.getElementById('login-intent-title');
+    const subtitleEl = document.getElementById('login-intent-subtitle');
+    const switchLink = document.getElementById('intent-switch-link');
+    const signupLink = document.getElementById('signup-link');
+
+    if (!subtitle || !titleEl || !subtitleEl || !switchLink || !signupLink) return;
+
+    if (!chosenRole) {
+      subtitle.textContent = 'Welcome back';
+      return;
+    }
+
+    subtitle.textContent = isContributor ? 'Contributor sign-in' : 'Company sign-in';
+    titleEl.textContent = isContributor ? 'Sign in as a contributor' : 'Sign in as a company';
+    subtitleEl.textContent = isContributor
+      ? 'Use your contributor account to apply, join sessions, and manage your profile.'
+      : 'Use your company account to run studies and manage participants.';
+    switchLink.textContent = isContributor
+      ? 'Not a contributor? Sign in as a company'
+      : 'Not a company? Sign in as a contributor';
+    signupLink.href = isContributor ? 'app.html' : 'vetd-client.html?intent=company';
+  }
+
+  function chooseRole(role, formView = 'login') {
+    chosenRole = normalizeIntent(role);
+    if (!chosenRole) {
+      showRoleChooser();
+      return;
+    }
+    syncIntentUrl(chosenRole);
+    updateIntentCopy();
+    showView(formView);
+  }
+
+  function switchRoleIntent() {
+    chooseRole(getChosenRole() === 'contributor' ? 'company' : 'contributor');
+  }
+
+  function showRoleChooser() {
+    chosenRole = null;
+    syncIntentUrl(null);
+    updateIntentCopy();
+    showView('chooser');
+  }
+
   // ─── XSS HELPER ────────────────────────────────────────────
   function esc(str) {
     if (str == null) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+
+  function normalizePortalRole(role) {
+    const normalized = typeof role === 'string' ? role.trim().toLowerCase() : '';
+    if (normalized === 'company') return 'client';
+    return normalized;
+  }
+
+  async function resolveUserRole(user) {
+    if (!db || !user?.id) return null;
+
+    const { data: profile, error: profileErr } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileErr) throw profileErr;
+
+    const profileRole = normalizePortalRole(profile?.role);
+    if (profileRole === 'contributor' || profileRole === 'client' || profileRole === 'admin') {
+      return profileRole;
+    }
+    return null;
+  }
+
+  function routeResolvedRole(role) {
+    if (role === 'contributor') {
+      window.location.href = 'app.html?logged_in=1';
+      return;
+    }
+    if (role === 'client') {
+      window.location.href = 'vetd-client.html';
+      return;
+    }
+    if (role === 'admin') {
+      window.location.href = 'vetd-admin.html';
+      return;
+    }
+    throw new Error('Unknown account type');
+  }
+
+  async function handleUnknownRole(errorEl, message) {
+    if (db) {
+      try {
+        await db.auth.signOut();
+      } catch (err) {
+        console.warn('Unknown-role sign-out failed:', err);
+      }
+    }
+    errorEl.textContent = message || 'We could not determine your account type. Please contact support.';
+    errorEl.classList.add('show');
   }
 
   // ─── LOGIN RATE LIMITING ────────────────────────────────────
@@ -436,16 +666,15 @@
 
       if (error) throw error;
 
-      // Check the user's role and redirect accordingly
-      const role = data.user?.user_metadata?.role || 'contributor';
-
-      if (role === 'contributor') {
-        window.location.href = 'app.html?logged_in=1';
-      } else if (role === 'client') {
-        window.location.href = 'vetd-client.html';
-      } else {
-        window.location.href = 'vetd-admin.html';
+      const resolvedRole = await resolveUserRole(data.user);
+      if (!resolvedRole) {
+        await handleUnknownRole(errorEl, 'We could not determine which Vetd portal belongs to this account.');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        return;
       }
+
+      routeResolvedRole(resolvedRole);
 
     } catch (err) {
       errorEl.textContent = err.message || "We couldn't sign you in. Check your email and password and try again.";
@@ -558,9 +787,37 @@
   setLang(localStorage.getItem('vetd_lang') || 'en');
 
   // ─── EMAIL CONFIRMATION BANNER ─────────────────────────────
-  if (new URLSearchParams(window.location.search).get('confirmed') === 'true') {
+  const pageParams = new URLSearchParams(window.location.search);
+
+  if (pageParams.get('confirmed') === 'true') {
     const banner = document.getElementById('confirmed-banner');
     if (banner) banner.style.display = 'flex';
+  }
+
+  const reason = pageParams.get('reason');
+  const portalMessage = document.getElementById('portal-message');
+  if (portalMessage && reason) {
+    if (reason === 'wrong_portal') {
+      portalMessage.textContent = 'This portal is for a different account type. Please sign in with the correct account.';
+      portalMessage.classList.add('show');
+    } else if (reason === 'missing_role') {
+      portalMessage.textContent = 'We couldn’t determine your account type. Please sign in again or contact support.';
+      portalMessage.classList.add('show');
+    }
+  }
+
+  if (reason) {
+    pageParams.delete('reason');
+    const nextQuery = pageParams.toString();
+    const nextUrl = nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname;
+    window.history.replaceState({}, '', nextUrl);
+  }
+
+  const initialIntent = normalizeIntent(pageParams.get('intent'));
+  if (initialIntent) {
+    chooseRole(initialIntent);
+  } else {
+    showRoleChooser();
   }
 
   // ─── COOKIE BANNER ─────────────────────────────────────────
