@@ -674,6 +674,18 @@
         return;
       }
 
+      // Enforce declared intent: if the user chose a portal, their actual role must match it.
+      // admin is exempt — admins can sign in from any intent and are routed to vetd-admin.html.
+      const intent = getChosenRole(); // 'company' | 'contributor' | null
+      if (intent && resolvedRole !== 'admin') {
+        const expectedRole = intent === 'company' ? 'client' : 'contributor';
+        if (resolvedRole !== expectedRole) {
+          await db.auth.signOut();
+          window.location.href = 'login.html?intent=' + encodeURIComponent(intent) + '&reason=wrong_portal';
+          return;
+        }
+      }
+
       routeResolvedRole(resolvedRole);
 
     } catch (err) {
