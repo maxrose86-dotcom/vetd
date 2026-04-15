@@ -2413,7 +2413,7 @@ textarea{resize:vertical;min-height:90px}
             oninput="syncScreener(${i},'text',this.value)" maxlength="200"
             style="flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none">
           <select onchange="syncScreener(${i},'type',this.value)"
-            style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;flex-shrink:0">
+            style="width:auto;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;flex-shrink:0">
             <option value="yesno"  ${q.type==='yesno'  ? 'selected':''}>Yes / No</option>
             <option value="choice" ${q.type==='choice' ? 'selected':''}>Multiple choice</option>
             <option value="text"   ${q.type==='text'   ? 'selected':''}>Short text</option>
