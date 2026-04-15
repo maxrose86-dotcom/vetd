@@ -1412,8 +1412,12 @@ textarea{resize:vertical;min-height:90px}
       const awaitingScheduling = Math.max(0, counts.accepted - counts.scheduled);
       const isOverdue = s.close_date && new Date(s.close_date) < today && status === 'active';
 
+      // Drafts open the builder in edit mode; live studies open the applicant workspace.
+      const rowClick = status === 'draft'
+        ? `openDraftInBuilder('${esc(s.id)}')`
+        : `openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')`;
       return `
-        <div class="study-row" onclick="openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')">
+        <div class="study-row" onclick="${rowClick}">
           <div class="study-row-header">
             <div class="study-title-group">
               <h3>${esc(s.title || 'Untitled study')}</h3>
@@ -1435,7 +1439,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
           ${status === 'draft' ? `
           <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-primary btn-green" onclick="event.stopPropagation();openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}','settings')">Review &amp; publish →</button>
+            <button class="btn-primary btn-green" onclick="event.stopPropagation();openDraftInBuilder('${esc(s.id)}')">Edit draft →</button>
           </div>` : ''}
           ${status === 'active' ? `
           <div style="display:flex;gap:10px;margin-top:12px">
@@ -2318,11 +2322,9 @@ textarea{resize:vertical;min-height:90px}
         console.warn('[Vetd] clients.company_id select failed — falling back to select *.', clientErr.message);
         ({ data: clientRow, error: clientErr } = await db.from('clients').select('*').eq('id', user.id).single());
       }
-      if (clientErr || !clientRow?.company_id) throw new Error('Could not resolve your company. Please refresh and try again.');
+      if (!_editingDraftId && (clientErr || !clientRow?.company_id)) throw new Error('Could not resolve your company. Please refresh and try again.');
 
-      const { error } = await db.from('studies').insert({
-        created_by:           user.id,
-        company_id:           clientRow.company_id,
+      const studyFields = {
         title,
         description:          desc || null,
         format,
@@ -2340,9 +2342,13 @@ textarea{resize:vertical;min-height:90px}
         min_rating:           minRating,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      addReq
-      });
+      };
+      const { error } = _editingDraftId
+        ? await db.from('studies').update(studyFields).eq('id', _editingDraftId)
+        : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
       if (error) throw error;
 
+      _editingDraftId = null;
       if (!isDraft) _justPublished = true;
 
       _screeners = []; renderScreenerRows();
@@ -2380,6 +2386,7 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── SCREENER BUILDER ──────────────────────────────────
   let _screeners = [];
+  let _editingDraftId = null; // set when editing an existing draft; cleared on save or leaving builder
 
   function addScreener() {
     if (_screeners.length >= 3) { showToast('Max 3 screening questions per study', true); return; }
@@ -2428,6 +2435,77 @@ textarea{resize:vertical;min-height:90px}
         </div>
       </div>`).join('');
     if (addBtn) addBtn.style.display = _screeners.length >= 3 ? 'none' : 'block';
+  }
+
+  // ─── DRAFT EDIT ─────────────────────────────────────────
+  async function openDraftInBuilder(studyId) {
+    // Use already-loaded cache first; fall back to a direct fetch if needed.
+    let study = _studiesCache?.studies?.find(s => s.id === studyId) || null;
+    if (!study && db) {
+      const { data } = await db.from('studies').select('*').eq('id', studyId).single();
+      study = data;
+    }
+    if (!study) { showToast('Could not load draft', true); return; }
+
+    // Prefill text / number / date inputs
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+    setVal('b-title',   study.title);
+    setVal('b-desc',    study.description);
+    setVal('b-spots',   study.spots ?? 10);
+    setVal('b-pay',     study.pay_per_participant ?? '');
+    setVal('b-start',   study.start_date  ? study.start_date.slice(0, 10)  : '');
+    setVal('b-close',   study.close_date ? study.close_date.slice(0, 10) : '');
+    setVal('b-addreqs', study.additional_reqs);
+
+    const formatEl = document.getElementById('b-format');
+    if (formatEl && study.format) formatEl.value = study.format;
+
+    const lengthEl = document.getElementById('b-length');
+    if (lengthEl && study.duration_minutes) {
+      const opt = study.duration_minutes + ' minutes';
+      if ([...lengthEl.options].some(o => o.value === opt || o.text === opt)) lengthEl.value = opt;
+    }
+
+    // Prefill chip groups (age, gender, location, interests)
+    const setChips = (field, values) => {
+      const group = document.querySelector(`[data-field="${field}"]`);
+      if (!group) return;
+      group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      if (!values?.length) return;
+      const valSet = new Set(values.map(String));
+      group.querySelectorAll('.chip').forEach(c => { if (valSet.has(c.dataset.value)) c.classList.add('on'); });
+    };
+    setChips('age_ranges', study.target_age_ranges);
+    setChips('genders',    study.target_genders);
+    setChips('locations',  study.target_locations);
+    setChips('interests',  study.target_interests);
+
+    // min_rating is a single-select chip group; chip values are "0", "3.0", "4.0", "4.5"
+    const ratingGroup = document.querySelector('[data-field="min_rating"]');
+    if (ratingGroup) {
+      ratingGroup.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      const ratingKey = study.min_rating != null ? parseFloat(study.min_rating).toFixed(1) : '0';
+      const ratingChip = ratingGroup.querySelector(`[data-value="${ratingKey}"]`) ||
+                         ratingGroup.querySelector('[data-value="0"]');
+      if (ratingChip) ratingChip.classList.add('on');
+    }
+
+    // Prefill screener questions
+    _screeners = Array.isArray(study.screening_questions)
+      ? study.screening_questions.map(q => ({
+          text:    q.text    || '',
+          type:    q.type    || 'yesno',
+          options: Array.isArray(q.options) ? q.options.join(', ') : (q.options || '')
+        }))
+      : [];
+    renderScreenerRows();
+
+    // Enter edit mode and navigate to builder
+    _editingDraftId = studyId;
+    showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'));
+    updatePreview();
+    refreshBuilderPoolPreview();
+    window.scrollTo(0, 0);
   }
 
   // ─── SCREENING ANSWER DISPLAY (APPLICANT REVIEW) ───────
@@ -3229,6 +3307,8 @@ textarea{resize:vertical;min-height:90px}
     if (id === 'study') {
       _studyBackTab = _currentTab;
     }
+    // Leave draft edit mode whenever navigating away from the builder
+    if (_currentTab === 'new-study' && id !== 'new-study') _editingDraftId = null;
     _currentTab = id;
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     document.getElementById('tab-'+id).classList.add('active');
