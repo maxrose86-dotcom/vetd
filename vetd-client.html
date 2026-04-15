@@ -1256,7 +1256,7 @@ textarea{resize:vertical;min-height:90px}
   let _builderContributorPoolPromise = null;
   let _builderPoolPreviewTimer = null;
   let _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
-  let _justPublishedStudy = null; // { id, title } — set on publish, cleared after first render
+  let _justPublished = false; // set on publish, cleared after first renderStudiesList()
 
   async function loadStudies() {
     const list = document.getElementById('studies-list');
@@ -1375,9 +1375,11 @@ textarea{resize:vertical;min-height:90px}
     const today = new Date(); today.setHours(0, 0, 0, 0);
 
     let bannerHtml = '';
-    if (_justPublishedStudy) {
-      const ps = _justPublishedStudy;
-      _justPublishedStudy = null;
+    if (_justPublished && filtered.length > 0) {
+      _justPublished = false;
+      // Pick the most recently created active study from the already-loaded cache —
+      // no extra query needed; loadStudies() just ran, so _studiesCache is fresh.
+      const ps = filtered[0];
       bannerHtml = `
         <div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
                     border:1px solid rgba(16,185,129,0.22);border-radius:10px;
@@ -1388,7 +1390,7 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:12px;color:var(--gray-500);margin-top:3px">Invite matched participants to fill it faster.</div>
           </div>
           <button class="btn-outline" style="white-space:nowrap;flex-shrink:0"
-            onclick="openContributorBrowser('${esc(ps.id)}','${escAttr(ps.title)}')">
+            onclick="openContributorBrowser('${esc(ps.id)}','${escAttr(ps.title||'')}')">
             Invite participants →
           </button>
         </div>`;
@@ -2318,7 +2320,7 @@ textarea{resize:vertical;min-height:90px}
       }
       if (clientErr || !clientRow?.company_id) throw new Error('Could not resolve your company. Please refresh and try again.');
 
-      const { data: newStudy, error } = await db.from('studies').insert({
+      const { error } = await db.from('studies').insert({
         created_by:           user.id,
         company_id:           clientRow.company_id,
         title,
@@ -2338,10 +2340,10 @@ textarea{resize:vertical;min-height:90px}
         min_rating:           minRating,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      addReq
-      }).select('id, title').single();
+      });
       if (error) throw error;
 
-      if (!isDraft && newStudy?.id) _justPublishedStudy = { id: newStudy.id, title: newStudy.title || title };
+      if (!isDraft) _justPublished = true;
 
       _screeners = []; renderScreenerRows();
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
