@@ -601,7 +601,7 @@ textarea{resize:vertical;min-height:90px}
       <div class="tab-pane" id="tab-studies">
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_my_studies">Your studies</h1><p id="studies-subtitle"></p></div>
-          <button class="btn-primary" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab=&quot;new-study&quot;]'))" data-i18n="cl_post_new_btn">＋ Post new study</button>
+          <button class="btn-primary" onclick="startNewStudy()" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
         <div class="filter-bar">
           <button class="fc on" data-filter="active" onclick="setStudiesFilter('active',this)">Active</button>
@@ -1367,7 +1367,7 @@ textarea{resize:vertical;min-height:90px}
           <div style="font-size:32px;margin-bottom:1rem">📋</div>
           <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${msg.text}</h3>
           ${msg.sub ? `<p style="font-size:14px;font-weight:300">${msg.sub}</p>` : ''}
-          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="showTab('new-study', document.querySelector('.nav-item[data-tab=&quot;new-study&quot;]'))">${t('cl_post_a_study') || 'Post a study'}</button>` : ''}
+          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${t('cl_post_a_study') || 'Post a study'}</button>` : ''}
         </div>`;
       return;
     }
@@ -2343,12 +2343,15 @@ textarea{resize:vertical;min-height:90px}
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      addReq
       };
-      const { error } = _editingDraftId
-        ? await db.from('studies').update(studyFields).eq('id', _editingDraftId)
+      // Derive the effective draft id from memory or URL (URL survives a page refresh).
+      const effectiveDraftId = _editingDraftId || new URLSearchParams(window.location.search).get('draft') || null;
+      const { error } = effectiveDraftId
+        ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
       if (error) throw error;
 
       _editingDraftId = null;
+      setDraftUrl(null);
       if (!isDraft) _justPublished = true;
 
       _screeners = []; renderScreenerRows();
@@ -2438,6 +2441,21 @@ textarea{resize:vertical;min-height:90px}
   }
 
   // ─── DRAFT EDIT ─────────────────────────────────────────
+  // Helpers to keep ?draft= URL param in sync with _editingDraftId.
+  function setDraftUrl(draftId) {
+    const p = new URLSearchParams(window.location.search);
+    if (draftId) p.set('draft', draftId); else p.delete('draft');
+    const q = p.toString();
+    window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
+  }
+
+  // Explicit entry point for "Post new study" — ensures edit mode is fully cleared.
+  function startNewStudy() {
+    _editingDraftId = null;
+    setDraftUrl(null);
+    showTab('new-study', null);
+  }
+
   async function openDraftInBuilder(studyId) {
     // Use already-loaded cache first; fall back to a direct fetch if needed.
     let study = _studiesCache?.studies?.find(s => s.id === studyId) || null;
@@ -2500,9 +2518,10 @@ textarea{resize:vertical;min-height:90px}
       : [];
     renderScreenerRows();
 
-    // Enter edit mode and navigate to builder
+    // Enter edit mode: persist in both memory and URL so a page refresh restores state.
     _editingDraftId = studyId;
-    showTab('new-study', document.querySelector('.nav-item[data-tab="new-study"]'));
+    setDraftUrl(studyId);
+    showTab('new-study', null);
     updatePreview();
     refreshBuilderPoolPreview();
     window.scrollTo(0, 0);
@@ -3308,7 +3327,7 @@ textarea{resize:vertical;min-height:90px}
       _studyBackTab = _currentTab;
     }
     // Leave draft edit mode whenever navigating away from the builder
-    if (_currentTab === 'new-study' && id !== 'new-study') _editingDraftId = null;
+    if (_currentTab === 'new-study' && id !== 'new-study') { _editingDraftId = null; setDraftUrl(null); }
     _currentTab = id;
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     document.getElementById('tab-'+id).classList.add('active');
@@ -4645,6 +4664,14 @@ textarea{resize:vertical;min-height:90px}
   // Called after goApp() so the app shell is fully initialised before opening modals.
   async function handleDeepLink() {
     const params  = new URLSearchParams(window.location.search);
+
+    // Restore draft edit mode after a page refresh (?draft= persists in URL).
+    const draftId = params.get('draft');
+    if (draftId) {
+      await openDraftInBuilder(draftId);
+      return;
+    }
+
     const studyId = params.get('study_id');
     const appId   = params.get('application_id');
     const section = params.get('section');
