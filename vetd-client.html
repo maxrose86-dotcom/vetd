@@ -2463,7 +2463,8 @@ textarea{resize:vertical;min-height:90px}
       const { data } = await db.from('studies').select('*').eq('id', studyId).single();
       study = data;
     }
-    if (!study) { showToast('Could not load draft', true); return; }
+    if (!study) { setDraftUrl(null); showToast('Draft not found. Starting a new study.', true); showTab('studies', document.querySelector('.nav-item[data-tab="studies"]')); return; }
+    if (study.status !== 'draft') { setDraftUrl(null); showToast(`"${study.title || 'This study'}" is already ${study.status}. Opening it instead.`, false); await openApplicants(study.id, study.title || 'Untitled study'); return; }
 
     // Prefill text / number / date inputs
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
