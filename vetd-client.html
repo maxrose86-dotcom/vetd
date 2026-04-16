@@ -1757,22 +1757,37 @@ textarea{resize:vertical;min-height:90px}
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
             actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${noShowBtn}${completeBtn}`;
           } else {
-            // One-to-one: accepted contributors can only be booked when availability is usable.
-            const statusPill = sessionPast
-              ? `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_session_time_passed')}</span>`
-              : isScheduled
-              ? `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`
-              : `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
-            const availabilityPill = !isScheduled
-              ? `<span class="badge ${canBookNow ? 'badge-green' : 'badge-amber'}">${t(canBookNow ? 'cl_ready_to_book' : 'cl_waiting_on_availability')}</span>`
-              : '';
-            const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
-            const scheduleBtn = !isScheduled
-              ? (canBookNow
-                ? `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_book_session')}</button>`
-                : '')
-              : `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
-            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${sessionPast ? noShowBtn : ''}${scheduleBtn}${completeBtn}`;
+            // One-to-one: derive one mutually exclusive scheduling state, then drive all
+            // UI from that single value. No element can appear outside its correct state.
+            // sessionPast can only be true when isScheduled is true (line 1705).
+            const schedulingState =
+              sessionPast ? 'session_past' :
+              isScheduled ? 'scheduled'    :
+              canBookNow  ? 'ready'        : 'waiting';
+
+            let statusPill, avPill = '', schedDisplay = '', scheduleBtn = '';
+
+            if (schedulingState === 'waiting') {
+              statusPill = `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+              avPill     = `<span class="badge badge-amber">${t('cl_waiting_on_availability')}</span>`;
+            } else if (schedulingState === 'ready') {
+              statusPill  = `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+              avPill      = `<span class="badge badge-green">${t('cl_ready_to_book')}</span>`;
+              scheduleBtn = `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_book_session')}</button>`;
+            } else if (schedulingState === 'scheduled') {
+              statusPill   = `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`;
+              schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
+              scheduleBtn  = `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
+            } else { // session_past
+              statusPill   = `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_session_time_passed')}</span>`;
+              schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
+              // No scheduleBtn: a past session must be completed or marked no-show first.
+            }
+
+            actions = statusPill + avPill + schedDisplay
+              + ((schedulingState === 'scheduled' || schedulingState === 'session_past') ? joinBtn : '')
+              + (schedulingState === 'session_past' ? attendanceBadge + noShowBtn + completeBtn : '')
+              + scheduleBtn;
           }
         } else if (a.status === 'invited') {
           if (sessionType === 'group') {
