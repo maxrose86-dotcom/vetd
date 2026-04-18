@@ -1450,8 +1450,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const filled = appCountMap[s.id]?.active_count || 0;
       const spots  = s.spots || 0;
 
-      // Secondary metadata line: "{format} · {filled} / {spots} spots" + optional close date
-      const secondaryParts = [formatLabel, spots > 0 ? `${filled} / ${spots} spots` : null].filter(Boolean);
+      // Secondary metadata line: "{format} · {participant count}" — state-aware
+      let participantLabel = null;
+      if (spots > 0) {
+        if (status === 'draft') {
+          // Not published yet — a filled/total count is misleading
+          participantLabel = null;
+        } else if (status === 'completed' || status === 'archived') {
+          participantLabel = filled > 0 ? `${filled} recruited` : null;
+        } else {
+          // active or paused
+          participantLabel = `${filled} of ${spots} recruited`;
+        }
+      }
+      const secondaryParts = [formatLabel, participantLabel].filter(Boolean);
       if (s.close_date) {
         const closeDate = new Date(s.close_date);
         const closeFmt  = closeDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -1849,7 +1861,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
             } else { // session_stale_outcome — >2h past, call definitively over
               // Pill framing shifts to "Outcome needed" to make the action clearer.
-              statusPill   = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">Outcome needed</span>`;
+              statusPill   = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_stage_outcome_needed')}</span>`;
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
             }
 
@@ -1891,7 +1903,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else if (a.status === 'no_show') {
-          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">No show</span>`;
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_no_show')}</span>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1938,13 +1950,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
       const pipelineStages = [
         {
-          key: 'outcome', label: 'Outcome needed', color: 'var(--coral)',
+          key: 'outcome', label: t('cl_stage_outcome_needed'), color: 'var(--coral)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at && new Date(a.scheduled_at) < _pCutoff
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          key: 'today', label: 'Today', color: 'var(--blue-dark)',
+          key: 'today', label: t('cl_stage_today'), color: 'var(--blue-dark)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at &&
             new Date(a.scheduled_at) >= _pCutoff &&
@@ -1952,15 +1964,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          key: 'schedule', label: 'Needs scheduling', color: 'var(--amber)',
+          key: 'schedule', label: t('cl_stage_needs_scheduling'), color: 'var(--amber)',
           rows: data.filter(a => a.status === 'accepted' && !a.scheduled_at),
         },
         {
-          key: 'review', label: 'Review', color: 'var(--gray-700)',
+          key: 'review', label: t('cl_stage_review'), color: 'var(--gray-700)',
           rows: data.filter(a => ['pending', 'invited'].includes(a.status)),
         },
         {
-          key: 'upcoming', label: 'Upcoming', color: 'var(--gray-400)',
+          key: 'upcoming', label: t('cl_stage_upcoming'), color: 'var(--gray-400)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at &&
             new Date(a.scheduled_at) >= _pCutoff &&
@@ -1968,7 +1980,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          key: 'done', label: 'Done', color: 'var(--gray-300,#D1D5DB)',
+          key: 'done', label: t('cl_stage_done'), color: 'var(--gray-300,#D1D5DB)',
           rows: data.filter(a => ['completed', 'no_show', 'declined', 'rejected'].includes(a.status)),
         },
       ];
@@ -4604,6 +4616,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_badge_in_progress: 'In progress',
       cl_badge_attended: 'Attended',
       cl_badge_no_show: 'No-show',
+      cl_stage_outcome_needed: 'Outcome needed',
+      cl_stage_today: 'Today',
+      cl_stage_needs_scheduling: 'Needs scheduling',
+      cl_stage_review: 'Review',
+      cl_stage_upcoming: 'Upcoming',
+      cl_stage_done: 'Done',
       cl_badge_live: 'Live',
       cl_badge_filling: 'Filling',
       cl_invite: 'Invite',
@@ -4946,6 +4964,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_badge_in_progress: 'Pågående',
       cl_badge_attended: 'Deltog',
       cl_badge_no_show: 'Uteblev',
+      cl_stage_outcome_needed: 'Utfall behövs',
+      cl_stage_today: 'Idag',
+      cl_stage_needs_scheduling: 'Behöver schemaläggas',
+      cl_stage_review: 'Granska',
+      cl_stage_upcoming: 'Kommande',
+      cl_stage_done: 'Klart',
       cl_badge_live: 'Aktiv',
       cl_badge_filling: 'Fyller på',
       cl_invite: 'Bjud in',
