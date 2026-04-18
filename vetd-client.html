@@ -517,39 +517,15 @@ textarea{resize:vertical;min-height:90px}
         </div>
 
         <div class="filter-bar" id="study-ws-nav" style="margin-bottom:1.5rem">
-          <button class="fc" onclick="switchStudySection('overview',this)">Overview</button>
-          <button class="fc on" onclick="switchStudySection('applicants',this)">Applicants</button>
-          <button class="fc" onclick="switchStudySection('sessions',this)">Sessions</button>
+          <button class="fc on" onclick="switchStudySection('people',this)">People</button>
           <button class="fc" onclick="switchStudySection('settings',this)">Settings</button>
         </div>
 
-        <!-- OVERVIEW -->
-        <div class="study-section" id="study-section-overview">
-          <div class="card" id="study-overview-content" style="min-height:120px">
-            <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">Loading…</div>
-          </div>
-        </div>
-
-        <!-- APPLICANTS -->
-        <div class="study-section active" id="study-section-applicants">
-          <div id="pipeline-applicants">
-            <div id="applicants-list">
-              <div style="text-align:center;padding:2rem;color:var(--gray-400)" data-i18n="cl_loading_applicants">Loading applicants…</div>
-            </div>
-          </div>
+        <!-- PEOPLE (unified workflow surface) -->
+        <div class="study-section active" id="study-section-people">
           <div id="applicants-group-header"></div>
-          <div id="pipeline-selected" style="display:none">
-            <div class="pipeline-label">Selected</div>
-            <div id="selected-list"></div>
-          </div>
-        </div>
-
-        <!-- SESSIONS -->
-        <div class="study-section" id="study-section-sessions">
-          <div id="pipeline-scheduled">
-            <div id="scheduled-list">
-              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px" data-i18n="cl_sessions_empty">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>
-            </div>
+          <div id="people-list">
+            <div style="text-align:center;padding:2rem;color:var(--gray-400)">Loading…</div>
           </div>
         </div>
 
@@ -1527,23 +1503,21 @@ textarea{resize:vertical;min-height:90px}
   let _contributorsFilter = 'all';
   let _contributorsCache  = null; // { scored, alreadyInvited, profileMap }
 
-  async function openApplicants(studyId, studyTitle, section = 'applicants', backTab = null) {
+  async function openApplicants(studyId, studyTitle, section = 'people', backTab = null) {
     currentApplicantsStudyId = studyId;
     currentApplicantsStudyTitle = studyTitle;
     document.getElementById('applicants-study-title').textContent = studyTitle;
     document.getElementById('applicants-count').textContent = t('cl_loading');
-    document.getElementById('applicants-list').innerHTML =
+    const peopleList = document.getElementById('people-list');
+    if (peopleList) peopleList.innerHTML =
       `<div style="text-align:center;padding:2rem;color:var(--gray-400)">${t('cl_loading_applicants')}</div>`;
-    document.getElementById('applicants-group-header').innerHTML = '';
-    document.getElementById('selected-list').innerHTML = '';
-    document.getElementById('scheduled-list').innerHTML = '';
-    document.getElementById('pipeline-selected').style.display = 'none';
+    const groupHeader = document.getElementById('applicants-group-header');
+    if (groupHeader) groupHeader.innerHTML = '';
     document.getElementById('study-ws-badge').textContent = '';
     document.getElementById('study-ws-badge').className = 'badge';
     showTab('study', null);
     if (backTab) _studyBackTab = backTab;
-    switchStudySection(section);
-    updateClientUrlParams({ tab: 'study', study_id: studyId, section, back: _studyBackTab });
+    switchStudySection(section); // alias mapping (applicants/sessions/overview → people) handled inside
     await Promise.all([loadApplicants(studyId), loadStudyOverview(studyId)]);
   }
 
@@ -1557,13 +1531,12 @@ textarea{resize:vertical;min-height:90px}
   }
 
   async function openApplicantsToRow(studyId, studyTitle, appId) {
-    await openApplicants(studyId, studyTitle);
-    switchStudySection('applicants');
+    await openApplicants(studyId, studyTitle, 'people');
     requestAnimationFrame(() => highlightApplicantRow(appId));
   }
 
   async function openStudySessionRow(studyId, studyTitle, appId) {
-    await openApplicants(studyId, studyTitle, 'sessions');
+    await openApplicants(studyId, studyTitle, 'people');
     requestAnimationFrame(() => highlightApplicantRow(appId));
   }
 
@@ -1593,7 +1566,7 @@ textarea{resize:vertical;min-height:90px}
   }
 
   async function loadApplicants(studyId) {
-    const list = document.getElementById('applicants-list');
+    const list = document.getElementById('people-list');
     const countEl = document.getElementById('applicants-count');
     const groupHeaderEl = document.getElementById('applicants-group-header');
     if (groupHeaderEl) groupHeaderEl.innerHTML = '';
@@ -1908,42 +1881,78 @@ textarea{resize:vertical;min-height:90px}
           </div>`;
       };
 
-      // Split into pipeline sections
-      const applicantRows  = data.filter(a => ['pending', 'invited', 'declined'].includes(a.status));
-      const selectedRows   = data.filter(a => a.status === 'accepted' && !a.scheduled_at);
-      const scheduledRows  = data.filter(a => !!a.scheduled_at);
+      // Unified People pipeline — all participants sorted into urgency buckets
+      const _pNow    = Date.now();
+      const _pCutoff = new Date(_pNow - 15 * 60 * 1000);
+      const _pTodayS = new Date(); _pTodayS.setHours(0, 0, 0, 0);
+      const _pTodayE = new Date(); _pTodayE.setHours(23, 59, 59, 999);
 
-      list.innerHTML = applicantRows.map(renderRow).join('');
+      const pipelineStages = [
+        {
+          label: 'Outcome needed', color: 'var(--coral)',
+          rows: data.filter(a =>
+            a.status === 'accepted' && a.scheduled_at && new Date(a.scheduled_at) < _pCutoff
+          ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
+        },
+        {
+          label: 'Today', color: 'var(--blue-dark)',
+          rows: data.filter(a =>
+            a.status === 'accepted' && a.scheduled_at &&
+            new Date(a.scheduled_at) >= _pCutoff &&
+            new Date(a.scheduled_at) >= _pTodayS && new Date(a.scheduled_at) <= _pTodayE
+          ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
+        },
+        {
+          label: 'Schedule', color: 'var(--amber)',
+          rows: data.filter(a => a.status === 'accepted' && !a.scheduled_at),
+        },
+        {
+          label: 'Review', color: 'var(--gray-700)',
+          rows: data.filter(a => ['pending', 'invited'].includes(a.status)),
+        },
+        {
+          label: 'Upcoming', color: 'var(--gray-400)',
+          rows: data.filter(a =>
+            a.status === 'accepted' && a.scheduled_at &&
+            new Date(a.scheduled_at) >= _pCutoff &&
+            !(new Date(a.scheduled_at) >= _pTodayS && new Date(a.scheduled_at) <= _pTodayE)
+          ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
+        },
+        {
+          label: 'Done', color: 'var(--gray-400)',
+          rows: data.filter(a => ['completed', 'no_show', 'declined', 'rejected'].includes(a.status)),
+        },
+      ];
 
-      const selectedList      = document.getElementById('selected-list');
-      const scheduledList     = document.getElementById('scheduled-list');
-      const pipelineSelected  = document.getElementById('pipeline-selected');
-      const pipelineScheduled = document.getElementById('pipeline-scheduled');
+      let pipelineHtml = '';
+      pipelineStages.forEach(stage => {
+        if (!stage.rows.length) return;
+        pipelineHtml +=
+          `<div style="display:flex;align-items:center;gap:8px;margin:20px 0 8px;` +
+          `font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:${stage.color}">` +
+          `${esc(stage.label)} <span style="font-weight:400;opacity:0.65">(${stage.rows.length})</span></div>`;
+        pipelineHtml += stage.rows.map(renderRow).join('');
+      });
 
-      selectedList.innerHTML = selectedRows.map(renderRow).join('');
-      pipelineSelected.style.display = selectedRows.length > 0 ? 'block' : 'none';
+      if (!pipelineHtml) {
+        pipelineHtml = `<div style="text-align:center;padding:3rem;color:var(--gray-400)">
+          <div style="font-size:32px;margin-bottom:0.75rem">📭</div>
+          <p style="font-size:14px;font-weight:300;margin-bottom:1.25rem">${t('cl_no_applicants')}</p>
+          <button class="btn-primary" onclick="openContributorBrowser('${esc(studyId)}','${escAttr(studyMeta?.title||'')}')">${t('cl_invite_participants_cta')}</button>
+        </div>`;
+      }
 
-      scheduledList.innerHTML = scheduledRows.length
-        ? scheduledRows.map(renderRow).join('')
-        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">${
-            selectedRows.length > 0
-              ? `${t(selectedRows.length > 1 ? 'cl_sessions_waiting_to_schedule_plural' : 'cl_sessions_waiting_to_schedule').replace('{count}', selectedRows.length)}
-                 <button class="btn-outline" style="margin-left:10px;font-size:11px;padding:4px 10px"
-                   onclick="switchStudySection('applicants')">${t('cl_go_to_applicants')}</button>`
-              : t('cl_sessions_empty')
-          }</div>`;
+      list.innerHTML = pipelineHtml;
 
       const rowActionMap = {
-        'schedule':      d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
-        'update-status': d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
-        'video-call':    d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
-        'complete':      d => markCompleted(d.appId, d.studyId),
+        'schedule':       d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
+        'update-status':  d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
+        'video-call':     d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
+        'complete':       d => markCompleted(d.appId, d.studyId),
         'did-not-happen': d => markSessionDidNotHappen(d.appId, d.studyId),
-        'browse':        d => openContributorBrowser(d.studyId, d.studyTitle),
+        'browse':         d => openContributorBrowser(d.studyId, d.studyTitle),
       };
       wireActions(list, rowActionMap);
-      wireActions(selectedList, rowActionMap);
-      wireActions(scheduledList, rowActionMap);
 
     } catch(err) {
       console.error('Load applicants error:', err);
@@ -3698,15 +3707,19 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── STUDY WORKSPACE HELPERS ────────────────────────────
   function switchStudySection(section, btn) {
+    // Map legacy section names to the new two-section model
+    const canonical = (section === 'overview' || section === 'applicants' || section === 'sessions')
+      ? 'people' : section;
     document.querySelectorAll('.study-section').forEach(s => s.classList.remove('active'));
-    document.getElementById('study-section-' + section).classList.add('active');
+    const sectionEl = document.getElementById('study-section-' + canonical);
+    if (sectionEl) sectionEl.classList.add('active');
     const navBtns = document.querySelectorAll('#study-ws-nav .fc');
     navBtns.forEach(b => b.classList.remove('on'));
-    const idx = ['overview','applicants','sessions','settings'].indexOf(section);
+    const idx = ['people', 'settings'].indexOf(canonical);
     const target = btn || (idx >= 0 ? navBtns[idx] : null);
     if (target) target.classList.add('on');
     if (_currentTab === 'study' && currentApplicantsStudyId) {
-      updateClientUrlParams({ tab: 'study', study_id: currentApplicantsStudyId, section, back: _studyBackTab });
+      updateClientUrlParams({ tab: 'study', study_id: currentApplicantsStudyId, section: canonical, back: _studyBackTab });
     }
   }
 
@@ -3714,7 +3727,7 @@ textarea{resize:vertical;min-height:90px}
     const overviewEl  = document.getElementById('study-overview-content');
     const settingsEl  = document.getElementById('study-settings-content');
     const badgeEl     = document.getElementById('study-ws-badge');
-    if (!overviewEl) return;
+    if (!overviewEl && !settingsEl && !badgeEl) return;
     try {
       const { data: study, error } = await db
         .from('studies')
@@ -3798,7 +3811,7 @@ textarea{resize:vertical;min-height:90px}
     const targetBtn = btn || document.querySelector(`.nav-item[data-tab="${id}"]`);
     if (targetBtn) targetBtn.classList.add('active');
     if (id === 'study' && currentApplicantsStudyId) {
-      const activeSection = document.querySelector('.study-section.active')?.id?.replace('study-section-', '') || 'applicants';
+      const activeSection = document.querySelector('.study-section.active')?.id?.replace('study-section-', '') || 'people';
       updateClientUrlParams({ tab: 'study', study_id: currentApplicantsStudyId, section: activeSection, back: _studyBackTab });
       return;
     }
@@ -5265,11 +5278,7 @@ textarea{resize:vertical;min-height:90px}
       return;
     }
 
-    const targetSection = section || (
-      appId
-        ? ((app?.status === 'accepted' || app?.status === 'completed' || app?.scheduled_at) ? 'sessions' : 'applicants')
-        : 'applicants'
-    );
+    const targetSection = section || 'people';
     await openApplicants(studyId, title, targetSection, backTab);
     if (isTransientDeepLink) updateClientUrlParams({ application_id: null, view: null });
 
