@@ -2952,6 +2952,281 @@ textarea{resize:vertical;min-height:90px}
     }
   }
 
+  const QA_APPLICANT_SEED_TITLE = '[QA] Applicant pipeline seed';
+
+  function qaSeedIso({ days = 0, hours = 0, minutes = 0 }) {
+    return new Date(Date.now() + (((days * 24) + hours) * 60 + minutes) * 60000).toISOString();
+  }
+
+  window.seedQaApplicantPipeline = async function seedQaApplicantPipeline(options = {}) {
+    if (!db || !currentClientUser) {
+      showToast('Sign in to the company portal first, then rerun the QA seed helper.', true);
+      return null;
+    }
+
+    const includeCompleted = options.includeCompleted !== false;
+    const includeNoShow = options.includeNoShow !== false;
+
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
+      let { data: clientRow, error: clientErr } = await db
+        .from('clients').select('company_id').eq('id', user.id).single();
+      if (clientErr) {
+        ({ data: clientRow, error: clientErr } = await db.from('clients').select('*').eq('id', user.id).single());
+      }
+      if (clientErr || !clientRow?.company_id) throw new Error('Could not resolve your company for QA seeding.');
+
+      const { data: previousSeedStudies, error: prevErr } = await db
+        .from('studies')
+        .select('id')
+        .eq('created_by', user.id)
+        .eq('title', QA_APPLICANT_SEED_TITLE);
+      if (prevErr) throw prevErr;
+
+      const previousSeedIds = (previousSeedStudies || []).map(s => s.id);
+      if (previousSeedIds.length) {
+        const neutralizeTs = new Date().toISOString();
+        const { error: neutralizeErr } = await db
+          .from('applications')
+          .update({
+            status: 'declined',
+            scheduled_at: null,
+            room_name: null,
+            room_url: null,
+            joined_call_at: null,
+            last_call_activity: null,
+            updated_at: neutralizeTs
+          })
+          .in('study_id', previousSeedIds);
+        if (neutralizeErr) console.warn('QA seed neutralize applications warning:', neutralizeErr);
+
+        const { error: archiveErr } = await db
+          .from('studies')
+          .update({ status: 'archived', filled_spots: 0 })
+          .in('id', previousSeedIds);
+        if (archiveErr) console.warn('QA seed archive studies warning:', archiveErr);
+      }
+
+      const contributorSelect = 'id, available_times, profiles(first_name, last_name)';
+      const { data: contributors, error: contribErr } = await db
+        .from('contributors')
+        .select(contributorSelect)
+        .order('id', { ascending: true })
+        .limit(100);
+      if (contribErr) throw contribErr;
+
+      const allContributors = contributors || [];
+      const weakPool = allContributors.filter(c => getAvailabilitySlotCount(c) <= 1);
+      const strongPool = allContributors.filter(c => hasSchedulableAvailability(c));
+      const usedIds = new Set();
+      const takeContributor = (pool) => {
+        const next = pool.find(c => c?.id && !usedIds.has(c.id));
+        if (!next) return null;
+        usedIds.add(next.id);
+        return next;
+      };
+
+      const acceptedWeak = takeContributor(weakPool);
+      const acceptedReady = takeContributor(strongPool);
+      const acceptedFuture = takeContributor(strongPool);
+      const acceptedPast = takeContributor(strongPool);
+      const completedContributor = includeCompleted ? takeContributor(strongPool) : null;
+      const noShowContributor = includeNoShow ? takeContributor(strongPool) : null;
+      const pendingContributor = takeContributor(allContributors);
+
+      if (!acceptedWeak || !acceptedReady || !acceptedFuture || !acceptedPast || !pendingContributor) {
+        throw new Error(
+          `QA seed needs at least 5 contributors with 1 weak-availability and 3 schedulable profiles. Found ${weakPool.length} weak and ${strongPool.length} schedulable.`
+        );
+      }
+
+      const studyPayload = {
+        created_by: user.id,
+        company_id: clientRow.company_id,
+        title: QA_APPLICANT_SEED_TITLE,
+        description: 'Deterministic QA seed study for company-side applicant pipeline testing.',
+        format: 'video_call',
+        session_type: 'one_to_one',
+        duration_minutes: 60,
+        spots: 7,
+        pay_per_participant: 300,
+        start_date: qaSeedIso({ days: 2 }).slice(0, 10),
+        close_date: qaSeedIso({ days: 10 }).slice(0, 10),
+        status: 'active',
+        filled_spots: 0,
+        target_age_ranges: null,
+        target_genders: null,
+        target_locations: null,
+        target_interests: null,
+        min_rating: null,
+        screening_questions: null,
+        additional_reqs: 'QA seed only'
+      };
+
+      const { data: insertedStudy, error: studyErr } = await db
+        .from('studies')
+        .insert(studyPayload)
+        .select('id, title')
+        .single();
+      if (studyErr) throw studyErr;
+
+      const seededRows = [
+        {
+          label: 'pending',
+          contributor: pendingContributor,
+          status: 'pending',
+          applied_at: qaSeedIso({ days: -3 }),
+          updated_at: qaSeedIso({ days: -3 }),
+          scheduled_at: null,
+          room_name: null,
+          room_url: null,
+          joined_call_at: null,
+          last_call_activity: null
+        },
+        {
+          label: 'accepted_weak',
+          contributor: acceptedWeak,
+          status: 'accepted',
+          applied_at: qaSeedIso({ days: -6 }),
+          updated_at: qaSeedIso({ days: -4 }),
+          scheduled_at: null,
+          room_name: null,
+          room_url: null,
+          joined_call_at: null,
+          last_call_activity: null
+        },
+        {
+          label: 'accepted_ready',
+          contributor: acceptedReady,
+          status: 'accepted',
+          applied_at: qaSeedIso({ days: -5 }),
+          updated_at: qaSeedIso({ days: -2 }),
+          scheduled_at: null,
+          room_name: null,
+          room_url: null,
+          joined_call_at: null,
+          last_call_activity: null
+        },
+        {
+          label: 'accepted_future_session',
+          contributor: acceptedFuture,
+          status: 'accepted',
+          applied_at: qaSeedIso({ days: -4 }),
+          updated_at: qaSeedIso({ days: -1 }),
+          scheduled_at: qaSeedIso({ days: 1, hours: 2 }),
+          room_name: 'QA seed room',
+          room_url: 'https://example.com/vetd-qa-seed',
+          joined_call_at: null,
+          last_call_activity: null
+        },
+        {
+          label: 'accepted_past_session',
+          contributor: acceptedPast,
+          status: 'accepted',
+          applied_at: qaSeedIso({ days: -4 }),
+          updated_at: qaSeedIso({ days: -1 }),
+          scheduled_at: qaSeedIso({ days: -1, hours: -2 }),
+          room_name: 'QA seed room',
+          room_url: 'https://example.com/vetd-qa-seed',
+          joined_call_at: null,
+          last_call_activity: null
+        }
+      ];
+
+      if (completedContributor) {
+        seededRows.push({
+          label: 'completed',
+          contributor: completedContributor,
+          status: 'completed',
+          applied_at: qaSeedIso({ days: -8 }),
+          updated_at: qaSeedIso({ days: -1 }),
+          scheduled_at: qaSeedIso({ days: -2, hours: -1 }),
+          room_name: 'QA seed room',
+          room_url: 'https://example.com/vetd-qa-seed',
+          joined_call_at: qaSeedIso({ days: -2, hours: -1 }),
+          last_call_activity: qaSeedIso({ days: -2 })
+        });
+      }
+
+      if (noShowContributor) {
+        seededRows.push({
+          label: 'no_show',
+          contributor: noShowContributor,
+          status: 'no_show',
+          applied_at: qaSeedIso({ days: -7 }),
+          updated_at: qaSeedIso({ days: -1 }),
+          scheduled_at: qaSeedIso({ days: -1, hours: -4 }),
+          room_name: 'QA seed room',
+          room_url: 'https://example.com/vetd-qa-seed',
+          joined_call_at: null,
+          last_call_activity: null
+        });
+      }
+
+      for (const row of seededRows) {
+        const { data: insertedApp, error: insertErr } = await db
+          .from('applications')
+          .insert({
+            study_id: insertedStudy.id,
+            contributor_id: row.contributor.id,
+            status: 'invited',
+            applied_at: row.applied_at
+          })
+          .select('id')
+          .single();
+        if (insertErr) throw insertErr;
+
+        const { error: updateErr } = await db
+          .from('applications')
+          .update({
+            status: row.status,
+            applied_at: row.applied_at,
+            updated_at: row.updated_at,
+            scheduled_at: row.scheduled_at,
+            room_name: row.room_name,
+            room_url: row.room_url,
+            joined_call_at: row.joined_call_at,
+            last_call_activity: row.last_call_activity,
+            reminder_sent_at: null,
+            day_before_reminder_sent_at: null
+          })
+          .eq('id', insertedApp.id);
+        if (updateErr) throw updateErr;
+      }
+
+      const filledSpots = seededRows.filter(row => row.status === 'accepted' || row.status === 'completed').length;
+      await db.from('studies').update({ filled_spots: filledSpots }).eq('id', insertedStudy.id);
+
+      await Promise.all([
+        loadStudies(),
+        loadPendingApplications(),
+        loadUnscheduledApplications(),
+        loadReadyToCompleteSessions(),
+        loadUpcomingSessions()
+      ]);
+      await openApplicants(insertedStudy.id, insertedStudy.title, 'applicants', 'studies');
+      loadDashboardStats();
+
+      const summary = seededRows.map(row => ({
+        state: row.label,
+        contributor: [row.contributor?.profiles?.first_name, row.contributor?.profiles?.last_name].filter(Boolean).join(' ') || row.contributor?.id,
+        availability_slots: getAvailabilitySlotCount(row.contributor),
+        status: row.status,
+        scheduled_at: row.scheduled_at
+      }));
+      console.table(summary);
+      showToast(`QA seed ready: ${seededRows.length} applicants added to "${insertedStudy.title}".`);
+      return { studyId: insertedStudy.id, title: insertedStudy.title, rows: summary };
+    } catch (err) {
+      console.error('QA applicant seed error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(err.message || 'Could not create QA applicant seed.', true);
+      throw err;
+    }
+  };
+
   // ─── RATE LIST ───────────────────────────────────────────
   const dimScores = { punctuality: 0, engagement: 0, quality: 0, honesty: 0, profile_fit: 0 };
   const dimKeys   = ['punctuality','engagement','quality','honesty','profile_fit'];
