@@ -1166,6 +1166,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   let currentCompanyName = '';
+  let currentCompanyIsTest = false;
 
   function updateDashboardGreeting() {
     const titleEl = document.getElementById('dash-greeting');
@@ -1215,8 +1216,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (adminNameEl) adminNameEl.textContent = fullName;
 
       if (client?.company_id) {
-        const { data: company } = await db.from('companies').select('name').eq('id', client.company_id).single();
+        const { data: company } = await db.from('companies').select('name, is_test').eq('id', client.company_id).single();
         const name = company?.name || '';
+        currentCompanyIsTest = company?.is_test === true;
         currentCompanyName = name;
         const nameEl = document.getElementById('sidebar-company-name');
         const subEl  = document.getElementById('sidebar-company-sub');
@@ -2562,7 +2564,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         console.warn('[Vetd] clients.company_id select failed — falling back to select *.', clientErr.message);
         ({ data: clientRow, error: clientErr } = await db.from('clients').select('*').eq('id', user.id).single());
       }
-      if (!_editingDraftId && (clientErr || !clientRow?.company_id)) throw new Error('Could not resolve your company. Please refresh and try again.');
+      // Derive the effective draft id from memory or URL (URL survives a page refresh).
+      const effectiveDraftId = _editingDraftId || new URLSearchParams(window.location.search).get('draft') || null;
+      if (!effectiveDraftId && (clientErr || !clientRow?.company_id)) throw new Error('Could not resolve your company. Please refresh and try again.');
+
+      let companyIsTest = currentCompanyIsTest === true;
+      if (clientRow?.company_id) {
+        const { data: company, error: companyErr } = await db
+          .from('companies')
+          .select('is_test')
+          .eq('id', clientRow.company_id)
+          .single();
+        if (companyErr) throw companyErr;
+        companyIsTest = company?.is_test === true;
+        currentCompanyIsTest = companyIsTest;
+      }
 
       const studyFields = {
         title,
@@ -2579,12 +2595,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_genders:       targetGenders,
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
+        is_test:              companyIsTest,
         min_rating:           minRating,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      addReq
       };
-      // Derive the effective draft id from memory or URL (URL survives a page refresh).
-      const effectiveDraftId = _editingDraftId || new URLSearchParams(window.location.search).get('draft') || null;
       const { error } = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
