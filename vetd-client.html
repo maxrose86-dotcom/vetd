@@ -3767,18 +3767,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         badgeEl.className = `badge badge-${study.status}`;
       }
 
-      const pay = formatCurrency(study.pay_per_participant || 0);
-      const spots = study.spots || 0;
-      const filled = study.filled_spots || 0;
-      const labelStyle = 'font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:4px';
-      const valStyle   = 'font-size:20px;font-weight:600;color:var(--gray-700)';
-      overviewEl.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1rem;padding:1.25rem 1.5rem">
-          <div><div style="${labelStyle}">Pay</div><div style="${valStyle}">${esc(pay)}</div></div>
-          <div><div style="${labelStyle}">Spots</div><div style="${valStyle}">${filled}/${spots}</div></div>
-          <div><div style="${labelStyle}">Type</div><div style="${valStyle}">${esc(study.session_type === 'group' ? 'Group' : '1:1')}</div></div>
-          <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.duration_minutes || '–'))} min</div></div>
-        </div>`;
+      if (overviewEl) {
+        const pay = formatCurrency(study.pay_per_participant || 0);
+        const spots = study.spots || 0;
+        const filled = study.filled_spots || 0;
+        const labelStyle = 'font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:4px';
+        const valStyle   = 'font-size:20px;font-weight:600;color:var(--gray-700)';
+        overviewEl.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1rem;padding:1.25rem 1.5rem">
+            <div><div style="${labelStyle}">Pay</div><div style="${valStyle}">${esc(pay)}</div></div>
+            <div><div style="${labelStyle}">Spots</div><div style="${valStyle}">${filled}/${spots}</div></div>
+            <div><div style="${labelStyle}">Type</div><div style="${valStyle}">${esc(study.session_type === 'group' ? 'Group' : '1:1')}</div></div>
+            <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.duration_minutes || '–'))} min</div></div>
+          </div>`;
+      }
 
       if (settingsEl) {
         const isActive    = study.status === 'active';
