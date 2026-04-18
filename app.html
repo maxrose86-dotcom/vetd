@@ -1781,16 +1781,20 @@
     sustainability:'Sustainability', social_media:'Social media',
     parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
   };
-  const CONTRIBUTOR_TEST_COMPANY_MATCH = 'test';
-
-  function shouldHideContributorStudy(study) {
-    const companyName = String(study?.companies?.name || '').toLowerCase();
-    return study?.is_test === true || companyName.includes(CONTRIBUTOR_TEST_COMPANY_MATCH);
+  function shouldHideContributorStudy(study, contributorIsTest) {
+    return (study?.is_test === true) !== (contributorIsTest === true);
   }
 
   async function loadStudies() {
     if (!db) return; // keep demo data
     try {
+      if (!state.contribData) await loadUserProfile();
+      if (!state.contribData) {
+        state.studies = [];
+        return;
+      }
+
+      const contributorIsTest = state.contribData?.is_test === true;
       let studies = null;
       let error = null;
 
@@ -1798,7 +1802,7 @@
         .from('studies')
         .select('*, companies(name)')
         .eq('status', 'active')
-        .eq('is_test', false)
+        .eq('is_test', contributorIsTest)
         .order('created_at', { ascending: false }));
 
       if (error && /is_test/i.test(error.message || '')) {
@@ -1811,7 +1815,7 @@
 
       if (error) throw error;
 
-      studies = (studies || []).filter(s => !shouldHideContributorStudy(s));
+      studies = (studies || []).filter(s => !shouldHideContributorStudy(s, contributorIsTest));
 
       if (!studies || studies.length === 0) {
         state.studies = [];
@@ -2109,10 +2113,11 @@
     ['landing','onboarding'].forEach(s => document.getElementById(s).classList.remove('active'));
     document.getElementById('app').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
-    await Promise.all([loadStudies(), loadAppliedStudies()]);
+    await loadAppliedStudies();
+    await loadUserProfile();
+    await loadStudies();
     renderStudies('dashboard-studies', state.studies.slice(0,2));
     renderStudies('studies-list', state.studies);
-    loadUserProfile();
     loadNotifications();
     loadPayments();
     loadMyApplications();
@@ -2286,6 +2291,17 @@
   async function loadMyApplications() {
     if (!db || !state.currentUser) return;
     try {
+      let contributorIsTest = state.contribData?.is_test;
+      if (typeof contributorIsTest !== 'boolean') {
+        const { data: contributor, error: contributorError } = await db
+          .from('contributors')
+          .select('is_test')
+          .eq('id', state.currentUser.id)
+          .maybeSingle();
+        if (contributorError) throw contributorError;
+        contributorIsTest = contributor?.is_test === true;
+        state.contribData = { ...(state.contribData || {}), is_test: contributorIsTest };
+      }
       let data = null;
       let error = null;
 
@@ -2303,7 +2319,7 @@
           .order('applied_at', { ascending: false }));
       }
       if (error) throw error;
-      state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies));
+      state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies, contributorIsTest));
       // Derive upcoming sessions for dashboard
       const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
       const upcoming = state.myApplications
@@ -2961,7 +2977,7 @@ async function applyToStudy(studyId, answers = null) {
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level, is_test').eq('id', user.id).single()
       ]);
       state.profileData = profile;
       state.contribData = contrib;
@@ -3368,6 +3384,17 @@ async function applyToStudy(studyId, answers = null) {
   async function loadPayments() {
     if (!db || !state.currentUser) return;
     try {
+      let contributorIsTest = state.contribData?.is_test;
+      if (typeof contributorIsTest !== 'boolean') {
+        const { data: contributor, error: contributorError } = await db
+          .from('contributors')
+          .select('is_test')
+          .eq('id', state.currentUser.id)
+          .maybeSingle();
+        if (contributorError) throw contributorError;
+        contributorIsTest = contributor?.is_test === true;
+        state.contribData = { ...(state.contribData || {}), is_test: contributorIsTest };
+      }
       const { data: payments, error } = await db
         .from('payments')
         .select('id, amount, status, paid_at, created_at, application_id')
@@ -3399,7 +3426,7 @@ async function applyToStudy(studyId, answers = null) {
             .from('studies')
             .select('id, title, is_test, companies(name)')
             .in('id', studyIds)
-            .eq('is_test', false));
+            .eq('is_test', contributorIsTest));
 
           if (studiesError && /is_test/i.test(studiesError.message || '')) {
             ({ data: studies, error: studiesError } = await db
@@ -3409,7 +3436,7 @@ async function applyToStudy(studyId, answers = null) {
           }
           if (studiesError) throw studiesError;
 
-          const sm = Object.fromEntries((studies || []).filter(s => !shouldHideContributorStudy(s)).map(s => [s.id, s.title]));
+          const sm = Object.fromEntries((studies || []).filter(s => !shouldHideContributorStudy(s, contributorIsTest)).map(s => [s.id, s.title]));
           (apps || []).forEach(a => {
             if (sm[a.study_id]) studyTitleMap[a.id] = sm[a.study_id];
           });
