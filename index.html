@@ -951,6 +951,87 @@
 
   setLang(localStorage.getItem('vetd_lang') || 'sv');
 
+  // ─── FUNNEL TRACKING ─────────────────────────────────
+  (function () {
+    var _SB_URL = 'https://klvhkpnwesajufvtbwlk.supabase.co';
+    var _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsdmhrcG53ZXNhanVmdnRid2xrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODMyNTIsImV4cCI6MjA5MDg1OTI1Mn0.NxvPHfat8B0cmSvNoC4Nv-frk-m2ylb7LlWvDUwN_4I';
+
+    // anonymous_id: first-touch, persistent across sessions
+    var anonId;
+    try {
+      anonId = localStorage.getItem('vetd_anon_id');
+      if (!anonId) {
+        anonId = crypto.randomUUID();
+        localStorage.setItem('vetd_anon_id', anonId);
+      }
+    } catch(e) {}
+
+    // session_id: tab-scoped, flows into app.html via sessionStorage
+    var sessionId;
+    try {
+      sessionId = sessionStorage.getItem('vetd_sid');
+      if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        sessionStorage.setItem('vetd_sid', sessionId);
+      }
+    } catch(e) {}
+
+    // Capture UTM params on landing (first-touch, stored for later steps)
+    try {
+      var p = new URLSearchParams(location.search);
+      if (p.get('utm_source')) {
+        localStorage.setItem('vetd_utm', JSON.stringify({
+          utm_source:   p.get('utm_source'),
+          utm_medium:   p.get('utm_medium'),
+          utm_campaign: p.get('utm_campaign'),
+        }));
+      }
+    } catch(e) {}
+
+    function readUtm() {
+      try { return JSON.parse(localStorage.getItem('vetd_utm') || '{}'); } catch(e) { return {}; }
+    }
+
+    function funnel(eventName) {
+      var utm = readUtm();
+      var payload = {
+        event_name:   eventName,
+        anonymous_id: anonId || null,
+        session_id:   sessionId || null,
+        page_path:    location.pathname,
+        locale:       (function(){ try { return localStorage.getItem('vetd_lang'); } catch(e){ return null; } })(),
+        device_type:  /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+        referrer:     document.referrer || null,
+        utm_source:   utm.utm_source   || null,
+        utm_medium:   utm.utm_medium   || null,
+        utm_campaign: utm.utm_campaign || null,
+      };
+      fetch(_SB_URL + '/rest/v1/funnel_events', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'apikey':        _SB_KEY,
+          'Authorization': 'Bearer ' + _SB_KEY,
+          'Prefer':        'return=minimal',
+        },
+        body: JSON.stringify(payload),
+      }).catch(function() {});
+    }
+
+    // homepage_view — once per session (prevents double-fire on back/forward nav)
+    try {
+      if (!sessionStorage.getItem('vetd_hp_view')) {
+        sessionStorage.setItem('vetd_hp_view', '1');
+        funnel('homepage_view');
+      }
+    } catch(e) {}
+
+    // contributor_cta_click — any CTA that sends the visitor to app.html
+    document.querySelectorAll('a.nav-cta[href="app.html"]').forEach(function(el) {
+      el.addEventListener('click', function() { funnel('contributor_cta_click'); });
+    });
+  })();
+
   // ─── HOMEPAGE ANALYTICS ──────────────────────────────
   const trackedElements = new WeakSet();
 

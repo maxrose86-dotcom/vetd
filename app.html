@@ -1446,6 +1446,8 @@
         await ensureOwnProfileRole('contributor', data.user);
       }
 
+      void trackFunnel('signup_completed', data.user?.id);
+
       // Show email confirmation message instead of advancing
       document.getElementById('email-confirm-msg').style.display = 'block';
       const formEls = document.querySelectorAll('#step-1 .field-row, #step-1 .field, #step-1 .nav-buttons');
@@ -1546,6 +1548,7 @@
       }).eq('id', user.id);
 
       if (error) throw error;
+      void trackFunnel('contributor_profile_completed', user.id);
       setLoading(btn, false);
       return true;
     } catch (err) {
@@ -1590,6 +1593,27 @@
     } else {
       console.log('[logEvent] insert ok:', payload.event_name);
     }
+  }
+
+  // ─── FUNNEL TRACKING ─────────────────────────────────────
+  async function trackFunnel(eventName, userId) {
+    if (!db) return;
+    var utm = {};
+    try { utm = JSON.parse(localStorage.getItem('vetd_utm') || '{}'); } catch(e) {}
+    var payload = {
+      event_name:   eventName,
+      user_id:      userId || null,
+      anonymous_id: (function(){ try { return localStorage.getItem('vetd_anon_id'); } catch(e){ return null; } })(),
+      session_id:   SESSION_ID,
+      page_path:    location.pathname,
+      locale:       (function(){ try { return localStorage.getItem('vetd_lang'); } catch(e){ return null; } })(),
+      device_type:  /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+      referrer:     document.referrer || null,
+      utm_source:   utm.utm_source   || null,
+      utm_medium:   utm.utm_medium   || null,
+      utm_campaign: utm.utm_campaign || null,
+    };
+    try { await db.from('funnel_events').insert(payload); } catch(e) {}
   }
 
   // ─── CHIP OPTIONS (single source of truth) ──────────────
@@ -1972,6 +1996,7 @@
   }
 
   function startOnboarding() {
+    void trackFunnel('signup_started');
     document.getElementById('landing').classList.remove('active');
     document.getElementById('onboarding').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
