@@ -202,6 +202,17 @@ textarea{resize:vertical;min-height:90px}
 .study-ws-back{padding:7px 14px;background:transparent;color:var(--gray-400);border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.15s;white-space:nowrap;flex-shrink:0}
 .study-ws-back:hover{border-color:var(--gray-700);color:var(--gray-700)}
 .pipeline-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:10px;padding-top:14px;border-top:1px solid var(--gray-100)}
+.pipeline-stage{margin-top:24px}
+.pipeline-stage:first-child{margin-top:0}
+.pipeline-stage-header{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;margin-bottom:4px;background:var(--gray-50)}
+.pipeline-stage-header.stage-done{background:transparent;opacity:0.65}
+.pipeline-stage-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0}
+.pipeline-stage-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;flex:1}
+.pipeline-stage-count{font-size:11px;font-weight:500;color:var(--gray-400);background:var(--gray-100);padding:1px 7px;border-radius:100px}
+.pipeline-stage.stage-done .pipeline-stage-label{font-weight:500;color:var(--gray-400)}
+.pipeline-stage.stage-done .applicant-row{opacity:0.6}
+details.pipeline-done-details summary{list-style:none;cursor:pointer}
+details.pipeline-done-details summary::-webkit-details-marker{display:none}
 .applicant-row{display:flex;align-items:center;gap:1rem;padding:12px 0;border-bottom:1px solid var(--gray-100)}
 .applicant-row:last-child{border-bottom:none}
 .applicant-av{width:42px;height:42px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--green-dark);flex-shrink:0}
@@ -1622,20 +1633,7 @@ textarea{resize:vertical;min-height:90px}
         return;
       }
 
-      const accepted     = data.filter(a => a.status === 'accepted').length;
-      const scheduled    = data.filter(a => a.status === 'accepted' && a.scheduled_at).length;
-      const needsSchedul = accepted - scheduled;
-      const invited      = data.filter(a => a.status === 'invited').length;
-      const declined     = data.filter(a => a.status === 'declined').length;
-      const completed    = data.filter(a => a.status === 'completed').length;
-      const parts = [];
-      if (invited      > 0) parts.push(`${invited} ${t('cl_invited')}`);
-      if (scheduled    > 0) parts.push(`${scheduled} ${t('cl_scheduled_short')}`);
-      // Suppress per-row amber count for group studies — the group header banner handles scheduling
-      if (needsSchedul > 0 && sessionType !== 'group') parts.push(`<span style="color:var(--amber)">${needsSchedul} ${t('cl_needs_scheduling')}</span>`);
-      if (completed    > 0) parts.push(`${completed} ${t('cl_completed_short')}`);
-      if (declined     > 0) parts.push(`${declined} ${t('cl_declined_short')}`);
-      countEl.innerHTML = parts.length ? parts.join(' · ') : `${data.length} ${t('cl_participants_total')}`;
+      countEl.textContent = `${data.length} ${data.length === 1 ? 'participant' : 'participants'}`;
 
       // Group header: scheduling action banner for group studies with accepted contributors
       if (groupHeaderEl && sessionType === 'group') {
@@ -1716,7 +1714,9 @@ textarea{resize:vertical;min-height:90px}
         return { fitKey, summaryReasons, gap, nextAction };
       }
 
-      const renderRow = (a, i) => {
+      const renderRow = (a, i, stageKey) => {
+        const showDetail = stageKey === 'review';
+        const isDone = stageKey === 'done';
         const c       = a.contributors || {};
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
@@ -1858,12 +1858,17 @@ textarea{resize:vertical;min-height:90px}
           actions = `<span class="status-pill ${cls}">${lbl}</span>`;
         }
 
+        const metaLine = isDone
+          ? `${esc(rating)}★ · ${esc(appliedDate)}`
+          : `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}`;
+
         return `
           <div class="applicant-row" id="approw-${esc(a.id)}">
             <div class="applicant-av" style="background:${esc(avColors[ci])};color:${esc(avText[ci])}">${esc(initials)}</div>
             <div class="applicant-info">
               <div class="applicant-name">${esc(name)}</div>
-              <div class="applicant-meta">${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}</div>
+              <div class="applicant-meta">${metaLine}</div>
+              ${showDetail ? `
               <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
                 <span class="badge ${decision.fitKey === 'cl_fit_strong' ? 'badge-green' : decision.fitKey === 'cl_fit_possible' ? 'badge-blue' : 'badge-gray'}">${t(decision.fitKey)}</span>
                 ${decision.summaryReasons.map(reason => `<span style="font-size:11px;color:var(--gray-400)">${esc(reason)}</span>`).join(' · ')}
@@ -1876,6 +1881,7 @@ textarea{resize:vertical;min-height:90px}
                 </div>` : ''}
               ${acceptedElapsedText ? `<div style="margin-top:4px;font-size:11px;line-height:1.4;color:var(--gray-400)">${esc(acceptedElapsedText)}</div>` : ''}
               ${renderScreeningAnswers(a.screening_answers, _studyScreeningQuestions)}
+              ` : ''}
             </div>
             <div class="applicant-actions">${actions}</div>
           </div>`;
@@ -1889,13 +1895,13 @@ textarea{resize:vertical;min-height:90px}
 
       const pipelineStages = [
         {
-          label: 'Outcome needed', color: 'var(--coral)',
+          key: 'outcome', label: 'Outcome needed', color: 'var(--coral)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at && new Date(a.scheduled_at) < _pCutoff
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          label: 'Today', color: 'var(--blue-dark)',
+          key: 'today', label: 'Today', color: 'var(--blue-dark)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at &&
             new Date(a.scheduled_at) >= _pCutoff &&
@@ -1903,15 +1909,15 @@ textarea{resize:vertical;min-height:90px}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          label: 'Schedule', color: 'var(--amber)',
+          key: 'schedule', label: 'Schedule', color: 'var(--amber)',
           rows: data.filter(a => a.status === 'accepted' && !a.scheduled_at),
         },
         {
-          label: 'Review', color: 'var(--gray-700)',
+          key: 'review', label: 'Review', color: 'var(--gray-700)',
           rows: data.filter(a => ['pending', 'invited'].includes(a.status)),
         },
         {
-          label: 'Upcoming', color: 'var(--gray-400)',
+          key: 'upcoming', label: 'Upcoming', color: 'var(--gray-400)',
           rows: data.filter(a =>
             a.status === 'accepted' && a.scheduled_at &&
             new Date(a.scheduled_at) >= _pCutoff &&
@@ -1919,7 +1925,7 @@ textarea{resize:vertical;min-height:90px}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          label: 'Done', color: 'var(--gray-400)',
+          key: 'done', label: 'Done', color: 'var(--gray-300,#D1D5DB)',
           rows: data.filter(a => ['completed', 'no_show', 'declined', 'rejected'].includes(a.status)),
         },
       ];
@@ -1927,11 +1933,28 @@ textarea{resize:vertical;min-height:90px}
       let pipelineHtml = '';
       pipelineStages.forEach(stage => {
         if (!stage.rows.length) return;
-        pipelineHtml +=
-          `<div style="display:flex;align-items:center;gap:8px;margin:20px 0 8px;` +
-          `font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:${stage.color}">` +
-          `${esc(stage.label)} <span style="font-weight:400;opacity:0.65">(${stage.rows.length})</span></div>`;
-        pipelineHtml += stage.rows.map(renderRow).join('');
+        const isDoneStage = stage.key === 'done';
+        const rowsHtml = stage.rows.map((a, i) => renderRow(a, i, stage.key)).join('');
+        const headerHtml =
+          `<div class="pipeline-stage-header${isDoneStage ? ' stage-done' : ''}">` +
+            `<div class="pipeline-stage-bar" style="background:${stage.color}"></div>` +
+            `<span class="pipeline-stage-label" style="color:${stage.color}">${esc(stage.label)}</span>` +
+            `<span class="pipeline-stage-count">${stage.rows.length}</span>` +
+          `</div>`;
+        if (isDoneStage) {
+          pipelineHtml +=
+            `<div class="pipeline-stage stage-done">` +
+            `<details class="pipeline-done-details">` +
+            `<summary>${headerHtml}</summary>` +
+            rowsHtml +
+            `</details></div>`;
+        } else {
+          pipelineHtml +=
+            `<div class="pipeline-stage">` +
+            headerHtml +
+            rowsHtml +
+            `</div>`;
+        }
       });
 
       if (!pipelineHtml) {
