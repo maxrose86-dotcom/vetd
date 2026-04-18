@@ -1781,17 +1781,37 @@
     sustainability:'Sustainability', social_media:'Social media',
     parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
   };
+  const CONTRIBUTOR_TEST_COMPANY_MATCH = 'test';
+
+  function shouldHideContributorStudy(study) {
+    const companyName = String(study?.companies?.name || '').toLowerCase();
+    return study?.is_test === true || companyName.includes(CONTRIBUTOR_TEST_COMPANY_MATCH);
+  }
 
   async function loadStudies() {
     if (!db) return; // keep demo data
     try {
-      const { data: studies, error } = await db
+      let studies = null;
+      let error = null;
+
+      ({ data: studies, error } = await db
         .from('studies')
         .select('*, companies(name)')
         .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('is_test', false)
+        .order('created_at', { ascending: false }));
+
+      if (error && /is_test/i.test(error.message || '')) {
+        ({ data: studies, error } = await db
+          .from('studies')
+          .select('*, companies(name)')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false }));
+      }
 
       if (error) throw error;
+
+      studies = (studies || []).filter(s => !shouldHideContributorStudy(s));
 
       if (!studies || studies.length === 0) {
         state.studies = [];
@@ -1874,7 +1894,7 @@
       const isDashboard = containerId === 'dashboard-studies';
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
-        : `<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p></div>`;
+        : `<div class="empty-state"><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p><p style="font-size:12px;color:var(--gray-400);margin-top:8px">${t('no_studies_browse_priority')}</p></div>`;
       return;
     }
     container.innerHTML = subset.map(job => {
@@ -2266,13 +2286,24 @@
   async function loadMyApplications() {
     if (!db || !state.currentUser) return;
     try {
-      const { data, error } = await db
+      let data = null;
+      let error = null;
+
+      ({ data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
+        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, is_test, companies(name))')
         .eq('contributor_id', state.currentUser.id)
-        .order('applied_at', { ascending: false });
+        .order('applied_at', { ascending: false }));
+
+      if (error && /is_test/i.test(error.message || '')) {
+        ({ data, error } = await db
+          .from('applications')
+          .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
+          .eq('contributor_id', state.currentUser.id)
+          .order('applied_at', { ascending: false }));
+      }
       if (error) throw error;
-      state.myApplications = data || [];
+      state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies));
       // Derive upcoming sessions for dashboard
       const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
       const upcoming = state.myApplications
@@ -3361,13 +3392,35 @@ async function applyToStudy(studyId, answers = null) {
         const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
         const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
         if (studyIds.length) {
-          const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
-          const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
-          (apps || []).forEach(a => { studyTitleMap[a.id] = sm[a.study_id] || 'Study'; });
+          let studies = null;
+          let studiesError = null;
+
+          ({ data: studies, error: studiesError } = await db
+            .from('studies')
+            .select('id, title, is_test, companies(name)')
+            .in('id', studyIds)
+            .eq('is_test', false));
+
+          if (studiesError && /is_test/i.test(studiesError.message || '')) {
+            ({ data: studies, error: studiesError } = await db
+              .from('studies')
+              .select('id, title, companies(name)')
+              .in('id', studyIds));
+          }
+          if (studiesError) throw studiesError;
+
+          const sm = Object.fromEntries((studies || []).filter(s => !shouldHideContributorStudy(s)).map(s => [s.id, s.title]));
+          (apps || []).forEach(a => {
+            if (sm[a.study_id]) studyTitleMap[a.id] = sm[a.study_id];
+          });
         }
       }
 
-      renderPaymentHistory(all.map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' })));
+      renderPaymentHistory(
+        all
+          .filter(p => !p.application_id || studyTitleMap[p.application_id])
+          .map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' }))
+      );
     } catch(err) {
       console.warn('loadPayments error:', err);
     }
@@ -3754,9 +3807,10 @@ async function applyToStudy(studyId, answers = null) {
       edit_save: 'Save changes',
       limited_availability: 'Limited spots remaining',
       top_match: '★ Top match for you',
-      no_studies_dash: 'No active studies right now — check back soon.',
-      no_studies_browse: 'No studies available',
-      no_studies_browse_sub: 'There are no active studies right now. Check back soon.',
+      no_studies_dash: 'No studies available right now — you\'re early. New studies are coming soon.',
+      no_studies_browse: 'No studies available right now',
+      no_studies_browse_sub: 'We\'re currently matching the first companies with contributors. You\'re early — new studies are coming soon.',
+      no_studies_browse_priority: 'Early contributors will get priority when we open up.',
       per_session: 'per session',
       per_survey: 'per survey',
       notif_title: 'Notifications',
@@ -3984,9 +4038,10 @@ async function applyToStudy(studyId, answers = null) {
       edit_save: 'Spara ändringar',
       limited_availability: 'Begränsat antal platser kvar',
       top_match: '★ Bästa matchning för dig',
-      no_studies_dash: 'Inga aktiva studier just nu — kolla tillbaka snart.',
-      no_studies_browse: 'Inga studier tillgängliga',
-      no_studies_browse_sub: 'Det finns inga aktiva studier just nu. Kolla tillbaka snart.',
+      no_studies_dash: 'Inga studier tillgängliga just nu — du är tidig. Nya studier kommer snart.',
+      no_studies_browse: 'Inga studier tillgängliga just nu',
+      no_studies_browse_sub: 'Vi matchar just nu de första företagen med bidragsgivare. Du är tidig — nya studier kommer snart.',
+      no_studies_browse_priority: 'De första deltagarna får prioritet när vi öppnar upp.',
       per_session: 'per session',
       per_survey: 'per enkät',
       notif_title: 'Aviseringar',
