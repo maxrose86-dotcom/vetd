@@ -452,7 +452,7 @@ textarea{resize:vertical;min-height:90px}
       <div style="font-size:12px;color:var(--gray-400)" id="cl-mob-company">Your company</div>
     </div>
     <div style="padding:0.5rem 0.75rem">
-      <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
+      <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);loadDashboardStats();toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
       <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Your studies</span></button>
       <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadReadyToCompleteSessions();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
@@ -474,7 +474,7 @@ textarea{resize:vertical;min-height:90px}
       </div>
       <div class="nav-section">
         <div class="nav-label" data-i18n="cl_nav_label_overview">Overview</div>
-        <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this)"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
+        <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);loadDashboardStats()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
         <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
       </div>
       <div class="nav-section">
@@ -564,7 +564,7 @@ textarea{resize:vertical;min-height:90px}
         <div class="study-section" id="study-section-sessions">
           <div id="pipeline-scheduled">
             <div id="scheduled-list">
-              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>
+              <div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px" data-i18n="cl_sessions_empty">No sessions scheduled yet — accept applicants and schedule them to see them here.</div>
             </div>
           </div>
         </div>
@@ -659,8 +659,16 @@ textarea{resize:vertical;min-height:90px}
                 </div>
               </div>
               <div class="field-row">
-                <div class="field"><label data-i18n="cl_label_start">Study start date</label><input type="date" id="b-start"></div>
-                <div class="field"><label data-i18n="cl_label_close">Closing date</label><input type="date" id="b-close"></div>
+                <div class="field">
+                  <label data-i18n="cl_label_start">Session start date</label>
+                  <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_start_hint">When do you plan to run sessions? Helps Vetd coordinate scheduling.</div>
+                  <input type="date" id="b-start">
+                </div>
+                <div class="field">
+                  <label data-i18n="cl_label_close">Application deadline</label>
+                  <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_close_hint">Last day to accept new applicants. After this date your study is flagged as overdue.</div>
+                  <input type="date" id="b-close">
+                </div>
               </div>
             </div>
 
@@ -1258,6 +1266,22 @@ textarea{resize:vertical;min-height:90px}
   let _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
 
+  function updateClientUrlParams(updates = {}) {
+    const p = new URLSearchParams(window.location.search);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value == null || value === '') p.delete(key);
+      else p.set(key, value);
+    });
+    const q = p.toString();
+    window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
+  }
+
+  function syncStudiesFilterButtons() {
+    document.querySelectorAll('#tab-studies .filter-bar .fc').forEach(btn => {
+      btn.classList.toggle('on', btn.dataset.filter === _studiesFilter);
+    });
+  }
+
   async function loadStudies() {
     const list = document.getElementById('studies-list');
     if (!list) return;
@@ -1310,6 +1334,7 @@ textarea{resize:vertical;min-height:90px}
       }
 
       _studiesCache = { studies: studies || [], appCountMap, paymentSpendMap };
+      syncStudiesFilterButtons();
       updateDashboardGreeting();
       renderStudiesList();
     } catch(err) {
@@ -1322,7 +1347,8 @@ textarea{resize:vertical;min-height:90px}
 
   function setStudiesFilter(filter, btn) {
     _studiesFilter = filter;
-    if (btn) fc(btn);
+    if (btn) fc(btn); else syncStudiesFilterButtons();
+    updateClientUrlParams({ studies_filter: filter });
     renderStudiesList();
   }
 
@@ -1356,10 +1382,10 @@ textarea{resize:vertical;min-height:90px}
 
     if (!filtered.length) {
       const emptyMsgs = {
-        active:    { text: t('cl_no_studies') || 'No active studies',   sub: 'Post a new study to get started.', cta: true  },
-        draft:     { text: 'No draft studies',                           sub: '',                                 cta: false },
-        completed: { text: 'No completed studies',                       sub: '',                                 cta: false },
-        archived:  { text: 'No archived studies',                        sub: '',                                 cta: false },
+        active:    { text: t('cl_no_studies') || 'No active studies',   sub: t('cl_no_studies_sub') || 'Post your first study to start recruiting participants.', cta: true, ctaLabel: t('cl_start_study_setup')  },
+        draft:     { text: t('cl_empty_draft_title') || 'No draft studies', sub: t('cl_empty_draft_sub') || 'Drafts you\'ve started will appear here.',  cta: true, ctaLabel: t('cl_start_new_draft') },
+        completed: { text: t('cl_empty_completed_title') || 'No completed studies', sub: '', cta: false },
+        archived:  { text: t('cl_empty_archived_title') || 'No archived studies', sub: '', cta: false },
       };
       const msg = emptyMsgs[_studiesFilter] || emptyMsgs.all;
       list.innerHTML = `
@@ -1367,7 +1393,7 @@ textarea{resize:vertical;min-height:90px}
           <div style="font-size:32px;margin-bottom:1rem">📋</div>
           <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${msg.text}</h3>
           ${msg.sub ? `<p style="font-size:14px;font-weight:300">${msg.sub}</p>` : ''}
-          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${t('cl_post_a_study') || 'Post a study'}</button>` : ''}
+          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${esc(msg.ctaLabel || t('cl_post_a_study') || 'Post a study')}</button>` : ''}
         </div>`;
       return;
     }
@@ -1404,6 +1430,7 @@ textarea{resize:vertical;min-height:90px}
       const badgeCls = status === 'active' ? 'badge-green' : status === 'paused' ? 'badge-amber' : 'badge-gray';
       const barColor = status === 'active' ? 'var(--green)' : status === 'paused' ? 'var(--amber)' : 'var(--gray-200)';
       const statusLabel = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' }[status] || status;
+      const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
       const posted = s.created_at
         ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
         : '';
@@ -1421,7 +1448,7 @@ textarea{resize:vertical;min-height:90px}
           <div class="study-row-header">
             <div class="study-title-group">
               <h3>${esc(s.title || 'Untitled study')}</h3>
-              <p>${[DASH_FORMAT_LABEL[s.format] || s.format, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
+              <p>${[DASH_FORMAT_LABEL[displayFormat] || displayFormat, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
             </div>
             <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
               ${isOverdue ? `<span style="font-size:11px;color:var(--amber);font-weight:500">Past close date</span>` : ''}
@@ -1441,7 +1468,7 @@ textarea{resize:vertical;min-height:90px}
           <div style="display:flex;gap:10px;margin-top:12px">
             <button class="btn-primary btn-green" onclick="event.stopPropagation();openDraftInBuilder('${esc(s.id)}')">Edit draft →</button>
           </div>` : ''}
-          ${status === 'active' ? `
+          ${status === 'active' && !(counts.pending > 0 || awaitingScheduling > 0 || counts.ready_to_complete > 0) ? `
           <div style="display:flex;gap:10px;margin-top:12px">
             <button class="btn-outline" data-action="browse" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}">${t('cl_invite_contributors')}</button>
           </div>` : ''}
@@ -1466,7 +1493,7 @@ textarea{resize:vertical;min-height:90px}
   let _contributorsFilter = 'all';
   let _contributorsCache  = null; // { scored, alreadyInvited, profileMap }
 
-  async function openApplicants(studyId, studyTitle, section = 'applicants') {
+  async function openApplicants(studyId, studyTitle, section = 'applicants', backTab = null) {
     currentApplicantsStudyId = studyId;
     currentApplicantsStudyTitle = studyTitle;
     document.getElementById('applicants-study-title').textContent = studyTitle;
@@ -1480,14 +1507,18 @@ textarea{resize:vertical;min-height:90px}
     document.getElementById('study-ws-badge').textContent = '';
     document.getElementById('study-ws-badge').className = 'badge';
     showTab('study', null);
+    if (backTab) _studyBackTab = backTab;
     switchStudySection(section);
+    updateClientUrlParams({ tab: 'study', study_id: studyId, section, back: _studyBackTab });
     await Promise.all([loadApplicants(studyId), loadStudyOverview(studyId)]);
   }
 
   function closeApplicants() {
     currentApplicantsStudyId = null;
+    currentApplicantsStudyTitle = null;
     const back = _studyBackTab || 'dashboard';
     const backBtn = document.querySelector(`.nav-item[data-tab="${back}"]`);
+    updateClientUrlParams({ study_id: null, section: null, back: null, tab: back });
     showTab(back, backBtn);
   }
 
@@ -1578,7 +1609,8 @@ textarea{resize:vertical;min-height:90px}
         list.innerHTML = `
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
             <div style="font-size:32px;margin-bottom:0.75rem">📭</div>
-            <p style="font-size:14px;font-weight:300">${t('cl_no_applicants')}</p>
+            <p style="font-size:14px;font-weight:300;margin-bottom:1.25rem">${t('cl_no_applicants')}</p>
+            <button class="btn-primary" onclick="openContributorBrowser('${esc(studyId)}','${escAttr(studyMeta?.title||'')}')">${t('cl_invite_participants_cta')}</button>
           </div>`;
         return;
       }
@@ -1611,7 +1643,7 @@ textarea{resize:vertical;min-height:90px}
           groupHeaderEl.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--blue-light,#EFF6FF);border-radius:8px;gap:12px;flex-wrap:wrap">
               <span style="font-size:13px;color:var(--blue-dark,#1D4ED8)">${esc(bannerText)}</span>
-              <button class="btn-accept" style="white-space:nowrap;font-size:12px;padding:6px 14px"
+              <button class="${anyScheduled ? 'btn-outline' : 'btn-accept'}" style="white-space:nowrap;font-size:12px;padding:6px 14px"
                 data-action="group-schedule" data-study-id="${esc(studyId)}" data-count="${acceptedRows.length}" data-any-scheduled="${anyScheduled}">${esc(btnLabel)}</button>
             </div>`;
           wireActions(groupHeaderEl, {
@@ -1718,9 +1750,9 @@ textarea{resize:vertical;min-height:90px}
                 const mins = Math.round((new Date(a.last_call_activity) - new Date(a.joined_call_at)) / 60000);
                 if (mins > 0) durText = ` (~${mins}m)`;
               }
-              attendanceBadge = `<span style="font-size:11px;color:var(--green-dark,#059669);font-weight:500">Attended${durText}</span>`;
+              attendanceBadge = `<span style="font-size:11px;color:var(--green-dark,#059669);font-weight:500">${t('cl_badge_attended')}${durText}</span>`;
             } else {
-              attendanceBadge = `<span style="font-size:11px;color:var(--gray-400);font-weight:500">No-show</span>`;
+              attendanceBadge = `<span style="font-size:11px;color:var(--gray-400);font-weight:500">${t('cl_badge_no_show')}</span>`;
             }
           }
           let joinBtn = '';
@@ -1755,15 +1787,15 @@ textarea{resize:vertical;min-height:90px}
               ? `<span class="badge ${canBookNow ? 'badge-green' : 'badge-amber'}">${t(canBookNow ? 'cl_ready_to_book' : 'cl_waiting_on_availability')}</span>`
               : '';
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
-            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${noShowBtn}${completeBtn}`;
+            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${a.joined_call_at ? completeBtn + noShowBtn : noShowBtn + completeBtn}`;
           } else {
             // One-to-one: derive one mutually exclusive scheduling state, then drive all
             // UI from that single value. No element can appear outside its correct state.
             // sessionPast can only be true when isScheduled is true (line 1705).
             const schedulingState =
-              sessionPast ? 'session_past' :
-              isScheduled ? 'scheduled'    :
-              canBookNow  ? 'ready'        : 'waiting';
+              sessionPast ? 'session_past_needs_outcome' :
+              isScheduled ? 'scheduled_upcoming'         :
+              canBookNow  ? 'ready'                      : 'waiting';
 
             let statusPill, avPill = '', schedDisplay = '', scheduleBtn = '';
 
@@ -1774,19 +1806,22 @@ textarea{resize:vertical;min-height:90px}
               statusPill  = `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
               avPill      = `<span class="badge badge-green">${t('cl_ready_to_book')}</span>`;
               scheduleBtn = `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_book_session')}</button>`;
-            } else if (schedulingState === 'scheduled') {
+            } else if (schedulingState === 'scheduled_upcoming') {
               statusPill   = `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`;
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
               scheduleBtn  = `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
-            } else { // session_past
+            } else { // session_past_needs_outcome
               statusPill   = `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_session_time_passed')}</span>`;
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
-              // No scheduleBtn: a past session must be completed or marked no-show first.
+              // No scheduleBtn: outcome must be recorded before scheduling can resume.
             }
 
             actions = statusPill + avPill + schedDisplay
-              + ((schedulingState === 'scheduled' || schedulingState === 'session_past') ? joinBtn : '')
-              + (schedulingState === 'session_past' ? attendanceBadge + noShowBtn + completeBtn : '')
+              + ((schedulingState === 'scheduled_upcoming' || schedulingState === 'session_past_needs_outcome') ? joinBtn : '')
+              + (schedulingState === 'session_past_needs_outcome'
+                  // If the contributor attended, lead with "Mark completed"; otherwise lead with "Did not happen".
+                  ? attendanceBadge + (a.joined_call_at ? completeBtn + noShowBtn : noShowBtn + completeBtn)
+                  : '')
               + scheduleBtn;
           }
         } else if (a.status === 'invited') {
@@ -1808,6 +1843,8 @@ textarea{resize:vertical;min-height:90px}
             <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_invite_someone_else')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
+        } else if (a.status === 'no_show') {
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_did_not_happen')}</span>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1854,7 +1891,13 @@ textarea{resize:vertical;min-height:90px}
 
       scheduledList.innerHTML = scheduledRows.length
         ? scheduledRows.map(renderRow).join('')
-        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">No sessions scheduled yet. Accepted participants will appear here once scheduled.</div>`;
+        : `<div style="text-align:center;padding:2rem;color:var(--gray-400);font-size:13px">${
+            selectedRows.length > 0
+              ? `${t(selectedRows.length > 1 ? 'cl_sessions_waiting_to_schedule_plural' : 'cl_sessions_waiting_to_schedule').replace('{count}', selectedRows.length)}
+                 <button class="btn-outline" style="margin-left:10px;font-size:11px;padding:4px 10px"
+                   onclick="switchStudySection('applicants')">${t('cl_go_to_applicants')}</button>`
+              : t('cl_sessions_empty')
+          }</div>`;
 
       const rowActionMap = {
         'schedule':      d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
@@ -1882,16 +1925,21 @@ textarea{resize:vertical;min-height:90px}
     if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
 
     try {
+      const guardedStatuses = newStatus === 'accepted' || newStatus === 'rejected'
+        ? ['invited', 'pending']
+        : null;
       let query = db
         .from('applications')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('id', appId);
-      // When accepting, guard against overwriting a declined or completed row
-      if (newStatus === 'accepted') {
-        query = query.in('status', ['invited', 'pending', 'accepted']);
+      // Accept/reject actions are only valid from pending/invited states.
+      // If no row matches that guard, treat it as a stale action and do not run side effects.
+      if (guardedStatuses) {
+        query = query.in('status', guardedStatuses);
       }
-      const { error: updateErr } = await query;
+      const { data: updatedRows, error: updateErr } = await query.select('id');
       if (updateErr) throw updateErr;
+      if (!updatedRows?.length) throw new Error('stale_application_state');
 
       // Fetch study title for notification
       const { data: study } = await db
@@ -1930,11 +1978,21 @@ textarea{resize:vertical;min-height:90px}
       await loadApplicants(studyId);
       // Refresh study list to update counts and progress bar
       await loadStudies();
+      if (newStatus === 'accepted') {
+        await loadUnscheduledApplications();
+      }
+      // Keep dashboard pending queue in sync so stale rows can't trigger a double-accept
+      loadPendingApplications();
     } catch(err) {
       console.error('Update application error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast("We couldn't update this application. Try again.", true);
+      showToast(t('cl_update_application_failed'), true);
       await loadApplicants(studyId); // restore buttons
+      await loadStudies();
+      loadPendingApplications();
+      if (newStatus === 'accepted') {
+        await loadUnscheduledApplications();
+      }
     }
   }
 
@@ -2068,11 +2126,11 @@ textarea{resize:vertical;min-height:90px}
   async function scheduleAndAccept() {
     const dateVal = document.getElementById('schedule-date').value;
     const timeVal = document.getElementById('schedule-time').value;
-    if (!dateVal || !timeVal) { showToast('Please select a date and time', true); return; }
+    if (!dateVal || !timeVal) { showToast(t('cl_schedule_pick_datetime'), true); return; }
 
     const isoDatetime = new Date(dateVal + 'T' + timeVal).toISOString();
     if (new Date(isoDatetime) <= Date.now()) {
-      showToast('Please choose a time in the future', true);
+      showToast(t('cl_schedule_future_required'), true);
       return;
     }
 
@@ -2193,7 +2251,7 @@ textarea{resize:vertical;min-height:90px}
           loadNotifications();
         }
 
-        showToast(t('cl_session_scheduled'));
+        showToast(t(needsAccept ? 'cl_session_scheduled' : 'cl_session_confirmed'));
         document.querySelector(`[data-app-id="${_schedAppId}"]`)?.remove();
         closeScheduleModal();
         await loadUnscheduledApplications();
@@ -2203,7 +2261,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(err) {
       console.error('Schedule session error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not schedule session — try again', true);
+      showToast(t('cl_schedule_failed'), true);
     } finally {
       btn.disabled = false;
       btn.textContent = btn.dataset.contextLabel || t('cl_schedule_accept');
@@ -2258,6 +2316,16 @@ textarea{resize:vertical;min-height:90px}
       .map(c => c.dataset.value);
   }
 
+  function getDbStudyFormat(format, sessionType) {
+    return format === 'focus_group' && sessionType === 'group' ? 'video_call' : format;
+  }
+
+  function getBuilderStudyFormat(study) {
+    return study?.session_type === 'group' && study?.format === 'video_call'
+      ? 'focus_group'
+      : study?.format;
+  }
+
   async function submitStudy(status) {
     const title  = document.getElementById('b-title').value.trim();
     const desc   = document.getElementById('b-desc').value.trim();
@@ -2281,6 +2349,7 @@ textarea{resize:vertical;min-height:90px}
     const start  = document.getElementById('b-start').value || null;
     const close  = document.getElementById('b-close').value || null;
     const addReq = document.getElementById('b-addreqs').value.trim()  || null;
+    const dbFormat = getDbStudyFormat(format, sessionType);
     const screeningQuestions = _screeners
       .filter(q => q.text.trim())
       .map(q => {
@@ -2308,7 +2377,14 @@ textarea{resize:vertical;min-height:90px}
 
     if (!db) {
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
-      setTimeout(() => showTab('studies', document.querySelector('.nav-item[data-tab="studies"]')), 1200);
+      setTimeout(() => {
+        showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
+        if (isDraft) {
+          setStudiesFilter('draft', document.querySelector('#tab-studies .fc[data-filter="draft"]'));
+        } else {
+          setStudiesFilter('active', document.querySelector('#tab-studies .fc[data-filter="active"]'));
+        }
+      }, 1200);
       return;
     }
 
@@ -2342,7 +2418,7 @@ textarea{resize:vertical;min-height:90px}
       const studyFields = {
         title,
         description:          desc || null,
-        format,
+        format:               dbFormat,
         session_type:         sessionType,
         duration_minutes:     durationMins,
         spots,
@@ -2367,16 +2443,21 @@ textarea{resize:vertical;min-height:90px}
 
       _editingDraftId = null;
       setDraftUrl(null);
-      if (!isDraft) _justPublished = true;
-
-      _screeners = []; renderScreenerRows();
+      if (!isDraft) {
+        _justPublished = true;
+        resetBuilderForm(); // clear form immediately so the builder is blank regardless of how the user re-enters it
+      } else {
+        _screeners = []; renderScreenerRows(); // draft save only needs screeners cleared; text/chips stay for continued editing
+      }
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
       setTimeout(async () => {
-        await loadStudies();
         showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
         if (isDraft) {
           setStudiesFilter('draft', document.querySelector('#tab-studies .fc[data-filter="draft"]'));
+        } else {
+          setStudiesFilter('active', document.querySelector('#tab-studies .fc[data-filter="active"]'));
         }
+        await loadStudies(); // runs after tab is visible so _justPublished banner renders in place
       }, 1200);
     } catch(err) {
       console.error(isDraft ? 'Save draft error:' : 'Publish error:', err);
@@ -2457,18 +2538,54 @@ textarea{resize:vertical;min-height:90px}
 
   // ─── DRAFT EDIT ─────────────────────────────────────────
   // Helpers to keep ?draft= URL param in sync with _editingDraftId.
+  // When entering draft edit mode, also evict workspace context (?study_id, ?section, ?back)
+  // so a stale workspace cannot be re-opened after the draft is submitted or abandoned.
   function setDraftUrl(draftId) {
-    const p = new URLSearchParams(window.location.search);
-    if (draftId) p.set('draft', draftId); else p.delete('draft');
-    const q = p.toString();
-    window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
+    if (draftId) {
+      updateClientUrlParams({ draft: draftId, study_id: null, section: null, back: null });
+    } else {
+      updateClientUrlParams({ draft: null });
+    }
+  }
+
+  // Resets all builder form fields to blank/default state without switching tabs.
+  // Called both from startNewStudy() and from submitStudy() on successful publish,
+  // so the form is never left populated regardless of how the user re-enters the builder.
+  function resetBuilderForm() {
+    ['b-title','b-desc','b-addreqs'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    ['b-spots','b-pay'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = el.id === 'b-spots' ? '10' : '450';
+    });
+    ['b-start','b-close'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const formatEl = document.getElementById('b-format'); if (formatEl) formatEl.selectedIndex = 0;
+    const lengthEl = document.getElementById('b-length'); if (lengthEl) lengthEl.selectedIndex = 2;
+    document.querySelectorAll('#tab-new-study [data-field] .chip').forEach(c => c.classList.remove('on'));
+    // Re-apply HTML-default chip selections.
+    const defaultAge = document.querySelector('#tab-new-study [data-field="age_ranges"] .chip[data-value="any"]');
+    if (defaultAge) defaultAge.classList.add('on');
+    const defaultGender = document.querySelector('#tab-new-study [data-field="genders"] .chip[data-value="any"]');
+    if (defaultGender) defaultGender.classList.add('on');
+    const defaultLocation = document.querySelector('#tab-new-study [data-field="locations"] .chip[data-value="se_any"]');
+    if (defaultLocation) defaultLocation.classList.add('on');
+    const defaultRating = document.querySelector('#tab-new-study [data-field="min_rating"] .chip[data-value="3.0"]');
+    if (defaultRating) defaultRating.classList.add('on');
+    _screeners = []; renderScreenerRows();
+    clearTimeout(_builderPoolPreviewTimer);
+    _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
+    renderBuilderPoolPreview();
   }
 
   // Explicit entry point for "Post new study" — ensures edit mode is fully cleared.
   function startNewStudy() {
     _editingDraftId = null;
     setDraftUrl(null);
+    resetBuilderForm();
     showTab('new-study', null);
+    updatePreview();
   }
 
   async function openDraftInBuilder(studyId) {
@@ -2492,7 +2609,8 @@ textarea{resize:vertical;min-height:90px}
     setVal('b-addreqs', study.additional_reqs);
 
     const formatEl = document.getElementById('b-format');
-    if (formatEl && study.format) formatEl.value = study.format;
+    const builderFormat = getBuilderStudyFormat(study);
+    if (formatEl && builderFormat) formatEl.value = builderFormat;
 
     const lengthEl = document.getElementById('b-length');
     if (lengthEl && study.duration_minutes) {
@@ -3091,6 +3209,7 @@ textarea{resize:vertical;min-height:90px}
 
       showToast(t('cl_marked_completed'));
       await loadApplicants(studyId);
+      await loadStudies();
       await loadRateList();
       loadClientBudget();
       await loadReadyToCompleteSessions();
@@ -3099,7 +3218,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(err) {
       console.error('markCompleted error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast("We couldn't update this application. Try again.", true);
+      showToast(t('cl_update_application_failed'), true);
     }
   }
 
@@ -3261,6 +3380,9 @@ textarea{resize:vertical;min-height:90px}
     const idx = ['overview','applicants','sessions','settings'].indexOf(section);
     const target = btn || (idx >= 0 ? navBtns[idx] : null);
     if (target) target.classList.add('on');
+    if (_currentTab === 'study' && currentApplicantsStudyId) {
+      updateClientUrlParams({ tab: 'study', study_id: currentApplicantsStudyId, section, back: _studyBackTab });
+    }
   }
 
   async function loadStudyOverview(studyId) {
@@ -3348,7 +3470,14 @@ textarea{resize:vertical;min-height:90px}
     document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     document.getElementById('tab-'+id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    const targetBtn = btn || document.querySelector(`.nav-item[data-tab="${id}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+    if (id === 'study' && currentApplicantsStudyId) {
+      const activeSection = document.querySelector('.study-section.active')?.id?.replace('study-section-', '') || 'applicants';
+      updateClientUrlParams({ tab: 'study', study_id: currentApplicantsStudyId, section: activeSection, back: _studyBackTab });
+      return;
+    }
+    updateClientUrlParams({ tab: id, study_id: null, section: null, back: null });
   }
 
   function fc(btn) {
@@ -3638,7 +3767,7 @@ textarea{resize:vertical;min-height:90px}
       if (sErr) throw sErr;
       const studyIds = (studies || []).map(s => s.id);
       if (!studyIds.length) {
-        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No sessions in the next 24 hours.</div>`;
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">${t('cl_no_upcoming_sessions')}</div>`;
         return;
       }
       const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
@@ -3658,7 +3787,7 @@ textarea{resize:vertical;min-height:90px}
 
       const data = rows || [];
       if (!data.length) {
-        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">No sessions in the next 24 hours.</div>`;
+        list.innerHTML = `<div style="font-size:13px;color:var(--gray-400);padding:10px 0">${t('cl_no_upcoming_sessions')}</div>`;
         return;
       }
 
@@ -3728,10 +3857,10 @@ textarea{resize:vertical;min-height:90px}
             <div style="font-size:14px;font-weight:500">${esc(name)}</div>
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
-          <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_did_not_happen')}</button>
           <button class="btn-complete" style="font-size:12px;padding:5px 12px;flex-shrink:0"
             data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_mark_completed')}</button>
+          <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_did_not_happen')}</button>
         </div>`;
       }).join('');
       wireActions(list, {
@@ -3748,6 +3877,7 @@ textarea{resize:vertical;min-height:90px}
     try {
       const { error } = await db.from('applications')
         .update({
+          status: 'no_show',
           scheduled_at: null,
           room_url: null,
           room_name: null,
@@ -3762,7 +3892,7 @@ textarea{resize:vertical;min-height:90px}
       if (error) throw error;
 
       showToast(t('cl_session_reset'));
-      if (currentApplicantsStudyId === studyId) await loadApplicants(studyId);
+      await loadApplicants(studyId);
       await loadStudies();
       await loadUnscheduledApplications();
       await loadReadyToCompleteSessions();
@@ -3770,7 +3900,7 @@ textarea{resize:vertical;min-height:90px}
     } catch (err) {
       console.error('markSessionDidNotHappen error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast("We couldn't update this session. Try again.", true);
+      showToast(t('cl_update_session_failed'), true);
     }
   }
 
@@ -3780,6 +3910,11 @@ textarea{resize:vertical;min-height:90px}
     if (db) {
       const roleCheck = await assertPortalRole('client');
       if (!roleCheck.ok) return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const savedFilter = params.get('studies_filter');
+    if (['active', 'draft', 'completed', 'archived'].includes(savedFilter)) {
+      _studiesFilter = savedFilter;
     }
     ['landing','auth'].forEach(id => document.getElementById(id)?.classList.remove('active'));
     document.getElementById('app').classList.add('active');
@@ -4030,6 +4165,7 @@ textarea{resize:vertical;min-height:90px}
       cl_th_date: 'Date',
       cl_badge_completed: 'Completed',
       cl_badge_in_progress: 'In progress',
+      cl_badge_attended: 'Attended',
       cl_badge_no_show: 'No-show',
       cl_badge_live: 'Live',
       cl_badge_filling: 'Filling',
@@ -4054,8 +4190,10 @@ textarea{resize:vertical;min-height:90px}
       cl_label_pay: 'Pay per participant (kr)',
       cl_ph_pay: 'e.g. £30 Amazon voucher for a 60-minute interview',
       cl_label_pay_hint: 'Be specific. Clear incentive wording increases applications.',
-      cl_label_start: 'Study start date',
-      cl_label_close: 'Closing date',
+      cl_label_start: 'Session start date',
+      cl_label_start_hint: 'When do you plan to run sessions? Helps Vetd coordinate scheduling.',
+      cl_label_close: 'Application deadline',
+      cl_label_close_hint: 'Last day to accept new applicants. After this date your study is flagged as overdue.',
       cl_section_targeting: 'Who are you looking for?',
       cl_label_age: 'Age range',
       cl_label_gender: 'Gender',
@@ -4176,7 +4314,7 @@ textarea{resize:vertical;min-height:90px}
       cl_participants_title: 'Applicants',
       cl_participants_label: 'Applicants',
       cl_participants_total: 'applicants',
-      cl_no_applicants: 'No applications yet. Applications will appear here after your study is live.',
+      cl_no_applicants: 'No one has applied yet.',
       cl_no_invitations_yet: 'No invitations sent yet',
       cl_view_participants: 'View {count} participant',
       cl_view_participants_plural: 'View {count} participants',
@@ -4193,9 +4331,10 @@ textarea{resize:vertical;min-height:90px}
       cl_scheduled_pill: 'Scheduled',
       cl_scheduled_short: 'scheduled',
       cl_session_time_passed: 'Session time passed',
-      cl_ready_to_complete_short: 'session time passed',
+      cl_ready_to_complete_short: 'need outcome',
       cl_did_not_happen: 'Did not happen',
-      cl_session_reset: 'Session moved back to not scheduled',
+      cl_session_reset: 'Marked as did not happen',
+      cl_session_confirmed: 'Session confirmed ✓',
       cl_accepted_needs_scheduling: 'Accepted, not yet scheduled',
       cl_ready_to_book: 'Ready to book',
       cl_waiting_on_availability: 'Waiting on availability',
@@ -4264,6 +4403,13 @@ textarea{resize:vertical;min-height:90px}
       cl_view_applicants: 'View {count} applicant',
       cl_view_applicants_plural: 'View {count} applicants',
       cl_no_applications: 'No applications yet for this study.',
+      cl_invite_participants_cta: 'Invite participants →',
+      cl_start_study_setup: 'Start a new study',
+      cl_start_new_draft: 'Start a new draft',
+      cl_empty_draft_title: 'No draft studies',
+      cl_empty_draft_sub: "Drafts you've started will appear here.",
+      cl_empty_completed_title: 'No completed studies',
+      cl_empty_archived_title: 'No archived studies',
       cl_continue_editing: 'Continue editing',
       cl_spots: 'Spots',
       cl_pay_label: 'Pay',
@@ -4285,6 +4431,7 @@ textarea{resize:vertical;min-height:90px}
       cl_rate_all_dims: 'Please rate all 5 dimensions before submitting',
       cl_rating_submitted: 'Rating submitted for {name}. Their score has been updated.',
       cl_marked_completed: 'Marked as completed ✓ — payment queued',
+      cl_update_application_failed: "We couldn't update this application. Try again.",
       cl_study_published: 'Study published. Matching participants now.',
       cl_no_rate_yet: 'No completed participants to rate yet.',
       cl_no_rate_yet_sub: 'No completed participants to rate yet. Mark accepted participants as completed first.',
@@ -4293,6 +4440,15 @@ textarea{resize:vertical;min-height:90px}
       cl_awaiting_rating_plural: '{count} participants awaiting your rating',
       cl_rate_now: 'Rate now →',
       cl_no_contributors: 'No participants match this view yet.',
+      cl_go_to_applicants: 'Go to Applicants →',
+      cl_sessions_empty: 'No sessions scheduled yet — accept applicants and schedule them to see them here.',
+      cl_sessions_waiting_to_schedule: '{count} accepted participant is waiting to be scheduled.',
+      cl_sessions_waiting_to_schedule_plural: '{count} accepted participants are waiting to be scheduled.',
+      cl_no_upcoming_sessions: 'No sessions in the next 24 hours.',
+      cl_schedule_pick_datetime: 'Please select a date and time',
+      cl_schedule_future_required: 'Please choose a time in the future',
+      cl_schedule_failed: 'Could not schedule session — try again',
+      cl_update_session_failed: "We couldn't update this session. Try again.",
       cl_just_now: 'just now',
       cl_time_m_ago: 'm ago',
       cl_time_h_ago: 'h ago',
@@ -4351,6 +4507,7 @@ textarea{resize:vertical;min-height:90px}
       cl_th_date: 'Datum',
       cl_badge_completed: 'Slutförd',
       cl_badge_in_progress: 'Pågående',
+      cl_badge_attended: 'Deltog',
       cl_badge_no_show: 'Uteblev',
       cl_badge_live: 'Aktiv',
       cl_badge_filling: 'Fyller på',
@@ -4375,8 +4532,10 @@ textarea{resize:vertical;min-height:90px}
       cl_label_pay: 'Ersättning per deltagare (kr)',
       cl_ph_pay: 't.ex. £30 Amazon-presentkort för en 60-minutersintervju',
       cl_label_pay_hint: 'Var tydlig. Klara incitamentsbeskrivningar ökar antalet ansökningar.',
-      cl_label_start: 'Startdatum',
-      cl_label_close: 'Slutdatum',
+      cl_label_start: 'Startdatum för sessioner',
+      cl_label_start_hint: 'När planerar ni att genomföra sessionerna? Hjälper Vetd att samordna schemaläggning.',
+      cl_label_close: 'Sista ansökningsdag',
+      cl_label_close_hint: 'Sista dagen att acceptera nya sökande. Efter detta datum flaggas studien som försenad.',
       cl_section_targeting: 'Vem söker du?',
       cl_label_age: 'Åldersintervall',
       cl_label_gender: 'Kön',
@@ -4497,7 +4656,7 @@ textarea{resize:vertical;min-height:90px}
       cl_participants_title: 'Sökande',
       cl_participants_label: 'Sökande',
       cl_participants_total: 'sökande',
-      cl_no_applicants: 'Ingen har ansökt ännu. Kolla tillbaka när din studie är aktiv.',
+      cl_no_applicants: 'Ingen har ansökt ännu.',
       cl_no_invitations_yet: 'Inga inbjudningar skickade ännu',
       cl_view_participants: 'Visa {count} deltagare',
       cl_view_participants_plural: 'Visa {count} deltagare',
@@ -4514,9 +4673,10 @@ textarea{resize:vertical;min-height:90px}
       cl_scheduled_pill: 'Schemalagd',
       cl_scheduled_short: 'schemalagda',
       cl_session_time_passed: 'Sessionstiden har passerat',
-      cl_ready_to_complete_short: 'sessionstid passerad',
+      cl_ready_to_complete_short: 'behöver utfall',
       cl_did_not_happen: 'Hände inte',
-      cl_session_reset: 'Sessionen flyttades tillbaka till ej schemalagd',
+      cl_session_reset: 'Markerad som ej genomförd',
+      cl_session_confirmed: 'Session bekräftad ✓',
       cl_accepted_needs_scheduling: 'Accepterad, inte schemalagd ännu',
       cl_ready_to_book: 'Redo att boka',
       cl_waiting_on_availability: 'Väntar på tillgänglighet',
@@ -4585,6 +4745,13 @@ textarea{resize:vertical;min-height:90px}
       cl_view_applicants: 'Visa {count} sökande',
       cl_view_applicants_plural: 'Visa {count} sökande',
       cl_no_applications: 'Inga ansökningar ännu',
+      cl_invite_participants_cta: 'Bjud in deltagare →',
+      cl_start_study_setup: 'Starta en ny studie',
+      cl_start_new_draft: 'Starta ett nytt utkast',
+      cl_empty_draft_title: 'Inga studieutkast',
+      cl_empty_draft_sub: 'Utkast du har påbörjat visas här.',
+      cl_empty_completed_title: 'Inga slutförda studier',
+      cl_empty_archived_title: 'Inga arkiverade studier',
       cl_continue_editing: 'Fortsätt redigera',
       cl_spots: 'Platser',
       cl_pay_label: 'Ersättning',
@@ -4606,6 +4773,7 @@ textarea{resize:vertical;min-height:90px}
       cl_rate_all_dims: 'Betygsätt alla 5 dimensioner innan du skickar',
       cl_rating_submitted: 'Betyg skickat för {name}. Deras poäng har uppdaterats.',
       cl_marked_completed: 'Markerad som slutförd ✓ — betalning köad',
+      cl_update_application_failed: 'Vi kunde inte uppdatera denna ansökan. Försök igen.',
       cl_study_published: 'Studie publicerad! Deltagare matchas nu.',
       cl_no_rate_yet: 'Inga slutförda deltagare att betygsätta ännu.',
       cl_no_rate_yet_sub: 'Inga slutförda deltagare att betygsätta ännu. Markera accepterade deltagare som slutförda först.',
@@ -4614,6 +4782,15 @@ textarea{resize:vertical;min-height:90px}
       cl_awaiting_rating_plural: '{count} deltagare väntar på ditt betyg',
       cl_rate_now: 'Betygsätt nu →',
       cl_no_contributors: 'Inga deltagare hittades ännu.',
+      cl_go_to_applicants: 'Gå till sökande →',
+      cl_sessions_empty: 'Inga sessioner är schemalagda ännu — acceptera sökande och schemalägg dem för att se dem här.',
+      cl_sessions_waiting_to_schedule: '{count} accepterad deltagare väntar på att schemaläggas.',
+      cl_sessions_waiting_to_schedule_plural: '{count} accepterade deltagare väntar på att schemaläggas.',
+      cl_no_upcoming_sessions: 'Inga sessioner de kommande 24 timmarna.',
+      cl_schedule_pick_datetime: 'Välj datum och tid',
+      cl_schedule_future_required: 'Välj en tid i framtiden',
+      cl_schedule_failed: 'Kunde inte schemalägga sessionen — försök igen',
+      cl_update_session_failed: 'Vi kunde inte uppdatera denna session. Försök igen.',
       cl_just_now: 'just nu',
       cl_time_m_ago: 'm sedan',
       cl_time_h_ago: 'h sedan',
@@ -4680,22 +4857,64 @@ textarea{resize:vertical;min-height:90px}
   // Called after goApp() so the app shell is fully initialised before opening modals.
   async function handleDeepLink() {
     const params  = new URLSearchParams(window.location.search);
-
-    // Restore draft edit mode after a page refresh (?draft= persists in URL).
     const draftId = params.get('draft');
-    if (draftId) {
-      await openDraftInBuilder(draftId);
-      return;
-    }
-
     const studyId = params.get('study_id');
     const appId   = params.get('application_id');
     const section = params.get('section');
     const view    = params.get('view');
-    if (!studyId) return;
+    const tab     = params.get('tab');
+    const backTab = params.get('back');
 
-    // Clean params from URL immediately so refresh doesn't re-trigger
-    window.history.replaceState({}, '', window.location.pathname);
+    // If the URL explicitly points to a non-builder destination, treat any draft param
+    // as stale context and clear it before restore. This mirrors the existing rule that
+    // an explicit non-study tab beats a stale study workspace.
+    if (draftId && (
+      (tab && tab !== 'new-study') ||
+      studyId ||
+      view ||
+      appId
+    )) {
+      updateClientUrlParams({ draft: null });
+    } else if (draftId) {
+      await openDraftInBuilder(draftId);
+      return;
+    }
+    const isTransientDeepLink = !!appId || !!view;
+
+    // If study_id is present but tab explicitly points somewhere other than 'study',
+    // the workspace context is stale (operator navigated away via a nav button that
+    // doesn't write ?tab=). Trust tab over study_id in this case; clean up the orphaned
+    // workspace params so they can't cause a phantom restore later.
+    // Exception: transient deep-links (application_id / view) have no tab set by the
+    // sender, so they should still open the workspace.
+    if (studyId && tab && tab !== 'study' && !isTransientDeepLink) {
+      updateClientUrlParams({ study_id: null, section: null, back: null });
+      const restorableTabs = ['dashboard', 'analytics', 'studies', 'sessions', 'panel', 'rate', 'new-study'];
+      if (restorableTabs.includes(tab) && tab !== 'dashboard') {
+        const navBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+        showTab(tab, navBtn || null);
+        if (tab === 'sessions') { loadUnscheduledApplications(); loadReadyToCompleteSessions(); loadUpcomingSessions(); }
+        if (tab === 'rate') loadRateList();
+        if (tab === 'studies') syncStudiesFilterButtons();
+      }
+      return;
+    }
+
+    if (!studyId) {
+      const restorableTabs = ['dashboard', 'analytics', 'studies', 'sessions', 'panel', 'rate', 'new-study'];
+      if (!tab || !restorableTabs.includes(tab) || tab === 'dashboard') return;
+      const navBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+      showTab(tab, navBtn || null);
+      if (tab === 'dashboard') loadDashboardStats();
+      if (tab === 'sessions') {
+        loadUnscheduledApplications();
+        loadReadyToCompleteSessions();
+        loadUpcomingSessions();
+      }
+      if (tab === 'rate') loadRateList();
+      if (tab === 'studies') syncStudiesFilterButtons();
+      return;
+    }
 
     // Fetch study/app context so the destination view can match the admin intent.
     let title = '';
@@ -4715,6 +4934,7 @@ textarea{resize:vertical;min-height:90px}
     } catch(e) { /* non-fatal — modal still opens with blank title */ }
 
     if (view === 'browse') {
+      if (isTransientDeepLink) updateClientUrlParams({ application_id: null, view: null });
       openContributorBrowser(studyId, title);
       return;
     }
@@ -4724,7 +4944,8 @@ textarea{resize:vertical;min-height:90px}
         ? ((app?.status === 'accepted' || app?.status === 'completed' || app?.scheduled_at) ? 'sessions' : 'applicants')
         : 'applicants'
     );
-    await openApplicants(studyId, title, targetSection);
+    await openApplicants(studyId, title, targetSection, backTab);
+    if (isTransientDeepLink) updateClientUrlParams({ application_id: null, view: null });
 
     if (!appId) return;
 
