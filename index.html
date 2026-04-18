@@ -106,7 +106,7 @@
     .nav-links a:focus-visible { color: #fff; background: rgba(255,255,255,0.06); outline: 2px solid var(--green); outline-offset: 2px; }
     .nav-cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
     .nav-signin:focus-visible { color: #fff; outline: 2px solid var(--green); outline-offset: 2px; border-radius: 8px; }
-    .nav-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .nav-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; min-width: 0; }
     .lang-toggle {
       display: flex; gap: 2px;
       background: rgba(255,255,255,0.07);
@@ -552,8 +552,22 @@
 
     /* ── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 960px) {
+      .nav-inner { gap: 12px; padding: 0 16px; }
       .nav-links { display: none; }
+      .nav-actions { margin-left: auto; min-width: 0; }
+      .nav-actions .lang-toggle,
+      .nav-actions .nav-signin { display: none; }
+      .nav-actions .nav-cta {
+        padding: 8px 14px;
+        font-size: 13px;
+      }
       .nav-hamburger { display: block; }
+    }
+    @media (max-width: 480px) {
+      .nav-actions .nav-cta {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
     }
     @media (max-width: 720px) {
       .route-cards { grid-template-columns: 1fr; max-width: 480px; }
