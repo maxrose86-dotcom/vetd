@@ -1275,10 +1275,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         allAppRows = apps || [];
         const _now = Date.now();
         const _cutoff15 = new Date(_now - 15 * 60 * 1000);
+        const _cutoff2h  = new Date(_now - 2 * 60 * 60 * 1000);
         const _todayStart = new Date(); _todayStart.setHours(0, 0, 0, 0);
         const _todayEnd   = new Date(); _todayEnd.setHours(23, 59, 59, 999);
         allAppRows.forEach(a => {
-          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, active_count: 0, scheduled: 0, ready_to_complete: 0, today_count: 0, first_today_at: null };
+          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, active_count: 0, scheduled: 0, ready_to_complete: 0, stale_sessions: 0, today_count: 0, first_today_at: null };
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
@@ -1287,7 +1288,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           if (a.status === 'accepted' && a.scheduled_at) {
             appCountMap[a.study_id].scheduled++;
             const sat = new Date(a.scheduled_at);
-            if (sat < _cutoff15) {
+            if (sat < _cutoff2h) {
+              appCountMap[a.study_id].ready_to_complete++;
+              appCountMap[a.study_id].stale_sessions++;
+            } else if (sat < _cutoff15) {
               appCountMap[a.study_id].ready_to_complete++;
             } else if (sat >= _todayStart && sat <= _todayEnd) {
               appCountMap[a.study_id].today_count++;
@@ -1369,12 +1373,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     function getCtaInfo(s) {
       const status = s.status || 'draft';
       const isActive = status === 'active' || status === 'paused';
-      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0, active_count: 0, scheduled: 0, ready_to_complete: 0, today_count: 0, first_today_at: null };
+      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0, active_count: 0, scheduled: 0, ready_to_complete: 0, stale_sessions: 0, today_count: 0, first_today_at: null };
       const unscheduled = Math.max(0, counts.accepted - counts.scheduled);
 
       if (isActive && counts.ready_to_complete > 0) {
         const n = counts.ready_to_complete;
-        return { priority: 1, label: `Handle ${n} session${n !== 1 ? 's' : ''} →`, action: 'sessions', style: 'coral' };
+        const label = counts.stale_sessions > 0
+          ? `Resolve ${n} session${n !== 1 ? 's' : ''} →`
+          : `Handle ${n} session${n !== 1 ? 's' : ''} →`;
+        return { priority: 1, label, action: 'sessions', style: 'coral' };
       }
       if (isActive && counts.today_count > 0) {
         const time = counts.first_today_at
@@ -1383,7 +1390,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         return { priority: 2, label: `Session today${time ? ' at ' + time : ''} →`, action: 'sessions', style: 'blue' };
       }
       if (isActive && unscheduled > 0) {
-        return { priority: 3, label: `Schedule ${unscheduled} →`, action: 'applicants', style: 'amber' };
+        return { priority: 3, label: `Schedule ${unscheduled} session${unscheduled !== 1 ? 's' : ''} →`, action: 'applicants', style: 'amber' };
       }
       if (isActive && counts.pending > 0) {
         const n = counts.pending;
@@ -1393,7 +1400,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         return { priority: 5, label: 'Invite participants →', action: 'invite', style: 'ghost' };
       }
       if (isActive) {
-        return { priority: 6, label: 'View pipeline →', action: 'view', style: 'ghost' };
+        return { priority: 6, label: 'View participants →', action: 'view', style: 'ghost' };
       }
       if (status === 'draft') {
         return { priority: 7, label: null, action: 'draft', style: 'draft' };
@@ -1746,7 +1753,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
-          const sessionPast = isScheduled && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000);
+          const _rowNow     = Date.now();
+          const sessionRecentlyPast = isScheduled &&
+            new Date(a.scheduled_at) < new Date(_rowNow - 15 * 60 * 1000) &&
+            new Date(a.scheduled_at) >= new Date(_rowNow - 2 * 60 * 60 * 1000);
+          const sessionStalePast = isScheduled &&
+            new Date(a.scheduled_at) < new Date(_rowNow - 2 * 60 * 60 * 1000);
+          const sessionPast = sessionRecentlyPast || sessionStalePast;
           const canBookNow = hasSchedulableAvailability(c);
           const completeBtn = sessionPast
             ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_mark_completed')}</button>`
@@ -1767,8 +1780,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               attendanceBadge = `<span style="font-size:11px;color:var(--gray-400);font-weight:500">${t('cl_badge_no_show')}</span>`;
             }
           }
+          // Join button: only shown when session is upcoming or within the recent 2-hour window.
+          // Never shown for stale sessions (>2h past) — the call is definitively over.
           let joinBtn = '';
-          if (a.room_url && isScheduled) {
+          if (a.room_url && isScheduled && !sessionStalePast) {
             const remaining = callTimeRemaining(a.scheduled_at);
             const btnText = remaining !== null ? esc(remaining) : t('cl_join_call');
             const btnDisabled = remaining !== null ? 'disabled' : '';
@@ -1799,15 +1814,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               ? `<span class="badge ${canBookNow ? 'badge-green' : 'badge-amber'}">${t(canBookNow ? 'cl_ready_to_book' : 'cl_waiting_on_availability')}</span>`
               : '';
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
-            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${a.joined_call_at ? completeBtn + noShowBtn : noShowBtn + completeBtn}`;
+            // Group outcome ordering: joined → Complete leads; no signal → show both without strong bias (group attendance is harder to confirm per-row)
+            const groupOutcome = sessionPast
+              ? (a.joined_call_at ? completeBtn + noShowBtn : completeBtn + noShowBtn)
+              : '';
+            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${groupOutcome}`;
           } else {
             // One-to-one: derive one mutually exclusive scheduling state, then drive all
             // UI from that single value. No element can appear outside its correct state.
-            // sessionPast can only be true when isScheduled is true (line 1705).
             const schedulingState =
-              sessionPast ? 'session_past_needs_outcome' :
-              isScheduled ? 'scheduled_upcoming'         :
-              canBookNow  ? 'ready'                      : 'waiting';
+              sessionStalePast   ? 'session_stale_outcome'  :
+              sessionRecentlyPast? 'session_recent_outcome'  :
+              isScheduled        ? 'scheduled_upcoming'       :
+              canBookNow         ? 'ready'                    : 'waiting';
 
             let statusPill, avPill = '', schedDisplay = '', scheduleBtn = '';
 
@@ -1822,18 +1841,33 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               statusPill   = `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`;
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
               scheduleBtn  = `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
-            } else { // session_past_needs_outcome
+            } else if (schedulingState === 'session_recent_outcome') {
+              // Session ended within the last 2 hours — call may still be wrapping up.
+              // Show join button in case they need to rejoin, lead with Complete.
               statusPill   = `<span class="status-pill" style="background:#DBEAFE;color:#1D4ED8">${t('cl_session_time_passed')}</span>`;
               schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
-              // No scheduleBtn: outcome must be recorded before scheduling can resume.
+            } else { // session_stale_outcome — >2h past, call definitively over
+              // Pill framing shifts to "Outcome needed" to make the action clearer.
+              statusPill   = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">Outcome needed</span>`;
+              schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
             }
 
+            // Outcome button ordering:
+            //   recent + joined signal  → Complete leads (call just ended, they attended)
+            //   recent + no signal      → Complete leads (call may still be live)
+            //   stale  + joined signal  → Complete leads (they attended)
+            //   stale  + no signal      → Did not happen leads (>2h with no join evidence)
+            const outcomeButtons = sessionPast
+              ? attendanceBadge + (
+                  schedulingState === 'session_stale_outcome' && !a.joined_call_at
+                    ? noShowBtn + completeBtn
+                    : completeBtn + noShowBtn
+                )
+              : '';
+
             actions = statusPill + avPill + schedDisplay
-              + ((schedulingState === 'scheduled_upcoming' || schedulingState === 'session_past_needs_outcome') ? joinBtn : '')
-              + (schedulingState === 'session_past_needs_outcome'
-                  // If the contributor attended, lead with "Mark completed"; otherwise lead with "Did not happen".
-                  ? attendanceBadge + (a.joined_call_at ? completeBtn + noShowBtn : noShowBtn + completeBtn)
-                  : '')
+              + (schedulingState === 'scheduled_upcoming' || schedulingState === 'session_recent_outcome' ? joinBtn : '')
+              + outcomeButtons
               + scheduleBtn;
           }
         } else if (a.status === 'invited') {
@@ -1914,7 +1948,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
-          key: 'schedule', label: 'Schedule', color: 'var(--amber)',
+          key: 'schedule', label: 'Needs scheduling', color: 'var(--amber)',
           rows: data.filter(a => a.status === 'accepted' && !a.scheduled_at),
         },
         {
@@ -4729,14 +4763,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_confirm_reschedule: 'Confirm new time',
       cl_scheduled_pill: 'Scheduled',
       cl_scheduled_short: 'scheduled',
-      cl_session_time_passed: 'Session time passed',
+      cl_session_time_passed: 'Session ended',
       cl_ready_to_complete_short: 'need outcome',
       cl_did_not_happen: 'Did not happen',
       cl_session_reset: 'Marked as did not happen',
       cl_session_confirmed: 'Session confirmed ✓',
-      cl_accepted_needs_scheduling: 'Accepted, not yet scheduled',
+      cl_accepted_needs_scheduling: 'Confirmed — needs time',
       cl_ready_to_book: 'Ready to book',
-      cl_waiting_on_availability: 'Waiting on availability',
+      cl_waiting_on_availability: 'No times shared yet',
       cl_accepted_today: 'Accepted today',
       cl_accepted_day_ago: 'Accepted 1 day ago',
       cl_accepted_days_ago: 'Accepted {count} days ago',
@@ -4747,7 +4781,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_reject: 'Reject',
       cl_mark_completed: 'Mark completed',
       cl_loading: 'Loading…',
-      cl_loading_applicants: 'Loading applicants…',
+      cl_loading_applicants: 'Loading participants…',
       // Auth
       cl_auth_create_title: 'Start your research',
       cl_auth_create_sub: 'Post your first study in under 5 minutes',
@@ -4801,7 +4835,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_post_a_study: '＋ Post a study',
       cl_view_applicants: 'View {count} applicant',
       cl_view_applicants_plural: 'View {count} applicants',
-      cl_no_applications: 'No applications yet for this study.',
+      cl_no_applications: 'No participants yet',
       cl_invite_participants_cta: 'Invite participants →',
       cl_start_study_setup: 'Start a new study',
       cl_start_new_draft: 'Start a new draft',
