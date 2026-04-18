@@ -3020,6 +3020,13 @@ textarea{resize:vertical;min-height:90px}
       const allContributors = contributors || [];
       const weakPool = allContributors.filter(c => getAvailabilitySlotCount(c) <= 1);
       const strongPool = allContributors.filter(c => hasSchedulableAvailability(c));
+
+      console.log(`QA seed: found ${weakPool.length} weak and ${strongPool.length} schedulable contributors out of ${allContributors.length} total.`);
+
+      if (allContributors.length === 0) {
+        throw new Error('QA seed needs at least one contributor in the database.');
+      }
+
       const usedIds = new Set();
       const takeContributor = (pool) => {
         const next = pool.find(c => c?.id && !usedIds.has(c.id));
@@ -3028,18 +3035,27 @@ textarea{resize:vertical;min-height:90px}
         return next;
       };
 
-      const acceptedWeak = takeContributor(weakPool);
-      const acceptedReady = takeContributor(strongPool);
-      const acceptedFuture = takeContributor(strongPool);
-      const acceptedPast = takeContributor(strongPool);
-      const completedContributor = includeCompleted ? takeContributor(strongPool) : null;
-      const noShowContributor = includeNoShow ? takeContributor(strongPool) : null;
+      // Prefer schedulable contributors for scheduled/ready states; fall back to weak if pool is exhausted.
+      let usedFallback = false;
+      const takeSchedulable = () => {
+        const fromStrong = takeContributor(strongPool);
+        if (fromStrong) return fromStrong;
+        const fallback = takeContributor(weakPool) || takeContributor(allContributors);
+        if (fallback) usedFallback = true;
+        return fallback;
+      };
+
+      // acceptedWeak prefers a genuinely weak contributor but falls back to any if the weak pool is empty.
+      const acceptedWeak = takeContributor(weakPool) || takeContributor(allContributors);
+      const acceptedReady = takeSchedulable();
+      const acceptedFuture = takeSchedulable();
+      const acceptedPast = takeSchedulable();
+      const completedContributor = includeCompleted ? takeSchedulable() : null;
+      const noShowContributor = includeNoShow ? takeSchedulable() : null;
       const pendingContributor = takeContributor(allContributors);
 
-      if (!acceptedWeak || !acceptedReady || !acceptedFuture || !acceptedPast || !pendingContributor) {
-        throw new Error(
-          `QA seed needs at least 5 contributors with 1 weak-availability and 3 schedulable profiles. Found ${weakPool.length} weak and ${strongPool.length} schedulable.`
-        );
+      if (usedFallback) {
+        console.warn('QA seed fallback: not enough schedulable contributors, using weak contributors instead.');
       }
 
       const studyPayload = {
