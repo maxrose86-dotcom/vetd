@@ -201,6 +201,8 @@ textarea{resize:vertical;min-height:90px}
 .study-section.active{display:block}
 .study-ws-back{padding:7px 14px;background:transparent;color:var(--gray-400);border:1.5px solid var(--gray-200);border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.15s;white-space:nowrap;flex-shrink:0}
 .study-ws-back:hover{border-color:var(--gray-700);color:var(--gray-700)}
+.btn-link{background:none;border:none;padding:0;font-family:var(--sans);font-size:12px;font-weight:500;color:var(--gray-400);cursor:pointer}
+.btn-link:hover{color:var(--gray-700);text-decoration:underline}
 .pipeline-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:10px;padding-top:14px;border-top:1px solid var(--gray-100)}
 .pipeline-stage{margin-top:24px}
 .pipeline-stage:first-child{margin-top:0}
@@ -522,14 +524,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <div style="min-width:0;flex:1">
               <h1 id="applicants-study-title" style="font-family:var(--serif);font-size:22px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Study</h1>
               <p id="applicants-count" style="font-size:13px;color:var(--gray-400);font-weight:300;margin:2px 0 0"></p>
+              <button class="btn-link" onclick="switchStudySection('settings')" style="margin-top:6px">Study setup →</button>
             </div>
           </div>
           <span class="badge" id="study-ws-badge"></span>
         </div>
 
         <div class="filter-bar" id="study-ws-nav" style="margin-bottom:1.5rem">
-          <button class="fc on" onclick="switchStudySection('people',this)">People</button>
-          <button class="fc" onclick="switchStudySection('settings',this)">Settings</button>
+          <button class="fc on" onclick="switchStudySection('people',this)">Participants</button>
+          <button class="fc" onclick="switchStudySection('settings',this)">Study setup</button>
         </div>
 
         <!-- PEOPLE (unified workflow surface) -->
@@ -3785,6 +3788,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const isArchived  = study.status === 'archived';
         settingsEl.innerHTML = `
           <div style="padding:1.25rem 1.5rem">
+            <div style="margin-bottom:20px">
+              <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">
+                Study setup
+              </div>
+              <div style="font-size:13px;color:var(--gray-400)">
+                Edit how this study runs and who you recruit.
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+              <button class="btn-outline" data-action="edit-details">Edit details</button>
+              <button class="btn-outline" data-action="edit-targeting">Edit targeting</button>
+              <button class="btn-outline" data-action="edit-questions">Edit questions</button>
+            </div>
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">Study status</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
               ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Publish</button>` : ''}
@@ -3797,6 +3813,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             </div>
             ${study.description ? `<div style="font-size:13px;color:var(--gray-500)">${esc(study.description)}</div>` : ''}
           </div>`;
+        wireActions(settingsEl, {
+          'edit-details': () => openDraftInBuilder(studyId),
+          'edit-targeting': () => openDraftInBuilder(studyId),
+          'edit-questions': () => openDraftInBuilder(studyId),
+        });
       }
     } catch(err) {
       console.error('loadStudyOverview error:', err?.message || err);
