@@ -523,10 +523,11 @@
   .toast.show { opacity: 1; }
 
   /* ── EMPTY STATE ── */
-  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--gray-400); }
+  .empty-state { text-align: center; padding: 5rem 2rem 4rem; color: var(--gray-400); max-width: 340px; margin: 0 auto; }
   .empty-state-icon { font-size: 40px; margin-bottom: 1rem; }
-  .empty-state h3 { font-family: var(--serif); font-size: 22px; color: var(--gray-700); margin-bottom: 6px; }
-  .empty-state p { font-size: 14px; font-weight: 300; }
+  .empty-state h3 { font-family: var(--serif); font-size: 24px; color: var(--gray-700); margin-bottom: 14px; line-height: 1.25; }
+  .empty-state p { font-size: 14px; font-weight: 300; line-height: 1.6; }
+  .empty-state .empty-state-secondary { font-size: 12px; color: var(--gray-400); margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
 
   /* ── NOTIFICATION BELL & PANEL ── */
   .notif-wrap { position: relative; }
@@ -1898,7 +1899,7 @@
       const isDashboard = containerId === 'dashboard-studies';
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
-        : `<div class="empty-state"><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p><p style="font-size:12px;color:var(--gray-400);margin-top:8px">${t('no_studies_browse_priority')}</p></div>`;
+        : `<div class="empty-state"><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p><p class="empty-state-secondary">${t('no_studies_browse_priority')}</p></div>`;
       return;
     }
     container.innerHTML = subset.map(job => {
