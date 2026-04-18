@@ -452,12 +452,9 @@ textarea{resize:vertical;min-height:90px}
       <div style="font-size:12px;color:var(--gray-400)" id="cl-mob-company">Your company</div>
     </div>
     <div style="padding:0.5rem 0.75rem">
-      <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);loadDashboardStats();toggleClientNav()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
-      <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
-      <button class="nav-item" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Your studies</span></button>
-      <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadReadyToCompleteSessions();loadUpcomingSessions();toggleClientNav()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
+      <button class="nav-item active" data-tab="studies" onclick="showTab('studies',this);toggleClientNav()"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
       <button class="nav-item" data-tab="panel" onclick="showTab('panel',this);toggleClientNav()"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
-      <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList();toggleClientNav()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
+      <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this);toggleClientNav()" style="color:var(--gray-400);font-size:12px"><span class="nav-icon" style="font-size:12px">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
     </div>
     <div style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--gray-100)">
       <button onclick="signOut()" style="width:100%;padding:8px;border-radius:var(--r-sm);border:1px solid var(--gray-200);background:transparent;font-size:12px;cursor:pointer;font-family:var(--sans);color:var(--gray-400)">Sign out</button>
@@ -473,22 +470,8 @@ textarea{resize:vertical;min-height:90px}
         <div class="sidebar-company"><strong id="sidebar-company-name">Your company</strong><span id="sidebar-company-sub">Research &amp; Insights</span></div>
       </div>
       <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_overview">Overview</div>
-        <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard',this);loadDashboardStats()"><span class="nav-icon">⬛</span><span data-i18n="cl_nav_overview">Overview</span></button>
-        <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this)"><span class="nav-icon">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_studies">Your studies</div>
-        <button class="nav-item" data-tab="studies" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Your studies</span></button>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_sessions">Sessions</div>
-        <button class="nav-item" data-tab="sessions" onclick="showTab('sessions',this);loadUnscheduledApplications();loadReadyToCompleteSessions();loadUpcomingSessions()"><span class="nav-icon">📅</span><span data-i18n="cl_nav_sessions">Sessions</span></button>
-      </div>
-      <div class="nav-section">
-        <div class="nav-label" data-i18n="cl_nav_label_panel">Participants</div>
-        <button class="nav-item" data-tab="panel" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span><span class="nav-badge">3</span></button>
-        <button class="nav-item" data-tab="rate" onclick="showTab('rate',this);loadRateList()"><span class="nav-icon">★</span><span data-i18n="cl_nav_rate">Rate participants</span></button>
+        <button class="nav-item active" data-tab="studies" onclick="showTab('studies',this)"><span class="nav-icon">📋</span><span data-i18n="cl_nav_studies">Studies</span></button>
+        <button class="nav-item" data-tab="panel" onclick="showTab('panel',this)"><span class="nav-icon">👥</span><span data-i18n="cl_nav_browse">Participants</span></button>
       </div>
       <div class="sidebar-bottom">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -507,6 +490,7 @@ textarea{resize:vertical;min-height:90px}
             </div>
           </div>
         </div>
+        <button class="nav-item" data-tab="analytics" onclick="showTab('analytics',this)" style="width:100%;margin-bottom:8px;color:var(--gray-400);font-size:12px"><span class="nav-icon" style="font-size:12px">📊</span><span data-i18n="cl_nav_analytics">Analytics</span></button>
         <div class="plan-card">
           <div class="plan-name" data-i18n="cl_plan_name">Pro plan</div>
           <div class="plan-detail" data-i18n="cl_plan_detail">Unlimited studies · Priority panel</div>
@@ -578,7 +562,7 @@ textarea{resize:vertical;min-height:90px}
       </div>
 
       <!-- DASHBOARD -->
-      <div class="tab-pane active" id="tab-dashboard">
+      <div class="tab-pane" id="tab-dashboard">
         <div class="page-topbar">
           <div class="page-title"><h1 id="dash-greeting">Overview</h1><p id="dash-subtitle" style="min-height:1em"></p></div>
         </div>
@@ -598,18 +582,11 @@ textarea{resize:vertical;min-height:90px}
       </div>
 
       <!-- STUDIES -->
-      <div class="tab-pane" id="tab-studies">
+      <div class="tab-pane active" id="tab-studies">
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_my_studies">Your studies</h1><p id="studies-subtitle"></p></div>
           <button class="btn-primary" onclick="startNewStudy()" data-i18n="cl_post_new_btn">＋ Post new study</button>
         </div>
-        <div class="filter-bar">
-          <button class="fc on" data-filter="active" onclick="setStudiesFilter('active',this)">Active</button>
-          <button class="fc" data-filter="draft" onclick="setStudiesFilter('draft',this)">Draft</button>
-          <button class="fc" data-filter="completed" onclick="setStudiesFilter('completed',this)">Completed</button>
-          <button class="fc" data-filter="archived" onclick="setStudiesFilter('archived',this)">Archived</button>
-        </div>
-
         <div id="studies-list">
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
             <div style="font-size:13px">Loading studies…</div>
@@ -1305,14 +1282,27 @@ textarea{resize:vertical;min-height:90px}
           .select('id, study_id, status, scheduled_at')
           .in('study_id', studies.map(s => s.id));
         allAppRows = apps || [];
+        const _now = Date.now();
+        const _cutoff15 = new Date(_now - 15 * 60 * 1000);
+        const _todayStart = new Date(); _todayStart.setHours(0, 0, 0, 0);
+        const _todayEnd   = new Date(); _todayEnd.setHours(23, 59, 59, 999);
         allAppRows.forEach(a => {
-          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0 };
+          if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0, today_count: 0, first_today_at: null };
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
           if (a.status === 'invited')  appCountMap[a.study_id].invited++;
-          if (a.status === 'accepted' && a.scheduled_at) appCountMap[a.study_id].scheduled++;
-          if (a.status === 'accepted' && a.scheduled_at && new Date(a.scheduled_at) < new Date(Date.now() - 15 * 60 * 1000)) appCountMap[a.study_id].ready_to_complete++;
+          if (a.status === 'accepted' && a.scheduled_at) {
+            appCountMap[a.study_id].scheduled++;
+            const sat = new Date(a.scheduled_at);
+            if (sat < _cutoff15) {
+              appCountMap[a.study_id].ready_to_complete++;
+            } else if (sat >= _todayStart && sat <= _todayEnd) {
+              appCountMap[a.study_id].today_count++;
+              const cur = appCountMap[a.study_id].first_today_at;
+              if (!cur || sat < new Date(cur)) appCountMap[a.study_id].first_today_at = a.scheduled_at;
+            }
+          }
         });
       }
 
@@ -1355,7 +1345,7 @@ textarea{resize:vertical;min-height:90px}
   function renderStudiesList() {
     const list = document.getElementById('studies-list');
     if (!list || !_studiesCache) return;
-    const { studies, appCountMap, paymentSpendMap } = _studiesCache;
+    const { studies, appCountMap } = _studiesCache;
 
     // Update subtitle with live counts
     const subEl = document.getElementById('studies-subtitle');
@@ -1370,112 +1360,156 @@ textarea{resize:vertical;min-height:90px}
       subEl.textContent = parts.join(' · ') || '';
     }
 
-    // Filter
-    const filtered = studies.filter(s => {
-      const st = s.status || 'draft';
-      if (_studiesFilter === 'active')    return st === 'active' || st === 'paused';
-      if (_studiesFilter === 'draft')     return st === 'draft';
-      if (_studiesFilter === 'completed') return st === 'completed';
-      if (_studiesFilter === 'archived')  return st === 'archived';
-      return st !== 'archived';
-    });
+    // Show all non-archived studies, sorted by action urgency
+    const visible = studies.filter(s => (s.status || 'draft') !== 'archived');
 
-    if (!filtered.length) {
-      const emptyMsgs = {
-        active:    { text: t('cl_no_studies') || 'No active studies',   sub: t('cl_no_studies_sub') || 'Post your first study to start recruiting participants.', cta: true, ctaLabel: t('cl_start_study_setup')  },
-        draft:     { text: t('cl_empty_draft_title') || 'No draft studies', sub: t('cl_empty_draft_sub') || 'Drafts you\'ve started will appear here.',  cta: true, ctaLabel: t('cl_start_new_draft') },
-        completed: { text: t('cl_empty_completed_title') || 'No completed studies', sub: '', cta: false },
-        archived:  { text: t('cl_empty_archived_title') || 'No archived studies', sub: '', cta: false },
-      };
-      const msg = emptyMsgs[_studiesFilter] || emptyMsgs.all;
-      list.innerHTML = `
-        <div style="text-align:center;padding:3rem;color:var(--gray-400)">
-          <div style="font-size:32px;margin-bottom:1rem">📋</div>
-          <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${msg.text}</h3>
-          ${msg.sub ? `<p style="font-size:14px;font-weight:300">${msg.sub}</p>` : ''}
-          ${msg.cta ? `<button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${esc(msg.ctaLabel || t('cl_post_a_study') || 'Post a study')}</button>` : ''}
-        </div>`;
+    if (!visible.length) {
+      list.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--gray-400)">
+        <div style="font-size:32px;margin-bottom:1rem">📋</div>
+        <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${t('cl_no_studies') || 'No studies yet'}</h3>
+        <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub') || 'Post your first study to start recruiting participants.'}</p>
+        <button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${esc(t('cl_post_a_study') || 'Post a study')}</button>
+      </div>`;
       return;
     }
 
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    // Compute CTA info per study (determines sort order and button rendered)
+    function getCtaInfo(s) {
+      const status = s.status || 'draft';
+      const isActive = status === 'active' || status === 'paused';
+      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0, today_count: 0, first_today_at: null };
+      const unscheduled = Math.max(0, counts.accepted - counts.scheduled);
 
-    let bannerHtml = '';
-    if (_justPublished && filtered.length > 0) {
-      _justPublished = false;
-      // Pick the most recently created active study from the already-loaded cache —
-      // no extra query needed; loadStudies() just ran, so _studiesCache is fresh.
-      const ps = filtered[0];
-      bannerHtml = `
-        <div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
-                    border:1px solid rgba(16,185,129,0.22);border-radius:10px;
-                    padding:14px 16px;margin-bottom:16px;
-                    display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--gray-800)">Your study is live.</div>
-            <div style="font-size:12px;color:var(--gray-500);margin-top:3px">Invite matched participants to fill it faster.</div>
-          </div>
-          <button class="btn-outline" style="white-space:nowrap;flex-shrink:0"
-            onclick="openContributorBrowser('${esc(ps.id)}','${escAttr(ps.title||'')}')">
-            Invite participants →
-          </button>
-        </div>`;
+      if (isActive && counts.ready_to_complete > 0) {
+        const n = counts.ready_to_complete;
+        return { priority: 1, label: `Handle ${n} session${n !== 1 ? 's' : ''} →`, action: 'sessions', style: 'coral' };
+      }
+      if (isActive && counts.today_count > 0) {
+        const time = counts.first_today_at
+          ? new Date(counts.first_today_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : '';
+        return { priority: 2, label: `Session today${time ? ' at ' + time : ''} →`, action: 'sessions', style: 'blue' };
+      }
+      if (isActive && unscheduled > 0) {
+        return { priority: 3, label: `Schedule ${unscheduled} →`, action: 'applicants', style: 'amber' };
+      }
+      if (isActive && counts.pending > 0) {
+        const n = counts.pending;
+        return { priority: 4, label: `Review ${n} applicant${n !== 1 ? 's' : ''} →`, action: 'applicants', style: 'blue' };
+      }
+      if (isActive && (s.filled_spots || 0) < (s.spots || 1)) {
+        return { priority: 5, label: 'Invite participants →', action: 'invite', style: 'ghost' };
+      }
+      if (isActive) {
+        return { priority: 6, label: 'View pipeline →', action: 'view', style: 'ghost' };
+      }
+      if (status === 'draft') {
+        return { priority: 7, label: null, action: 'draft', style: 'draft' };
+      }
+      if (status === 'completed') {
+        const n = s.filled_spots || 0;
+        return { priority: 8, label: n > 0 ? `${n} completed` : 'Completed', action: null, style: 'muted' };
+      }
+      return { priority: 9, label: null, action: null, style: 'muted' };
     }
 
-    list.innerHTML = bannerHtml + filtered.map(s => {
-      const filled   = s.filled_spots || 0;
-      const spots    = s.spots || 1;
-      const pct      = Math.min(100, Math.round((filled / spots) * 100));
-      const status   = s.status || 'draft';
-      const badgeCls = status === 'active' ? 'badge-green' : status === 'paused' ? 'badge-amber' : 'badge-gray';
-      const barColor = status === 'active' ? 'var(--green)' : status === 'paused' ? 'var(--amber)' : 'var(--gray-200)';
-      const statusLabel = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' }[status] || status;
-      const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
-      const posted = s.created_at
-        ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
-        : '';
-      const payDisplay = s.pay_per_participant ? `${formatCurrency(s.pay_per_participant)}/person` : null;
-      const counts = appCountMap[s.id] || { total: 0, pending: 0, accepted: 0, invited: 0, scheduled: 0, ready_to_complete: 0 };
-      const awaitingScheduling = Math.max(0, counts.accepted - counts.scheduled);
-      const isOverdue = s.close_date && new Date(s.close_date) < today && status === 'active';
+    // Sort by CTA priority (ascending), tie-break by oldest creation date first
+    const sorted = visible
+      .map(s => ({ s, cta: getCtaInfo(s) }))
+      .sort((a, b) => a.cta.priority !== b.cta.priority
+        ? a.cta.priority - b.cta.priority
+        : new Date(a.s.created_at) - new Date(b.s.created_at));
 
-      // Drafts open the builder in edit mode; live studies open the applicant workspace.
+    // _justPublished banner — find first active study in sorted list
+    let bannerHtml = '';
+    if (_justPublished && sorted.length > 0) {
+      _justPublished = false;
+      const ps = (sorted.find(({ s }) => s.status === 'active') || sorted[0]).s;
+      bannerHtml = `<div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
+          border:1px solid rgba(16,185,129,0.22);border-radius:10px;
+          padding:14px 16px;margin-bottom:16px;
+          display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">Your study is live.</div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:3px">Invite matched participants to fill it faster.</div>
+        </div>
+        <button class="btn-outline" style="white-space:nowrap;flex-shrink:0"
+          data-action="invite-study" data-study-id="${esc(ps.id)}" data-study-title="${escAttr(ps.title||'')}">
+          Invite participants →
+        </button>
+      </div>`;
+    }
+
+    const STATUS_LABEL = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' };
+
+    list.innerHTML = bannerHtml + sorted.map(({ s, cta }) => {
+      const status = s.status || 'draft';
+      const badgeCls = status === 'active' ? 'badge-green' : status === 'paused' ? 'badge-amber' : 'badge-gray';
+      const statusLabel = STATUS_LABEL[status] || status;
+      const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
+      const formatLabel = DASH_FORMAT_LABEL[displayFormat] || displayFormat || '';
+      const filled = s.filled_spots || 0;
+      const spots  = s.spots || 0;
+
+      // Secondary metadata line: "{format} · {filled} / {spots} spots" + optional close date
+      const secondaryParts = [formatLabel, spots > 0 ? `${filled} / ${spots} spots` : null].filter(Boolean);
+      if (s.close_date) {
+        const closeDate = new Date(s.close_date);
+        const closeFmt  = closeDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const isPast    = closeDate < new Date() && status === 'active';
+        secondaryParts.push(isPast ? `⚠ Closed ${closeFmt}` : `Closes ${closeFmt}`);
+      }
+
+      // Row onclick — whole row navigates to the logical destination
       const rowClick = status === 'draft'
         ? `openDraftInBuilder('${esc(s.id)}')`
-        : `openApplicants('${esc(s.id)}','${escJS(s.title||'Untitled study')}')`;
-      return `
-        <div class="study-row" onclick="${rowClick}">
-          <div class="study-row-header">
-            <div class="study-title-group">
-              <h3>${esc(s.title || 'Untitled study')}</h3>
-              <p>${[DASH_FORMAT_LABEL[displayFormat] || displayFormat, s.duration_minutes ? s.duration_minutes+' mins' : '', posted ? 'Posted '+posted : ''].filter(Boolean).join(' · ')}</p>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-              ${isOverdue ? `<span style="font-size:11px;color:var(--amber);font-weight:500">Past close date</span>` : ''}
-              <span class="badge ${badgeCls}">${statusLabel}</span>
-            </div>
+        : `openApplicants('${esc(s.id)}','${escJS(s.title || 'Untitled study')}')`;
+
+      // CTA button(s) — use data-action for stopPropagation via wireActions
+      let ctaHtml = '';
+      if (cta.style === 'draft') {
+        ctaHtml = `
+          <button class="btn-outline" style="font-size:13px;padding:7px 14px"
+            data-action="cta-draft" data-study-id="${esc(s.id)}">Edit draft</button>
+          <button class="btn-primary btn-green" style="font-size:13px;padding:7px 14px"
+            data-action="cta-draft" data-study-id="${esc(s.id)}">Publish →</button>`;
+      } else if (cta.label && cta.action === 'invite') {
+        ctaHtml = `<button class="btn-outline" style="font-size:13px;padding:7px 14px"
+          data-action="invite-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}">${esc(cta.label)}</button>`;
+      } else if (cta.label && (cta.action === 'sessions' || cta.action === 'applicants' || cta.action === 'view')) {
+        const section = cta.action === 'sessions' ? 'sessions' : 'applicants';
+        let btnStyle;
+        if (cta.style === 'coral') {
+          btnStyle = 'background:var(--coral);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;box-shadow:0 2px 8px rgba(220,38,38,0.2)';
+        } else if (cta.style === 'amber') {
+          btnStyle = 'background:var(--amber-light);color:var(--amber);border:1.5px solid rgba(180,83,9,0.2);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer';
+        } else if (cta.style === 'ghost') {
+          btnStyle = 'background:transparent;border:1.5px solid var(--gray-200);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;color:var(--gray-700)';
+        } else {
+          btnStyle = 'background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.2)';
+        }
+        ctaHtml = `<button style="${btnStyle}"
+          data-action="cta-open" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}" data-section="${section}">${esc(cta.label)}</button>`;
+      } else if (cta.label && cta.style === 'muted') {
+        ctaHtml = `<span style="font-size:12px;color:var(--gray-400)">${esc(cta.label)}</span>`;
+      }
+
+      return `<div class="study-row" onclick="${rowClick}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:600;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Untitled study')}</div>
+            <div style="font-size:12px;color:var(--gray-400);margin-top:3px">${esc(secondaryParts.join(' · '))}</div>
           </div>
-          <div class="study-meta" style="margin-bottom:10px">
-            <span>${t('cl_spots')}: <strong>${filled} / ${spots}</strong></span>
-            ${payDisplay ? `<span>${t('cl_pay_label')}: <strong>${payDisplay}</strong></span>` : ''}
-            ${paymentSpendMap[s.id] ? `<span>${t('cl_spent')}: <strong>${formatCurrency(paymentSpendMap[s.id])}</strong></span>` : ''}
-            ${counts.total > 0 ? `<span>${t('cl_participants_label')}: <strong>${counts.total}</strong></span>` : ''}
-            ${awaitingScheduling > 0 ? `<span style="color:var(--amber)">${awaitingScheduling} ${t('cl_needs_scheduling')}</span>` : ''}
-            ${counts.ready_to_complete > 0 ? `<span style="color:var(--blue-dark)">${counts.ready_to_complete} ${t('cl_ready_to_complete_short')}</span>` : ''}
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div>
-          ${status === 'draft' ? `
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-primary btn-green" onclick="event.stopPropagation();openDraftInBuilder('${esc(s.id)}')">Edit draft →</button>
-          </div>` : ''}
-          ${status === 'active' && !(counts.pending > 0 || awaitingScheduling > 0 || counts.ready_to_complete > 0) ? `
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button class="btn-outline" data-action="browse" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}">${t('cl_invite_contributors')}</button>
-          </div>` : ''}
-        </div>`;
+          <span class="badge ${badgeCls}" style="flex-shrink:0;margin-top:2px">${statusLabel}</span>
+        </div>
+        ${ctaHtml ? `<div style="display:flex;gap:8px;margin-top:12px">${ctaHtml}</div>` : ''}
+      </div>`;
     }).join('');
+
     wireActions(list, {
-      browse: d => openContributorBrowser(d.studyId, d.studyTitle),
+      'cta-open':    d => openApplicants(d.studyId, d.studyTitle || 'Study', d.section || 'applicants'),
+      'cta-draft':   d => openDraftInBuilder(d.studyId),
+      'invite-study': d => openContributorBrowser(d.studyId, d.studyTitle),
     });
   }
 
@@ -1483,8 +1517,8 @@ textarea{resize:vertical;min-height:90px}
   let currentApplicantsStudyId = null;
   let currentApplicantsStudyTitle = null;
   let _studyScreeningQuestions = null;
-  let _currentTab = 'dashboard';
-  let _studyBackTab = 'dashboard';
+  let _currentTab = 'studies';
+  let _studyBackTab = 'studies';
 
   // ─── INVITE CONTEXT ─────────────────────────────────────
   let currentInviteStudyId = null;
@@ -1516,7 +1550,7 @@ textarea{resize:vertical;min-height:90px}
   function closeApplicants() {
     currentApplicantsStudyId = null;
     currentApplicantsStudyTitle = null;
-    const back = _studyBackTab || 'dashboard';
+    const back = _studyBackTab || 'studies';
     const backBtn = document.querySelector(`.nav-item[data-tab="${back}"]`);
     updateClientUrlParams({ study_id: null, section: null, back: null, tab: back });
     showTab(back, backBtn);
@@ -4125,7 +4159,7 @@ textarea{resize:vertical;min-height:90px}
 
       const { data: rows, error: rErr } = await db
         .from('applications')
-        .select('id, study_id, contributor_id, scheduled_at, contributors(profiles(first_name, last_name))')
+        .select('id, study_id, contributor_id, scheduled_at, joined_call_at, last_call_activity, contributors(profiles(first_name, last_name))')
         .eq('status', 'accepted')
         .not('scheduled_at', 'is', null)
         .lte('scheduled_at', cutoff)
@@ -4143,15 +4177,27 @@ textarea{resize:vertical;min-height:90px}
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
         const title = studyTitleMap[a.study_id] || '—';
         const time = formatScheduledTime(a.scheduled_at);
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
+        let attendanceBadge = '';
+        if (a.joined_call_at) {
+          let durText = '';
+          if (a.last_call_activity) {
+            const mins = Math.round((new Date(a.last_call_activity) - new Date(a.joined_call_at)) / 60000);
+            if (mins > 0) durText = ` (~${mins}m)`;
+          }
+          attendanceBadge = `<span style="font-size:11px;color:var(--green-dark,#059669);font-weight:500;margin-right:4px">${t('cl_badge_attended')}${durText}</span>`;
+        } else {
+          attendanceBadge = `<span style="font-size:11px;color:var(--gray-400);font-weight:500;margin-right:4px">${t('cl_badge_no_show')}</span>`;
+        }
+        const completeBtn = `<button class="btn-complete" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_mark_completed')}</button>`;
+        const noShowBtn = `<button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
+            data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_did_not_happen')}</button>`;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:500">${esc(name)}</div>
             <div style="font-size:12px;color:var(--gray-400)">${esc(title)} · ${esc(time)}</div>
           </div>
-          <button class="btn-complete" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_mark_completed')}</button>
-          <button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0"
-            data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}">${t('cl_did_not_happen')}</button>
+          ${attendanceBadge}${a.joined_call_at ? completeBtn + noShowBtn : noShowBtn + completeBtn}
         </div>`;
       }).join('');
       wireActions(list, {
@@ -5180,30 +5226,19 @@ textarea{resize:vertical;min-height:90px}
     // sender, so they should still open the workspace.
     if (studyId && tab && tab !== 'study' && !isTransientDeepLink) {
       updateClientUrlParams({ study_id: null, section: null, back: null });
-      const restorableTabs = ['dashboard', 'analytics', 'studies', 'sessions', 'panel', 'rate', 'new-study'];
-      if (restorableTabs.includes(tab) && tab !== 'dashboard') {
+      const restorableTabs = ['analytics', 'studies', 'panel', 'new-study'];
+      if (restorableTabs.includes(tab)) {
         const navBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
         showTab(tab, navBtn || null);
-        if (tab === 'sessions') { loadUnscheduledApplications(); loadReadyToCompleteSessions(); loadUpcomingSessions(); }
-        if (tab === 'rate') loadRateList();
-        if (tab === 'studies') syncStudiesFilterButtons();
       }
       return;
     }
 
     if (!studyId) {
-      const restorableTabs = ['dashboard', 'analytics', 'studies', 'sessions', 'panel', 'rate', 'new-study'];
-      if (!tab || !restorableTabs.includes(tab) || tab === 'dashboard') return;
+      const restorableTabs = ['analytics', 'studies', 'panel', 'new-study'];
+      if (!tab || !restorableTabs.includes(tab)) return;
       const navBtn = document.querySelector(`.nav-item[data-tab="${tab}"]`);
       showTab(tab, navBtn || null);
-      if (tab === 'dashboard') loadDashboardStats();
-      if (tab === 'sessions') {
-        loadUnscheduledApplications();
-        loadReadyToCompleteSessions();
-        loadUpcomingSessions();
-      }
-      if (tab === 'rate') loadRateList();
-      if (tab === 'studies') syncStudiesFilterButtons();
       return;
     }
 
