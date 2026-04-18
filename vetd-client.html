@@ -1729,6 +1729,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const renderRow = (a, i, stageKey) => {
         const showDetail = stageKey === 'review';
         const isDone = stageKey === 'done';
+        const isScheduledStage = stageKey === 'outcome' || stageKey === 'today' || stageKey === 'upcoming';
         const c       = a.contributors || {};
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
@@ -1890,7 +1891,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else if (a.status === 'no_show') {
-          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_did_not_happen')}</span>`;
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">No show</span>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -1899,6 +1900,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
         const metaLine = isDone
           ? `${esc(rating)}★ · ${esc(appliedDate)}`
+          : isScheduledStage
+          ? `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies`
           : `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}`;
 
         return `
@@ -1907,6 +1910,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <div class="applicant-info">
               <div class="applicant-name">${esc(name)}</div>
               <div class="applicant-meta">${metaLine}</div>
+              ${stageKey === 'schedule' && acceptedElapsedText ? `<div style="margin-top:2px;font-size:11px;color:var(--amber);font-weight:500">${esc(acceptedElapsedText)}</div>` : ''}
               ${showDetail ? `
               <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px">
                 <span class="badge ${decision.fitKey === 'cl_fit_strong' ? 'badge-green' : decision.fitKey === 'cl_fit_possible' ? 'badge-blue' : 'badge-gray'}">${t(decision.fitKey)}</span>
@@ -4781,7 +4785,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_reject: 'Reject',
       cl_mark_completed: 'Mark completed',
       cl_loading: 'Loading…',
-      cl_loading_applicants: 'Loading participants…',
+      cl_loading_applicants: 'Loading applicants…',
       // Auth
       cl_auth_create_title: 'Start your research',
       cl_auth_create_sub: 'Post your first study in under 5 minutes',
@@ -4835,7 +4839,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_post_a_study: '＋ Post a study',
       cl_view_applicants: 'View {count} applicant',
       cl_view_applicants_plural: 'View {count} applicants',
-      cl_no_applications: 'No participants yet',
+      cl_no_applications: 'No applications yet',
       cl_invite_participants_cta: 'Invite participants →',
       cl_start_study_setup: 'Start a new study',
       cl_start_new_draft: 'Start a new draft',
