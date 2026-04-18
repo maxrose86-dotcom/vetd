@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="google-site-verification" content="3XHwbpVY5GGxb-ylHewkyzl602CnT11__95KyWfVlT0" />
-  <title>Vetd — Paid research, for both sides</title>
-  <meta name="description" content="Vetd connects companies with qualified participants for paid research sessions. Post a study or get paid to participate — remote, rated, and matched within 48 hours.">
+  <title>Get Paid for Research Studies | Vetd</title>
+  <meta name="description" content="Join Vetd and earn 200–800 kr per research session. Take part in video calls, surveys, and product tests for real companies — flexible, remote, and free to join.">
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
   <script>
@@ -259,13 +259,52 @@
       margin: 0 auto;
       line-height: 1.7;
     }
+    .hero-cta-wrap {
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-cta-note {
+      font-size: 13px;
+      color: rgba(255,255,255,0.42);
+      font-weight: 500;
+    }
 
-    /* ── ROUTING CARDS ──────────────────────────────────── */
+    /* ── LANDING SECTIONS ───────────────────────────────── */
     .route-section {
       background: var(--dark);
       padding: 48px 0 96px;
       position: relative;
       z-index: 1;
+    }
+    .section-header {
+      max-width: 680px;
+      margin: 0 auto 32px;
+      text-align: center;
+      padding: 0 24px;
+    }
+    .section-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.15;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .section-copy {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 300;
+      line-height: 1.65;
     }
     .route-cards {
       display: grid;
@@ -274,6 +313,14 @@
       max-width: 920px;
       margin: 0 auto;
       padding: 0 24px;
+    }
+    .step-grid {
+      grid-template-columns: repeat(3, 1fr);
+      max-width: 1160px;
+    }
+    .type-grid {
+      grid-template-columns: repeat(4, 1fr);
+      max-width: 1160px;
     }
     .route-card {
       display: block;
@@ -339,6 +386,87 @@
       color: rgba(255,255,255,0.28);
       font-weight: 300;
       line-height: 1.5;
+    }
+    .route-card-step {
+      font-family: var(--serif);
+      font-size: 32px;
+      line-height: 1;
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+    .section-stack {
+      display: grid;
+      gap: 16px;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .earnings-list {
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+    .earnings-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--dark-border);
+      font-size: 15px;
+      color: rgba(255,255,255,0.82);
+    }
+    .earnings-list strong {
+      color: #fff;
+      font-weight: 600;
+    }
+    .earnings-note {
+      margin-top: 18px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.42);
+    }
+    .trust-strip-lite {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .trust-item {
+      border: 1px solid var(--dark-border2);
+      border-radius: var(--radius);
+      background: var(--dark-3);
+      padding: 16px 18px;
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
+      font-weight: 500;
+    }
+    .faq-list {
+      display: grid;
+      gap: 16px;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    .faq-item {
+      background: var(--dark-3);
+      border: 1px solid var(--dark-border2);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.75rem;
+    }
+    .faq-question {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .faq-answer {
+      font-size: 15px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 300;
+      line-height: 1.65;
     }
 
     /* ── PROOF STRIP ────────────────────────────────────── */
@@ -429,6 +557,9 @@
     }
     @media (max-width: 720px) {
       .route-cards { grid-template-columns: 1fr; max-width: 480px; }
+      .step-grid,
+      .type-grid { max-width: 480px; }
+      .trust-strip-lite { grid-template-columns: 1fr 1fr; }
       .proof-grid {
         grid-template-columns: 1fr;
         gap: 32px;
@@ -437,6 +568,8 @@
     }
     @media (max-width: 640px) {
       .hero { padding: calc(var(--nav-h) + 48px) 0 40px; }
+      .trust-strip-lite { grid-template-columns: 1fr; }
+      .earnings-list li { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -456,7 +589,7 @@
         <button id="lb-sv" class="lt-btn" onclick="setLang('sv')">SV</button>
       </div>
       <a href="login.html" class="nav-signin" data-i18n="nav_signin">Sign in</a>
-      <a href="vetd-client.html" class="nav-cta" data-i18n="nav_post_study">Post a study</a>
+      <a href="app.html" class="nav-cta" data-i18n="nav_post_study">Start earning — free →</a>
     </div>
     <button class="nav-hamburger" onclick="toggleNav()" aria-label="Menu">☰</button>
   </div>
@@ -465,7 +598,7 @@
   <a href="vetd-client.html" onclick="closeNav()" data-i18n="nav_for_companies">For companies</a>
   <a href="app.html" onclick="closeNav()" data-i18n="nav_for_contributors">For contributors</a>
   <a href="login.html" data-i18n="nav_signin">Sign in</a>
-  <a href="vetd-client.html" style="color:var(--green)" data-i18n="nav_post_study">Post a study</a>
+  <a href="app.html" style="color:var(--green)" data-i18n="nav_post_study">Start earning — free →</a>
   <div style="display:flex;gap:8px;align-items:center;padding:10px 0">
     <span style="font-size:12px;color:rgba(255,255,255,0.4);font-weight:500">Language:</span>
     <div class="lang-toggle">
@@ -484,35 +617,15 @@
   </div>
   <div class="hero-content">
     <h1 class="hero-h1 fade-up">
-      <span data-i18n="hero_h1_a">Find research participants.</span><br>
-      <span class="grad" data-i18n="hero_h1_b">Or get paid to take part.</span>
+      <span class="grad" data-i18n="hero_h1_a">Get paid to share what you think.</span>
     </h1>
     <p class="hero-sub fade-up fade-up-d1" data-i18n="hero_sub">
-      Vetd matches companies with qualified participants for paid research sessions — remote, rated, and first session within 48 hours.
+      Earn 200–800 kr per session taking part in research for real companies. Remote, flexible, free to join.
     </p>
-  </div>
-</section>
-
-<!-- ══ ROUTING CARDS ══════════════════════════════════════════ -->
-<section class="route-section">
-  <div class="route-cards">
-
-    <a href="vetd-client.html" class="route-card fade-up">
-      <div class="route-card-tag" data-i18n="card_co_tag">For companies</div>
-      <h2 class="route-card-title" data-i18n="card_co_title">I need research participants</h2>
-      <p class="route-card-copy" data-i18n="card_co_copy">Post a brief, set your criteria, and get matched with qualified participants. Most studies reach their first session within 48 hours.</p>
-      <div class="route-card-cta" data-i18n="card_co_cta">Post a study →</div>
-      <div class="route-card-proof" data-i18n="card_co_proof">No upfront cost — you only pay when sessions are booked.</div>
-    </a>
-
-    <a href="app.html" class="route-card fade-up fade-up-d1">
-      <div class="route-card-tag" data-i18n="card_ct_tag">For contributors</div>
-      <h2 class="route-card-title" data-i18n="card_ct_title">I want to get paid for my time</h2>
-      <p class="route-card-copy" data-i18n="card_ct_copy">Apply to research studies that fit your background. Sessions are remote, flexible, and pay 200–800 kr each.</p>
-      <div class="route-card-cta" data-i18n="card_ct_cta">Browse open studies →</div>
-      <div class="route-card-proof" data-i18n="card_ct_proof">Free to join. Paid after each completed session.</div>
-    </a>
-
+    <div class="hero-cta-wrap fade-up fade-up-d2">
+      <a href="app.html" class="nav-cta" data-i18n="hero_cta">Start earning — free →</a>
+      <div class="hero-cta-note" data-i18n="hero_note">No experience needed</div>
+    </div>
   </div>
 </section>
 
@@ -522,21 +635,127 @@
     <div class="proof-grid">
       <div class="proof-item fade-up">
         <div class="proof-num">4.8<span class="proof-green">★</span></div>
-        <div class="proof-label" data-i18n="proof_1">Average session rating across all completed studies</div>
+        <div class="proof-label" data-i18n="proof_1">Rated 4.8★ by contributors</div>
       </div>
       <div class="proof-sep"></div>
       <div class="proof-item fade-up fade-up-d1">
-        <div class="proof-num"><span class="proof-green">48</span>h</div>
-        <div class="proof-label" data-i18n="proof_2">Median time from posting to first booked session</div>
+        <div class="proof-num" style="font-size:28px;line-height:1.2" data-i18n="proof_2_num">Paid every time</div>
+        <div class="proof-label" data-i18n="proof_2">Paid after every completed session</div>
       </div>
       <div class="proof-sep"></div>
       <div class="proof-item fade-up fade-up-d2">
-        <div class="proof-num" style="font-size:28px;line-height:1.2" data-i18n="proof_3_num">Both sides rate</div>
-        <div class="proof-label" data-i18n="proof_3">Contributors and researchers reviewed after every session</div>
+        <div class="proof-num" style="font-size:28px;line-height:1.2" data-i18n="proof_3_num">Free to join</div>
+        <div class="proof-label" data-i18n="proof_3">Free to join. Leave anytime.</div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- ══ INSERTED: HOW IT WORKS ═══════════════════════════════ -->
+<section class="route-section">
+  <div class="section-header">
+    <div class="section-eyebrow fade-up" data-i18n="how_eyebrow">How it works</div>
+    <h2 class="section-title fade-up fade-up-d1" data-i18n="how_title">How Vetd works for contributors</h2>
+  </div>
+  <div class="route-cards step-grid">
+    <div class="route-card fade-up">
+      <div class="route-card-step">1</div>
+      <h3 class="route-card-title" data-i18n="how_step_1_title">Create your free profile</h3>
+      <p class="route-card-copy" data-i18n="how_step_1_text">Tell us a bit about yourself so we can match you with relevant studies.</p>
+    </div>
+    <div class="route-card fade-up fade-up-d1">
+      <div class="route-card-step">2</div>
+      <h3 class="route-card-title" data-i18n="how_step_2_title">Get matched to studies</h3>
+      <p class="route-card-copy" data-i18n="how_step_2_text">We invite you to sessions that fit your profile and availability.</p>
+    </div>
+    <div class="route-card fade-up fade-up-d2">
+      <div class="route-card-step">3</div>
+      <h3 class="route-card-title" data-i18n="how_step_3_title">Complete sessions and get paid</h3>
+      <p class="route-card-copy" data-i18n="how_step_3_text">Join a call or complete a task, then get paid after each session.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ INSERTED: EARNINGS ═══════════════════════════════════ -->
+<section class="route-section" style="padding-top:0">
+  <div class="section-header">
+    <h2 class="section-title fade-up" data-i18n="earn_title">What you can earn</h2>
+  </div>
+  <div class="section-stack">
+    <div class="route-card fade-up">
+      <ul class="earnings-list">
+        <li><strong data-i18n="earn_item_1_title">Video calls</strong><span data-i18n="earn_item_1_value">300–800 kr (30–60 min)</span></li>
+        <li><strong data-i18n="earn_item_2_title">Online surveys</strong><span data-i18n="earn_item_2_value">100–250 kr (15–30 min)</span></li>
+        <li><strong data-i18n="earn_item_3_title">Product tests</strong><span data-i18n="earn_item_3_value">200–500 kr</span></li>
+      </ul>
+      <div class="earnings-note" data-i18n="earn_note">Most contributors complete 1–3 sessions per month.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ INSERTED: STUDY TYPES ════════════════════════════════ -->
+<section class="route-section" style="padding-top:0">
+  <div class="section-header">
+    <h2 class="section-title fade-up" data-i18n="types_title">Study types you can take part in</h2>
+  </div>
+  <div class="route-cards type-grid">
+    <div class="route-card fade-up">
+      <h3 class="route-card-title" data-i18n="types_1_title">Video call</h3>
+      <p class="route-card-copy" data-i18n="types_1_text">Talk to a researcher over Zoom (30–60 minutes)</p>
+    </div>
+    <div class="route-card fade-up fade-up-d1">
+      <h3 class="route-card-title" data-i18n="types_2_title">Online survey</h3>
+      <p class="route-card-copy" data-i18n="types_2_text">Answer questions in your own time (15–30 minutes)</p>
+    </div>
+    <div class="route-card fade-up fade-up-d2">
+      <h3 class="route-card-title" data-i18n="types_3_title">Product testing</h3>
+      <p class="route-card-copy" data-i18n="types_3_text">Try a product or feature and share feedback</p>
+    </div>
+    <div class="route-card fade-up">
+      <h3 class="route-card-title" data-i18n="types_4_title">Focus group</h3>
+      <p class="route-card-copy" data-i18n="types_4_text">Join a small group discussion (usually 60 minutes)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ INSERTED: TRUST STRIP ════════════════════════════════ -->
+<section class="route-section" style="padding-top:0">
+  <div class="trust-strip-lite">
+    <div class="trust-item fade-up" data-i18n="trust_1">Free to join</div>
+    <div class="trust-item fade-up fade-up-d1" data-i18n="trust_2">Paid after each session</div>
+    <div class="trust-item fade-up fade-up-d2" data-i18n="trust_3">Your data stays private</div>
+    <div class="trust-item fade-up" data-i18n="trust_4">Cancel anytime</div>
+  </div>
+</section>
+
+<!-- ══ INSERTED: FAQ ════════════════════════════════════════ -->
+<section class="route-section" style="padding-top:0">
+  <div class="section-header">
+    <h2 class="section-title fade-up" data-i18n="faq_title">Questions contributors usually ask</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item fade-up">
+      <div class="faq-question" data-i18n="faq_1_q">Do I need experience?</div>
+      <div class="faq-answer" data-i18n="faq_1_a">No. Most studies are looking for honest opinions, not professional research experience.</div>
+    </div>
+    <div class="faq-item fade-up fade-up-d1">
+      <div class="faq-question" data-i18n="faq_2_q">How do I get paid?</div>
+      <div class="faq-answer" data-i18n="faq_2_a">You get paid after each completed session. The exact incentive is shown before you apply.</div>
+    </div>
+    <div class="faq-item fade-up fade-up-d2">
+      <div class="faq-question" data-i18n="faq_3_q">How often will I get invited?</div>
+      <div class="faq-answer" data-i18n="faq_3_a">It depends on your profile and what studies are live, but completing your profile improves your chances of being matched.</div>
+    </div>
+    <div class="faq-item fade-up">
+      <div class="faq-question" data-i18n="faq_4_q">Can I decline a study?</div>
+      <div class="faq-answer" data-i18n="faq_4_a">Yes. You choose which studies to apply for and can skip opportunities that do not fit your schedule.</div>
+    </div>
+    <div class="faq-item fade-up fade-up-d1">
+      <div class="faq-question" data-i18n="faq_5_q">Is it free to join?</div>
+      <div class="faq-answer" data-i18n="faq_5_a">Yes. Creating a profile and receiving invitations is completely free.</div>
+    </div>
+  </div>
+</section>
 
 <!-- ══ FOOTER ═════════════════════════════════════════════════ -->
 <footer>
@@ -585,24 +804,56 @@
       nav_for_companies:    'For companies',
       nav_for_contributors: 'For contributors',
       nav_signin:           'Sign in',
-      nav_post_study:       'Post a study',
-      hero_h1_a:   'Find research participants.',
-      hero_h1_b:   'Or get paid to take part.',
-      hero_sub:    'Vetd matches companies with qualified participants for paid research sessions — remote, rated, and first session within 48 hours.',
-      card_co_tag:   'For companies',
-      card_co_title: 'I need research participants',
-      card_co_copy:  'Post a brief, set your criteria, and get matched with qualified participants. Most studies reach their first session within 48 hours.',
-      card_co_cta:   'Post a study →',
-      card_co_proof: 'No upfront cost — you only pay when sessions are booked.',
-      card_ct_tag:   'For contributors',
-      card_ct_title: 'I want to get paid for my time',
-      card_ct_copy:  'Apply to research studies that fit your background. Sessions are remote, flexible, and pay 200–800 kr each.',
-      card_ct_cta:   'Browse open studies →',
-      card_ct_proof: 'Free to join. Paid after each completed session.',
-      proof_1:     'Average session rating across all completed studies',
-      proof_2:     'Median time from posting to first booked session',
-      proof_3_num: 'Both sides rate',
-      proof_3:     'Contributors and researchers reviewed after every session',
+      nav_post_study:       'Start earning — free →',
+      hero_h1_a:            'Get paid to share what you think.',
+      hero_sub:             'Earn 200–800 kr per session taking part in research for real companies. Remote, flexible, free to join.',
+      hero_cta:             'Start earning — free →',
+      hero_note:            'No experience needed',
+      proof_1:              'Rated 4.8★ by contributors',
+      proof_2_num:          'Paid every time',
+      proof_2:              'Paid after every completed session',
+      proof_3_num:          'Free to join',
+      proof_3:              'Free to join. Leave anytime.',
+      how_eyebrow:          'How it works',
+      how_title:            'How Vetd works for contributors',
+      how_step_1_title:     'Create your free profile',
+      how_step_1_text:      'Tell us a bit about yourself so we can match you with relevant studies.',
+      how_step_2_title:     'Get matched to studies',
+      how_step_2_text:      'We invite you to sessions that fit your profile and availability.',
+      how_step_3_title:     'Complete sessions and get paid',
+      how_step_3_text:      'Join a call or complete a task, then get paid after each session.',
+      earn_title:           'What you can earn',
+      earn_item_1_title:    'Video calls',
+      earn_item_1_value:    '300–800 kr (30–60 min)',
+      earn_item_2_title:    'Online surveys',
+      earn_item_2_value:    '100–250 kr (15–30 min)',
+      earn_item_3_title:    'Product tests',
+      earn_item_3_value:    '200–500 kr',
+      earn_note:            'Most contributors complete 1–3 sessions per month.',
+      types_title:          'Study types you can take part in',
+      types_1_title:        'Video call',
+      types_1_text:         'Talk to a researcher over Zoom (30–60 minutes)',
+      types_2_title:        'Online survey',
+      types_2_text:         'Answer questions in your own time (15–30 minutes)',
+      types_3_title:        'Product testing',
+      types_3_text:         'Try a product or feature and share feedback',
+      types_4_title:        'Focus group',
+      types_4_text:         'Join a small group discussion (usually 60 minutes)',
+      trust_1:              'Free to join',
+      trust_2:              'Paid after each session',
+      trust_3:              'Your data stays private',
+      trust_4:              'Cancel anytime',
+      faq_title:            'Questions contributors usually ask',
+      faq_1_q:              'Do I need experience?',
+      faq_1_a:              'No. Most studies are looking for honest opinions, not professional research experience.',
+      faq_2_q:              'How do I get paid?',
+      faq_2_a:              'You get paid after each completed session. The exact incentive is shown before you apply.',
+      faq_3_q:              'How often will I get invited?',
+      faq_3_a:              'It depends on your profile and what studies are live, but completing your profile improves your chances of being matched.',
+      faq_4_q:              'Can I decline a study?',
+      faq_4_a:              'Yes. You choose which studies to apply for and can skip opportunities that do not fit your schedule.',
+      faq_5_q:              'Is it free to join?',
+      faq_5_a:              'Yes. Creating a profile and receiving invitations is completely free.',
       footer_privacy: 'Privacy Policy',
       footer_contrib: 'For contributors',
       footer_comp:    'For companies',
@@ -611,24 +862,56 @@
       nav_for_companies:    'För företag',
       nav_for_contributors: 'För deltagare',
       nav_signin:           'Logga in',
-      nav_post_study:       'Publicera en studie',
-      hero_h1_a:   'Hitta forskningsdeltagare.',
-      hero_h1_b:   'Eller bli betald för att delta.',
-      hero_sub:    'Vetd matchar företag med verifierade deltagare för betalda forskningssessioner — på distans, betygsatta och klara inom 48 timmar.',
-      card_co_tag:   'För företag',
-      card_co_title: 'Jag behöver forskningsdeltagare',
-      card_co_copy:  'Publicera ett uppdrag, sätt dina kriterier och bli matchad med verifierade deltagare. De flesta studier når sin första session inom 48 timmar.',
-      card_co_cta:   'Publicera en studie →',
-      card_co_proof: 'Ingen uppstartskostnad — du betalar bara när sessioner bokas.',
-      card_ct_tag:   'För deltagare',
-      card_ct_title: 'Jag vill bli betald för min tid',
-      card_ct_copy:  'Ansök till forskningsstudier som passar din bakgrund. Sessioner är flexibla, på distans och betalar 200–800 kr styck.',
-      card_ct_cta:   'Bläddra bland öppna studier →',
-      card_ct_proof: 'Gratis att gå med. Betalas ut efter varje avslutad session.',
-      proof_1:     'Genomsnittligt sessionsbetyg för alla avslutade studier',
-      proof_2:     'Mediantid från publicering till första bokade session',
-      proof_3_num: 'Båda parter betygsätter',
-      proof_3:     'Deltagare och forskare betygsätts efter varje session',
+      nav_post_study:       'Börja tjäna — gratis →',
+      hero_h1_a:            'Få betalt för att dela vad du tycker.',
+      hero_sub:             'Tjäna 200–800 kr per session genom att delta i research för riktiga företag. På distans, flexibelt och gratis att gå med.',
+      hero_cta:             'Börja tjäna — gratis →',
+      hero_note:            'Ingen erfarenhet behövs',
+      proof_1:              'Betygsatt 4,8★ av deltagare',
+      proof_2_num:          'Betalt varje gång',
+      proof_2:              'Betalas ut efter varje avslutad session',
+      proof_3_num:          'Gratis att gå med',
+      proof_3:              'Gratis att gå med. Avsluta när du vill.',
+      how_eyebrow:          'Så fungerar det',
+      how_title:            'Så fungerar Vetd för deltagare',
+      how_step_1_title:     'Skapa din kostnadsfria profil',
+      how_step_1_text:      'Berätta lite om dig själv så att vi kan matcha dig med relevanta studier.',
+      how_step_2_title:     'Bli matchad till studier',
+      how_step_2_text:      'Vi bjuder in dig till sessioner som passar din profil och tillgänglighet.',
+      how_step_3_title:     'Genomför sessioner och få betalt',
+      how_step_3_text:      'Gå med i ett samtal eller slutför en uppgift, och få betalt efter varje session.',
+      earn_title:           'Vad du kan tjäna',
+      earn_item_1_title:    'Videosamtal',
+      earn_item_1_value:    '300–800 kr (30–60 min)',
+      earn_item_2_title:    'Enkäter online',
+      earn_item_2_value:    '100–250 kr (15–30 min)',
+      earn_item_3_title:    'Produkttester',
+      earn_item_3_value:    '200–500 kr',
+      earn_note:            'De flesta deltagare genomför 1–3 sessioner per månad.',
+      types_title:          'Studietyper du kan delta i',
+      types_1_title:        'Videosamtal',
+      types_1_text:         'Prata med en researcher över Zoom (30–60 minuter)',
+      types_2_title:        'Enkät online',
+      types_2_text:         'Svara på frågor när det passar dig (15–30 minuter)',
+      types_3_title:        'Produkttest',
+      types_3_text:         'Testa en produkt eller funktion och dela din feedback',
+      types_4_title:        'Fokusgrupp',
+      types_4_text:         'Delta i en mindre gruppdiskussion (vanligtvis 60 minuter)',
+      trust_1:              'Gratis att gå med',
+      trust_2:              'Betalt efter varje session',
+      trust_3:              'Din data förblir privat',
+      trust_4:              'Avsluta när du vill',
+      faq_title:            'Vanliga frågor från deltagare',
+      faq_1_q:              'Behöver jag erfarenhet?',
+      faq_1_a:              'Nej. De flesta studier söker ärliga åsikter, inte professionell erfarenhet av research.',
+      faq_2_q:              'Hur får jag betalt?',
+      faq_2_a:              'Du får betalt efter varje avslutad session. Exakt ersättning visas innan du ansöker.',
+      faq_3_q:              'Hur ofta blir jag inbjuden?',
+      faq_3_a:              'Det beror på din profil och vilka studier som är live, men en komplett profil förbättrar dina chanser att bli matchad.',
+      faq_4_q:              'Kan jag tacka nej till en studie?',
+      faq_4_a:              'Ja. Du väljer själv vilka studier du vill ansöka till och kan hoppa över möjligheter som inte passar ditt schema.',
+      faq_5_q:              'Är det gratis att gå med?',
+      faq_5_a:              'Ja. Att skapa en profil och få inbjudningar är helt gratis.',
       footer_privacy: 'Integritetspolicy',
       footer_contrib: 'För deltagare',
       footer_comp:    'För företag',
@@ -678,11 +961,10 @@
     track('homepage_view', { lang: document.documentElement.lang });
   }
 
-  bindTrackClick('.route-cards .route-card[href="vetd-client.html"]', 'homepage_company_card_click');
-  bindTrackClick('.route-cards .route-card[href="app.html"]', 'homepage_contributor_card_click');
   bindTrackClick('a[data-i18n="nav_for_companies"]', 'homepage_nav_for_companies_click');
   bindTrackClick('a[data-i18n="nav_for_contributors"]', 'homepage_nav_for_contributors_click');
   bindTrackClick('.nav-actions .nav-cta, .nav-mobile a[data-i18n="nav_post_study"]', 'homepage_post_study_click');
+  bindTrackClick('.hero-cta-wrap .nav-cta', 'homepage_contributor_cta_click');
   bindTrackClick('.nav-actions .nav-signin, .nav-mobile a[data-i18n="nav_signin"]', 'homepage_sign_in_click');
   bindTrackClick('#lb-en, #lb-sv, #lb-en-m, #lb-sv-m, #lb-en-f, #lb-sv-f', 'homepage_language_switch', (el) => ({
     language: el.id.includes('-sv') ? 'sv' : 'en'
