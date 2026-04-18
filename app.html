@@ -1996,7 +1996,10 @@
   }
 
   function startOnboarding() {
-    void trackFunnel('signup_started');
+    if (!sessionStorage.getItem('vetd_signup_started')) {
+      sessionStorage.setItem('vetd_signup_started', '1');
+      void trackFunnel('signup_started');
+    }
     document.getElementById('landing').classList.remove('active');
     document.getElementById('onboarding').classList.add('active');
     document.getElementById('lang-toggle').classList.add('light');
