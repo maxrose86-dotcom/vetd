@@ -91,6 +91,34 @@
       </div>
     </div>
 
+    <div class="section" id="acquisition-section" style="display:none">
+      <h2>Acquisition</h2>
+      <div class="grid" style="margin-bottom:1rem">
+        <div class="card">
+          <div class="card-label">Homepage visitors</div>
+          <div class="card-total" id="acq-hp">—</div>
+        </div>
+        <div class="card">
+          <div class="card-label">CTA clicks</div>
+          <div class="card-total" id="acq-cta">—</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Signup started</div>
+          <div class="card-total" id="acq-started">—</div>
+        </div>
+      </div>
+      <div class="rates">
+        <div class="rate-card">
+          <div class="rate-pct" id="acq-cta-rate">—</div>
+          <div class="rate-label">CTA rate (visitors → click)</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-pct" id="acq-start-rate">—</div>
+          <div class="rate-label">Signup start rate (click → started)</div>
+        </div>
+      </div>
+    </div>
+
     <div class="section">
       <h2>Conversion</h2>
       <div class="rates">
@@ -184,11 +212,43 @@
       document.getElementById('m-sched-comp').textContent =
         data.sched_to_comp_rate != null ? data.sched_to_comp_rate + '%' : '—';
 
+      loadAcquisitionMetrics();
+
     } catch (err) {
       document.getElementById('status').style.display = 'none';
       const errEl = document.getElementById('error-msg');
       errEl.style.display = 'block';
       errEl.textContent = 'Error: ' + err.message;
+    }
+  }
+
+  async function loadAcquisitionMetrics() {
+    if (!db) return;
+    try {
+      const { data, error } = await db
+        .from('contributor_funnel_by_source')
+        .select('homepage_view_people, contributor_cta_click_people, signup_started_people');
+      if (error) throw error;
+
+      let hpCount = 0, ctaCount = 0, startedCount = 0;
+      (data || []).forEach(function(row) {
+        hpCount      += row.homepage_view_people        || 0;
+        ctaCount     += row.contributor_cta_click_people || 0;
+        startedCount += row.signup_started_people        || 0;
+      });
+
+      const ctaRate   = hpCount  > 0 ? Math.round((ctaCount     / hpCount)  * 100) : null;
+      const startRate = ctaCount > 0 ? Math.round((startedCount / ctaCount) * 100) : null;
+
+      document.getElementById('acq-hp').textContent      = hpCount;
+      document.getElementById('acq-cta').textContent     = ctaCount;
+      document.getElementById('acq-started').textContent = startedCount;
+      document.getElementById('acq-cta-rate').textContent   = ctaRate   != null ? ctaRate   + '%' : '—';
+      document.getElementById('acq-start-rate').textContent = startRate != null ? startRate + '%' : '—';
+
+      document.getElementById('acquisition-section').style.display = 'block';
+    } catch(err) {
+      console.warn('Acquisition metrics failed:', err);
     }
   }
 
