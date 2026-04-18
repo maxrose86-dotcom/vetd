@@ -215,6 +215,12 @@ textarea{resize:vertical;min-height:90px}
 .pipeline-stage.stage-done .applicant-row{opacity:0.6}
 details.pipeline-done-details summary{list-style:none;cursor:pointer}
 details.pipeline-done-details summary::-webkit-details-marker{display:none}
+.inline-schedule-form{display:none;margin:0 0 8px 54px;padding:10px 12px;background:var(--gray-50);border-radius:8px;border:1px solid var(--gray-100)}
+.inline-schedule-form.open{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inline-schedule-form .inline-schedule-copy{font-size:12px;color:var(--gray-700);font-weight:500;flex:1;min-width:0}
+.inline-schedule-form .btn-inline-confirm{padding:5px 14px;background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+.inline-schedule-form .btn-inline-cancel{background:none;border:none;font-size:12px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);padding:4px 6px}
+.inline-schedule-form .btn-inline-cancel:hover{color:var(--gray-700)}
 .applicant-row{display:flex;align-items:center;gap:1rem;padding:12px 0;border-bottom:1px solid var(--gray-100)}
 .applicant-row:last-child{border-bottom:none}
 .applicant-av{width:42px;height:42px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--green-dark);flex-shrink:0}
@@ -524,7 +530,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <div style="min-width:0;flex:1">
               <h1 id="applicants-study-title" style="font-family:var(--serif);font-size:22px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Study</h1>
               <p id="applicants-count" style="font-size:13px;color:var(--gray-400);font-weight:300;margin:2px 0 0"></p>
-              <button class="btn-link" onclick="switchStudySection('settings')" style="margin-top:6px">Study setup →</button>
             </div>
           </div>
           <span class="badge" id="study-ws-badge"></span>
@@ -1227,7 +1232,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── LOAD STUDIES ───────────────────────────────────────
   let _studiesCache = null;
-  let _studiesFilter = 'active';
   let _builderContributorPool = null;
   let _builderContributorPoolPromise = null;
   let _builderPoolPreviewTimer = null;
@@ -1242,12 +1246,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     });
     const q = p.toString();
     window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
-  }
-
-  function syncStudiesFilterButtons() {
-    document.querySelectorAll('#tab-studies .filter-bar .fc').forEach(btn => {
-      btn.classList.toggle('on', btn.dataset.filter === _studiesFilter);
-    });
   }
 
   async function loadStudies() {
@@ -1320,7 +1318,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       }
 
       _studiesCache = { studies: studies || [], appCountMap, paymentSpendMap };
-      syncStudiesFilterButtons();
       updateDashboardGreeting();
       renderStudiesList();
     } catch(err) {
@@ -1331,13 +1328,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
-  function setStudiesFilter(filter, btn) {
-    _studiesFilter = filter;
-    if (btn) fc(btn); else syncStudiesFilterButtons();
-    updateClientUrlParams({ studies_filter: filter });
-    renderStudiesList();
-  }
-
   function renderStudiesList() {
     const list = document.getElementById('studies-list');
     if (!list || !_studiesCache) return;
@@ -1346,11 +1336,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     // Update subtitle with live counts
     const subEl = document.getElementById('studies-subtitle');
     if (subEl) {
-      const activeCount    = studies.filter(s => s.status === 'active' || s.status === 'paused').length;
+      const activeCount    = studies.filter(s => s.status === 'active').length;
+      const pausedCount    = studies.filter(s => s.status === 'paused').length;
       const draftCount     = studies.filter(s => s.status === 'draft').length;
       const completedCount = studies.filter(s => s.status === 'completed').length;
       const parts = [];
       if (activeCount)    parts.push(`${activeCount} active`);
+      if (pausedCount)    parts.push(`${pausedCount} paused`);
       if (draftCount)     parts.push(`${draftCount} draft`);
       if (completedCount) parts.push(`${completedCount} completed`);
       subEl.textContent = parts.join(' · ') || '';
@@ -1380,7 +1372,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const n = counts.ready_to_complete;
         const label = counts.stale_sessions > 0
           ? `Resolve ${n} session${n !== 1 ? 's' : ''} →`
-          : `Handle ${n} session${n !== 1 ? 's' : ''} →`;
+          : `Log ${n} outcome${n !== 1 ? 's' : ''} →`;
         return { priority: 1, label, action: 'sessions', style: 'coral' };
       }
       if (isActive && counts.today_count > 0) {
@@ -1406,8 +1398,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         return { priority: 7, label: null, action: 'draft', style: 'draft' };
       }
       if (status === 'completed') {
-        const n = counts.active_count || 0;
-        return { priority: 8, label: n > 0 ? `${n} completed` : 'Completed', action: null, style: 'muted' };
+        return { priority: 8, label: null, action: null, style: 'muted' };
       }
       return { priority: 9, label: null, action: null, style: 'muted' };
     }
@@ -1657,7 +1648,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         return;
       }
 
-      countEl.textContent = `${data.length} ${data.length === 1 ? 'participant' : 'participants'}`;
+      countEl.textContent = data.length === 1
+        ? t('cl_workspace_pipeline_count_single')
+        : t('cl_workspace_pipeline_count_plural').replace('{count}', data.length);
 
       // Group header: scheduling action banner for group studies with accepted contributors
       if (groupHeaderEl && sessionType === 'group') {
@@ -1741,7 +1734,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const renderRow = (a, i, stageKey) => {
         const showDetail = stageKey === 'review';
         const isDone = stageKey === 'done';
-        const isScheduledStage = stageKey === 'outcome' || stageKey === 'today' || stageKey === 'upcoming';
+        const isScheduledStage = stageKey === 'outcome' || stageKey === 'today' || stageKey === 'upcoming' || stageKey === 'schedule';
+        let schedulingState = null; // set in the 1:1 accepted path; used below for inline form
         const c       = a.contributors || {};
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
@@ -1755,7 +1749,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ? new Date(a.applied_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
           : '';
         const acceptedElapsedText = a.status === 'accepted' && !a.scheduled_at
-          ? formatAcceptedElapsedText(a.updated_at)
+          ? formatAcceptedElapsedText(a.updated_at, true)
           : '';
         const decision = summarizeApplicantDecision(studyMeta, a);
 
@@ -1835,7 +1829,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           } else {
             // One-to-one: derive one mutually exclusive scheduling state, then drive all
             // UI from that single value. No element can appear outside its correct state.
-            const schedulingState =
+            schedulingState =
               sessionStalePast   ? 'session_stale_outcome'  :
               sessionRecentlyPast? 'session_recent_outcome'  :
               isScheduled        ? 'scheduled_upcoming'       :
@@ -1844,15 +1838,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             let statusPill, avPill = '', schedDisplay = '', scheduleBtn = '';
 
             if (schedulingState === 'waiting') {
-              statusPill = `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+              statusPill = '';
               avPill     = `<span class="badge badge-amber">${t('cl_waiting_on_availability')}</span>`;
             } else if (schedulingState === 'ready') {
-              statusPill  = `<span class="status-pill status-accepted">${t('cl_accepted_needs_scheduling')}</span>`;
+              statusPill  = '';
               avPill      = `<span class="badge badge-green">${t('cl_ready_to_book')}</span>`;
-              scheduleBtn = `<button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted">${t('cl_book_session')}</button>`;
+              scheduleBtn = `<button class="btn-accept" data-action="inline-schedule" data-app-id="${esc(a.id)}">${t('cl_book_session')}</button>`;
             } else if (schedulingState === 'scheduled_upcoming') {
-              statusPill   = `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`;
-              schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>`;
+              const isToday = stageKey === 'today';
+              statusPill   = isToday ? '' : `<span class="status-pill" style="background:#EFF6FF;color:#1D4ED8">${t('cl_scheduled_pill')}</span>`;
+              schedDisplay = `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at, isToday))}</span>`;
               scheduleBtn  = `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="reschedule">${t('cl_reschedule')}</button>`;
             } else if (schedulingState === 'session_recent_outcome') {
               // Session ended within the last 2 hours — call may still be wrapping up.
@@ -1916,6 +1911,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ? `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies`
           : `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}`;
 
+        const _inlineFormId = `sched-inline-${esc(a.id)}`;
+        const availabilitySlots = getAvailabilitySlotCount(c);
+        const _avStrings = Array.isArray(c?.available_times)
+          ? c.available_times.filter(v => v && String(v).trim()).slice(0, 2).map(v => esc(String(v).trim()))
+          : [];
+        const _inlineCopy = _avStrings.length > 0
+          ? _avStrings.join(' · ')
+          : t('cl_times_shared_count').replace('{count}', availabilitySlots);
+        const _inlineForm = (stageKey === 'schedule' && schedulingState === 'ready')
+          ? `<div class="inline-schedule-form" id="${_inlineFormId}">
+               <div class="inline-schedule-copy">${_inlineCopy}</div>
+               <button class="btn-inline-confirm" data-action="inline-schedule-launch" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="accepted" data-form-id="${_inlineFormId}">${t('cl_choose_time')}</button>
+               <button class="btn-inline-cancel" data-action="inline-schedule-cancel" data-form-id="${_inlineFormId}">${t('cl_cancel')}</button>
+             </div>`
+          : '';
+
         return `
           <div class="applicant-row" id="approw-${esc(a.id)}">
             <div class="applicant-av" style="background:${esc(avColors[ci])};color:${esc(avText[ci])}">${esc(initials)}</div>
@@ -1939,7 +1950,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               ` : ''}
             </div>
             <div class="applicant-actions">${actions}</div>
-          </div>`;
+          </div>
+          ${_inlineForm}`;
       };
 
       // Unified People pipeline — all participants sorted into urgency buckets
@@ -2023,12 +2035,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       list.innerHTML = pipelineHtml;
 
       const rowActionMap = {
-        'schedule':       d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
-        'update-status':  d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
-        'video-call':     d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
-        'complete':       d => markCompleted(d.appId, d.studyId),
-        'did-not-happen': d => markSessionDidNotHappen(d.appId, d.studyId),
-        'browse':         d => openContributorBrowser(d.studyId, d.studyTitle),
+        'schedule':               d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
+        'inline-schedule':        d => openInlineSchedule(d.appId),
+        'inline-schedule-launch': d => { cancelInlineSchedule(d.formId); openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode); },
+        'inline-schedule-cancel': d => cancelInlineSchedule(d.formId),
+        'update-status':          d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
+        'video-call':             d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
+        'complete':               d => markCompleted(d.appId, d.studyId),
+        'did-not-happen':         d => markSessionDidNotHappen(d.appId, d.studyId),
+        'browse':                 d => openContributorBrowser(d.studyId, d.studyTitle),
       };
       wireActions(list, rowActionMap);
 
@@ -2125,22 +2140,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let _schedIsReschedule = false;
   let _schedCurrentStatus = null; // original status at modal open ('pending','invited','accepted','reschedule')
 
-  function formatScheduledTime(isoStr) {
+  function formatScheduledTime(isoStr, timeOnly = false) {
     const d = new Date(isoStr);
     const lang = localStorage.getItem('vetd_lang') || 'en';
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
     const at = lang === 'sv' ? 'kl.' : 'at';
-    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
-      + ' ' + at + ' '
-      + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const timeStr = at + ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    if (timeOnly) return timeStr;
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) + ' ' + timeStr;
   }
 
-  function formatAcceptedElapsedText(acceptedAt) {
+  function formatAcceptedElapsedText(acceptedAt, hideToday = false) {
     if (!acceptedAt) return '';
     const acceptedMs = new Date(acceptedAt).getTime();
     if (Number.isNaN(acceptedMs)) return '';
     const days = Math.max(0, Math.floor((Date.now() - acceptedMs) / 86400000));
-    if (days === 0) return t('cl_accepted_today');
+    if (days === 0) return hideToday ? '' : t('cl_accepted_today');
     if (days === 1) return t('cl_accepted_day_ago');
     return t('cl_accepted_days_ago').replace('{count}', days);
   }
@@ -2159,8 +2174,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const diff = new Date(isoStr) - Date.now();
     if (diff <= 15 * 60 * 1000) return null; // ready to join
     const totalMin = Math.floor(diff / 60000);
+    const d = Math.floor(totalMin / 1440);
     const h = Math.floor(totalMin / 60);
     const m = totalMin % 60;
+    if (d >= 1) {
+      const remH = Math.floor((totalMin % 1440) / 60);
+      return `Opens in ${d}d ${remH}h`;
+    }
     return h > 0 ? `Opens in ${h}h ${m}m` : `Opens in ${m}m`;
   }
 
@@ -2209,6 +2229,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     _schedSessionType = 'one_to_one';
     _schedIsReschedule = false;
     _schedCurrentStatus = null;
+  }
+
+  function openInlineSchedule(appId) {
+    const formEl = document.getElementById(`sched-inline-${appId}`);
+    if (!formEl) return;
+    const isOpen = formEl.classList.contains('open');
+    if (isOpen) { formEl.classList.remove('open'); return; }
+    formEl.classList.add('open');
+  }
+
+  function cancelInlineSchedule(formId) {
+    const formEl = document.getElementById(formId);
+    if (formEl) formEl.classList.remove('open');
   }
 
   function openGroupScheduleModal(studyId, acceptedCount, isReschedule) {
@@ -2500,11 +2533,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
       setTimeout(() => {
         showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
-        if (isDraft) {
-          setStudiesFilter('draft', document.querySelector('#tab-studies .fc[data-filter="draft"]'));
-        } else {
-          setStudiesFilter('active', document.querySelector('#tab-studies .fc[data-filter="active"]'));
-        }
       }, 1200);
       return;
     }
@@ -2573,11 +2601,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
       setTimeout(async () => {
         showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
-        if (isDraft) {
-          setStudiesFilter('draft', document.querySelector('#tab-studies .fc[data-filter="draft"]'));
-        } else {
-          setStudiesFilter('active', document.querySelector('#tab-studies .fc[data-filter="active"]'));
-        }
         await loadStudies(); // runs after tab is visible so _justPublished banner renders in place
       }, 1200);
     } catch(err) {
@@ -3843,17 +3866,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         settingsEl.innerHTML = `
           <div style="padding:1.25rem 1.5rem">
             <div style="margin-bottom:20px">
-              <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">
-                Study setup
-              </div>
-              <div style="font-size:13px;color:var(--gray-400)">
-                Edit how this study runs and who you recruit.
-              </div>
+              <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">Study setup</div>
+              <div style="font-size:13px;color:var(--gray-400)">Edit how this study runs and who you recruit.</div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-              <button class="btn-outline" data-action="edit-details">Edit details</button>
-              <button class="btn-outline" data-action="edit-targeting">Edit targeting</button>
-              <button class="btn-outline" data-action="edit-questions">Edit questions</button>
+              <button class="btn-outline" data-action="edit-details">Edit study →</button>
             </div>
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">Study status</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
@@ -3869,8 +3886,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           </div>`;
         wireActions(settingsEl, {
           'edit-details': () => openDraftInBuilder(studyId),
-          'edit-targeting': () => openDraftInBuilder(studyId),
-          'edit-questions': () => openDraftInBuilder(studyId),
         });
       }
     } catch(err) {
@@ -4360,11 +4375,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const roleCheck = await assertPortalRole('client');
       if (!roleCheck.ok) return;
     }
-    const params = new URLSearchParams(window.location.search);
-    const savedFilter = params.get('studies_filter');
-    if (['active', 'draft', 'completed', 'archived'].includes(savedFilter)) {
-      _studiesFilter = savedFilter;
-    }
     ['landing','auth'].forEach(id => document.getElementById(id)?.classList.remove('active'));
     document.getElementById('app').classList.add('active');
     // Capture current user for notifications
@@ -4769,6 +4779,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_participants_title: 'Applicants',
       cl_participants_label: 'Applicants',
       cl_participants_total: 'applicants',
+      cl_workspace_pipeline_count_single: '1 person in pipeline',
+      cl_workspace_pipeline_count_plural: '{count} people in pipeline',
       cl_no_applicants: 'No one has applied yet.',
       cl_no_invitations_yet: 'No invitations sent yet',
       cl_view_participants: 'View {count} participant',
@@ -4779,6 +4791,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_schedule_and_confirm: 'Schedule & confirm',
       cl_schedule_session: 'Schedule session',
       cl_book_session: 'Book session',
+      cl_choose_time: 'Choose time →',
       cl_schedule_only: 'Schedule session',
       cl_reschedule: 'Reschedule',
       cl_reschedule_title: 'Reschedule session',
@@ -4793,6 +4806,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_accepted_needs_scheduling: 'Confirmed — needs time',
       cl_ready_to_book: 'Ready to book',
       cl_waiting_on_availability: 'No times shared yet',
+      cl_times_shared: 'Times have been shared',
+      cl_times_shared_count: '{count} slots available',
       cl_accepted_today: 'Accepted today',
       cl_accepted_day_ago: 'Accepted 1 day ago',
       cl_accepted_days_ago: 'Accepted {count} days ago',
@@ -5117,6 +5132,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_participants_title: 'Sökande',
       cl_participants_label: 'Sökande',
       cl_participants_total: 'sökande',
+      cl_workspace_pipeline_count_single: '1 person i flödet',
+      cl_workspace_pipeline_count_plural: '{count} personer i flödet',
       cl_no_applicants: 'Ingen har ansökt ännu.',
       cl_no_invitations_yet: 'Inga inbjudningar skickade ännu',
       cl_view_participants: 'Visa {count} deltagare',
@@ -5127,6 +5144,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_schedule_and_confirm: 'Schemalägg & bekräfta',
       cl_schedule_session: 'Schemalägg session',
       cl_book_session: 'Boka session',
+      cl_choose_time: 'Välj tid →',
       cl_schedule_only: 'Schemalägg session',
       cl_reschedule: 'Omschemalägg',
       cl_reschedule_title: 'Omschemalägg session',
@@ -5141,6 +5159,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_accepted_needs_scheduling: 'Accepterad, inte schemalagd ännu',
       cl_ready_to_book: 'Redo att boka',
       cl_waiting_on_availability: 'Väntar på tillgänglighet',
+      cl_times_shared: 'Tider har delats',
+      cl_times_shared_count: '{count} tider tillgängliga',
       cl_accepted_today: 'Accepterad idag',
       cl_accepted_day_ago: 'Accepterad för 1 dag sedan',
       cl_accepted_days_ago: 'Accepterad för {count} dagar sedan',

@@ -288,7 +288,7 @@
   .session-card-info { flex: 1; min-width: 0; }
   .session-card-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
   .session-card-meta { font-size: 12px; color: var(--gray-400); font-weight: 300; }
-  .session-card-time { font-size: 12px; color: var(--green-dark); font-weight: 500; margin-top: 3px; }
+  .session-card-time { font-size: 12px; color: var(--gray-400); font-weight: 500; margin-top: 3px; }
   .btn-join { padding: 8px 16px; background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
   .btn-join:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,196,122,0.35); }
   .btn-join:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; transform: none; box-shadow: none; }
@@ -375,9 +375,6 @@
     padding: 8px 22px; background: var(--green-light); color: var(--green-dark);
     border-radius: 100px; font-size: 13px; font-weight: 500;
   }
-  .progress-thin { height: 4px; background: var(--gray-100); border-radius: 100px; overflow: hidden; margin-top: 10px; }
-  .progress-fill-green { height: 100%; background: var(--green); border-radius: 100px; }
-
   /* ── FILTER BAR ── */
   .filter-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
   .filter-chip {
@@ -992,7 +989,7 @@
             <div id="stat-studies-sub" class="stat-card-sub">No studies yet</div>
           </div>
           <div class="stat-card">
-            <div class="stat-card-label">Completion rate</div>
+            <div class="stat-card-label" data-i18n="dash_completion">Completion rate</div>
             <div id="stat-completion" class="stat-card-num">—</div>
             <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
           </div>
@@ -1003,12 +1000,12 @@
         <div class="section-title" data-i18n="upcoming_sessions">Upcoming sessions</div>
         <div id="upcoming-sessions-list"></div>
 
-        <div class="section-title">New matches for you</div>
+        <div class="section-title" data-i18n="dash_recommended">Recommended opportunities</div>
         <div id="dashboard-studies"></div>
 
-        <div class="section-title" style="margin-top:1.5rem">Recent notifications</div>
+        <div class="section-title" style="margin-top:1.5rem" data-i18n="dash_notifications">Notifications</div>
         <div id="dash-notif-list" style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden">
-          <div class="notif-empty">No notifications yet</div>
+          <div class="notif-empty" data-i18n="notif_empty">No notifications yet</div>
         </div>
       </div>
 
@@ -1876,10 +1873,8 @@
         <div class="job-footer">
           <div>
             ${(() => { const spotsLeft = job.spots - job.filled; return spotsLeft <= 3 && job.spots > 0
-              ? `<div class="job-meta" style="color:var(--amber);font-weight:600">⚡ ${spotsLeft} ${t('spots_left')}</div>`
-              : `<div class="job-meta">${esc(job.duration)} · ${spotsLeft} ${t('spots_left')}</div>
-            <div class="progress-thin" style="width:120px"><div class="progress-fill-green" style="width:${Math.round(job.filled/job.spots*100)}%"></div></div>`; })()}
-            ${job.filled > 0 ? `<div style="font-size:11px;color:var(--gray-400);margin-top:4px">👥 ${job.filled} spots filled</div>` : ''}
+              ? `<div class="job-meta" style="color:var(--amber);font-weight:600">⚡ ${t('limited_availability')}</div>`
+              : `<div class="job-meta">${esc(job.duration)}</div>`; })()}
           </div>
           <div style="display:flex;align-items:center;gap:12px">
             ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
@@ -2380,8 +2375,17 @@
     const container = document.getElementById('my-applications-list');
     if (!container) return;
     let apps = state.myApplications || [];
-    if (filter === 'active') apps = apps.filter(a => ['pending','invited','accepted'].includes(a.status));
-    else if (filter === 'past')  apps = apps.filter(a => ['rejected','declined','completed'].includes(a.status));
+    if (filter === 'active') {
+      apps = apps.filter(a => {
+        const phase = getSessionStatus(a, (a.studies || {}).duration_minutes).phase;
+        return ['pending','invited','accepted_needs_availability','accepted_ready','scheduled','starting_soon','in_progress'].includes(phase);
+      });
+    } else if (filter === 'past') {
+      apps = apps.filter(a => {
+        const phase = getSessionStatus(a, (a.studies || {}).duration_minutes).phase;
+        return ['rejected','declined','ended_joined','ended_missed','completed'].includes(phase);
+      });
+    }
 
     if (!state.myApplications.length) {
       container.innerHTML = `
@@ -2393,7 +2397,8 @@
       return;
     }
     if (!apps.length) {
-      container.innerHTML = `<p style="color:var(--gray-400);font-weight:300;font-size:14px;padding:1rem 0">No ${filter} applications.</p>`;
+      const emptyKey = filter === 'past' ? 'no_past_applications' : 'no_active_applications';
+      container.innerHTML = `<p style="color:var(--gray-400);font-weight:300;font-size:14px;padding:1rem 0">${t(emptyKey)}</p>`;
       return;
     }
 
@@ -2428,11 +2433,11 @@
         accepted_needs_availability: 'app-status-accepted',
         accepted_ready:'app-status-accepted',
         scheduled:     'app-status-accepted',
-        starting_soon: 'app-status-pending',
+        starting_soon: 'app-status-accepted',
         in_progress:   'app-status-in-progress',
         ended_joined:  'app-status-completed',
         ended_missed:  'app-status-missed',
-        completed:     'app-status-completed',
+        completed:     'app-status-pending',
         rejected:      'app-status-rejected',
       }[ss.phase] || 'app-status-pending';
 
@@ -2451,7 +2456,7 @@
       } else if (ss.phase === 'declined') {
         statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('invite_you_declined')}</span>`;
       } else if (ss.phase === 'pending') {
-        statusDetail = `${t('applied_on')} ${esc(appliedDate)} — ${t('waiting_response')}`;
+        statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'accepted_needs_availability') {
@@ -2461,7 +2466,6 @@
           : '';
         statusDetail = `
           <div style="display:flex;flex-direction:column;gap:10px">
-            <span style="font-style:italic">${esc(ss.sublabel)}</span>
             ${acceptedWaitText ? `<span style="font-size:11px;color:var(--gray-400)">${esc(acceptedWaitText)}</span>` : ''}
             ${availabilityHint}
             <div>
@@ -2471,7 +2475,7 @@
       } else if (ss.phase === 'accepted_ready') {
         statusDetail = `
           <div style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-style:italic">${esc(ss.sublabel)}</span>
+            <span style="font-size:12px;color:var(--gray-400)">${esc(ss.sublabel)}</span>
             ${acceptedWaitText ? `<span style="font-size:11px;color:var(--gray-400)">${esc(acceptedWaitText)}</span>` : ''}
           </div>`;
       } else if (ss.phase === 'scheduled' && ss.sublabel === t('waiting_schedule')) {
@@ -2486,7 +2490,7 @@
           ? `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`
           : `<button onclick="cantAttend('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
         statusDetail = `<div class="app-schedule-row">
-          <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
+          <strong>${esc(ss.sublabel)}</strong>
           <span class="session-card-time">${esc(ss.countdownText)}</span>
         </div><div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">${preJoinHints}</div><div id="cant-attend-${esc(a.id)}" style="margin-top:6px">${cantAttendHtml}</div>`;
       } else if (ss.canJoin && a.room_url) {
@@ -2495,15 +2499,15 @@
           ? `<div style="margin-top:4px"><span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span></div>`
           : '';
         statusDetail = `<div class="app-schedule-row">
-          <span>${t('scheduled_for')} <strong>${esc(ss.sublabel)}</strong></span>
+          <strong>${esc(ss.sublabel)}</strong>
           <button class="btn-join" data-scheduled-at="${esc(a.scheduled_at)}" onclick="openVideoCall('${escAttr(a.room_url)}','${escAttr(title)}','${escAttr(a.id)}')">${esc(btnLabel)}</button>
         </div>${groupCtx}`;
       } else if (ss.phase === 'ended_joined') {
         statusDetail = `<span style="color:var(--green-dark);font-size:12px;font-weight:500">${t('you_participated')}${ss.sublabel ? ' · ' + esc(ss.sublabel) : ''}</span>`;
       } else if (ss.phase === 'ended_missed') {
-        statusDetail = `<span style="color:var(--coral);font-size:12px;font-weight:500">${t('you_missed')}</span>`;
-      } else if (ss.phase === 'completed') {
         statusDetail = '';
+      } else if (ss.phase === 'completed') {
+        statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('payment_processing')}</span>`;
       }
 
       return `
@@ -2563,7 +2567,7 @@
             <div class="session-card-title">${esc(title)}</div>
             <div class="session-card-meta">${metaParts.map(esc).join(' · ')}</div>
             ${preJoinHintLine}
-            <div class="session-card-time">${esc(ss.phase === 'in_progress' ? t('status_in_progress') : (ss.countdownText || sessionTimeUntil(s.scheduled_at)))}</div>
+            <div class="session-card-time"${ss.phase === 'in_progress' ? ' style="color:var(--green-dark)"' : ''}>${esc(ss.phase === 'in_progress' ? t('status_in_progress') : (ss.countdownText || sessionTimeUntil(s.scheduled_at)))}</div>
           </div>
           ${joinBtn}
         </div>`;
@@ -3663,6 +3667,9 @@ async function applyToStudy(studyId, answers = null) {
       dash_studies: 'Studies done',
       dash_earned: 'Total earned',
       dash_rating: 'Your rating',
+      dash_completion: 'Completion rate',
+      dash_recommended: 'Recommended opportunities',
+      dash_notifications: 'Notifications',
       browse_title: 'Available opportunities',
       apply_btn: 'Apply',
       applied_badge: 'Applied ✓',
@@ -3717,7 +3724,7 @@ async function applyToStudy(studyId, answers = null) {
       edit_label_notes: "Anything else you'd like us to know?",
       edit_cancel: 'Cancel',
       edit_save: 'Save changes',
-      spots_left: 'spots left',
+      limited_availability: 'Limited spots remaining',
       top_match: '★ Top match for you',
       no_studies_dash: 'No active studies right now — check back soon.',
       no_studies_browse: 'No studies available',
@@ -3783,19 +3790,18 @@ async function applyToStudy(studyId, answers = null) {
       status_rejected: 'Not selected',
       status_completed: 'Completed ✓',
       applied_on: 'Applied on',
-      waiting_response: 'waiting for response',
       status_invited: 'Invited',
       status_declined: 'Declined',
       waiting_schedule: 'You accepted — the study team will send you a session time shortly',
       waiting_schedule_group: 'You accepted — the study team will send a group session time shortly',
-      status_accepted_needs_availability: 'Accepted — add your availability to get scheduled',
+      status_accepted_needs_availability: 'Accepted',
       waiting_schedule_needs_availability: 'Add your availability so the study team can book you.',
-      status_accepted_ready: 'Accepted — ready to be booked',
-      waiting_schedule_ready: 'You are ready to be booked when the study team picks a time.',
+      status_accepted_ready: 'Accepted',
+      waiting_schedule_ready: 'Waiting for the study team to confirm a time.',
       availability_needs_more_hint: 'Add more availability to increase your chances of being scheduled.',
-      accepted_today_unscheduled: 'Accepted today — not yet scheduled',
-      accepted_day_unscheduled: 'Accepted 1 day ago — not yet scheduled',
-      accepted_days_unscheduled: 'Accepted {count} days ago — not yet scheduled',
+      accepted_today_unscheduled: 'Accepted today',
+      accepted_day_unscheduled: 'Accepted 1 day ago',
+      accepted_days_unscheduled: 'Accepted {count} days ago',
       set_availability_btn: 'Set availability',
       session_type_group: 'Group session',
       join_early_hint: 'You can join 15 minutes before start',
@@ -3807,6 +3813,8 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
       waiting_schedule_invited: 'You\'ve been personally selected for this study',
       no_applications: 'You have no active invitations yet.',
+      no_active_applications: 'No active applications right now.',
+      no_past_applications: 'No past applications yet.',
       browse_studies_btn: 'View opportunities',
       invite_context_line: 'You\'ve been personally selected for this study',
       invite_accept_btn: 'Accept invitation',
@@ -3834,13 +3842,13 @@ async function applyToStudy(studyId, answers = null) {
       status_scheduled: 'Scheduled',
       status_starting_soon: 'Starting soon',
       status_in_progress: 'Session in progress',
-      status_ended_joined: 'Session complete — awaiting review',
+      status_ended_joined: 'Session complete',
       status_ended_missed: 'Missed session',
       status_completed_awaiting: 'Completed — awaiting payment',
       status_paid: 'Paid',
       you_participated: '✓ You participated',
-      call_duration_approx: 'approx. {mins} minutes',
-      you_missed: 'You missed this session',
+      call_duration_approx: '~{mins} min',
+      payment_processing: 'Payment is being processed',
       rejoin_call: 'Rejoin call',
       session_ended: 'Session ended',
       cookie_text: 'We use localStorage to remember your language preference.',
@@ -3889,6 +3897,9 @@ async function applyToStudy(studyId, answers = null) {
       dash_studies: 'Studier gjorda',
       dash_earned: 'Totalt tjänat',
       dash_rating: 'Ditt betyg',
+      dash_completion: 'Slutförandegrad',
+      dash_recommended: 'Rekommenderade möjligheter',
+      dash_notifications: 'Aviseringar',
       browse_title: 'Tillgängliga studier',
       apply_btn: 'Ansök',
       applied_badge: 'Ansökt ✓',
@@ -3943,7 +3954,7 @@ async function applyToStudy(studyId, answers = null) {
       edit_label_notes: 'Något annat du vill att vi ska veta?',
       edit_cancel: 'Avbryt',
       edit_save: 'Spara ändringar',
-      spots_left: 'platser kvar',
+      limited_availability: 'Begränsat antal platser kvar',
       top_match: '★ Bästa matchning för dig',
       no_studies_dash: 'Inga aktiva studier just nu — kolla tillbaka snart.',
       no_studies_browse: 'Inga studier tillgängliga',
@@ -4009,19 +4020,18 @@ async function applyToStudy(studyId, answers = null) {
       status_rejected: 'Ej vald',
       status_completed: 'Slutförd ✓',
       applied_on: 'Ansökt den',
-      waiting_response: 'väntar på svar',
       status_invited: 'Inbjuden',
       status_declined: 'Avböjd',
       waiting_schedule: 'Du accepterade — studieansvariga skickar en sessionstid till dig inom kort',
       waiting_schedule_group: 'Du accepterade — studieansvariga skickar en gruppsessionstid till dig inom kort',
-      status_accepted_needs_availability: 'Accepterad — lägg till din tillgänglighet för att bli schemalagd',
+      status_accepted_needs_availability: 'Accepterad',
       waiting_schedule_needs_availability: 'Lägg till din tillgänglighet så att studieteamet kan boka dig.',
-      status_accepted_ready: 'Accepterad — redo att bokas',
-      waiting_schedule_ready: 'Du är redo att bokas när studieteamet väljer en tid.',
+      status_accepted_ready: 'Accepterad',
+      waiting_schedule_ready: 'Väntar på att studieteamet bekräftar en tid.',
       availability_needs_more_hint: 'Lägg till mer tillgänglighet för att öka chansen att bli schemalagd.',
-      accepted_today_unscheduled: 'Accepterad idag — ännu inte schemalagd',
-      accepted_day_unscheduled: 'Accepterad för 1 dag sedan — ännu inte schemalagd',
-      accepted_days_unscheduled: 'Accepterad för {count} dagar sedan — ännu inte schemalagd',
+      accepted_today_unscheduled: 'Accepterad idag',
+      accepted_day_unscheduled: 'Accepterad för 1 dag sedan',
+      accepted_days_unscheduled: 'Accepterad för {count} dagar sedan',
       set_availability_btn: 'Lägg till tillgänglighet',
       session_type_group: 'Gruppsession',
       join_early_hint: 'Du kan gå med 15 minuter innan start',
@@ -4033,6 +4043,8 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
       waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
       no_applications: 'Du har inga aktiva inbjudningar ännu.',
+      no_active_applications: 'Inga aktiva ansökningar just nu.',
+      no_past_applications: 'Inga tidigare ansökningar ännu.',
       browse_studies_btn: 'Se möjligheter',
       invite_context_line: 'Du har blivit personligen utvald för den här studien',
       invite_accept_btn: 'Acceptera inbjudan',
@@ -4060,13 +4072,13 @@ async function applyToStudy(studyId, answers = null) {
       status_scheduled: 'Schemalagd',
       status_starting_soon: 'Börjar snart',
       status_in_progress: 'Session pågår',
-      status_ended_joined: 'Session slutförd — väntar på granskning',
+      status_ended_joined: 'Session slutförd',
       status_ended_missed: 'Missad session',
       status_completed_awaiting: 'Slutförd — väntar på betalning',
       status_paid: 'Betald',
       you_participated: '✓ Du deltog',
-      call_duration_approx: 'ca {mins} minuter',
-      you_missed: 'Du missade denna session',
+      call_duration_approx: '~{mins} min',
+      payment_processing: 'Betalning behandlas',
       rejoin_call: 'Gå med igen',
       session_ended: 'Sessionen avslutad',
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
