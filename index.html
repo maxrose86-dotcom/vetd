@@ -1026,9 +1026,15 @@
       }
     } catch(e) {}
 
-    // contributor_cta_click — any CTA that sends the visitor to app.html
+    // contributor_cta_click — once per session for any CTA that sends the visitor to app.html
     document.querySelectorAll('a.nav-cta[href="app.html"]').forEach(function(el) {
-      el.addEventListener('click', function() { funnel('contributor_cta_click'); });
+      el.addEventListener('click', function() {
+        try {
+          if (sessionStorage.getItem('vetd_contributor_cta_click')) return;
+          sessionStorage.setItem('vetd_contributor_cta_click', '1');
+        } catch(e) {}
+        funnel('contributor_cta_click');
+      });
     });
   })();
 
