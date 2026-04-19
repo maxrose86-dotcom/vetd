@@ -687,10 +687,10 @@
       }
 
       // Send welcome email once, on the first sign-in after email confirmation.
-      // Only fires for contributors; only when ?confirmed=true is in the URL;
-      // deduplicated by localStorage so it never sends twice even if the user
-      // lands on login.html?confirmed=true more than once.
-      if (resolvedRole === 'contributor' && pageParams.get('confirmed') === 'true') {
+      // Uses email_confirmed_at from the auth user object — reliable regardless
+      // of URL params, which are gone by the time routing completes.
+      // Deduplicated by localStorage so it never sends twice.
+      if (resolvedRole === 'contributor' && data.user?.email_confirmed_at) {
         const dedupeKey = 'vetd_welcome_sent_' + data.user.id;
         if (!localStorage.getItem(dedupeKey)) {
           localStorage.setItem(dedupeKey, '1');
