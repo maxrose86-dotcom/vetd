@@ -389,6 +389,7 @@
   .preview-supply-note { font-size: 12px; color: var(--gray-500); line-height: 1.6; margin: 0 0 1rem; max-width: 620px; }
   .preview-study-stack { display: flex; flex-direction: column; gap: 12px; }
   .preview-card-hint { font-size: 12px; color: var(--gray-400); }
+  .preview-footer-continuation { font-size: 12px; color: var(--gray-400); text-align: center; margin-top: 0.9rem; }
   .job-match { display: flex; align-items: center; gap: 6px; }
   .match-pct { font-size: 13px; font-weight: 600; color: var(--green); }
   .match-bar { width: 60px; height: 5px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
@@ -1711,6 +1712,16 @@
     `).join('');
   }
 
+  function renderPreviewStudySection(limit, introKey) {
+    return `
+      <div>
+        <p class="preview-supply-note">${t(introKey)}</p>
+        <div class="preview-study-stack">${renderPreviewStudyCards(limit)}</div>
+        <div class="preview-footer-continuation">${t('preview_footer_continuation')}</div>
+      </div>
+    `;
+  }
+
   // ─── EVENT LOGGING ───────────────────────────────────────
   const SESSION_ID = sessionStorage.getItem('vetd_sid') || (() => {
     const id = crypto.randomUUID(); sessionStorage.setItem('vetd_sid', id); return id;
@@ -2036,10 +2047,7 @@
       const hasLiveStudies = state.studies.length > 0;
       if (isDashboard) {
         container.innerHTML = !hasLiveStudies
-          ? `<div>
-              <p class="preview-supply-note">${t('preview_supply_dashboard_intro')}</p>
-              <div class="preview-study-stack">${renderPreviewStudyCards(2)}</div>
-            </div>`
+          ? renderPreviewStudySection(2, 'preview_supply_dashboard_intro')
           : `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`;
         return;
       }
@@ -2067,8 +2075,7 @@
             </div>
             <div style="margin-bottom:2rem">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
-              <p class="preview-supply-note">${t('preview_supply_browse_intro')}</p>
-              <div class="preview-study-stack">${renderPreviewStudyCards(3)}</div>
+              ${renderPreviewStudySection(3, 'preview_supply_browse_intro')}
             </div>
             <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
@@ -4251,6 +4258,7 @@ async function applyToStudy(studyId, answers = null) {
       empty_hero_cta: 'Complete your profile',
       preview_supply_dashboard_intro: 'Typical studies here include interviews, app feedback, checkout testing and product research.',
       preview_supply_browse_intro: 'This is the kind of research that appears here as the pipeline opens.',
+      preview_footer_continuation: 'New studies are added regularly — check back soon.',
       preview_status_label: 'Preview',
       preview_footer_meta: 'Paid session',
       preview_card_hint: 'Not open for applications yet',
@@ -4568,6 +4576,7 @@ async function applyToStudy(studyId, answers = null) {
       empty_hero_cta: 'Slutför din profil',
       preview_supply_dashboard_intro: 'Här dyker vanligtvis intervjuer, appfeedback, checkouttester och produktstudier upp.',
       preview_supply_browse_intro: 'Det här är den typ av research som visas här när flödet öppnar upp.',
+      preview_footer_continuation: 'Nya studier läggs till löpande — titta in igen snart.',
       preview_status_label: 'Förhandsvisning',
       preview_footer_meta: 'Betald session',
       preview_card_hint: 'Inte öppen för ansökningar ännu',
