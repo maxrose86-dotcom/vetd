@@ -349,6 +349,18 @@
     transform: translateY(-2px);
   }
   .job-card.featured { border-color: var(--green); }
+  .job-card.preview-card {
+    cursor: default;
+    pointer-events: none;
+    border-color: rgba(17,17,17,0.07);
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FAFBFB 100%);
+    box-shadow: none;
+  }
+  .job-card.preview-card:hover {
+    border-color: rgba(17,17,17,0.07);
+    box-shadow: none;
+    transform: none;
+  }
   .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .job-company { display: flex; align-items: center; gap: 10px; }
   .company-badge {
@@ -374,6 +386,9 @@
   .tag-coral { background: var(--coral-light); color: #993C1D; }
   .job-footer { display: flex; justify-content: space-between; align-items: center; }
   .job-meta { font-size: 12px; color: var(--gray-400); }
+  .preview-supply-note { font-size: 12px; color: var(--gray-500); line-height: 1.6; margin: 0 0 1rem; max-width: 620px; }
+  .preview-study-stack { display: flex; flex-direction: column; gap: 12px; }
+  .preview-card-hint { font-size: 12px; color: var(--gray-400); }
   .job-match { display: flex; align-items: center; gap: 6px; }
   .match-pct { font-size: 13px; font-weight: 600; color: var(--green); }
   .match-bar { width: 60px; height: 5px; background: var(--gray-100); border-radius: 100px; overflow: hidden; }
@@ -1624,6 +1639,78 @@
     notifications: null
   };
 
+  const PREVIEW_STUDIES = [
+    {
+      id: 'preview_checkout',
+      badge: 'CHK',
+      companyKey: 'preview_study_1_company',
+      titleKey: 'preview_study_1_title',
+      descKey: 'preview_study_1_desc',
+      pay: '€45',
+      duration: '45 min',
+      categoryKey: 'preview_tag_checkout',
+      categoryCls: 'tag-blue',
+      formatKey: 'preview_tag_video_call',
+      formatCls: 'tag-gray'
+    },
+    {
+      id: 'preview_onboarding',
+      badge: 'APP',
+      companyKey: 'preview_study_2_company',
+      titleKey: 'preview_study_2_title',
+      descKey: 'preview_study_2_desc',
+      pay: '€60',
+      duration: '60 min',
+      categoryKey: 'preview_tag_app_feedback',
+      categoryCls: 'tag-green',
+      formatKey: 'preview_tag_guided_test',
+      formatCls: 'tag-gray'
+    },
+    {
+      id: 'preview_ai_workflow',
+      badge: 'AI',
+      companyKey: 'preview_study_3_company',
+      titleKey: 'preview_study_3_title',
+      descKey: 'preview_study_3_desc',
+      pay: '€80',
+      duration: '75 min',
+      categoryKey: 'preview_tag_product_research',
+      categoryCls: 'tag-amber',
+      formatKey: 'preview_tag_remote_interview',
+      formatCls: 'tag-gray'
+    }
+  ];
+
+  function renderPreviewStudyCards(limit = PREVIEW_STUDIES.length) {
+    return PREVIEW_STUDIES.slice(0, limit).map(study => `
+      <div class="job-card preview-card">
+        <div class="job-header">
+          <div class="job-company">
+            <div class="company-badge">${esc(study.badge)}</div>
+            <div>
+              <div class="job-company-name">${esc(t(study.companyKey))}</div>
+              <div class="job-title">${esc(t(study.titleKey))}</div>
+            </div>
+          </div>
+          <div class="job-pay">
+            <div class="pay-amount">${esc(study.pay)}</div>
+            <div class="pay-type">${t('per_session')}</div>
+          </div>
+        </div>
+        <div class="job-desc">${esc(t(study.descKey))}</div>
+        <div class="job-tags">
+          <span class="tag tag-gray">${esc(t('preview_status_label'))}</span>
+          <span class="tag ${esc(study.categoryCls)}">${esc(t(study.categoryKey))}</span>
+          <span class="tag ${esc(study.formatCls)}">${esc(t(study.formatKey))}</span>
+        </div>
+        <div class="job-footer">
+          <div class="job-meta">${esc(study.duration)} · ${esc(t('preview_footer_meta'))}</div>
+          <div class="preview-card-hint">${esc(t('preview_card_hint'))}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   // ─── EVENT LOGGING ───────────────────────────────────────
   const SESSION_ID = sessionStorage.getItem('vetd_sid') || (() => {
     const id = crypto.randomUUID(); sessionStorage.setItem('vetd_sid', id); return id;
@@ -1946,6 +2033,22 @@
     const container = document.getElementById(containerId);
     if (!subset.length) {
       const isDashboard = containerId === 'dashboard-studies';
+      const hasLiveStudies = state.studies.length > 0;
+      if (isDashboard) {
+        container.innerHTML = !hasLiveStudies
+          ? `<div>
+              <p class="preview-supply-note">${t('preview_supply_dashboard_intro')}</p>
+              <div class="preview-study-stack">${renderPreviewStudyCards(2)}</div>
+            </div>`
+          : `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`;
+        return;
+      }
+
+      if (hasLiveStudies) {
+        container.innerHTML = `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_browse')}</p>`;
+        return;
+      }
+
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
         : `<div style="max-width:600px">
@@ -1964,23 +2067,8 @@
             </div>
             <div style="margin-bottom:2rem">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
-              <div style="display:flex;flex-direction:column;gap:12px">
-                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
-                  <div class="job-header"><div><div class="job-title">${t('empty_card_1_title')}</div></div><div class="job-pay"><div class="pay-amount">€45</div><div class="pay-type">${t('per_session')}</div></div></div>
-                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-blue">${t('empty_tag_online')}</span></div>
-                  <div class="job-footer"><div class="job-meta">45 min</div></div>
-                </div>
-                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
-                  <div class="job-header"><div><div class="job-title">${t('empty_card_2_title')}</div></div><div class="job-pay"><div class="pay-amount">€60</div><div class="pay-type">${t('per_session')}</div></div></div>
-                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-green">${t('empty_tag_high_pay')}</span></div>
-                  <div class="job-footer"><div class="job-meta">60 min</div></div>
-                </div>
-                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
-                  <div class="job-header"><div><div class="job-title">${t('empty_card_3_title')}</div></div><div class="job-pay"><div class="pay-amount">€80</div><div class="pay-type">${t('per_session')}</div></div></div>
-                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-amber">${t('empty_tag_interview')}</span></div>
-                  <div class="job-footer"><div class="job-meta">75 min</div></div>
-                </div>
-              </div>
+              <p class="preview-supply-note">${t('preview_supply_browse_intro')}</p>
+              <div class="preview-study-stack">${renderPreviewStudyCards(3)}</div>
             </div>
             <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
@@ -4161,6 +4249,26 @@ async function applyToStudy(studyId, answers = null) {
       empty_hero_title: 'You\'re early — new studies are launching soon',
       empty_hero_sub: 'We\'re matching contributors with upcoming paid research sessions. Complete your profile to get invited first.',
       empty_hero_cta: 'Complete your profile',
+      preview_supply_dashboard_intro: 'Typical studies here include interviews, app feedback, checkout testing and product research.',
+      preview_supply_browse_intro: 'This is the kind of research that appears here as the pipeline opens.',
+      preview_status_label: 'Preview',
+      preview_footer_meta: 'Paid session',
+      preview_card_hint: 'Not open for applications yet',
+      preview_tag_checkout: 'Checkout testing',
+      preview_tag_app_feedback: 'App feedback',
+      preview_tag_product_research: 'Product research',
+      preview_tag_video_call: 'Video call',
+      preview_tag_guided_test: 'Guided app test',
+      preview_tag_remote_interview: 'Remote interview',
+      preview_study_1_company: 'Retail product team',
+      preview_study_1_title: 'Checkout flow feedback',
+      preview_study_1_desc: 'Review a purchase journey and point out where the experience feels slow or unclear.',
+      preview_study_2_company: 'Consumer app team',
+      preview_study_2_title: 'Mobile app onboarding review',
+      preview_study_2_desc: 'Try a new onboarding flow and talk through what feels intuitive, missing or confusing.',
+      preview_study_3_company: 'AI tools team',
+      preview_study_3_title: 'AI workflow interview',
+      preview_study_3_desc: 'Walk through how you use AI tools at work and where they still create friction.',
       empty_how_label: 'How it works',
       empty_step_1: 'Complete your profile',
       empty_step_2: 'Get matched to studies',
@@ -4458,6 +4566,26 @@ async function applyToStudy(studyId, answers = null) {
       empty_hero_title: 'Du är tidig — nya studier lanseras snart',
       empty_hero_sub: 'Vi matchar bidragsgivare med kommande betalda studier. Slutför din profil för att bli inbjuden först.',
       empty_hero_cta: 'Slutför din profil',
+      preview_supply_dashboard_intro: 'Här dyker vanligtvis intervjuer, appfeedback, checkouttester och produktstudier upp.',
+      preview_supply_browse_intro: 'Det här är den typ av research som visas här när flödet öppnar upp.',
+      preview_status_label: 'Förhandsvisning',
+      preview_footer_meta: 'Betald session',
+      preview_card_hint: 'Inte öppen för ansökningar ännu',
+      preview_tag_checkout: 'Checkouttest',
+      preview_tag_app_feedback: 'Appfeedback',
+      preview_tag_product_research: 'Produktresearch',
+      preview_tag_video_call: 'Videosamtal',
+      preview_tag_guided_test: 'Guidad apptest',
+      preview_tag_remote_interview: 'Fjärrintervju',
+      preview_study_1_company: 'Retailteam',
+      preview_study_1_title: 'Feedback på checkoutflöde',
+      preview_study_1_desc: 'Gå igenom en köpresa och peka ut var upplevelsen känns långsam eller otydlig.',
+      preview_study_2_company: 'Appteam',
+      preview_study_2_title: 'Granskning av onboarding i mobilapp',
+      preview_study_2_desc: 'Testa ett nytt onboardingflöde och berätta vad som känns intuitivt, saknas eller är oklart.',
+      preview_study_3_company: 'AI-verktygsteam',
+      preview_study_3_title: 'Intervju om AI-arbetsflöden',
+      preview_study_3_desc: 'Gå igenom hur du använder AI-verktyg i arbetet och var det fortfarande skaver.',
       empty_how_label: 'Så fungerar det',
       empty_step_1: 'Slutför din profil',
       empty_step_2: 'Matchas med studier',
