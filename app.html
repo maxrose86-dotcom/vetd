@@ -256,6 +256,8 @@
   }
   .rating-hero-left h2 { font-family: var(--serif); font-size: 20px; letter-spacing: -0.2px; margin-bottom: 6px; }
   .rating-hero-left p { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300; line-height: 1.5; }
+  .hero-signal-stack { display:flex; flex-direction:column; gap:6px; margin-top:1rem; }
+  .hero-signal-line { font-size:12px; color:rgba(255,255,255,0.66); font-weight:400; letter-spacing:0.01em; }
   .hero-quiet-cta {
     background: #fff;
     color: var(--gray-900);
@@ -3002,6 +3004,10 @@ async function applyToStudy(studyId, answers = null) {
         `<div class="rating-hero-left" style="flex:1;max-width:none">` +
           `<h2 style="font-family:var(--serif);font-size:26px;letter-spacing:-0.3px;margin-bottom:12px">${esc(t('zero_state_hero_title'))}</h2>` +
           `<p style="font-size:14px;color:rgba(255,255,255,0.55);font-weight:300;line-height:1.7;max-width:380px">${esc(t('zero_state_hero_body'))}</p>` +
+          `<div class="hero-signal-stack">` +
+            `<div class="hero-signal-line">${esc(t('zero_state_signal_supply'))}</div>` +
+            `<div class="hero-signal-line">${esc(t('zero_state_signal_value'))}</div>` +
+          `</div>` +
           `<div style="margin-top:1.35rem">` +
             `<button class="apply-btn hero-quiet-cta" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${esc(t('zero_state_hero_cta'))}</button>` +
           `</div>` +
@@ -4302,6 +4308,8 @@ async function applyToStudy(studyId, answers = null) {
       dash_subtext_active: 'Keep going — each study builds your reputation.',
       zero_state_hero_title: 'Your profile is live',
       zero_state_hero_body: 'Add a few final details and we\'ll bring forward studies that fit.',
+      zero_state_signal_supply: 'New studies added weekly',
+      zero_state_signal_value: 'Most studies pay €40–€80',
       zero_state_hero_cta: 'Complete profile',
       boost_card_title: 'Get better study matches',
       boost_section_topics: 'Topics that match you',
@@ -4597,6 +4605,8 @@ async function applyToStudy(studyId, answers = null) {
       dash_subtext_active: 'Fortsätt — varje studie bygger ditt rykte.',
       zero_state_hero_title: 'Din profil är live',
       zero_state_hero_body: 'Lägg till några sista detaljer så lyfter vi fram studier som passar dig.',
+      zero_state_signal_supply: 'Nya studier läggs till varje vecka',
+      zero_state_signal_value: 'De flesta studier betalar €40–€80',
       zero_state_hero_cta: 'Slutför profil',
       boost_card_title: 'Få bättre studiematchningar',
       boost_section_topics: 'Ämnen som passar dig',
