@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const RESEND_API_KEY       = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY    = Deno.env.get("PUBLIC_ANON_KEY")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +64,32 @@ serve(async (req) => {
     });
   }
 
+  // ── Resolve authenticated user from Authorization header ────────────────────
+  // Use a user-context client (anon key + forwarded Authorization header).
+  // auth.getUser() with no args verifies the JWT against Supabase Auth.
+  const authHeader = req.headers.get("Authorization")!;
+  const token = authHeader.replace("Bearer ", "");
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      headers: { Authorization: authHeader },
+    },
+  });
+
+  const { data: { user }, error: authErr } = await userClient.auth.getUser(token);
+
+  // Service role client used only for DB reads/writes below.
+  const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  if (authErr || !user) {
+    console.error("[send-welcome-email] Could not resolve user from token:", authErr?.message);
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  // ── End auth resolution ─────────────────────────────────────────────────────
+
   let email: string | undefined;
 
   try {
@@ -80,6 +110,29 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  // ── DB dedupe check ─────────────────────────────────────────────────────────
+  const { data: contributor, error: fetchErr } = await adminClient
+    .from("contributors")
+    .select("welcome_email_sent_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (fetchErr) {
+    console.error("[send-welcome-email] Failed to query contributors:", fetchErr);
+    return new Response(JSON.stringify({ error: "db query failed" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (contributor?.welcome_email_sent_at) {
+    console.log("[send-welcome-email] Already sent for userId:", user.id);
+    return new Response(JSON.stringify({ ok: true, skipped: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  // ── End dedupe check ────────────────────────────────────────────────────────
 
   console.log("[send-welcome-email] Attempting send to:", email);
 
@@ -120,6 +173,21 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  // ── Mark as sent ────────────────────────────────────────────────────────────
+  const { error: updateErr } = await adminClient
+    .from("contributors")
+    .update({ welcome_email_sent_at: new Date().toISOString() })
+    .eq("id", user.id);
+
+  if (updateErr) {
+    console.error("[send-welcome-email] Failed to update welcome_email_sent_at:", updateErr);
+    return new Response(JSON.stringify({ error: "failed to mark email as sent" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  // ── End mark as sent ────────────────────────────────────────────────────────
 
   let result: { id?: string };
   try {
