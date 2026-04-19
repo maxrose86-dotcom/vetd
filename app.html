@@ -2977,15 +2977,21 @@
   // ─── APPLY TO STUDY ───────────────────────────────────────
 // ─── APPLY TO STUDY ───────────────────────────────────────
 async function applyToStudy(studyId, answers = null) {
-  if (!db || !state.currentUser) {
+  if (!db) {
     showToast(t('apply_err_auth') || 'Not signed in — please refresh.', true);
     return false;
   }
+  const { data: { user } } = await db.auth.getUser();
+  if (!user?.id) {
+    showToast(t('apply_err_auth') || 'Not signed in — please refresh.', true);
+    return false;
+  }
+  state.currentUser = user;
   if (state.appliedStudies.has(studyId)) return false;
 
   const insertRow = {
     study_id:       studyId,
-    contributor_id: state.currentUser.id,
+    contributor_id: user.id,
     status:         'pending',
     applied_at:     new Date().toISOString(),
   };
