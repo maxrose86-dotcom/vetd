@@ -701,6 +701,7 @@
               'Authorization': 'Bearer ' + SUPABASE_ANON,
             },
             body: JSON.stringify({ email: data.user.email }),
+            keepalive: true, // survives page navigation/unload
           }).catch(() => {}); // fire-and-forget, non-critical
         }
       }
