@@ -234,14 +234,14 @@
   .app-content { flex: 1; padding: 2.5rem 2rem; max-width: 860px; margin: 0 auto; width: 100%; }
 
   /* ── DASHBOARD ── */
-  .dash-welcome { margin-bottom: 3rem; }
+  .dash-welcome { margin-bottom: 2.25rem; }
   .dash-welcome h1 { font-family: var(--serif); font-size: 38px; letter-spacing: -0.5px; margin-bottom: 10px; }
   .dash-welcome p { color: var(--gray-700); font-size: 15px; font-weight: 300; }
 
   .rating-hero {
     background: #111111; color: #fff; border-radius: var(--radius-xl);
     padding: 2.5rem; display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1.5rem; position: relative; overflow: hidden;
+    margin-bottom: 1.25rem; position: relative; overflow: hidden;
     box-shadow: 0 4px 24px rgba(0,0,0,0.12);
   }
   .rating-hero::before {
@@ -283,6 +283,8 @@
   .section-title::after {
     content: ''; flex: 1; height: 1px; background: var(--gray-100);
   }
+  #tab-dashboard .section-title { color: var(--gray-500); margin-bottom: 1rem; font-weight: 500; letter-spacing: 0.06em; }
+  #tab-dashboard .section-title::after { background: rgba(17,17,17,0.06); }
 
   /* ── UPCOMING SESSIONS ── */
   .session-card {
@@ -466,6 +468,39 @@
   .boost-save-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
   .pc-chip { padding:6px 16px; border:1.5px solid var(--gray-200); border-radius:100px; font-size:13px; font-family:var(--sans); cursor:pointer; background:#fff; color:var(--gray-600); transition:all 0.15s; }
   .pc-chip.selected { border-color:var(--green); background:var(--green-light); color:var(--green-dark); font-weight:600; }
+  .profile-completion-surface {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #F8FBFA 100%);
+    border: 1px solid rgba(17,17,17,0.06);
+    box-shadow: 0 12px 30px rgba(17,17,17,0.05);
+    padding: 1.65rem;
+    margin-bottom: 2rem;
+  }
+  .profile-completion-head { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:14px; }
+  .profile-completion-kicker { font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray-400); margin-bottom:8px; }
+  .profile-completion-surface .boost-title { font-size:18px; letter-spacing:-0.25px; margin-bottom:6px; }
+  .profile-completion-surface .boost-sub { color:var(--gray-500); line-height:1.55; max-width:460px; }
+  .profile-completion-dismiss {
+    background:none; border:none; font-size:18px; color:var(--gray-400); cursor:pointer;
+    line-height:1; padding:2px 0 0; margin-left:8px; flex-shrink:0;
+  }
+  .profile-completion-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .profile-completion-surface .pc-label { font-size:12px; font-weight:500; color:var(--gray-500); display:block; margin-bottom:6px; }
+  .profile-completion-surface .pc-input,
+  .profile-completion-surface .pc-select {
+    width:100%; padding:10px 12px; min-height:42px; border:1px solid rgba(17,17,17,0.08);
+    border-radius:10px; font-family:var(--sans); font-size:13px; outline:none; box-sizing:border-box;
+    background:rgba(255,255,255,0.92); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+  .profile-completion-surface .pc-input:focus,
+  .profile-completion-surface .pc-select:focus {
+    border-color: rgba(0,196,122,0.55);
+    box-shadow: 0 0 0 3px rgba(0,196,122,0.10);
+  }
+  .profile-completion-surface .pc-select { -webkit-appearance:none; appearance:none; }
+  .profile-completion-surface .pc-chip { border-color: rgba(17,17,17,0.08); background: rgba(255,255,255,0.9); }
+  .profile-completion-actions { display:flex; align-items:center; gap:12px; }
+  .profile-completion-surface .boost-save-btn { margin-top:0; box-shadow:none; }
+  .profile-completion-secondary { background:none; border:none; font-size:13px; color:var(--gray-400); cursor:pointer; font-family:var(--sans); padding:0; }
   .profile-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
   .profile-row:last-child { border-bottom: none; }
   .profile-row-label { color: var(--gray-400); }
@@ -2959,6 +2994,9 @@ async function applyToStudy(studyId, answers = null) {
         `<div class="rating-hero-left" style="flex:1;max-width:none">` +
           `<h2 style="font-family:var(--serif);font-size:26px;letter-spacing:-0.3px;margin-bottom:12px">${esc(t('zero_state_hero_title'))}</h2>` +
           `<p style="font-size:14px;color:rgba(255,255,255,0.55);font-weight:300;line-height:1.7;max-width:380px">${esc(t('zero_state_hero_body'))}</p>` +
+          `<div style="margin-top:1.35rem">` +
+            `<button class="btn-back" style="border-color:rgba(255,255,255,0.14);background:rgba(255,255,255,0.06);color:#fff" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${esc(t('zero_state_hero_cta'))}</button>` +
+          `</div>` +
           `<div style="margin-top:1.25rem"><div id="dash-tier-badge" class="${tierClass}">${esc(tierLabel)}</div></div>` +
         `</div>`;
     } else {
@@ -3389,28 +3427,29 @@ async function applyToStudy(studyId, answers = null) {
     const snoozed = localStorage.getItem('vetd_pc_snooze');
     if (snoozed && Date.now() < parseInt(snoozed, 10) + 7 * 24 * 60 * 60 * 1000) { card.style.display = 'none'; return; }
 
-    card.className = 'boost-card';
+    card.className = 'boost-card profile-completion-surface';
     card.style.display = 'block';
     card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div class="profile-completion-head">
         <div>
+          <div class="profile-completion-kicker">Professional details</div>
           <div class="boost-title">Complete your profile</div>
-          <div class="boost-sub">Add a few work details to get invited to more relevant studies.</div>
+          <div class="boost-sub">Add a few work details so we can prioritise studies that fit.</div>
         </div>
-        <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:20px;color:var(--gray-400);cursor:pointer;line-height:1;padding:0;margin-left:8px;flex-shrink:0">×</button>
+        <button onclick="skipProfileCompletion()" class="profile-completion-dismiss">×</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="profile-completion-grid">
         <div>
-          <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Job title</label>
-          <input id="pc-job-title" type="text" placeholder="e.g. Product manager" maxlength="80"
+          <label class="pc-label">Job title</label>
+          <input id="pc-job-title" class="pc-input" type="text" placeholder="e.g. Product manager" maxlength="80"
             oninput="updatePcSaveBtn()"
-            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">
+            >
         </div>
         <div>
-          <label style="font-size:12px;font-weight:500;color:var(--gray-400);display:block;margin-bottom:5px">Industry</label>
-          <select id="pc-industry"
+          <label class="pc-label">Industry</label>
+          <select id="pc-industry" class="pc-select"
             onchange="updatePcSaveBtn()"
-            style="width:100%;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;box-sizing:border-box;-webkit-appearance:none">
+            >
             <option value="">Select…</option>
             <option>Technology</option>
             <option>Finance &amp; banking</option>
@@ -3427,16 +3466,16 @@ async function applyToStudy(studyId, answers = null) {
         </div>
       </div>
       <div style="margin-bottom:14px">
-        <div style="font-size:12px;font-weight:500;color:var(--gray-400);margin-bottom:7px">Experience level</div>
+        <div class="pc-label" style="margin-bottom:7px">Experience level</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="pc-chip" data-value="junior"  onclick="togglePcChip(this)">Junior</button>
           <button class="pc-chip" data-value="mid"     onclick="togglePcChip(this)">Mid-level</button>
           <button class="pc-chip" data-value="senior"  onclick="togglePcChip(this)">Senior</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px">
+      <div class="profile-completion-actions">
         <button id="pc-save-btn" onclick="saveProfileCompletion()" class="boost-save-btn" disabled>Save</button>
-        <button onclick="skipProfileCompletion()" style="background:none;border:none;font-size:13px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);padding:0">Skip</button>
+        <button onclick="skipProfileCompletion()" class="profile-completion-secondary">Skip for now</button>
       </div>`;
 
     if (c?.job_title) document.getElementById('pc-job-title').value = c.job_title;
@@ -4253,8 +4292,9 @@ async function applyToStudy(studyId, answers = null) {
       dash_subtext_new: 'Your profile is live. We\'ll match you with studies that fit.',
       dash_subtext_upcoming: 'You have an upcoming session — check your schedule below.',
       dash_subtext_active: 'Keep going — each study builds your reputation.',
-      zero_state_hero_title: 'You\'re in.',
-      zero_state_hero_body: 'Your profile is live and we\'re matching you with studies. Early contributors get priority access when new opportunities open.',
+      zero_state_hero_title: 'Your profile is live',
+      zero_state_hero_body: 'Add a few final details and we\'ll bring forward studies that fit.',
+      zero_state_hero_cta: 'Complete profile',
       boost_card_title: 'Get better study matches',
       boost_section_topics: 'Topics that match you',
       boost_section_topics_hint: 'Lifestyle, tech & finance — helps us surface relevant studies',
@@ -4547,8 +4587,9 @@ async function applyToStudy(studyId, answers = null) {
       dash_subtext_new: 'Din profil är live. Vi matchar dig med studier som passar.',
       dash_subtext_upcoming: 'Du har en kommande session — kolla schemat nedan.',
       dash_subtext_active: 'Fortsätt — varje studie bygger ditt rykte.',
-      zero_state_hero_title: 'Du är inne.',
-      zero_state_hero_body: 'Din profil är live och vi matchar dig med studier. Tidiga deltagare får prioriterad tillgång när nya möjligheter öppnas.',
+      zero_state_hero_title: 'Din profil är live',
+      zero_state_hero_body: 'Lägg till några sista detaljer så lyfter vi fram studier som passar dig.',
+      zero_state_hero_cta: 'Slutför profil',
       boost_card_title: 'Få bättre studiematchningar',
       boost_section_topics: 'Ämnen som passar dig',
       boost_section_topics_hint: 'Livsstil, teknik & ekonomi — hjälper oss hitta relevanta studier',
