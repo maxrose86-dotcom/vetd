@@ -1082,6 +1082,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (authData.session) {
         // Email confirmation is disabled — user is immediately authenticated.
         // Create company + client rows now and go straight to the dashboard.
+        await ensureOwnProfileRole('client', authData.session.user || authData.user);
         const roleCheck = await assertPortalRole('client');
         if (!roleCheck.ok) return;
         await ensureClientRecords(roleCheck.session.user);
@@ -1146,6 +1147,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      await ensureOwnProfileRole('client', data.user);
       const roleCheck = await assertPortalRole('client');
       if (!roleCheck.ok) return;
       // Ensure companies/clients rows exist — creates them on first sign-in after email confirmation
