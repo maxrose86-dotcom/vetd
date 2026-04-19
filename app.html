@@ -2995,14 +2995,6 @@ async function applyToStudy(studyId, answers = null) {
     if (session?.access_token) break;
     await new Promise(r => setTimeout(r, 150));
   }
-  console.log('APPLY_AUTH_DEBUG', {
-    userId: user?.id || null,
-    sessionUserId: session?.user?.id || null,
-    hasSession: !!session,
-    hasAccessToken: !!session?.access_token,
-    authorizationHeader: session?.access_token ? 'Bearer <token>' : null,
-    studyId,
-  });
   if (!user?.id || !session?.access_token) {
     showToast(t('apply_err_auth') || 'Not signed in — please refresh.', true);
     return false;
