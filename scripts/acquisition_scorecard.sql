@@ -146,16 +146,17 @@ SELECT
   -- Overall verdict
   CASE
     -- Hard stops: insufficient data or broken funnel mechanic
-    WHEN low_volume                          THEN 'hold'
-    WHEN cta_rate_status          = 'bad'    THEN 'hold'
-    WHEN signup_complete_rate_status = 'bad' THEN 'hold'
-    WHEN activation_rate_status   = 'bad'    THEN 'hold'
-    -- Ready to scale: volume ok, no bad metrics, activation is strong
+    WHEN low_volume                            THEN 'hold'
+    WHEN cta_rate_status          = 'bad'      THEN 'hold'
+    WHEN signup_complete_rate_status = 'bad'   THEN 'hold'
+    WHEN activation_rate_status   = 'bad'      THEN 'hold'
+    -- Ready to scale: volume ok, top-of-funnel healthy,
+    -- signup flow and activation both strong.
+    -- first_accept_rate is informational only — does not gate this verdict.
     WHEN NOT low_volume
-     AND cta_rate_status          != 'bad'
-     AND signup_complete_rate_status != 'bad'
-     AND activation_rate_status   = 'strong'
-     AND first_accept_rate_status != 'bad'    THEN 'ready_to_scale'
+     AND cta_rate_status             IN ('acceptable', 'strong')
+     AND signup_complete_rate_status = 'strong'
+     AND activation_rate_status      = 'strong'  THEN 'ready_to_scale'
     -- Everything else: alive but not ready
     ELSE 'watch'
   END AS verdict

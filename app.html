@@ -3726,6 +3726,26 @@ async function applyToStudy(studyId, answers = null) {
     try {
       const roleCheck = await assertPortalRole('contributor');
       if (roleCheck.ok) {
+        const user = (await db.auth.getUser()).data.user;
+
+        if (user?.email_confirmed_at) {
+          const dedupeKey = 'vetd_welcome_sent_' + user.id;
+
+          if (!localStorage.getItem(dedupeKey)) {
+            localStorage.setItem(dedupeKey, '1');
+
+            fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + SUPABASE_ANON,
+              },
+              body: JSON.stringify({ email: user.email }),
+              keepalive: true,
+            }).catch(() => {});
+          }
+        }
+
         await goToApp();
       }
     } catch(e) {
@@ -4289,11 +4309,13 @@ async function applyToStudy(studyId, answers = null) {
   // ─── COOKIE BANNER ─────────────────────────────────────
   (function initCookieBanner() {
     const consent = localStorage.getItem('vetd_cookie_consent');
-    if (!consent) document.getElementById('cookie-banner').style.display = 'flex';
+    const banner = document.getElementById('cookie-banner');
+    if (!consent && banner) banner.style.display = 'flex';
   })();
   function cookieChoice(accepted) {
     localStorage.setItem('vetd_cookie_consent', accepted ? 'accepted' : 'declined');
-    document.getElementById('cookie-banner').style.display = 'none';
+    const banner = document.getElementById('cookie-banner');
+    if (banner) banner.style.display = 'none';
     if (!accepted) {
       localStorage.removeItem('vetd_lang');
     }
