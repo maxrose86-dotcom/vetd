@@ -686,32 +686,6 @@
         }
       }
 
-      // Send welcome email once, on the first sign-in after email confirmation.
-      // Uses email_confirmed_at from the auth user object — reliable regardless
-      // of URL params, which are gone by the time routing completes.
-      // Deduplicated by localStorage so it never sends twice.
-      console.log('WELCOME_TRIGGER_CHECK', {
-        resolvedRole,
-        emailConfirmed: data.user?.email_confirmed_at,
-        userId: data.user?.id
-      });
-      if (resolvedRole === 'contributor' && data.user?.email_confirmed_at) {
-        const dedupeKey = 'vetd_welcome_sent_' + data.user.id;
-        if (!localStorage.getItem(dedupeKey)) {
-          console.log('WELCOME_TRIGGER_FIRED');
-          localStorage.setItem(dedupeKey, '1');
-          void fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + SUPABASE_ANON,
-            },
-            body: JSON.stringify({ email: data.user.email }),
-            keepalive: true, // survives page navigation/unload
-          }).catch(() => {}); // fire-and-forget, non-critical
-        }
-      }
-
       routeResolvedRole(resolvedRole);
 
     } catch (err) {

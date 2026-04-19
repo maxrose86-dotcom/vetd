@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,16 +51,43 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const { email } = await req.json();
-    if (!email || typeof email !== "string") {
-      return new Response(JSON.stringify({ error: "email required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  // Guard: API key must exist
+  if (!RESEND_API_KEY) {
+    console.error("[send-welcome-email] RESEND_API_KEY is missing");
+    return new Response(JSON.stringify({ error: "RESEND_API_KEY missing" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
-    const res = await fetch("https://api.resend.com/emails", {
+  let email: string | undefined;
+
+  try {
+    const body = await req.json();
+    email = body?.email;
+  } catch (parseErr) {
+    console.error("[send-welcome-email] Failed to parse request body:", parseErr);
+    return new Response(JSON.stringify({ error: "invalid request body" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  if (!email || typeof email !== "string") {
+    console.error("[send-welcome-email] email missing or invalid:", email);
+    return new Response(JSON.stringify({ error: "email missing" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  console.log("[send-welcome-email] Attempting send to:", email);
+
+  let resendRes: Response;
+  let resendBody: string;
+
+  try {
+    resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -74,20 +101,35 @@ serve(async (req) => {
       }),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Resend error ${res.status}: ${body}`);
+    resendBody = await resendRes.text();
+
+    if (!resendRes.ok) {
+      console.error("[send-welcome-email] Resend rejected request:", {
+        status: resendRes.status,
+        body: resendBody,
+      });
+      return new Response(JSON.stringify({ error: `Resend error ${resendRes.status}: ${resendBody}` }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    const result = await res.json();
-    return new Response(JSON.stringify({ ok: true, id: result.id }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (fetchErr) {
+    console.error("[send-welcome-email] fetch to Resend failed:", fetchErr);
+    return new Response(JSON.stringify({ error: String(fetchErr) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+
+  let result: { id?: string };
+  try {
+    result = JSON.parse(resendBody);
+  } catch {
+    result = {};
+  }
+
+  console.log("[send-welcome-email] Sent successfully. Resend id:", result.id);
+  return new Response(JSON.stringify({ ok: true, id: result.id }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 });

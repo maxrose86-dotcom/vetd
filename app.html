@@ -2111,14 +2111,10 @@
       const { data } = await db.auth.getUser();
       const user = data?.user;
 
-      console.log('WELCOME_TRIGGER_IN_GO_TO_APP');
-
       if (user?.email_confirmed_at) {
         const dedupeKey = 'vetd_welcome_sent_' + user.id;
 
         if (!localStorage.getItem(dedupeKey)) {
-          console.log('WELCOME_TRIGGER_FIRED');
-
           localStorage.setItem(dedupeKey, '1');
 
           fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
@@ -3734,7 +3730,6 @@ async function applyToStudy(studyId, answers = null) {
   // ─── AUTO-LOGIN CHECK ──────────────────────────────────
   // If user came from login page or has an active session, skip to dashboard
   (async function checkSession() {
-    console.log('CHECK_SESSION_RUNNING');
     // ── Detect email confirmation from Supabase ──
     // Implicit flow: hash contains access_token + type=signup
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -3754,28 +3749,6 @@ async function applyToStudy(studyId, answers = null) {
     try {
       const roleCheck = await assertPortalRole('contributor');
       if (roleCheck.ok) {
-        const user = (await db.auth.getUser()).data.user;
-
-        console.log('WELCOME_BLOCK_REACHED');
-        if (user?.email_confirmed_at) {
-          console.log('WELCOME_CONDITION_TRUE', user?.email_confirmed_at);
-          const dedupeKey = 'vetd_welcome_sent_' + user.id;
-
-          if (!localStorage.getItem(dedupeKey)) {
-            localStorage.setItem(dedupeKey, '1');
-
-            fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + SUPABASE_ANON,
-              },
-              body: JSON.stringify({ email: user.email }),
-              keepalive: true,
-            }).catch(() => {});
-          }
-        }
-
         await goToApp();
       }
     } catch(e) {
