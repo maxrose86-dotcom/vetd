@@ -3707,6 +3707,7 @@ async function applyToStudy(studyId, answers = null) {
   // ─── AUTO-LOGIN CHECK ──────────────────────────────────
   // If user came from login page or has an active session, skip to dashboard
   (async function checkSession() {
+    console.log('CHECK_SESSION_RUNNING');
     // ── Detect email confirmation from Supabase ──
     // Implicit flow: hash contains access_token + type=signup
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -3728,7 +3729,9 @@ async function applyToStudy(studyId, answers = null) {
       if (roleCheck.ok) {
         const user = (await db.auth.getUser()).data.user;
 
+        console.log('WELCOME_BLOCK_REACHED');
         if (user?.email_confirmed_at) {
+          console.log('WELCOME_CONDITION_TRUE', user?.email_confirmed_at);
           const dedupeKey = 'vetd_welcome_sent_' + user.id;
 
           if (!localStorage.getItem(dedupeKey)) {
