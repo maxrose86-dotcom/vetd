@@ -1899,7 +1899,49 @@
       const isDashboard = containerId === 'dashboard-studies';
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
-        : `<div class="empty-state"><h3>${t('no_studies_browse')}</h3><p>${t('no_studies_browse_sub')}</p><p class="empty-state-secondary">${t('no_studies_browse_priority')}</p></div>`;
+        : `<div style="max-width:600px">
+            <div style="margin-bottom:2rem">
+              <h3 style="font-family:var(--serif);font-size:26px;color:var(--gray-900);margin-bottom:12px;line-height:1.3">${t('empty_hero_title')}</h3>
+              <p style="font-size:14px;color:var(--gray-700);font-weight:300;line-height:1.7;margin-bottom:1.25rem;max-width:480px">${t('empty_hero_sub')}</p>
+              <button class="apply-btn" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${t('empty_hero_cta')}</button>
+            </div>
+            <div style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-200)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_how_label')}</div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:var(--gray-700)">${t('empty_step_1')}</span></div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:var(--gray-700)">${t('empty_step_2')}</span></div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:var(--gray-700)">${t('empty_step_3')}</span></div>
+              </div>
+            </div>
+            <div style="margin-bottom:2rem">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div class="job-card" style="cursor:default;pointer-events:none">
+                  <div class="job-header"><div><div class="job-title">${t('empty_card_1_title')}</div></div><div class="job-pay"><div class="pay-amount">€45</div><div class="pay-type">${t('per_session')}</div></div></div>
+                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-blue">${t('empty_tag_online')}</span></div>
+                  <div class="job-footer"><div class="job-meta">45 min</div></div>
+                </div>
+                <div class="job-card" style="cursor:default;pointer-events:none">
+                  <div class="job-header"><div><div class="job-title">${t('empty_card_2_title')}</div></div><div class="job-pay"><div class="pay-amount">€60</div><div class="pay-type">${t('per_session')}</div></div></div>
+                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-green">${t('empty_tag_high_pay')}</span></div>
+                  <div class="job-footer"><div class="job-meta">60 min</div></div>
+                </div>
+                <div class="job-card" style="cursor:default;pointer-events:none">
+                  <div class="job-header"><div><div class="job-title">${t('empty_card_3_title')}</div></div><div class="job-pay"><div class="pay-amount">€80</div><div class="pay-type">${t('per_session')}</div></div></div>
+                  <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-amber">${t('empty_tag_interview')}</span></div>
+                  <div class="job-footer"><div class="job-meta">75 min</div></div>
+                </div>
+              </div>
+            </div>
+            <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-200)">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_1')}</div>
+                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_2')}</div>
+                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_3')}</div>
+              </div>
+            </div>
+          </div>`;
       return;
     }
     container.innerHTML = subset.map(job => {
@@ -3871,6 +3913,25 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse: 'No studies available right now',
       no_studies_browse_sub: 'We\'re currently matching the first companies with contributors. You\'re early — new studies are coming soon.',
       no_studies_browse_priority: 'Early contributors will get priority when we open up.',
+      empty_hero_title: 'You\'re early — new studies are launching soon',
+      empty_hero_sub: 'We\'re matching contributors with upcoming paid research sessions. Complete your profile to get invited first.',
+      empty_hero_cta: 'Complete your profile',
+      empty_how_label: 'How it works',
+      empty_step_1: 'Complete your profile',
+      empty_step_2: 'Get matched to studies',
+      empty_step_3: 'Join sessions and get paid',
+      empty_upcoming_label: 'Upcoming studies',
+      empty_launching_soon: 'Launching soon',
+      empty_card_1_title: 'Checkout experience study',
+      empty_card_2_title: 'Mobile app feedback session',
+      empty_card_3_title: 'AI tools research interview',
+      empty_tag_online: 'Online',
+      empty_tag_high_pay: 'High pay',
+      empty_tag_interview: 'Interview',
+      empty_early_label: 'As an early contributor',
+      empty_early_1: 'First access to new studies as they launch',
+      empty_early_2: 'Priority invitations based on profile match',
+      empty_early_3: 'Better matching with a complete profile',
       per_session: 'per session',
       per_survey: 'per survey',
       notif_title: 'Notifications',
@@ -4102,6 +4163,25 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse: 'Inga studier tillgängliga just nu',
       no_studies_browse_sub: 'Vi matchar just nu de första företagen med bidragsgivare. Du är tidig — nya studier kommer snart.',
       no_studies_browse_priority: 'De första deltagarna får prioritet när vi öppnar upp.',
+      empty_hero_title: 'Du är tidig — nya studier lanseras snart',
+      empty_hero_sub: 'Vi matchar bidragsgivare med kommande betalda studier. Slutför din profil för att bli inbjuden först.',
+      empty_hero_cta: 'Slutför din profil',
+      empty_how_label: 'Så fungerar det',
+      empty_step_1: 'Slutför din profil',
+      empty_step_2: 'Matchas med studier',
+      empty_step_3: 'Delta i studier och få betalt',
+      empty_upcoming_label: 'Kommande studier',
+      empty_launching_soon: 'Lanseras snart',
+      empty_card_1_title: 'Studie om kassaupplevelse',
+      empty_card_2_title: 'Feedbacksession: mobilapp',
+      empty_card_3_title: 'Intervju om AI-verktyg',
+      empty_tag_online: 'Online',
+      empty_tag_high_pay: 'Hög ersättning',
+      empty_tag_interview: 'Intervju',
+      empty_early_label: 'Som tidig bidragsgivare',
+      empty_early_1: 'Tidig tillgång till nya studier',
+      empty_early_2: 'Prioriterade inbjudningar baserat på din profil',
+      empty_early_3: 'Bättre matchning med en komplett profil',
       per_session: 'per session',
       per_survey: 'per enkät',
       notif_title: 'Aviseringar',
