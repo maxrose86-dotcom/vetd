@@ -380,6 +380,8 @@
   }
   .job-company-name { font-size: 12px; color: var(--gray-400); }
   .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+  .job-snapshot { font-size: 12px; color: var(--gray-700); line-height: 1.35; margin-top: 4px; }
+  .job-relevance { font-size: 12px; color: var(--gray-400); line-height: 1.4; margin-bottom: 10px; }
   .job-pay { text-align: right; }
   .pay-amount { font-family: var(--serif); font-size: 28px; color: var(--green); }
   .pay-type { font-size: 11px; color: var(--gray-400); }
@@ -571,6 +573,8 @@
   .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
   .modal-detail { font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-bottom: 1rem; }
   .modal-fit-line { font-size: 12px; color: var(--gray-500); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-what-block { margin-bottom: 1rem; padding: 0.95rem 1rem; background: #fff; border: 1px solid var(--gray-100); border-radius: 12px; }
+  .modal-what-copy { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
   .modal-next-block {
     margin-bottom: 1rem; padding: 1rem 1.1rem; background: var(--gray-50);
     border: 1px solid var(--gray-100); border-radius: 12px;
@@ -1328,6 +1332,10 @@
       <div class="modal-tags" id="modal-tags"></div>
       <p class="modal-detail" id="modal-detail"></p>
       <p class="modal-fit-line" id="modal-fit-line"></p>
+      <div class="modal-what-block">
+        <div class="modal-next-title" data-i18n="modal_what_title">What you’ll do</div>
+        <div class="modal-what-copy" id="modal-what-copy"></div>
+      </div>
       <div class="modal-next-block">
         <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
         <div class="modal-next-step" data-i18n="modal_next_step_1">We review your profile for fit</div>
@@ -2132,13 +2140,18 @@
         <div class="job-header">
           <div class="job-company">
             <div class="company-badge">${esc(job.company)}</div>
-            <div><div class="job-company-name">${esc(job.company)}</div><div class="job-title">${esc(job.title)}</div></div>
+            <div>
+              <div class="job-company-name">${esc(job.company)}</div>
+              <div class="job-title">${esc(job.title)}</div>
+              <div class="job-snapshot">${esc(getStudySnapshot(job, payTypeLabel))}</div>
+            </div>
           </div>
           <div class="job-pay">
             <div class="pay-amount">${fmtPay(job.pay)}</div>
             <div class="pay-type">${payTypeLabel}${job.hourlyRate ? ` · ~${job.hourlyRate} kr/hr` : ''}</div>
           </div>
         </div>
+        <div class="job-relevance">${esc(getStudyRelevance(job))}</div>
         <div class="job-desc">${esc(job.desc)}</div>
         <div class="job-tags">${job.tags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
@@ -2153,6 +2166,20 @@
         </div>
       </div>
     `}).join('');
+  }
+
+  function getStudyRelevance(study) {
+    const tags = Array.isArray(study?.tags) ? study.tags : [];
+    const interestTag = tags.find(tag => tag?.cls === 'tag-blue' && tag?.text);
+    if (interestTag) {
+      return t('browse_relevance_interest').replace('{tag}', interestTag.text.toLowerCase());
+    }
+    if (study?.format === 'online') return t('browse_relevance_format');
+    return t('browse_relevance_generic');
+  }
+
+  function getStudySnapshot(study, payTypeLabel) {
+    return study?.duration || payTypeLabel;
   }
 
   function formatFitTags(tags) {
@@ -2180,6 +2207,21 @@
       : t('modal_fit_generic_online');
   }
 
+  function getStudyWhatYoullDo(study) {
+    const title = String(study?.title || '').toLowerCase();
+    const duration = study?.duration || '';
+    if (title.includes('interview')) {
+      return t('modal_what_interview').replace('{duration}', duration || t('modal_what_short_session'));
+    }
+    if (title.includes('feedback') || title.includes('review')) {
+      return t('modal_what_feedback').replace('{duration}', duration || t('modal_what_short_session'));
+    }
+    if (title.includes('test') || title.includes('checkout') || title.includes('onboarding')) {
+      return t('modal_what_test').replace('{duration}', duration || t('modal_what_short_session'));
+    }
+    return t('modal_what_generic').replace('{duration}', duration || t('modal_what_short_session'));
+  }
+
   function filterStudies(type, btn) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -2201,6 +2243,7 @@
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
     document.getElementById('modal-fit-line').textContent = getStudyFitLine(state.currentStudy);
+    document.getElementById('modal-what-copy').textContent = getStudyWhatYoullDo(state.currentStudy);
     const sqArea = document.getElementById('modal-screener-area');
     const sqList = state.currentStudy.screeningQuestions;
     if (sqArea) {
@@ -4304,9 +4347,18 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Recommended opportunities',
       dash_notifications: 'Notifications',
       browse_title: 'Available opportunities',
+      browse_relevance_generic: 'Matches your profile',
+      browse_relevance_interest: 'Based on your interest in {tag}',
+      browse_relevance_format: 'Fits your study preferences',
       apply_btn: 'Apply',
       modal_apply_cta: 'Apply for study',
       modal_apply_later: 'Not now',
+      modal_what_title: 'What you’ll do',
+      modal_what_short_session: 'a short session',
+      modal_what_interview: 'Take part in {duration} about how you use this area today.',
+      modal_what_feedback: 'Share feedback in {duration} with the product team.',
+      modal_what_test: 'Try the experience in {duration} and talk through what stands out.',
+      modal_what_generic: 'Take part in {duration} and share your experience with the team.',
       modal_next_title: 'What happens next',
       modal_next_step_1: 'We review your profile for fit',
       modal_next_step_2: 'If selected, you’ll get an invite to schedule',
@@ -4660,9 +4712,18 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Rekommenderade möjligheter',
       dash_notifications: 'Aviseringar',
       browse_title: 'Tillgängliga studier',
+      browse_relevance_generic: 'Matchar din profil',
+      browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
+      browse_relevance_format: 'Passar dina studiepreferenser',
       apply_btn: 'Ansök',
       modal_apply_cta: 'Ansök till studie',
       modal_apply_later: 'Inte nu',
+      modal_what_title: 'Det här gör du',
+      modal_what_short_session: 'en kort session',
+      modal_what_interview: 'Delta i {duration} om hur du använder det här området i dag.',
+      modal_what_feedback: 'Dela feedback i {duration} tillsammans med produktteamet.',
+      modal_what_test: 'Testa upplevelsen i {duration} och berätta vad som sticker ut.',
+      modal_what_generic: 'Delta i {duration} och dela din upplevelse med teamet.',
       modal_next_title: 'Vad händer nu',
       modal_next_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_next_step_2: 'Om du väljs ut får du en inbjudan att boka tid',
