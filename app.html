@@ -3012,7 +3012,6 @@ async function applyToStudy(studyId, answers = null) {
 
   const insertRow = {
     study_id:       studyId,
-    contributor_id: user.id,
     status:         'pending',
     applied_at:     new Date().toISOString(),
   };
