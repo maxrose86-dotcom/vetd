@@ -351,8 +351,8 @@
   <div id="confirmed-banner" style="display:none;background:#DCFFF0;border:1px solid #A7F3D0;border-radius:10px;padding:12px 16px;margin-bottom:1.25rem;align-items:center;gap:10px">
     <span style="font-size:18px">✅</span>
     <div>
-      <div style="font-size:13px;font-weight:600;color:#065F46">Email confirmed</div>
-      <div style="font-size:12px;color:#047857;font-weight:300">Your account is active — please sign in below.</div>
+      <div style="font-size:13px;font-weight:600;color:#065F46" data-i18n="confirmed_title">Email confirmed</div>
+      <div style="font-size:12px;color:#047857;font-weight:300" data-i18n="confirmed_sub">Your account is active — please sign in below.</div>
     </div>
   </div>
 
@@ -361,25 +361,25 @@
   <!-- ROLE CHOOSER VIEW -->
   <div class="view active" id="view-chooser">
     <div style="text-align:center">
-      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px">Choose your sign-in</h2>
-      <p style="color:var(--gray-400);font-size:13px;font-weight:300">Start with the portal that matches your account type.</p>
+      <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px" data-i18n="chooser_title">Choose your sign-in</h2>
+      <p style="color:var(--gray-400);font-size:13px;font-weight:300" data-i18n="chooser_sub">Start with the portal that matches your account type.</p>
     </div>
 
     <div class="intent-grid">
       <button class="intent-card" onclick="chooseRole('contributor')">
-        <span class="intent-card-title">Contributor</span>
-        <span class="intent-card-copy">Join paid research sessions and manage your profile.</span>
+        <span class="intent-card-title" data-i18n="chooser_contributor_title">Contributor</span>
+        <span class="intent-card-copy" data-i18n="chooser_contributor_copy">Join paid research sessions and manage your profile.</span>
       </button>
       <button class="intent-card" onclick="chooseRole('company')">
-        <span class="intent-card-title">Company</span>
-        <span class="intent-card-copy">Run studies, review applicants, and manage scheduling.</span>
+        <span class="intent-card-title" data-i18n="chooser_company_title">Company</span>
+        <span class="intent-card-copy" data-i18n="chooser_company_copy">Run studies, review applicants, and manage scheduling.</span>
       </button>
     </div>
   </div>
 
   <!-- LOGIN VIEW -->
   <div class="view" id="view-login">
-    <div class="back-link" onclick="showRoleChooser()">← Back</div>
+    <div class="back-link" onclick="showRoleChooser()" data-i18n="back_btn">← Back</div>
 
     <div style="margin-bottom:1.5rem">
       <h2 style="font-family:var(--serif);font-size:24px;margin-bottom:4px" id="login-intent-title">Sign in</h2>
@@ -402,7 +402,7 @@
 
     <button class="btn-login" id="btn-login" onclick="handleLogin()" data-i18n="login_btn">Sign in</button>
 
-    <div class="divider">or</div>
+    <div class="divider" data-i18n="divider_or">or</div>
 
     <div class="signup-link">
       <span data-i18n="login_no_account">Don't have an account?</span> <a href="app.html" id="signup-link" data-i18n="login_signup_link">Sign up free</a>
@@ -500,19 +500,17 @@
 
     if (!subtitle || !titleEl || !subtitleEl || !switchLink || !signupLink) return;
 
+    const L = LANG[currentLang] || LANG.sv;
+
     if (!chosenRole) {
-      subtitle.textContent = 'Welcome back';
+      subtitle.textContent = L.login_welcome;
       return;
     }
 
-    subtitle.textContent = isContributor ? 'Contributor sign-in' : 'Company sign-in';
-    titleEl.textContent = isContributor ? 'Sign in as a contributor' : 'Sign in as a company';
-    subtitleEl.textContent = isContributor
-      ? 'Use your contributor account to apply, join sessions, and manage your profile.'
-      : 'Use your company account to run studies and manage participants.';
-    switchLink.textContent = isContributor
-      ? 'Not a contributor? Sign in as a company'
-      : 'Not a company? Sign in as a contributor';
+    subtitle.textContent = isContributor ? L.intent_contributor_subtitle : L.intent_company_subtitle;
+    titleEl.textContent = isContributor ? L.intent_contributor_title : L.intent_company_title;
+    subtitleEl.textContent = isContributor ? L.intent_contributor_sub : L.intent_company_sub;
+    switchLink.textContent = isContributor ? L.intent_switch_to_company : L.intent_switch_to_contributor;
     signupLink.href = isContributor ? 'app.html' : 'vetd-client.html?intent=company';
   }
 
@@ -592,8 +590,23 @@
         console.warn('Unknown-role sign-out failed:', err);
       }
     }
-    errorEl.textContent = message || 'We could not determine your account type. Please contact support.';
+    const L = LANG[currentLang] || LANG.sv;
+    errorEl.textContent = message || L.unknown_role;
     errorEl.classList.add('show');
+  }
+
+  // ─── AUTH ERROR MAPPING ────────────────────────────────────
+  function getLocalizedAuthError(err, L, fallback) {
+    const code = err?.code || '';
+    const msg  = (err?.message || '').toLowerCase();
+    if (code === 'invalid_credentials' || /invalid.*credentials|invalid login/i.test(msg))
+      return L.auth_invalid_credentials;
+    if (code === 'email_not_confirmed' || /email.*not.*confirmed/i.test(msg))
+      return L.auth_email_not_confirmed;
+    if (code === 'over_request_rate_limit' || code === 'too_many_requests' ||
+        /too many requests|rate.?limit|after \d+ second/i.test(msg))
+      return L.auth_too_many_requests;
+    return fallback;
   }
 
   // ─── LOGIN RATE LIMITING ────────────────────────────────────
@@ -617,24 +630,25 @@
 
     // Client-side validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const L = LANG[currentLang] || LANG.sv;
     let valid = true;
 
     if (!email) {
-      emailErr.textContent = 'Please enter your email address';
+      emailErr.textContent = L.err_email_empty;
       emailErr.classList.add('show');
       valid = false;
     } else if (!emailRegex.test(email)) {
-      emailErr.textContent = 'Please enter a valid email address';
+      emailErr.textContent = L.err_email_invalid;
       emailErr.classList.add('show');
       valid = false;
     }
 
     if (!password) {
-      passErr.textContent = 'Please enter your password';
+      passErr.textContent = L.err_pass_empty;
       passErr.classList.add('show');
       valid = false;
     } else if (password.length < 8) {
-      passErr.textContent = 'Password must be at least 8 characters';
+      passErr.textContent = L.err_pass_short;
       passErr.classList.add('show');
       valid = false;
     }
@@ -648,7 +662,7 @@
     }
 
     const originalText = btn.textContent;
-    btn.textContent = 'Signing in…';
+    btn.textContent = L.signing_in;
     btn.disabled = true;
 
     // Apply rate limiting
@@ -668,7 +682,7 @@
 
       const resolvedRole = await resolveUserRole(data.user);
       if (!resolvedRole) {
-        await handleUnknownRole(errorEl, 'We could not determine which Vetd portal belongs to this account.');
+        await handleUnknownRole(errorEl, (LANG[currentLang] || LANG.sv).unknown_role);
         btn.textContent = originalText;
         btn.disabled = false;
         return;
@@ -689,7 +703,7 @@
       routeResolvedRole(resolvedRole);
 
     } catch (err) {
-      errorEl.textContent = err.message || "We couldn't sign you in. Check your email and password and try again.";
+      errorEl.textContent = getLocalizedAuthError(err, L, L.login_error_generic);
       errorEl.classList.add('show');
       btn.textContent = originalText;
       btn.disabled = false;
@@ -706,19 +720,21 @@
     errorEl.classList.remove('show');
     successEl.classList.remove('show');
 
+    const L = LANG[currentLang] || LANG.sv;
+
     if (!email) {
-      errorEl.textContent = 'Please enter your email';
+      errorEl.textContent = L.forgot_err_empty;
       errorEl.classList.add('show');
       return;
     }
 
     if (!db) {
-      successEl.textContent = 'Demo mode — no email sent';
+      successEl.textContent = L.reset_success;
       successEl.classList.add('show');
       return;
     }
 
-    btn.textContent = 'Sending…';
+    btn.textContent = L.forgot_sending;
     btn.disabled = true;
 
     try {
@@ -728,19 +744,21 @@
 
       if (error) throw error;
 
-      successEl.textContent = 'Check your inbox — we sent you a reset link.';
+      successEl.textContent = L.reset_success;
       successEl.classList.add('show');
-      btn.textContent = 'Sent!';
+      btn.textContent = L.forgot_sent;
 
     } catch (err) {
-      errorEl.textContent = err.message || "We couldn't send the reset link. Try again.";
+      errorEl.textContent = getLocalizedAuthError(err, L, L.forgot_err_generic);
       errorEl.classList.add('show');
-      btn.textContent = 'Send reset link';
+      btn.textContent = L.reset_btn;
       btn.disabled = false;
     }
   }
 
   // ─── LANGUAGE TOGGLE ───────────────────────────────────
+  let currentLang = 'sv';
+
   const LANG = {
     en: {
       login_welcome: 'Welcome back',
@@ -760,6 +778,49 @@
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
+      // role chooser
+      chooser_title: 'Choose your sign-in',
+      chooser_sub: 'Start with the portal that matches your account type.',
+      chooser_contributor_title: 'Contributor',
+      chooser_contributor_copy: 'Join paid research sessions and manage your profile.',
+      chooser_company_title: 'Company',
+      chooser_company_copy: 'Run studies, review applicants, and manage scheduling.',
+      back_btn: '← Back',
+      // confirmed banner
+      confirmed_title: 'Email confirmed',
+      confirmed_sub: 'Your account is active — please sign in below.',
+      // divider
+      divider_or: 'or',
+      // intent copy (set dynamically)
+      intent_contributor_subtitle: 'Contributor sign-in',
+      intent_contributor_title: 'Sign in as a contributor',
+      intent_contributor_sub: 'Use your contributor account to apply, join sessions, and manage your profile.',
+      intent_company_subtitle: 'Company sign-in',
+      intent_company_title: 'Sign in as a company',
+      intent_company_sub: 'Use your company account to run studies and manage participants.',
+      intent_switch_to_company: 'Not a contributor? Sign in as a company',
+      intent_switch_to_contributor: 'Not a company? Sign in as a contributor',
+      // portal messages
+      reason_wrong_portal: 'This portal is for a different account type. Please sign in with the correct account.',
+      reason_missing_role: "We couldn't determine your account type. Please sign in again or contact support.",
+      unknown_role: 'We could not determine your account type. Please contact support.',
+      // validation errors
+      err_email_empty: 'Please enter your email address',
+      err_email_invalid: 'Please enter a valid email address',
+      err_pass_empty: 'Please enter your password',
+      err_pass_short: 'Password must be at least 8 characters',
+      // login button states
+      signing_in: 'Signing in…',
+      login_error_generic: "We couldn't sign you in. Check your email and password and try again.",
+      // forgot password
+      forgot_err_empty: 'Please enter your email',
+      forgot_sending: 'Sending…',
+      forgot_sent: 'Sent!',
+      forgot_err_generic: "We couldn't send the reset link. Try again.",
+      // auth error mapping
+      auth_invalid_credentials: 'Incorrect email or password.',
+      auth_email_not_confirmed: 'Please confirm your email before signing in. Check your inbox.',
+      auth_too_many_requests: 'Too many attempts. Please wait a moment and try again.',
     },
     sv: {
       login_welcome: 'Välkommen tillbaka',
@@ -779,10 +840,54 @@
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
+      // role chooser
+      chooser_title: 'Välj inloggning',
+      chooser_sub: 'Börja med portalen som matchar din kontotyp.',
+      chooser_contributor_title: 'Bidragsgivare',
+      chooser_contributor_copy: 'Delta i betalda forskningsstudier och hantera din profil.',
+      chooser_company_title: 'Företag',
+      chooser_company_copy: 'Kör studier, granska sökande och hantera schemaläggning.',
+      back_btn: '← Tillbaka',
+      // confirmed banner
+      confirmed_title: 'E-post bekräftad',
+      confirmed_sub: 'Ditt konto är aktivt — logga in nedan.',
+      // divider
+      divider_or: 'eller',
+      // intent copy (set dynamically)
+      intent_contributor_subtitle: 'Bidragsgivare inloggning',
+      intent_contributor_title: 'Logga in som bidragsgivare',
+      intent_contributor_sub: 'Använd ditt bidragsgiver-konto för att söka, delta i studier och hantera din profil.',
+      intent_company_subtitle: 'Företagsinloggning',
+      intent_company_title: 'Logga in som företag',
+      intent_company_sub: 'Använd ditt företagskonto för att köra studier och hantera deltagare.',
+      intent_switch_to_company: 'Inte bidragsgivare? Logga in som företag',
+      intent_switch_to_contributor: 'Inte ett företag? Logga in som bidragsgivare',
+      // portal messages
+      reason_wrong_portal: 'Den här portalen är för en annan kontotyp. Logga in med rätt konto.',
+      reason_missing_role: 'Vi kunde inte fastställa din kontotyp. Logga in igen eller kontakta support.',
+      unknown_role: 'Vi kunde inte fastställa din kontotyp. Kontakta support.',
+      // validation errors
+      err_email_empty: 'Ange din e-postadress',
+      err_email_invalid: 'Ange en giltig e-postadress',
+      err_pass_empty: 'Ange ditt lösenord',
+      err_pass_short: 'Lösenordet måste vara minst 8 tecken',
+      // login button states
+      signing_in: 'Loggar in…',
+      login_error_generic: 'Vi kunde inte logga in dig. Kontrollera din e-post och ditt lösenord och försök igen.',
+      // forgot password
+      forgot_err_empty: 'Ange din e-post',
+      forgot_sending: 'Skickar…',
+      forgot_sent: 'Skickat!',
+      forgot_err_generic: 'Vi kunde inte skicka återställningslänken. Försök igen.',
+      // auth error mapping
+      auth_invalid_credentials: 'Fel e-post eller lösenord.',
+      auth_email_not_confirmed: 'Bekräfta din e-post innan du loggar in. Kolla din inkorg.',
+      auth_too_many_requests: 'För många försök. Vänta lite och försök igen.',
     }
   };
 
   function setLang(lang) {
+    currentLang = lang;
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
@@ -794,6 +899,7 @@
       const k = el.dataset.i18nPh;
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
+    updateIntentCopy();
   }
 
   setLang(localStorage.getItem('vetd_lang') || 'sv');
@@ -809,11 +915,12 @@
   const reason = pageParams.get('reason');
   const portalMessage = document.getElementById('portal-message');
   if (portalMessage && reason) {
+    const L = LANG[currentLang] || LANG.sv;
     if (reason === 'wrong_portal') {
-      portalMessage.textContent = 'This portal is for a different account type. Please sign in with the correct account.';
+      portalMessage.textContent = L.reason_wrong_portal;
       portalMessage.classList.add('show');
     } else if (reason === 'missing_role') {
-      portalMessage.textContent = 'We couldn’t determine your account type. Please sign in again or contact support.';
+      portalMessage.textContent = L.reason_missing_role;
       portalMessage.classList.add('show');
     }
   }
