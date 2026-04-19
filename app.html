@@ -962,7 +962,7 @@
           </div>
         </div>
 
-        <div class="rating-hero">
+        <div id="dash-rating-hero" class="rating-hero">
           <div class="rating-hero-left">
             <h2>Your Vetd rating</h2>
             <p id="dash-rating-desc">Complete your first study to earn a rating</p>
@@ -1003,15 +1003,17 @@
 
         <div id="profile-completion-card" style="display:none"></div>
 
-        <div class="section-title" data-i18n="upcoming_sessions">Upcoming sessions</div>
-        <div id="upcoming-sessions-list"></div>
+        <div id="upcoming-section-wrap" style="display:none">
+          <div class="section-title" data-i18n="upcoming_sessions">Upcoming sessions</div>
+          <div id="upcoming-sessions-list"></div>
+        </div>
 
         <div class="section-title" data-i18n="dash_recommended">Recommended opportunities</div>
         <div id="dashboard-studies"></div>
 
-        <div class="section-title" style="margin-top:1.5rem" data-i18n="dash_notifications">Notifications</div>
-        <div id="dash-notif-list" style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden">
-          <div class="notif-empty" data-i18n="notif_empty">No notifications yet</div>
+        <div id="notifications-section-wrap" style="display:none">
+          <div class="section-title" style="margin-top:1.5rem" data-i18n="dash_notifications">Notifications</div>
+          <div id="dash-notif-list" style="background:#fff;border:1px solid var(--gray-100);border-radius:var(--radius-md);overflow:hidden"></div>
         </div>
       </div>
 
@@ -2398,12 +2400,20 @@
       if (error) throw error;
       state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies, contributorIsTest));
       // Derive upcoming sessions for dashboard
-      const cutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
       const upcoming = state.myApplications
-        .filter(a => a.status === 'accepted' && a.scheduled_at && a.scheduled_at >= cutoff)
+        .filter(a => a.status === 'accepted'
+          && a.scheduled_at
+          && Number.isFinite(new Date(a.scheduled_at).getTime())
+          && new Date(a.scheduled_at).getTime() > Date.now())
         .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
         .slice(0, 10);
       renderUpcomingSessions(upcoming);
+      if (state.contribData && state.currentUser) {
+        const stats       = computeUserStats(state.contribData);
+        const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
+        const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
+        updateDashboard(firstName, stats, tierDisplay);
+      }
       renderMyApplications('all');
     } catch(err) {
       console.warn('Could not load applications:', err);
@@ -2678,9 +2688,11 @@
 
   function renderUpcomingSessions(sessions) {
     const container = document.getElementById('upcoming-sessions-list');
+    const wrap      = document.getElementById('upcoming-section-wrap');
     if (!container) return;
     if (!sessions.length) {
-      container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300;padding:0.25rem 0 1rem">${t('no_upcoming')}</p>`;
+      container.innerHTML = '';
+      if (wrap) wrap.style.display = 'none';
       return;
     }
     const visible = sessions.filter(s => {
@@ -2689,9 +2701,11 @@
     });
 
     if (!visible.length) {
-      container.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300;padding:0.25rem 0 1rem">${t('no_upcoming')}</p>`;
+      container.innerHTML = '';
+      if (wrap) wrap.style.display = 'none';
       return;
     }
+    if (wrap) wrap.style.display = '';
 
     container.innerHTML = visible.map(s => {
       const study       = s.studies || {};
@@ -2917,31 +2931,83 @@ async function applyToStudy(studyId, answers = null) {
     const { studiesDone, totalEarned, rating, completionRate } = stats;
     const { tierLabel, tierClass } = tierDisplay;
 
+    // ── Greeting ──────────────────────────────────────────────
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? t('good_morning') : hour < 18 ? t('good_afternoon') : t('good_evening');
     document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'}.`;
 
-    document.getElementById('dash-rating-desc').textContent =
-      studiesDone > 0
-        ? t('based_on_studies').replace('{count}', studiesDone).replace('{noun}', studiesDone === 1 ? t('study_singular') : t('study_plural'))
-        : t('complete_first_rating');
+    // ── State-aware subtext ───────────────────────────────────
+    const hasUpcoming = (state.myApplications || []).some(
+      a => a.status === 'accepted'
+        && a.scheduled_at
+        && Number.isFinite(new Date(a.scheduled_at).getTime())
+        && new Date(a.scheduled_at).getTime() > Date.now()
+    );
+    const subtextEl = document.getElementById('dash-subtext');
+    if (subtextEl) {
+      subtextEl.textContent = hasUpcoming
+        ? t('dash_subtext_upcoming')
+        : studiesDone > 0
+          ? t('dash_subtext_active')
+          : t('dash_subtext_new');
+    }
 
-    const dashTier = document.getElementById('dash-tier-badge');
-    dashTier.textContent = tierLabel;
-    dashTier.className   = tierClass;
+    // ── Rating hero ───────────────────────────────────────────
+    const hero = document.getElementById('dash-rating-hero');
+    if (studiesDone === 0) {
+      if (hero) hero.innerHTML =
+        `<div class="rating-hero-left" style="flex:1;max-width:none">` +
+          `<h2 style="font-family:var(--serif);font-size:26px;letter-spacing:-0.3px;margin-bottom:12px">${esc(t('zero_state_hero_title'))}</h2>` +
+          `<p style="font-size:14px;color:rgba(255,255,255,0.55);font-weight:300;line-height:1.7;max-width:380px">${esc(t('zero_state_hero_body'))}</p>` +
+          `<div style="margin-top:1.25rem"><div id="dash-tier-badge" class="${tierClass}">${esc(tierLabel)}</div></div>` +
+        `</div>`;
+    } else {
+      if (hero) {
+        hero.innerHTML =
+          `<div class="rating-hero-left">` +
+            `<h2>${esc(t('dash_your_rating'))}</h2>` +
+            `<p id="dash-rating-desc"></p>` +
+            `<div style="margin-top:1rem"><div id="dash-tier-badge" class="${tierClass}">${esc(tierLabel)}</div></div>` +
+          `</div>` +
+          `<div style="text-align:right;position:relative;z-index:1">` +
+            `<div id="dash-rating-num" class="rating-big">—</div>` +
+            `<div id="dash-rating-stars" class="rating-stars-big"></div>` +
+            `<div id="dash-rating-pct" style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px"></div>` +
+          `</div>`;
+      }
+      const ratingDesc = document.getElementById('dash-rating-desc');
+      if (ratingDesc) {
+        ratingDesc.textContent =
+          t('based_on_studies').replace('{count}', studiesDone).replace('{noun}', studiesDone === 1 ? t('study_singular') : t('study_plural'));
+      }
 
-    document.getElementById('dash-rating-num').textContent = rating !== null ? rating.toFixed(1) : '—';
+      const dashTier = document.getElementById('dash-tier-badge');
+      if (dashTier) { dashTier.textContent = tierLabel; dashTier.className = tierClass; }
 
-    const starsFilled = rating !== null ? Math.round(rating) : 0;
-    document.getElementById('dash-rating-stars').innerHTML = [1,2,3,4,5]
-      .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
-      .join('');
+      const ratingNum = document.getElementById('dash-rating-num');
+      if (ratingNum) ratingNum.textContent = rating !== null ? rating.toFixed(1) : '—';
 
-    document.getElementById('dash-rating-pct').textContent =
-      rating === null  ? t('no_ratings_yet')
-      : rating >= 4.7  ? t('top_5_pct')
-      : rating >= 4.5  ? t('top_15_pct')
-      : `${rating.toFixed(1)} ${t('overall_rating')}`;
+      const starsFilled = rating !== null ? Math.round(rating) : 0;
+      const ratingStars = document.getElementById('dash-rating-stars');
+      if (ratingStars) {
+        ratingStars.innerHTML = [1,2,3,4,5]
+          .map(i => `<span class="star-icon" style="color:${i <= starsFilled ? '#5DCAA5' : 'rgba(255,255,255,0.2)'}">★</span>`)
+          .join('');
+      }
+
+      const ratingPct = document.getElementById('dash-rating-pct');
+      if (ratingPct) {
+        ratingPct.textContent =
+          rating === null  ? t('no_ratings_yet')
+          : rating >= 4.7  ? t('top_5_pct')
+          : rating >= 4.5  ? t('top_15_pct')
+          : `${rating.toFixed(1)} ${t('overall_rating')}`;
+      }
+    }
+
+    // ── Stat cards ────────────────────────────────────────────
+    const statCards = document.querySelector('.stat-cards');
+    if (statCards) statCards.style.display = (studiesDone === 0 && totalEarned === 0) ? 'none' : '';
 
     document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
     document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? t('complete_first_study') : t('earnings_month');
@@ -3744,10 +3810,12 @@ async function applyToStudy(studyId, answers = null) {
     }
 
     const dashList = document.getElementById('dash-notif-list');
+    const notifWrap = document.getElementById('notifications-section-wrap');
 
     if (!notifs.length) {
       body.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
-      if (dashList) dashList.innerHTML = `<div class="notif-empty">${t('notif_empty')}</div>`;
+      if (dashList) dashList.innerHTML = '';
+      if (notifWrap) notifWrap.style.display = 'none';
       return;
     }
 
@@ -3766,7 +3834,10 @@ async function applyToStudy(studyId, answers = null) {
     };
 
     body.innerHTML = notifs.map(notifRow).join('');
-    if (dashList) dashList.innerHTML = notifs.slice(0, 5).map(notifRow).join('');
+    if (dashList) {
+      dashList.innerHTML = notifs.slice(0, 5).map(notifRow).join('');
+      if (notifWrap) notifWrap.style.display = '';
+    }
   }
 
   function toggleNotifPanel() {
@@ -4178,6 +4249,12 @@ async function applyToStudy(studyId, answers = null) {
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
+      dash_your_rating: 'Your Vetd rating',
+      dash_subtext_new: 'Your profile is live. We\'ll match you with studies that fit.',
+      dash_subtext_upcoming: 'You have an upcoming session — check your schedule below.',
+      dash_subtext_active: 'Keep going — each study builds your reputation.',
+      zero_state_hero_title: 'You\'re in.',
+      zero_state_hero_body: 'Your profile is live and we\'re matching you with studies. Early contributors get priority access when new opportunities open.',
       boost_card_title: 'Get better study matches',
       boost_section_topics: 'Topics that match you',
       boost_section_topics_hint: 'Lifestyle, tech & finance — helps us surface relevant studies',
@@ -4466,6 +4543,12 @@ async function applyToStudy(studyId, answers = null) {
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
+      dash_your_rating: 'Ditt Vetd-betyg',
+      dash_subtext_new: 'Din profil är live. Vi matchar dig med studier som passar.',
+      dash_subtext_upcoming: 'Du har en kommande session — kolla schemat nedan.',
+      dash_subtext_active: 'Fortsätt — varje studie bygger ditt rykte.',
+      zero_state_hero_title: 'Du är inne.',
+      zero_state_hero_body: 'Din profil är live och vi matchar dig med studier. Tidiga deltagare får prioriterad tillgång när nya möjligheter öppnas.',
       boost_card_title: 'Få bättre studiematchningar',
       boost_section_topics: 'Ämnen som passar dig',
       boost_section_topics_hint: 'Livsstil, teknik & ekonomi — hjälper oss hitta relevanta studier',
