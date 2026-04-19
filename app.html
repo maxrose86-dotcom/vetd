@@ -2115,13 +2115,17 @@
         const dedupeKey = 'vetd_welcome_sent_' + user.id;
 
         if (!localStorage.getItem(dedupeKey)) {
+          const { data: sessionData } = await db.auth.getSession();
+          const sessionToken = sessionData.session?.access_token;
+          console.log('[welcome] sessionToken exists:', !!sessionToken);
+          console.log('[welcome] sessionToken prefix:', sessionToken?.slice(0, 20));
+          if (!sessionToken) return;
           localStorage.setItem(dedupeKey, '1');
-
           fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + SUPABASE_ANON,
+              'Authorization': 'Bearer ' + sessionToken,
             },
             body: JSON.stringify({ email: user.email }),
             keepalive: true,
