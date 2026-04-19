@@ -314,6 +314,9 @@
   .app-card-info { flex: 1; min-width: 0; }
   .app-card-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
   .app-card-meta { font-size: 12px; color: var(--gray-400); font-weight: 300; }
+  .app-card-priority { border-color: rgba(17,17,17,0.08); box-shadow: 0 8px 18px rgba(17,17,17,0.025); }
+  .app-card-history { background: linear-gradient(180deg, #fff 0%, #FAFBFB 100%); border-color: rgba(17,17,17,0.05); }
+  .app-card-meaning { margin-top: 8px; font-size: 12px; color: var(--gray-700); line-height: 1.45; }
   .app-card-status-row { margin-top: 10px; font-size: 12px; color: var(--gray-400); font-weight: 300; }
   .app-status { padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
   .app-status-pending { background: var(--amber-light); color: var(--amber); }
@@ -324,6 +327,12 @@
   .app-status-in-progress { background: var(--green); color: #fff; }
   .app-status-missed { background: var(--coral-light); color: var(--coral); }
   .app-schedule-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .app-section { margin-top: 1.5rem; }
+  .app-section:first-child { margin-top: 0; }
+  .app-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .app-section-title { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+  .app-section-sub { font-size: 12px; color: var(--gray-400); font-weight: 300; }
+  .app-section-empty { font-size: 12px; color: var(--gray-400); font-weight: 300; padding: 8px 0 4px; }
 
   /* ── VIDEO CALL OVERLAY ── */
   #video-call-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #fff; flex-direction: column; }
@@ -2732,6 +2741,30 @@
     renderMyApplications(filter);
   }
 
+  function getMyStudiesSectionKey(phase) {
+    if (['scheduled','starting_soon'].includes(phase)) return 'upcoming';
+    if (['rejected','declined','ended_joined','ended_missed','completed'].includes(phase)) return 'completed';
+    return 'in_progress';
+  }
+
+  function getMyStudiesMeaning(app, ss) {
+    switch (ss.phase) {
+      case 'invited': return t('my_studies_meaning_invited');
+      case 'pending': return t('my_studies_meaning_pending');
+      case 'declined': return t('my_studies_meaning_declined');
+      case 'rejected': return t('my_studies_meaning_rejected');
+      case 'accepted_needs_availability': return t('my_studies_meaning_accepted_needs_availability');
+      case 'accepted_ready': return t('my_studies_meaning_accepted_ready');
+      case 'scheduled': return t('my_studies_meaning_scheduled');
+      case 'starting_soon': return t('my_studies_meaning_starting_soon');
+      case 'in_progress': return t('my_studies_meaning_in_progress');
+      case 'ended_joined': return t('my_studies_meaning_ended_joined');
+      case 'ended_missed': return t('my_studies_meaning_ended_missed');
+      case 'completed': return t('my_studies_meaning_completed');
+      default: return '';
+    }
+  }
+
   function renderMyApplications(filter) {
     const container = document.getElementById('my-applications-list');
     if (!container) return;
@@ -2750,9 +2783,11 @@
 
     if (!state.myApplications.length) {
       container.innerHTML = `
-        <div style="text-align:center;padding:3rem">
-          <div style="font-size:32px;margin-bottom:1rem">📋</div>
-          <p style="color:var(--gray-400);font-weight:300;margin-bottom:1.5rem">${t('no_applications')}</p>
+        <div class="empty-state" style="padding:3.5rem 2rem">
+          <div class="empty-state-icon">📋</div>
+          <h3>${t('my_studies_empty_title')}</h3>
+          <p>${t('no_applications')}</p>
+          <p class="empty-state-secondary">${t('my_studies_empty_sub')}</p>
           <button class="btn-primary" onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)'))">${t('browse_studies_btn')}</button>
         </div>`;
       return;
@@ -2766,7 +2801,7 @@
     const lang = localStorage.getItem('vetd_lang') || 'en';
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
 
-    container.innerHTML = apps.map(a => {
+    const renderedApps = apps.map(a => {
       const study       = a.studies || {};
       const company     = study.companies || {};
       const title       = study.title || 'Study';
@@ -2803,6 +2838,7 @@
       }[ss.phase] || 'app-status-pending';
 
       const statusBadge = `<span class="app-status ${badgeCls}">${esc(ss.label)}</span>`;
+      const meaningLine = getMyStudiesMeaning(a, ss);
 
       let statusDetail = '';
       if (ss.phase === 'invited') {
@@ -2871,8 +2907,13 @@
         statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('payment_processing')}</span>`;
       }
 
-      return `
-        <div class="app-card">
+      const sectionKey = getMyStudiesSectionKey(ss.phase);
+      const cardClass = sectionKey === 'completed' ? 'app-card app-card-history' : 'app-card app-card-priority';
+
+      return {
+        sectionKey,
+        html: `
+        <div class="${cardClass}">
           <div class="app-card-header">
             <div class="app-card-info">
               <div class="app-card-title">${esc(title)}</div>
@@ -2880,9 +2921,38 @@
             </div>
             ${statusBadge}
           </div>
+          ${meaningLine ? `<div class="app-card-meaning">${esc(meaningLine)}</div>` : ''}
           ${statusDetail ? `<div class="app-card-status-row">${statusDetail}</div>` : ''}
+        </div>`
+      };
+    });
+
+    const sectionMeta = {
+      in_progress: { title: t('my_studies_section_in_progress'), sub: t('my_studies_section_in_progress_sub') },
+      upcoming:    { title: t('my_studies_section_upcoming'),    sub: t('my_studies_section_upcoming_sub') },
+      completed:   { title: t('my_studies_section_completed'),   sub: t('my_studies_section_completed_sub') },
+    };
+    const visibleSections = filter === 'past'
+      ? ['completed']
+      : filter === 'active'
+        ? ['in_progress', 'upcoming']
+        : ['in_progress', 'upcoming', 'completed'];
+
+    const sectionHtml = visibleSections.map(sectionKey => {
+      const sectionCards = renderedApps.filter(card => card.sectionKey === sectionKey);
+      if (!sectionCards.length) return '';
+      const meta = sectionMeta[sectionKey];
+      return `
+        <div class="app-section">
+          <div class="app-section-head">
+            <div class="app-section-title">${esc(meta.title)}</div>
+            <div class="app-section-sub">${esc(meta.sub)}</div>
+          </div>
+          ${sectionCards.map(card => card.html).join('')}
         </div>`;
-    }).join('');
+    }).filter(Boolean).join('');
+
+    container.innerHTML = sectionHtml || `<p style="color:var(--gray-400);font-weight:300;font-size:14px;padding:1rem 0">${t(filter === 'past' ? 'no_past_applications' : 'no_active_applications')}</p>`;
   }
 
   function renderUpcomingSessions(sessions) {
@@ -4440,6 +4510,17 @@ async function applyToStudy(studyId, answers = null) {
       no_interests: 'No interests selected yet — edit your profile to add some.',
       nav_my_studies: 'My Studies',
       my_studies_title: 'My Studies',
+      my_studies_empty_title: 'Nothing yet',
+      my_studies_empty_sub: 'As you apply and take part, everything will collect here.',
+      my_studies_section_in_progress: 'In progress',
+      my_studies_section_in_progress_sub: 'Where things stand right now.',
+      my_studies_section_in_progress_empty: 'Nothing is in motion right now.',
+      my_studies_section_upcoming: 'Upcoming',
+      my_studies_section_upcoming_sub: 'Confirmed sessions with a set time.',
+      my_studies_section_upcoming_empty: 'No upcoming sessions yet.',
+      my_studies_section_completed: 'Completed',
+      my_studies_section_completed_sub: 'Past studies and closed outcomes.',
+      my_studies_section_completed_empty: 'No completed study history yet.',
       filter_active: 'Active',
       filter_past: 'Past',
       status_pending: 'Pending',
@@ -4502,6 +4583,18 @@ async function applyToStudy(studyId, answers = null) {
       status_ended_joined: 'Session complete',
       status_ended_missed: 'Missed session',
       status_completed_awaiting: 'Completed — awaiting payment',
+      my_studies_meaning_invited: 'You have been invited to continue. A response is needed.',
+      my_studies_meaning_pending: 'Application received. We’ll be in touch if it’s a fit.',
+      my_studies_meaning_declined: 'You chose not to continue with this study.',
+      my_studies_meaning_rejected: 'This study moved ahead with a different set of participants.',
+      my_studies_meaning_accepted_needs_availability: 'You’re selected. Share availability to keep things moving.',
+      my_studies_meaning_accepted_ready: 'You’re selected. Scheduling is in progress.',
+      my_studies_meaning_scheduled: 'You’re confirmed. Details are set below.',
+      my_studies_meaning_starting_soon: 'You’re confirmed. Final details are below.',
+      my_studies_meaning_in_progress: 'Your session is underway.',
+      my_studies_meaning_ended_joined: 'Your participation is complete.',
+      my_studies_meaning_ended_missed: 'This session has passed.',
+      my_studies_meaning_completed: 'Study complete. Payment is being processed.',
       status_paid: 'Paid',
       you_participated: '✓ You participated',
       call_duration_approx: '~{mins} min',
@@ -4773,6 +4866,17 @@ async function applyToStudy(studyId, answers = null) {
       no_interests: 'Inga intressen valda ännu — redigera din profil för att lägga till.',
       nav_my_studies: 'Mina studier',
       my_studies_title: 'Mina studier',
+      my_studies_empty_title: 'Inget ännu',
+      my_studies_empty_sub: 'När du ansöker och deltar samlas allt här.',
+      my_studies_section_in_progress: 'Pågående',
+      my_studies_section_in_progress_sub: 'Här ser du var saker står just nu.',
+      my_studies_section_in_progress_empty: 'Ingenting är i rörelse just nu.',
+      my_studies_section_upcoming: 'Kommande',
+      my_studies_section_upcoming_sub: 'Bekräftade sessioner med en bestämd tid.',
+      my_studies_section_upcoming_empty: 'Inga kommande sessioner ännu.',
+      my_studies_section_completed: 'Avslutade',
+      my_studies_section_completed_sub: 'Tidigare studier och avslutade utfall.',
+      my_studies_section_completed_empty: 'Ingen avslutad studiehistorik ännu.',
       filter_active: 'Aktiva',
       filter_past: 'Tidigare',
       status_pending: 'Väntar',
@@ -4835,6 +4939,18 @@ async function applyToStudy(studyId, answers = null) {
       status_ended_joined: 'Session slutförd',
       status_ended_missed: 'Missad session',
       status_completed_awaiting: 'Slutförd — väntar på betalning',
+      my_studies_meaning_invited: 'Du har blivit inbjuden att gå vidare. Ett svar behövs.',
+      my_studies_meaning_pending: 'Ansökan är mottagen. Vi hör av oss om det är en bra matchning.',
+      my_studies_meaning_declined: 'Du valde att inte gå vidare med den här studien.',
+      my_studies_meaning_rejected: 'Den här studien gick vidare med andra deltagare.',
+      my_studies_meaning_accepted_needs_availability: 'Du är utvald. Dela din tillgänglighet för att komma vidare.',
+      my_studies_meaning_accepted_ready: 'Du är utvald. Schemaläggning pågår.',
+      my_studies_meaning_scheduled: 'Du är bekräftad. Detaljerna finns nedan.',
+      my_studies_meaning_starting_soon: 'Du är bekräftad. Sista detaljerna finns nedan.',
+      my_studies_meaning_in_progress: 'Din session är nu igång.',
+      my_studies_meaning_ended_joined: 'Ditt deltagande är slutfört.',
+      my_studies_meaning_ended_missed: 'Den här sessionen har passerat.',
+      my_studies_meaning_completed: 'Studien är slutförd. Betalning behandlas.',
       status_paid: 'Betald',
       you_participated: '✓ Du deltog',
       call_duration_approx: '~{mins} min',
