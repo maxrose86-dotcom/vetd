@@ -2175,6 +2175,8 @@
       return t('browse_relevance_interest').replace('{tag}', interestTag.text.toLowerCase());
     }
     if (study?.format === 'online') return t('browse_relevance_format');
+    const shortSession = String(study?.duration || '').match(/^(\d+)-?/)?.[1];
+    if (shortSession && Number(shortSession) <= 45) return t('browse_relevance_short');
     return t('browse_relevance_generic');
   }
 
@@ -4347,9 +4349,10 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Recommended opportunities',
       dash_notifications: 'Notifications',
       browse_title: 'Available opportunities',
-      browse_relevance_generic: 'Relevant to your profile',
+      browse_relevance_generic: 'Relevant to how you use this area',
       browse_relevance_interest: 'Based on your interest in {tag}',
-      browse_relevance_format: 'Fits your study preferences',
+      browse_relevance_format: 'Online session that fits your preferences',
+      browse_relevance_short: 'Short session that fits your profile',
       apply_btn: 'Apply',
       modal_apply_cta: 'Apply for study',
       modal_apply_later: 'Not now',
@@ -4712,9 +4715,10 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Rekommenderade möjligheter',
       dash_notifications: 'Aviseringar',
       browse_title: 'Tillgängliga studier',
-      browse_relevance_generic: 'Relevant för din profil',
+      browse_relevance_generic: 'Relevant för hur du använder det här området',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
-      browse_relevance_format: 'Passar dina studiepreferenser',
+      browse_relevance_format: 'Digital session som passar dina preferenser',
+      browse_relevance_short: 'Kort session som passar din profil',
       apply_btn: 'Ansök',
       modal_apply_cta: 'Ansök till studie',
       modal_apply_later: 'Inte nu',
