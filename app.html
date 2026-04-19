@@ -231,16 +231,16 @@
     position: relative; top: -2px;
   }
 
-  .app-content { flex: 1; padding: 2rem 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+  .app-content { flex: 1; padding: 2.5rem 2rem; max-width: 860px; margin: 0 auto; width: 100%; }
 
   /* ── DASHBOARD ── */
-  .dash-welcome { margin-bottom: 2rem; }
-  .dash-welcome h1 { font-family: var(--serif); font-size: 30px; margin-bottom: 4px; }
-  .dash-welcome p { color: var(--gray-400); font-size: 14px; font-weight: 300; }
+  .dash-welcome { margin-bottom: 3rem; }
+  .dash-welcome h1 { font-family: var(--serif); font-size: 38px; letter-spacing: -0.5px; margin-bottom: 10px; }
+  .dash-welcome p { color: var(--gray-700); font-size: 15px; font-weight: 300; }
 
   .rating-hero {
     background: #111111; color: #fff; border-radius: var(--radius-xl);
-    padding: 2rem; display: flex; align-items: center; justify-content: space-between;
+    padding: 2.5rem; display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 1.5rem; position: relative; overflow: hidden;
     box-shadow: 0 4px 24px rgba(0,0,0,0.12);
   }
@@ -254,30 +254,34 @@
     width: 200px; height: 200px; border-radius: 50%;
     background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
   }
-  .rating-hero-left h2 { font-family: var(--serif); font-size: 22px; margin-bottom: 4px; }
-  .rating-hero-left p { font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 300; }
-  .rating-big { font-family: var(--serif); font-size: 56px; color: var(--green-mid); line-height: 1; }
+  .rating-hero-left h2 { font-family: var(--serif); font-size: 20px; letter-spacing: -0.2px; margin-bottom: 6px; }
+  .rating-hero-left p { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 300; line-height: 1.5; }
+  .rating-big { font-family: var(--serif); font-size: 64px; color: var(--green-mid); line-height: 1; letter-spacing: -1px; }
   .rating-stars-big { display: flex; gap: 4px; margin-top: 6px; justify-content: flex-end; }
   .star-icon { font-size: 16px; }
 
-  .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+  .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 2rem; }
   .stat-card {
     background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
-    padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04);
+    padding: 1.5rem;
+    box-shadow: none;
     transition: box-shadow 0.2s, transform 0.2s;
   }
   .stat-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
     transform: translateY(-1px);
   }
-  .stat-card-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 8px; font-weight: 500; }
-  .stat-card-num { font-family: var(--serif); font-size: 30px; color: var(--gray-900); }
-  .stat-card-sub { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+  .stat-card-label { font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--gray-400); margin-bottom: 10px; font-weight: 400; }
+  .stat-card-num { font-family: var(--serif); font-size: 40px; color: var(--gray-900); }
+  .stat-card-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
 
   .section-title {
-    font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
-    color: var(--gray-400); margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 14px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gray-400); margin-bottom: 1.25rem; white-space: nowrap;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--gray-100);
   }
 
   /* ── UPCOMING SESSIONS ── */
@@ -323,28 +327,29 @@
   /* TODO: rename .job-* CSS classes to .study-* in future cleanup */
   .job-card {
     background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem; margin-bottom: 14px;
+    padding: 1.5rem 1.75rem; margin-bottom: 14px;
     transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: none;
   }
   .job-card:hover {
     border-color: var(--green);
-    box-shadow: 0 4px 16px rgba(0,196,122,0.1), 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px rgba(0,196,122,0.1), 0 1px 4px rgba(0,0,0,0.06);
     transform: translateY(-2px);
   }
   .job-card.featured { border-color: var(--green); }
   .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .job-company { display: flex; align-items: center; gap: 10px; }
   .company-badge {
-    width: 38px; height: 38px; border-radius: var(--radius-sm); background: var(--gray-100);
+    width: 40px; height: 40px; border-radius: var(--radius-sm); background: var(--gray-50);
+    border: 1px solid var(--gray-100);
     display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;
     color: var(--gray-400);
   }
   .job-company-name { font-size: 12px; color: var(--gray-400); }
   .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
   .job-pay { text-align: right; }
-  .pay-amount { font-family: var(--serif); font-size: 24px; color: var(--green); }
+  .pay-amount { font-family: var(--serif); font-size: 28px; color: var(--green); }
   .pay-type { font-size: 11px; color: var(--gray-400); }
   .job-desc { font-size: 13px; color: var(--gray-400); line-height: 1.5; margin-bottom: 12px; font-weight: 300; }
   .job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -419,7 +424,7 @@
   .bankid-verified-badge { display:inline-flex;align-items:center;gap:5px;background:#1B4A8A;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;letter-spacing:0.02em; }
   .bankid-verified-badge-sm { display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;vertical-align:middle; }
 
-  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .profile-grid { display: flex; flex-direction: column; gap: 14px; }
   .profile-section {
     background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md);
     padding: 1.25rem;
@@ -950,11 +955,11 @@
       <!-- DASHBOARD TAB -->
       <div id="tab-dashboard">
         <div class="dash-welcome">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <h1 id="dash-greeting">Welcome 👋</h1>
+          <h1 id="dash-greeting">Welcome.</h1>
+          <p id="dash-subtext">Browse available studies and apply to start earning.</p>
+          <div style="margin-top:12px">
             <span id="dash-bankid-badge" class="bankid-verified-badge" style="display:none">🔒 BankID Verified</span>
           </div>
-          <p id="dash-subtext">Browse available studies and apply to start earning.</p>
         </div>
 
         <div class="rating-hero">
@@ -1051,15 +1056,18 @@
         <!-- profile_title handled via nav -->
         <div class="profile-header">
           <div id="profile-avatar-big" class="profile-avatar-big">?</div>
-          <div style="flex:1">
+          <div style="flex:1;min-width:0">
             <div id="profile-fullname" class="profile-name">Member</div>
             <div id="profile-subtitle" class="profile-subtitle">New member</div>
+            <div id="profile-prof-line" style="display:none;font-size:13px;color:var(--gray-700);font-weight:400;margin-bottom:10px"></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
               <div id="profile-tier-badge" class="tier-badge">New member</div>
               <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · 0 kr earned</div>
             </div>
+            <div id="profile-bankid-inline" style="margin-top:8px"></div>
+            <div id="profile-completeness" style="margin-top:10px"></div>
           </div>
-          <button class="apply-btn" style="white-space:nowrap" id="edit-profile-btn" onclick="enterEditMode()" data-i18n="prof_edit_btn">Edit profile</button>
+          <button class="btn-back" id="edit-profile-btn" onclick="enterEditMode()" data-i18n="prof_edit_btn">Edit profile</button>
         </div>
 
         <div id="profile-boost-card" style="display:none"></div>
@@ -1075,6 +1083,23 @@
             <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_living">Living situation</span><span id="profile-detail-living" class="profile-row-value">—</span></div>
           </div>
 
+          <div class="profile-section" style="display:none" id="profile-prefs-section">
+            <h3 data-i18n="prof_preferences">Matching preferences</h3>
+            <div id="profile-prefs-content"></div>
+          </div>
+
+          <div class="profile-section" style="display:none" id="profile-bio-section">
+            <h3 data-i18n="prof_background">Background</h3>
+            <p id="profile-bio-text" style="font-size:14px;color:var(--gray-700);line-height:1.7;font-weight:300;margin:0"></p>
+          </div>
+
+          <div class="profile-section">
+            <h3 data-i18n="prof_interests">My interests & tags</h3>
+            <div class="job-tags" id="profile-interests-tags" style="margin-top:4px">
+              <span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>
+            </div>
+          </div>
+
           <div class="profile-section">
             <h3 data-i18n="prof_rating">Rating breakdown</h3>
             <div id="rating-breakdown-content">
@@ -1082,37 +1107,14 @@
             </div>
           </div>
 
-          <div class="profile-section" style="grid-column:1/-1" id="bankid-section">
-            <h3 data-i18n="prof_identity">Identity verification</h3>
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-              <div style="display:flex;align-items:center;gap:14px">
-                <div class="bankid-logo"><span>Bank<br>ID</span></div>
-                <div>
-                  <div style="font-weight:600;font-size:14px;color:var(--gray-900)" data-i18n="prof_identity_title">Verify your identity</div>
-                  <div style="font-size:12px;color:var(--gray-400);font-weight:300;margin-top:2px" data-i18n="prof_identity_sub">Verified contributors get priority access to premium studies</div>
-                </div>
-              </div>
-              <div id="bankid-status">
-                <button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap" data-i18n="prof_identity_btn">Verify with BankID</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="profile-section" style="grid-column:1/-1">
-            <h3 data-i18n="prof_interests">My interests & tags</h3>
-            <div class="job-tags" id="profile-interests-tags" style="margin-top:4px">
-              <span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>
-            </div>
-          </div>
-
-          <div class="profile-section" style="grid-column:1/-1">
+          <div class="profile-section">
             <h3 data-i18n="prof_payments">Payment history</h3>
             <div id="payment-history-section">
               <p style="font-size:13px;color:var(--gray-400);font-weight:300" data-i18n="prof_payments_loading">Loading…</p>
             </div>
           </div>
 
-          <div class="profile-section" style="grid-column:1/-1;border-top:1px solid var(--gray-100);padding-top:1.5rem;margin-top:0.5rem">
+          <div class="profile-section" style="border-top:2px solid var(--gray-100);padding-top:1.5rem">
             <h3 style="color:var(--coral)" data-i18n="prof_danger">Danger zone</h3>
             <p style="font-size:13px;color:var(--gray-400);margin-bottom:1rem;font-weight:300" data-i18n="prof_danger_desc">Permanently delete your account and all associated data. This cannot be undone.</p>
             <button onclick="openDeleteModal()" style="padding:9px 20px;border-radius:8px;border:1.5px solid var(--coral);background:transparent;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)" data-i18n="prof_danger_btn">Delete my account</button>
@@ -1905,7 +1907,7 @@
               <p style="font-size:14px;color:var(--gray-700);font-weight:300;line-height:1.7;margin-bottom:1.25rem;max-width:480px">${t('empty_hero_sub')}</p>
               <button class="apply-btn" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${t('empty_hero_cta')}</button>
             </div>
-            <div style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-200)">
+            <div style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_how_label')}</div>
               <div style="display:flex;flex-direction:column;gap:10px">
                 <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:var(--gray-700)">${t('empty_step_1')}</span></div>
@@ -1916,24 +1918,24 @@
             <div style="margin-bottom:2rem">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
               <div style="display:flex;flex-direction:column;gap:12px">
-                <div class="job-card" style="cursor:default;pointer-events:none">
+                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
                   <div class="job-header"><div><div class="job-title">${t('empty_card_1_title')}</div></div><div class="job-pay"><div class="pay-amount">€45</div><div class="pay-type">${t('per_session')}</div></div></div>
                   <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-blue">${t('empty_tag_online')}</span></div>
                   <div class="job-footer"><div class="job-meta">45 min</div></div>
                 </div>
-                <div class="job-card" style="cursor:default;pointer-events:none">
+                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
                   <div class="job-header"><div><div class="job-title">${t('empty_card_2_title')}</div></div><div class="job-pay"><div class="pay-amount">€60</div><div class="pay-type">${t('per_session')}</div></div></div>
                   <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-green">${t('empty_tag_high_pay')}</span></div>
                   <div class="job-footer"><div class="job-meta">60 min</div></div>
                 </div>
-                <div class="job-card" style="cursor:default;pointer-events:none">
+                <div class="job-card" style="cursor:default;pointer-events:none;opacity:0.72">
                   <div class="job-header"><div><div class="job-title">${t('empty_card_3_title')}</div></div><div class="job-pay"><div class="pay-amount">€80</div><div class="pay-type">${t('per_session')}</div></div></div>
                   <div class="job-tags"><span class="tag tag-gray">${t('empty_launching_soon')}</span><span class="tag tag-amber">${t('empty_tag_interview')}</span></div>
                   <div class="job-footer"><div class="job-meta">75 min</div></div>
                 </div>
               </div>
             </div>
-            <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-200)">
+            <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_1')}</div>
@@ -2917,7 +2919,7 @@ async function applyToStudy(studyId, answers = null) {
 
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? t('good_morning') : hour < 18 ? t('good_afternoon') : t('good_evening');
-    document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'} 👋`;
+    document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'}.`;
 
     document.getElementById('dash-rating-desc').textContent =
       studiesDone > 0
@@ -2998,21 +3000,73 @@ async function applyToStudy(studyId, answers = null) {
       document.getElementById('profile-detail-age').textContent = '—';
     }
 
-    const genderMap = { woman: 'Woman', man: 'Man', non_binary: 'Non-binary', self_describe: 'Self-described', prefer_not_to_say: 'Prefer not to say' };
+    const genderMap = { woman: t('gender_woman'), man: t('gender_man'), non_binary: t('gender_non_binary'), self_describe: t('gender_self_describe'), prefer_not_to_say: t('gender_prefer_not') };
     document.getElementById('profile-detail-gender').textContent = genderMap[contrib?.gender] || '—';
 
     document.getElementById('profile-detail-location').textContent = city || '—';
 
-    const employmentMap = { full_time: 'Full-time', part_time: 'Part-time', self_employed: 'Self-employed', student: 'Student', unemployed: 'Not employed', retired: 'Retired' };
+    const employmentMap = { full_time: t('emp_full_time'), part_time: t('emp_part_time'), self_employed: t('emp_self_employed'), student: t('emp_student'), unemployed: t('emp_unemployed'), retired: t('emp_retired') };
     document.getElementById('profile-detail-employment').textContent = employmentMap[contrib?.employment] || '—';
 
-    const childrenMap = { no_children: 'No children', under_5: 'Under 5', children_5_12: '5–12', teenagers: 'Teenagers', adult_children: 'Adult children' };
+    const childrenMap = { no_children: t('child_none'), under_5: t('child_under_5'), children_5_12: t('child_5_12'), teenagers: t('child_teen'), adult_children: t('child_adult') };
     const childrenVals = Array.isArray(contrib?.children) ? contrib.children : [];
     document.getElementById('profile-detail-children').textContent = childrenVals.length ? childrenVals.map(c => childrenMap[c] || c).join(', ') : '—';
 
-    const livingMap = { own_home: 'Own home', renting: 'Renting', with_family: 'With family', student_accommodation: 'Student accommodation' };
+    const livingMap = { own_home: t('living_own_home'), renting: t('living_renting'), with_family: t('living_with_family'), student_accommodation: t('living_student') };
     const livingVals = Array.isArray(contrib?.living_situation) ? contrib.living_situation : [];
     document.getElementById('profile-detail-living').textContent = livingVals.length ? livingVals.map(l => livingMap[l] || l).join(', ') : '—';
+
+    // Professional identity — header line
+    const expLevelMap = { junior: t('exp_level_junior'), mid: t('exp_level_mid'), senior: t('exp_level_senior') };
+    const profLine = document.getElementById('profile-prof-line');
+    if (profLine) {
+      const profParts = [contrib?.job_title, contrib?.industry, expLevelMap[contrib?.experience_level]].filter(Boolean);
+      profLine.textContent   = profParts.join(' · ');
+      profLine.style.display = profParts.length ? '' : 'none';
+    }
+
+    // Background / bio notes — only show when non-empty
+    const bioSection = document.getElementById('profile-bio-section');
+    if (bioSection) {
+      const notes = contrib?.additional_notes?.trim();
+      if (notes) {
+        document.getElementById('profile-bio-text').textContent = notes;
+        bioSection.style.display = '';
+      } else {
+        bioSection.style.display = 'none';
+      }
+    }
+
+    // Matching preferences — only show when at least one preference is set
+    const prefsSection = document.getElementById('profile-prefs-section');
+    if (prefsSection) {
+      const lang = localStorage.getItem('vetd_lang') || 'en';
+      const labelFor = (field, val) => {
+        const opt = CHIP_OPTIONS[field]?.find(o => o.value === val);
+        return opt ? ((lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label) : val;
+      };
+      const freqMap = { once_a_month: t('freq_once_a_month'), '2_3_per_month': t('freq_2_3_per_month'), weekly: t('freq_weekly'), as_often_as_possible: t('freq_as_often') };
+      const formats = Array.isArray(contrib?.study_formats)   ? contrib.study_formats   : [];
+      const times   = Array.isArray(contrib?.available_times) ? contrib.available_times : [];
+      const freq    = contrib?.frequency;
+      const minPay  = contrib?.min_pay_per_hour;
+
+      if (formats.length || times.length || freq || minPay) {
+        let html = '';
+        if (formats.length)
+          html += `<div class="profile-row"><span class="profile-row-label">${t('prof_pref_formats')}</span><span class="profile-row-value" style="display:flex;flex-wrap:wrap;gap:5px">${formats.map(v => `<span class="tag tag-blue">${esc(labelFor('study_formats', v))}</span>`).join('')}</span></div>`;
+        if (times.length)
+          html += `<div class="profile-row"><span class="profile-row-label">${t('prof_pref_availability')}</span><span class="profile-row-value" style="display:flex;flex-wrap:wrap;gap:5px">${times.map(v => `<span class="tag tag-gray">${esc(labelFor('available_times', v))}</span>`).join('')}</span></div>`;
+        if (freq)
+          html += `<div class="profile-row"><span class="profile-row-label">${t('prof_pref_frequency')}</span><span class="profile-row-value">${esc(freqMap[freq] || freq)}</span></div>`;
+        if (minPay)
+          html += `<div class="profile-row"><span class="profile-row-label">${t('prof_pref_minpay')}</span><span class="profile-row-value">${esc(String(minPay))} kr / hr</span></div>`;
+        document.getElementById('profile-prefs-content').innerHTML = html;
+        prefsSection.style.display = '';
+      } else {
+        prefsSection.style.display = 'none';
+      }
+    }
 
     // Interests & tags
     const tagsContainer = document.getElementById('profile-interests-tags');
@@ -3028,6 +3082,35 @@ async function applyToStudy(studyId, answers = null) {
         : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
     }
 
+    // Profile completeness bar
+    const compEl = document.getElementById('profile-completeness');
+    if (compEl) {
+      const hasInterests = (Array.isArray(contrib?.interests_lifestyle) && contrib.interests_lifestyle.length) ||
+                           (Array.isArray(contrib?.interests_tech)      && contrib.interests_tech.length)      ||
+                           (Array.isArray(contrib?.interests_finance)   && contrib.interests_finance.length);
+      const checks = [
+        !!(contrib?.date_of_birth && (contrib?.city || contrib?.country)),
+        !!(contrib?.job_title && contrib?.industry),
+        !!hasInterests,
+        !!(Array.isArray(contrib?.study_formats)   && contrib.study_formats.length ||
+           Array.isArray(contrib?.available_times) && contrib.available_times.length),
+        !!(contrib?.additional_notes?.trim()),
+      ];
+      const done = checks.filter(Boolean).length;
+      const pct  = Math.round((done / checks.length) * 100);
+      compEl.innerHTML =
+        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">` +
+          `<div style="flex:1;height:3px;background:var(--gray-100);border-radius:100px;overflow:hidden">` +
+            `<div style="width:${pct}%;height:100%;background:var(--green);border-radius:100px;transition:width 0.4s ease"></div>` +
+          `</div>` +
+          `<span style="font-size:11px;color:var(--gray-400);white-space:nowrap;font-weight:500">${done}/${checks.length}</span>` +
+        `</div>` +
+        `<span style="font-size:11px;color:var(--gray-400);font-weight:300">${t('prof_completeness_hint')}</span>`;
+    }
+
+    // Re-render BankID inline on lang change
+    updateBankIDStatus(contrib?.bankid_verified === true);
+
     return { fullName, initials };
   }
 
@@ -3035,11 +3118,11 @@ async function applyToStudy(studyId, answers = null) {
     const dashBadge = document.getElementById('dash-bankid-badge');
     if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
 
-    const bankidStatus = document.getElementById('bankid-status');
-    if (bankidStatus) {
-      bankidStatus.innerHTML = verified
-        ? '<span class="bankid-verified-badge">✓ Verified</span>'
-        : '<button onclick="openBankIDModal()" class="apply-btn" style="white-space:nowrap">Verify with BankID</button>';
+    const inlineEl = document.getElementById('profile-bankid-inline');
+    if (inlineEl) {
+      inlineEl.innerHTML = verified
+        ? '<span class="bankid-verified-badge-sm">✓ BankID Verified</span>'
+        : `<span style="font-size:12px;color:var(--gray-400);font-weight:300">🔒 ${t('prof_identity_coming_soon')}</span>`;
     }
   }
 
@@ -3868,12 +3951,50 @@ async function applyToStudy(studyId, answers = null) {
       prof_label_employment: 'Employment',
       prof_label_children: 'Children',
       prof_label_living: 'Living situation',
+      prof_label_jobtitle: 'Job title',
+      prof_label_industry: 'Industry',
+      prof_label_experience: 'Experience',
+      exp_level_junior: 'Junior',
+      exp_level_mid: 'Mid-level',
+      exp_level_senior: 'Senior',
+      freq_once_a_month: 'Once a month',
+      freq_2_3_per_month: '2–3× / month',
+      freq_weekly: 'Weekly',
+      freq_as_often: 'As often as possible',
+      prof_completeness_hint: 'A complete profile improves your study matches.',
+      prof_identity_coming_soon: 'Identity verification coming soon',
+      gender_woman: 'Woman',
+      gender_man: 'Man',
+      gender_non_binary: 'Non-binary',
+      gender_self_describe: 'Self-described',
+      gender_prefer_not: 'Prefer not to say',
+      emp_full_time: 'Full-time',
+      emp_part_time: 'Part-time',
+      emp_self_employed: 'Self-employed',
+      emp_student: 'Student',
+      emp_unemployed: 'Not employed',
+      emp_retired: 'Retired',
+      child_none: 'No children',
+      child_under_5: 'Under 5',
+      child_5_12: '5–12',
+      child_teen: 'Teenagers',
+      child_adult: 'Adult children',
+      living_own_home: 'Own home',
+      living_renting: 'Renting',
+      living_with_family: 'With family',
+      living_student: 'Student accommodation',
       prof_rating: 'Rating breakdown',
       prof_rating_empty: 'Complete your first study to see your rating breakdown.',
       prof_identity: 'Identity verification',
       prof_identity_title: 'Verify your identity',
       prof_identity_sub: 'Verified contributors get priority access to premium studies',
       prof_identity_btn: 'Verify with BankID',
+      prof_background: 'Background',
+      prof_preferences: 'Matching preferences',
+      prof_pref_formats: 'Formats',
+      prof_pref_availability: 'Availability',
+      prof_pref_frequency: 'Frequency',
+      prof_pref_minpay: 'Min. pay',
       prof_interests: 'My interests & tags',
       prof_payments: 'Payment history',
       prof_payments_loading: 'Loading…',
@@ -4118,12 +4239,50 @@ async function applyToStudy(studyId, answers = null) {
       prof_label_employment: 'Sysselsättning',
       prof_label_children: 'Barn',
       prof_label_living: 'Boendesituation',
+      prof_label_jobtitle: 'Jobbtitel',
+      prof_label_industry: 'Bransch',
+      prof_label_experience: 'Erfarenhet',
+      exp_level_junior: 'Junior',
+      exp_level_mid: 'Mellannivå',
+      exp_level_senior: 'Senior',
+      freq_once_a_month: 'En gång i månaden',
+      freq_2_3_per_month: '2–3 ggr / mån',
+      freq_weekly: 'Varje vecka',
+      freq_as_often: 'Så ofta som möjligt',
+      prof_completeness_hint: 'En komplett profil ger bättre studiematchningar.',
+      prof_identity_coming_soon: 'Identitetsverifiering kommer snart',
+      gender_woman: 'Kvinna',
+      gender_man: 'Man',
+      gender_non_binary: 'Ickebinär',
+      gender_self_describe: 'Föredrar att beskriva själv',
+      gender_prefer_not: 'Föredrar att inte ange',
+      emp_full_time: 'Heltid',
+      emp_part_time: 'Deltid',
+      emp_self_employed: 'Egenföretagare',
+      emp_student: 'Student',
+      emp_unemployed: 'Ej sysselsatt',
+      emp_retired: 'Pensionär',
+      child_none: 'Inga barn',
+      child_under_5: 'Under 5 år',
+      child_5_12: '5–12 år',
+      child_teen: 'Tonåringar',
+      child_adult: 'Vuxna barn',
+      living_own_home: 'Eget hem',
+      living_renting: 'Hyr',
+      living_with_family: 'Hos familj',
+      living_student: 'Studentboende',
       prof_rating: 'Betygsöversikt',
       prof_rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
       prof_identity: 'Identitetsverifiering',
       prof_identity_title: 'Verifiera din identitet',
       prof_identity_sub: 'Verifierade deltagare får prioriterad tillgång till premiumstudier',
       prof_identity_btn: 'Verifiera med BankID',
+      prof_background: 'Bakgrund',
+      prof_preferences: 'Matchningspreferenser',
+      prof_pref_formats: 'Format',
+      prof_pref_availability: 'Tillgänglighet',
+      prof_pref_frequency: 'Frekvens',
+      prof_pref_minpay: 'Minersättning',
       prof_interests: 'Mina intressen',
       prof_payments: 'Betalningshistorik',
       prof_payments_loading: 'Laddar…',
