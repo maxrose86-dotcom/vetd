@@ -561,6 +561,14 @@
   .modal-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 1.5rem; font-weight: 300; }
   .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
   .modal-detail { font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-fit-line { font-size: 12px; color: var(--gray-500); line-height: 1.6; margin-bottom: 1rem; }
+  .modal-next-block {
+    margin-bottom: 1rem; padding: 1rem 1.1rem; background: var(--gray-50);
+    border: 1px solid var(--gray-100); border-radius: 12px;
+  }
+  .modal-next-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-400); margin-bottom: 0.75rem; }
+  .modal-next-step { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
+  .modal-next-step + .modal-next-step { margin-top: 0.45rem; }
   .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
   .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
   .modal-buttons { display: flex; gap: 12px; }
@@ -1310,17 +1318,30 @@
       <p class="modal-sub" id="modal-company-name"></p>
       <div class="modal-tags" id="modal-tags"></div>
       <p class="modal-detail" id="modal-detail"></p>
+      <p class="modal-fit-line" id="modal-fit-line"></p>
+      <div class="modal-next-block">
+        <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
+        <div class="modal-next-step" data-i18n="modal_next_step_1">We review your profile for fit</div>
+        <div class="modal-next-step" data-i18n="modal_next_step_2">If selected, you’ll get an invite to schedule</div>
+      </div>
       <div id="modal-screener-area" style="display:none;margin-bottom:1rem"></div>
       <div class="modal-buttons">
-        <button class="modal-close" onclick="closeModal()">Not now</button>
-        <button class="modal-apply" onclick="confirmApply()">Apply now</button>
+        <button class="modal-close" onclick="closeModal()" data-i18n="modal_apply_later">Not now</button>
+        <button class="modal-apply" onclick="confirmApply()" data-i18n="modal_apply_cta">Apply for study</button>
       </div>
     </div>
     <div id="modal-confirmed" style="display:none;text-align:center;padding:1rem 0">
       <div class="confirm-icon">✓</div>
-      <h2>Application sent</h2>
-      <p style="color:var(--gray-400);margin:8px 0 1.5rem;font-size:14px;font-weight:300">We'll confirm your spot shortly. You'll get a notification when it's scheduled.</p>
-      <button class="btn-primary" style="width:100%" onclick="closeModal()">Back to studies</button>
+      <h2 id="modal-confirm-title">Applied</h2>
+      <div class="modal-next-block" style="text-align:left;margin:12px 0 1.5rem">
+        <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
+        <div class="modal-next-step" data-i18n="modal_confirm_step_1">We’ll review your profile for fit</div>
+        <div class="modal-next-step" data-i18n="modal_confirm_step_2">If selected, you’ll be invited to schedule</div>
+      </div>
+      <div class="modal-buttons" style="justify-content:center">
+        <button class="modal-close" onclick="closeModal()" data-i18n="modal_close_btn">Close</button>
+        <button class="modal-apply" onclick="goToMyStudiesFromModal()" data-i18n="modal_confirm_view_studies">View my studies</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2119,6 +2140,31 @@
     `}).join('');
   }
 
+  function formatFitTags(tags) {
+    const items = (tags || []).filter(Boolean);
+    if (!items.length) return '';
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return `${items[0]}${t('modal_fit_joiner')}${items[1]}`;
+    return `${items.slice(0, -1).join(', ')}${t('modal_fit_joiner')}${items[items.length - 1]}`;
+  }
+
+  function getStudyFitLine(study) {
+    const allTags = Array.isArray(study?.tags) ? study.tags : [];
+    const preferredTags = allTags.filter(tag => tag && tag.text && tag.cls !== 'tag-gray');
+    const fitTags = (preferredTags.length ? preferredTags : allTags)
+      .map(tag => tag?.text)
+      .filter(Boolean)
+      .slice(0, 3);
+
+    if (fitTags.length) {
+      return t('modal_fit_from_tags').replace('{tags}', formatFitTags(fitTags));
+    }
+
+    return study?.format === 'in-person'
+      ? t('modal_fit_generic_in_person')
+      : t('modal_fit_generic_online');
+  }
+
   function filterStudies(type, btn) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -2139,6 +2185,7 @@
     document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
     document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
+    document.getElementById('modal-fit-line').textContent = getStudyFitLine(state.currentStudy);
     const sqArea = document.getElementById('modal-screener-area');
     const sqList = state.currentStudy.screeningQuestions;
     if (sqArea) {
@@ -2152,6 +2199,12 @@
     }
     document.getElementById('apply-modal').classList.add('open');
     await logEvent('study_page_view', state.currentStudy.id);
+  }
+
+  function goToMyStudiesFromModal() {
+    closeModal();
+    const btn = document.querySelector('.topbar-nav button:nth-child(3)');
+    if (btn) showTab('my-studies', btn);
   }
 
   function closeModal() {
@@ -2953,9 +3006,16 @@ async function applyToStudy(studyId, answers = null) {
     state.appliedStudies.add(studyId);
   }
 
-  showToast('Thanks — Vetd will review your profile and invite you to relevant studies.');
   logEvent('application_intent_submitted', studyId); // fire-and-forget — must not block closeModal
-  closeModal();
+  renderStudies('studies-list', state.studies);
+  renderStudies('dashboard-studies', state.studies.slice(0, 2));
+  await loadMyApplications();
+  const confirmTitle = document.getElementById('modal-confirm-title');
+  if (confirmTitle) {
+    confirmTitle.textContent = t('modal_confirm_title').replace('{title}', state.currentStudy?.title || t('modal_confirm_fallback_title'));
+  }
+  document.getElementById('modal-pre-apply').style.display = 'none';
+  document.getElementById('modal-confirmed').style.display = 'block';
   return true;
 }
 
@@ -4157,6 +4217,21 @@ async function applyToStudy(studyId, answers = null) {
       dash_notifications: 'Notifications',
       browse_title: 'Available opportunities',
       apply_btn: 'Apply',
+      modal_apply_cta: 'Apply for study',
+      modal_apply_later: 'Not now',
+      modal_next_title: 'What happens next',
+      modal_next_step_1: 'We review your profile for fit',
+      modal_next_step_2: 'If selected, you’ll get an invite to schedule',
+      modal_fit_joiner: ' and ',
+      modal_fit_from_tags: 'You may fit this study through {tags}.',
+      modal_fit_generic_online: 'This study is open to contributors who fit the research profile and remote format.',
+      modal_fit_generic_in_person: 'This study is open to contributors who fit the research profile and in-person format.',
+      modal_confirm_title: 'Applied to {title}',
+      modal_confirm_fallback_title: 'this study',
+      modal_confirm_step_1: 'We’ll review your profile for fit',
+      modal_confirm_step_2: 'If selected, you’ll be invited to schedule',
+      modal_confirm_view_studies: 'View my studies',
+      modal_close_btn: 'Close',
       applied_badge: 'Applied ✓',
       filter_all: 'All studies',
       filter_online: 'Online only',
@@ -4475,6 +4550,21 @@ async function applyToStudy(studyId, answers = null) {
       dash_notifications: 'Aviseringar',
       browse_title: 'Tillgängliga studier',
       apply_btn: 'Ansök',
+      modal_apply_cta: 'Ansök till studie',
+      modal_apply_later: 'Inte nu',
+      modal_next_title: 'Vad händer nu',
+      modal_next_step_1: 'Vi granskar din profil för att bedöma passform',
+      modal_next_step_2: 'Om du väljs ut får du en inbjudan att boka tid',
+      modal_fit_joiner: ' och ',
+      modal_fit_from_tags: 'Du kan passa för den här studien genom {tags}.',
+      modal_fit_generic_online: 'Den här studien är öppen för deltagare som passar forskningsprofilen och det digitala formatet.',
+      modal_fit_generic_in_person: 'Den här studien är öppen för deltagare som passar forskningsprofilen och ett fysiskt format.',
+      modal_confirm_title: 'Du har ansökt till {title}',
+      modal_confirm_fallback_title: 'den här studien',
+      modal_confirm_step_1: 'Vi granskar din profil för att bedöma passform',
+      modal_confirm_step_2: 'Om du väljs ut blir du inbjuden att boka tid',
+      modal_confirm_view_studies: 'Se mina studier',
+      modal_close_btn: 'Stäng',
       applied_badge: 'Ansökt ✓',
       filter_all: 'Alla',
       filter_online: 'Online',
