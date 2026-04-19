@@ -2115,8 +2115,15 @@
         const dedupeKey = 'vetd_welcome_sent_' + user.id;
 
         if (!localStorage.getItem(dedupeKey)) {
-          const { data: sessionData } = await db.auth.getSession();
-          const sessionToken = sessionData.session?.access_token;
+          let sessionToken = null;
+
+          for (let i = 0; i < 5; i++) {
+            const { data: sessionData } = await db.auth.getSession();
+            sessionToken = sessionData.session?.access_token;
+            if (sessionToken) break;
+            await new Promise(r => setTimeout(r, 200));
+          }
+
           console.log('[welcome] sessionToken exists:', !!sessionToken);
           console.log('[welcome] sessionToken prefix:', sessionToken?.slice(0, 20));
           if (!sessionToken) return;
