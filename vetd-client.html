@@ -1075,7 +1075,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // Create auth user — store company name in metadata so we can create DB rows after confirmation
       const { data: authData, error: authErr } = await db.auth.signUp({
         email, password,
-        options: { data: { first_name: fname, last_name: lname, company } }
+        options: { data: { first_name: fname, last_name: lname, company, role: 'client' } }
       });
       if (authErr) throw authErr;
 
