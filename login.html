@@ -686,6 +686,25 @@
         }
       }
 
+      // Send welcome email once, on the first sign-in after email confirmation.
+      // Only fires for contributors; only when ?confirmed=true is in the URL;
+      // deduplicated by localStorage so it never sends twice even if the user
+      // lands on login.html?confirmed=true more than once.
+      if (resolvedRole === 'contributor' && pageParams.get('confirmed') === 'true') {
+        const dedupeKey = 'vetd_welcome_sent_' + data.user.id;
+        if (!localStorage.getItem(dedupeKey)) {
+          localStorage.setItem(dedupeKey, '1');
+          void fetch(SUPABASE_URL + '/functions/v1/send-welcome-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + SUPABASE_ANON,
+            },
+            body: JSON.stringify({ email: data.user.email }),
+          }).catch(() => {}); // fire-and-forget, non-critical
+        }
+      }
+
       routeResolvedRole(resolvedRole);
 
     } catch (err) {
