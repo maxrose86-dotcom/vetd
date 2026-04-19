@@ -380,8 +380,8 @@
   }
   .job-company-name { font-size: 12px; color: var(--gray-400); }
   .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
-  .job-snapshot { font-size: 12px; color: var(--gray-700); line-height: 1.35; margin-top: 4px; }
-  .job-relevance { font-size: 12px; color: var(--gray-400); line-height: 1.4; margin-bottom: 10px; }
+  .job-snapshot { font-size: 12px; color: var(--gray-700); line-height: 1.35; margin-top: 3px; }
+  .job-relevance { font-size: 12px; color: var(--gray-700); line-height: 1.4; margin-top: 3px; }
   .job-pay { text-align: right; }
   .pay-amount { font-family: var(--serif); font-size: 28px; color: var(--green); }
   .pay-type { font-size: 11px; color: var(--gray-400); }
@@ -2143,6 +2143,7 @@
             <div>
               <div class="job-company-name">${esc(job.company)}</div>
               <div class="job-title">${esc(job.title)}</div>
+              <div class="job-relevance">${esc(getStudyRelevance(job))}</div>
               <div class="job-snapshot">${esc(getStudySnapshot(job, payTypeLabel))}</div>
             </div>
           </div>
@@ -2151,7 +2152,6 @@
             <div class="pay-type">${payTypeLabel}${job.hourlyRate ? ` · ~${job.hourlyRate} kr/hr` : ''}</div>
           </div>
         </div>
-        <div class="job-relevance">${esc(getStudyRelevance(job))}</div>
         <div class="job-desc">${esc(job.desc)}</div>
         <div class="job-tags">${job.tags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
@@ -4347,7 +4347,7 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Recommended opportunities',
       dash_notifications: 'Notifications',
       browse_title: 'Available opportunities',
-      browse_relevance_generic: 'Matches your profile',
+      browse_relevance_generic: 'Relevant to your profile',
       browse_relevance_interest: 'Based on your interest in {tag}',
       browse_relevance_format: 'Fits your study preferences',
       apply_btn: 'Apply',
@@ -4712,7 +4712,7 @@ async function applyToStudy(studyId, answers = null) {
       dash_recommended: 'Rekommenderade möjligheter',
       dash_notifications: 'Aviseringar',
       browse_title: 'Tillgängliga studier',
-      browse_relevance_generic: 'Matchar din profil',
+      browse_relevance_generic: 'Relevant för din profil',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
       browse_relevance_format: 'Passar dina studiepreferenser',
       apply_btn: 'Ansök',
