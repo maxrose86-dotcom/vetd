@@ -3103,6 +3103,7 @@
           targetAges: ages,
           targetGenders: genders,
           targetLocations: locs,
+          minRating: s.min_rating || null,
           format:             FORMAT_FILTER[s.format] || 'online',
           featured:           false,
           detail:             s.description || 'No additional details provided.',
@@ -3214,6 +3215,7 @@
       : '';
     container.innerHTML = lowFitNote + displayStudies.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
+      const displayTags = getStudyDisplayTags(job);
       return `
       <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
         ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : ''}
@@ -3233,12 +3235,12 @@
           </div>
         </div>
         <div class="job-desc">${esc(job.desc)}</div>
-        <div class="job-tags">${job.tags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
+        <div class="job-tags">${displayTags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
           <div>
             ${(() => { const spotsLeft = job.spots - job.filled; return spotsLeft <= 3 && job.spots > 0
               ? `<div class="job-meta" style="color:var(--amber);font-weight:600">⚡ ${t('limited_availability')}</div>`
-              : `<div class="job-meta">${esc(job.duration)}</div>`; })()}
+              : `<div class="job-meta">${esc(getStudyDurationLabel(job))}</div>`; })()}
           </div>
           <div style="display:flex;align-items:center;gap:12px">
             ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
@@ -3253,8 +3255,45 @@
     return fit.positives[0] || t('browse_relevance_generic');
   }
 
+  function getStudyDurationLabel(study) {
+    const formatLabel = study?.format === 'in-person'
+      ? t('modal_overview_format_in_person')
+      : t('modal_overview_format_online');
+    return study?.durationMinutes
+      ? `${study.durationMinutes} min · ${formatLabel}`
+      : formatLabel;
+  }
+
+  function getStudyDisplayTags(study) {
+    const tags = [];
+    const ages = Array.isArray(study?.targetAges) ? study.targetAges : [];
+    const genders = Array.isArray(study?.targetGenders) ? study.targetGenders : [];
+    const interests = Array.isArray(study?.targetInterests) ? study.targetInterests : [];
+    const locs = Array.isArray(study?.targetLocations) ? study.targetLocations : [];
+
+    if (ages.length && !ages.includes('any')) {
+      tags.push({ text: ages.map(a => AGE_LABEL[a] || a).join(', '), cls: 'tag-green' });
+    }
+    if (genders.length && !genders.includes('any')) {
+      const genderMap = {
+        woman: t('gender_woman'),
+        man: t('gender_man'),
+        non_binary: t('gender_non_binary'),
+        any: t('gender_any')
+      };
+      tags.push({ text: genders.map(g => genderMap[g] || g).join(' / '), cls: 'tag-green' });
+    }
+    interests.slice(0, 2).forEach(i => tags.push({ text: getInterestLabel(i), cls: 'tag-blue' }));
+    if (locs.includes('uk_any')) tags.push({ text: t('study_tag_uk_only'), cls: 'tag-gray' });
+    else if (locs.includes('remote')) tags.push({ text: t('study_tag_remote_only'), cls: 'tag-gray' });
+    else if (locs.length) tags.push({ text: locs[0].charAt(0).toUpperCase() + locs[0].slice(1), cls: 'tag-gray' });
+    if (study?.minRating) tags.push({ text: t('study_tag_min_rating').replace('{rating}', study.minRating), cls: 'tag-amber' });
+
+    return tags.length ? tags : (Array.isArray(study?.tags) ? study.tags : []);
+  }
+
   function getStudySnapshot(study, payTypeLabel) {
-    return study?.duration || payTypeLabel;
+    return getStudyDurationLabel(study) || payTypeLabel;
   }
 
   function getStudyCredibilityLine(study) {
@@ -3307,7 +3346,7 @@
   }
 
   function getStudyFitLine(study) {
-    const allTags = Array.isArray(study?.tags) ? study.tags : [];
+    const allTags = getStudyDisplayTags(study);
     const preferredTags = allTags.filter(tag => tag && tag.text && tag.cls !== 'tag-gray');
     const fitTags = (preferredTags.length ? preferredTags : allTags)
       .map(tag => tag?.text)
@@ -3395,7 +3434,7 @@
     return list.map(study => {
       const metaParts = [
         study.company,
-        study.duration || '',
+        getStudyDurationLabel(study),
         study.pay != null ? formatCurrency(study.pay) : ''
       ].filter(Boolean);
       return `
@@ -3484,7 +3523,7 @@
           const err = document.createElement('div');
           err.className = 'sq-error';
           err.style.cssText = 'color:#e53e3e;font-size:12px;margin-top:4px';
-          err.textContent = 'Required';
+          err.textContent = t('sq_required');
           wrapper.appendChild(err);
         }
         hasError = true;
@@ -4370,8 +4409,8 @@ async function applyToStudy(studyId, answers = null) {
       let input = '';
       if (q.type === 'yesno') {
         input = `<div style="display:flex;gap:16px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="Yes"> Yes</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="No"> No</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="Yes"> ${t('sq_yes')}</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="sq-${i}" value="No"> ${t('sq_no')}</label>
         </div>`;
       } else if (q.type === 'choice' && Array.isArray(q.options) && q.options.length) {
         input = `<div style="display:flex;flex-wrap:wrap;gap:8px">` +
@@ -4379,7 +4418,7 @@ async function applyToStudy(studyId, answers = null) {
             <input type="radio" name="sq-${i}" value="${escAttr(o)}"> ${esc(o)}
           </label>`).join('') + `</div>`;
       } else {
-        input = `<input type="text" class="sq-text-input" data-idx="${i}" maxlength="200" placeholder="Your answer…"
+        input = `<input type="text" class="sq-text-input" data-idx="${i}" maxlength="200" placeholder="${escAttr(t('sq_answer_ph'))}"
           style="width:100%;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;box-sizing:border-box">`;
       }
       return `<div data-sq-idx="${i}" style="margin-bottom:${i < questions.length - 1 ? '14px' : '0'}">${label}${input}</div>`;
@@ -4628,7 +4667,7 @@ async function applyToStudy(studyId, answers = null) {
     const location = [city, country].filter(Boolean).join(', ');
     const createdAt   = safeProfile?.created_at || safe.user?.created_at;
     const memberSince = createdAt
-      ? new Date(createdAt).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+      ? new Date(createdAt).toLocaleDateString(getUiLocale(), { month: 'long', year: 'numeric' })
       : null;
 
     document.getElementById('profile-avatar-big').textContent = initials;
@@ -4636,7 +4675,7 @@ async function applyToStudy(studyId, answers = null) {
 
     const subtitleParts = [];
     if (location)    subtitleParts.push(location);
-    if (memberSince) subtitleParts.push(`Member since ${memberSince}`);
+    if (memberSince) subtitleParts.push(t('member_since').replace('{date}', memberSince));
     document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || t('new_member');
 
     const profileTier = document.getElementById('profile-tier-badge');
@@ -4645,8 +4684,8 @@ async function applyToStudy(studyId, answers = null) {
 
     const statsLineParts = [];
     if (rating !== null) statsLineParts.push(`${rating.toFixed(1)}★`);
-    statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
-    statsLineParts.push(`${totalEarned} kr earned`);
+    statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? t('profile_stats_study_singular') : t('profile_stats_study_plural')}`);
+    statsLineParts.push(`${totalEarned} kr ${t('profile_stats_earned')}`);
     document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
 
     const standing = getContributorStanding(safeProfile, safeStats);
@@ -4985,50 +5024,50 @@ async function applyToStudy(studyId, answers = null) {
     card.innerHTML = `
       <div class="profile-completion-head">
         <div>
-          <div class="profile-completion-kicker">Professional details</div>
-          <div class="boost-title">Complete your profile</div>
-          <div class="boost-sub">Add a few work details so we can prioritise studies that fit.</div>
+          <div class="profile-completion-kicker">${t('pc_kicker')}</div>
+          <div class="boost-title">${t('pc_title')}</div>
+          <div class="boost-sub">${t('pc_sub')}</div>
         </div>
         <button onclick="skipProfileCompletion()" class="profile-completion-dismiss">×</button>
       </div>
       <div class="profile-completion-grid">
         <div>
-          <label class="pc-label">Job title</label>
-          <input id="pc-job-title" class="pc-input" type="text" placeholder="e.g. Product manager" maxlength="80"
+          <label class="pc-label">${t('pc_job_title')}</label>
+          <input id="pc-job-title" class="pc-input" type="text" placeholder="${escAttr(t('pc_job_title_ph'))}" maxlength="80"
             oninput="updatePcSaveBtn()"
             >
         </div>
         <div>
-          <label class="pc-label">Industry</label>
+          <label class="pc-label">${t('pc_industry')}</label>
           <select id="pc-industry" class="pc-select"
             onchange="updatePcSaveBtn()"
             >
-            <option value="">Select…</option>
-            <option>Technology</option>
-            <option>Finance &amp; banking</option>
-            <option>Healthcare</option>
-            <option>Retail &amp; e-commerce</option>
-            <option>Media &amp; entertainment</option>
-            <option>Education</option>
-            <option>Travel &amp; hospitality</option>
-            <option>Food &amp; beverage</option>
-            <option>Fashion &amp; beauty</option>
-            <option>Real estate</option>
-            <option>Other</option>
+            <option value="">${t('pc_select')}</option>
+            <option>${t('pc_industry_technology')}</option>
+            <option>${t('pc_industry_finance')}</option>
+            <option>${t('pc_industry_healthcare')}</option>
+            <option>${t('pc_industry_retail')}</option>
+            <option>${t('pc_industry_media')}</option>
+            <option>${t('pc_industry_education')}</option>
+            <option>${t('pc_industry_travel')}</option>
+            <option>${t('pc_industry_food')}</option>
+            <option>${t('pc_industry_fashion')}</option>
+            <option>${t('pc_industry_real_estate')}</option>
+            <option>${t('pc_industry_other')}</option>
           </select>
         </div>
       </div>
       <div style="margin-bottom:14px">
-        <div class="pc-label" style="margin-bottom:7px">Experience level</div>
+        <div class="pc-label" style="margin-bottom:7px">${t('pc_exp_level')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="pc-chip" data-value="junior"  onclick="togglePcChip(this)">Junior</button>
-          <button class="pc-chip" data-value="mid"     onclick="togglePcChip(this)">Mid-level</button>
-          <button class="pc-chip" data-value="senior"  onclick="togglePcChip(this)">Senior</button>
+          <button class="pc-chip" data-value="junior"  onclick="togglePcChip(this)">${t('pc_exp_junior')}</button>
+          <button class="pc-chip" data-value="mid"     onclick="togglePcChip(this)">${t('pc_exp_mid')}</button>
+          <button class="pc-chip" data-value="senior"  onclick="togglePcChip(this)">${t('pc_exp_senior')}</button>
         </div>
       </div>
       <div class="profile-completion-actions">
-        <button id="pc-save-btn" onclick="saveProfileCompletion()" class="boost-save-btn" disabled>Save</button>
-        <button onclick="skipProfileCompletion()" class="profile-completion-secondary">Skip for now</button>
+        <button id="pc-save-btn" onclick="saveProfileCompletion()" class="boost-save-btn" disabled>${t('pc_save')}</button>
+        <button onclick="skipProfileCompletion()" class="profile-completion-secondary">${t('pc_skip')}</button>
       </div>`;
 
     if (c?.job_title) document.getElementById('pc-job-title').value = c.job_title;
@@ -5298,7 +5337,7 @@ async function applyToStudy(studyId, answers = null) {
 
     const renderRow = (p, isPaid) => {
       const d = p.paid_at || p.created_at;
-      const date = d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      const date = d ? new Date(d).toLocaleDateString(getUiLocale(), { day:'numeric', month:'short', year:'numeric' }) : '—';
       const delayed = isDelayedPayment(p);
       const statusLabel = esc(
         p.status === 'paid'
@@ -5492,7 +5531,7 @@ async function applyToStudy(studyId, answers = null) {
     if (hrs < 24)  return `${hrs}${t('time_h_ago')}`;
     const days = Math.floor(hrs / 24);
     if (days < 7)  return `${days}${t('time_d_ago')}`;
-    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString(getUiLocale(), { day: 'numeric', month: 'short' });
   }
 
   // @deprecated — use sendStructuredNotification() for new notification types
@@ -5821,6 +5860,7 @@ async function applyToStudy(studyId, answers = null) {
       gender_woman: 'Woman',
       gender_man: 'Man',
       gender_non_binary: 'Non-binary',
+      gender_any: 'Any gender',
       gender_self_describe: 'Self-described',
       gender_prefer_not: 'Prefer not to say',
       emp_full_time: 'Full-time',
@@ -6083,6 +6123,38 @@ async function applyToStudy(studyId, answers = null) {
       boost_bio_note: 'Not required — only used to find studies relevant to your background.',
       boost_save: 'Save',
       boost_saved_ok: 'Saved',
+      pc_kicker: 'Professional details',
+      pc_title: 'Complete your profile',
+      pc_sub: 'Add a few work details so we can prioritise studies that fit.',
+      pc_job_title: 'Job title',
+      pc_job_title_ph: 'e.g. Product manager',
+      pc_industry: 'Industry',
+      pc_select: 'Select…',
+      pc_industry_technology: 'Technology',
+      pc_industry_finance: 'Finance & banking',
+      pc_industry_healthcare: 'Healthcare',
+      pc_industry_retail: 'Retail & e-commerce',
+      pc_industry_media: 'Media & entertainment',
+      pc_industry_education: 'Education',
+      pc_industry_travel: 'Travel & hospitality',
+      pc_industry_food: 'Food & beverage',
+      pc_industry_fashion: 'Fashion & beauty',
+      pc_industry_real_estate: 'Real estate',
+      pc_industry_other: 'Other',
+      pc_exp_level: 'Experience level',
+      pc_exp_junior: 'Junior',
+      pc_exp_mid: 'Mid-level',
+      pc_exp_senior: 'Senior',
+      pc_save: 'Save',
+      pc_skip: 'Skip for now',
+      member_since: 'Member since {date}',
+      profile_stats_study_singular: 'study',
+      profile_stats_study_plural: 'studies',
+      profile_stats_earned: 'earned',
+      sq_yes: 'Yes',
+      sq_no: 'No',
+      sq_answer_ph: 'Your answer…',
+      sq_required: 'Required',
       activity_missed_title: 'Session missed: {title}',
       activity_missed_sub: 'This session was missed, so it isn’t paid. Future matches are still possible.',
       activity_rejected_title: 'Not selected for {title}',
@@ -6092,6 +6164,9 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_long_time_title: 'No studies are available right now',
       no_studies_long_time_sub: 'New studies will appear here when they open.',
       low_fit_browse_note: 'Studies are live, but none quite match your profile right now.',
+      study_tag_uk_only: 'UK only',
+      study_tag_remote_only: 'Remote only',
+      study_tag_min_rating: '{rating}★+ rating',
     },
     sv: {
       landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
@@ -6326,6 +6401,7 @@ async function applyToStudy(studyId, answers = null) {
       gender_woman: 'Kvinna',
       gender_man: 'Man',
       gender_non_binary: 'Ickebinär',
+      gender_any: 'Alla kön',
       gender_self_describe: 'Föredrar att beskriva själv',
       gender_prefer_not: 'Föredrar att inte ange',
       emp_full_time: 'Heltid',
@@ -6588,6 +6664,38 @@ async function applyToStudy(studyId, answers = null) {
       boost_bio_note: 'Inte obligatoriskt — används bara för att hitta studier relevanta för dig.',
       boost_save: 'Spara',
       boost_saved_ok: 'Sparat',
+      pc_kicker: 'Yrkesuppgifter',
+      pc_title: 'Komplettera din profil',
+      pc_sub: 'Lägg till några arbetsuppgifter så kan vi prioritera studier som passar.',
+      pc_job_title: 'Jobbtitel',
+      pc_job_title_ph: 't.ex. Produktchef',
+      pc_industry: 'Bransch',
+      pc_select: 'Välj…',
+      pc_industry_technology: 'Teknik',
+      pc_industry_finance: 'Ekonomi & bank',
+      pc_industry_healthcare: 'Sjukvård',
+      pc_industry_retail: 'Handel & e-handel',
+      pc_industry_media: 'Media & underhållning',
+      pc_industry_education: 'Utbildning',
+      pc_industry_travel: 'Resor & hotell',
+      pc_industry_food: 'Mat & dryck',
+      pc_industry_fashion: 'Mode & skönhet',
+      pc_industry_real_estate: 'Fastigheter',
+      pc_industry_other: 'Annat',
+      pc_exp_level: 'Erfarenhetsnivå',
+      pc_exp_junior: 'Junior',
+      pc_exp_mid: 'Mellannivå',
+      pc_exp_senior: 'Senior',
+      pc_save: 'Spara',
+      pc_skip: 'Hoppa över nu',
+      member_since: 'Medlem sedan {date}',
+      profile_stats_study_singular: 'studie',
+      profile_stats_study_plural: 'studier',
+      profile_stats_earned: 'intjänat',
+      sq_yes: 'Ja',
+      sq_no: 'Nej',
+      sq_answer_ph: 'Ditt svar…',
+      sq_required: 'Obligatoriskt',
       activity_missed_title: 'Session missad: {title}',
       activity_missed_sub: 'Den här sessionen missades, så den betalas inte. Framtida matchningar är fortfarande möjliga.',
       activity_rejected_title: 'Inte vald för {title}',
@@ -6597,6 +6705,9 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_long_time_title: 'Det finns inga studier tillgängliga just nu',
       no_studies_long_time_sub: 'Nya studier visas här när de öppnar.',
       low_fit_browse_note: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
+      study_tag_uk_only: 'Endast Storbritannien',
+      study_tag_remote_only: 'Endast på distans',
+      study_tag_min_rating: '{rating}★+ i betyg',
     }
   };
 
@@ -6611,13 +6722,68 @@ async function applyToStudy(studyId, answers = null) {
     return sek != null ? `${sek} kr` : 'TBD';
   }
 
+  function getUiLocale() {
+    const lang = localStorage.getItem('vetd_lang') || 'en';
+    return lang === 'sv' ? 'sv-SE' : 'en-GB';
+  }
+
   function t(key) {
     const lang = localStorage.getItem('vetd_lang') || 'en';
     return (LANG[lang] && LANG[lang][key]) || (LANG.en && LANG.en[key]) || key;
   }
 
+  function rerenderOpenStudyModalForLanguage() {
+    const modal = document.getElementById('apply-modal');
+    if (!modal || !modal.classList.contains('open') || !state.currentStudy) return;
+
+    const current = state.studies.find(j => j.id == state.currentStudy.id) || state.currentStudy;
+    state.currentStudy = current;
+
+    const payTypeLabel = current.payType === 'per survey' ? t('per_survey') : t('per_session');
+    const preApply = document.getElementById('modal-pre-apply');
+    const confirmed = document.getElementById('modal-confirmed');
+    const isConfirmed = confirmed && confirmed.style.display !== 'none';
+
+    if (!isConfirmed && preApply) {
+      document.getElementById('modal-company-badge').textContent = current.company;
+      document.getElementById('modal-title').textContent = current.title;
+      document.getElementById('modal-company-name').textContent = current.company;
+      document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(current.pay)}</div><div class="modal-pay-sub">${payTypeLabel}${current.hourlyRate ? ` · ~${current.hourlyRate} kr/hr` : ''}</div>`;
+      document.getElementById('modal-overview-grid').innerHTML = renderStudyOverviewItems(current);
+      document.getElementById('modal-detail').textContent = current.detail;
+      document.getElementById('modal-fit-copy').textContent = getStudyGoodFitFor(current);
+      document.getElementById('modal-match-explain').innerHTML = renderStudyMatchExplanation(current, state.contribData);
+      document.getElementById('modal-what-copy').textContent = getStudyWhatYoullDo(current);
+      document.getElementById('modal-session-note').textContent = getStudySessionConfidence(current);
+      const sqArea = document.getElementById('modal-screener-area');
+      const sqList = current.screeningQuestions;
+      if (sqArea) {
+        if (Array.isArray(sqList) && sqList.length) {
+          sqArea.innerHTML = `<div style="border-top:1px solid var(--gray-100);padding-top:1rem">${renderScreenerInputs(sqList)}</div>`;
+          sqArea.style.display = 'block';
+        } else {
+          sqArea.innerHTML = '';
+          sqArea.style.display = 'none';
+        }
+      }
+      return;
+    }
+
+    const confirmTitle = document.getElementById('modal-confirm-title');
+    if (confirmTitle) {
+      confirmTitle.textContent = t('modal_confirm_title').replace('{title}', current.title || t('modal_confirm_fallback_title'));
+    }
+    const suggestionsWrap = document.getElementById('modal-next-suggestions');
+    const suggestionsList = document.getElementById('modal-next-list');
+    if (suggestionsWrap && suggestionsList) {
+      suggestionsList.innerHTML = renderModalSuggestions(current.id);
+      suggestionsWrap.style.display = suggestionsList.innerHTML ? '' : 'none';
+    }
+  }
+
   function setLang(lang) {
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
+    document.documentElement.lang = lang;
     // Sync floating toggle (landing/onboarding)
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
     document.getElementById('lb-sv').classList.toggle('active', lang === 'sv');
@@ -6642,7 +6808,14 @@ async function applyToStudy(studyId, answers = null) {
     }
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const k = el.dataset.i18n;
-      if (LANG[lang] && LANG[lang][k] !== undefined) el.textContent = LANG[lang][k];
+      if (LANG[lang] && LANG[lang][k] !== undefined) {
+        if (k === 'cookie_text') {
+          const linkLabel = lang === 'sv' ? 'Integritetspolicy' : 'Privacy Policy';
+          el.innerHTML = `${LANG[lang][k]} <a href="privacy-policy.html">${linkLabel}</a>`;
+        } else {
+          el.textContent = LANG[lang][k];
+        }
+      }
     });
     document.querySelectorAll('[data-i18n-ph]').forEach(el => {
       const k = el.dataset.i18nPh;
@@ -6650,19 +6823,13 @@ async function applyToStudy(studyId, answers = null) {
     });
     // Re-render dynamic content with updated language
     updateChipLabels();
-    renderStudies('studies-list', state.studies);
-    renderStudies('dashboard-studies', state.studies.slice(0, 2));
+    rerenderApp();
     if (state.notifications) renderNotifications(state.notifications);
-    renderContributorActivityTimeline();
-    renderContributorCommandSurface();
-    if (state.contribData && state.currentUser) {
-      const stats       = computeUserStats(state.contribData);
-      const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
-      const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
-      updateDashboard(firstName, stats, tierDisplay);
-      updateProfileTab(state.profileData, state.contribData, stats, tierDisplay, state.currentUser);
-      renderBoostCard();
-    }
+    renderBoostCard();
+    renderProfileCompletionCard();
+    rerenderOpenStudyModalForLanguage();
+    const debugPanel = document.getElementById('debug-panel');
+    if (debugPanel && debugPanel.classList.contains('open')) refreshDebugPanel();
   }
 
   initChipGroups();
