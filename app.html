@@ -1850,6 +1850,67 @@
     };
   }
 
+  function getIsoTime(value) {
+    const ts = new Date(value || 0).getTime();
+    return Number.isFinite(ts) ? ts : null;
+  }
+
+  function isCompanyCancelledApp(app) {
+    const status = normalizePortalRole(app?.status);
+    return status === 'cancelled'
+      || status === 'company_cancelled'
+      || app?.cancelled_by_company === true
+      || app?.failure_state === 'company_cancelled';
+  }
+
+  function isRejectedAfterWaitApp(app) {
+    if (isCompanyCancelledApp(app) || normalizePortalRole(app?.status) !== 'rejected') return false;
+    const appliedTs = getIsoTime(app?.applied_at);
+    const resolvedTs = getIsoTime(app?.updated_at || app?.applied_at);
+    if (!appliedTs || !resolvedTs) return false;
+    return (resolvedTs - appliedTs) >= (5 * 86400000);
+  }
+
+  function isDelayedPayment(payment) {
+    if (!payment || normalizePortalRole(payment.status) === 'paid') return false;
+    if (payment.is_delayed === true || payment.delay_state === 'delayed') return true;
+    const createdTs = getIsoTime(payment.created_at || payment.updated_at || payment.paid_at);
+    return Boolean(createdTs && (Date.now() - createdTs) >= (5 * 86400000));
+  }
+
+  function getPaymentForApplication(appId, payments = state.payments) {
+    return (Array.isArray(payments) ? payments : []).find(payment => payment.application_id === appId) || null;
+  }
+
+  function getMostRecentContributorActivityTs(apps, payments) {
+    const values = [];
+    (Array.isArray(apps) ? apps : []).forEach(app => {
+      [app?.updated_at, app?.scheduled_at, app?.applied_at].forEach(value => {
+        const ts = getIsoTime(value);
+        if (ts) values.push(ts);
+      });
+    });
+    (Array.isArray(payments) ? payments : []).forEach(payment => {
+      [payment?.paid_at, payment?.created_at].forEach(value => {
+        const ts = getIsoTime(value);
+        if (ts) values.push(ts);
+      });
+    });
+    return values.length ? Math.max(...values) : null;
+  }
+
+  function hasNoStudiesLongTime(studies, apps, payments) {
+    if ((Array.isArray(studies) ? studies : []).length) return false;
+    const lastTs = getMostRecentContributorActivityTs(apps, payments);
+    return Boolean(lastTs && (Date.now() - lastTs) >= (30 * 86400000));
+  }
+
+  function hasLowFitContributor(studies, profile, prefs) {
+    const list = Array.isArray(studies) ? studies : [];
+    if (!list.length) return false;
+    return !list.some(study => computeStudyFit(study, profile, prefs).score >= 3);
+  }
+
   function renderPreviewStudySection() {
     return `
       <div class="empty-state" style="padding:3.5rem 2rem 3rem;max-width:420px">
@@ -1882,6 +1943,9 @@
 
   function buildContributorActivityTimeline() {
     const items = [];
+    const studies = Array.isArray(state.studies) ? state.studies : [];
+    const profile = { ...(state.profileData || {}), ...(state.contribData || {}) };
+    const prefs = getContributorMatchPreferences(profile);
 
     (state.myApplications || []).forEach(app => {
       const study = app.studies || {};
@@ -1939,17 +2003,74 @@
           tone: 'positive'
         });
       }
+
+      if (ss.phase === 'ended_missed' && app.scheduled_at) {
+        items.push({
+          key: `missed-${app.id}`,
+          ts: app.scheduled_at,
+          title: t('activity_missed_title').replace('{title}', title),
+          sub: t('activity_missed_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (ss.phase === 'company_cancelled') {
+        items.push({
+          key: `cancelled-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_cancelled_title').replace('{title}', title),
+          sub: t('activity_cancelled_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (isRejectedAfterWaitApp(app)) {
+        items.push({
+          key: `rejected-wait-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_rejected_wait_title').replace('{title}', title),
+          sub: t('activity_rejected_wait_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (ss.phase === 'rejected' && !isRejectedAfterWaitApp(app)) {
+        items.push({
+          key: `rejected-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_rejected_title').replace('{title}', title),
+          sub: t('activity_rejected_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (ss.phase === 'declined') {
+        items.push({
+          key: `declined-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_declined_title').replace('{title}', title),
+          sub: t('activity_declined_sub'),
+          tone: 'default'
+        });
+      }
     });
 
     (state.payments || []).forEach(payment => {
+      const delayed = isDelayedPayment(payment);
       items.push({
         key: `payment-${payment.id}`,
         ts: payment.paid_at || payment.created_at,
-        title: (payment.status === 'paid' ? t('activity_payment_paid_title') : t('activity_payment_pending_title'))
+        title: (payment.status === 'paid'
+          ? t('activity_payment_paid_title')
+          : delayed
+            ? t('activity_payment_delayed_title')
+            : t('activity_payment_pending_title'))
           .replace('{title}', payment.studyTitle || t('activity_fallback_study')),
         sub: payment.status === 'paid'
           ? t('activity_payment_paid_sub')
-          : t('activity_payment_pending_sub'),
+          : delayed
+            ? t('activity_payment_delayed_sub')
+            : t('activity_payment_pending_sub'),
         tone: payment.status === 'paid' ? 'positive' : 'default'
       });
     });
@@ -1966,6 +2087,24 @@
           tone: 'positive'
         });
       });
+
+    if (hasNoStudiesLongTime(studies, state.myApplications, state.payments)) {
+      items.push({
+        key: 'no-supply',
+        ts: new Date().toISOString(),
+        title: t('activity_no_supply_title'),
+        sub: t('activity_no_supply_sub'),
+        tone: 'default'
+      });
+    } else if (hasLowFitContributor(studies, profile, prefs)) {
+      items.push({
+        key: 'low-fit',
+        ts: new Date().toISOString(),
+        title: t('activity_low_fit_title'),
+        sub: t('activity_low_fit_sub'),
+        tone: 'default'
+      });
+    }
 
     return items
       .filter(item => item.ts)
@@ -1987,8 +2126,14 @@
       in_session: 'scheduled-',
       scheduled: 'scheduled-',
       selected: 'selected-',
+      payment_delayed: 'payment-',
+      company_cancelled: 'cancelled-',
+      missed_session: 'missed-',
+      rejected_after_wait: 'rejected-wait-',
       applied_waiting: 'applied-',
       post_session: 'payment-',
+      no_studies_long_time: 'no-supply',
+      low_fit_contributor: 'low-fit',
       paid: 'payment-'
     };
     const primaryId =
@@ -2023,8 +2168,9 @@
     const safe = getSafeContributorState();
     const apps = safe.applications;
     const payments = safe.payments;
+    const studies = Array.isArray(appState.studies || state.studies) ? (appState.studies || state.studies) : [];
     const prefs = getContributorMatchPreferences(safe.profile);
-    const rankedStudies = applyStudyPreferenceBias(appState.studies || state.studies || [], prefs);
+    const rankedStudies = applyStudyPreferenceBias(studies, prefs, safe.profile);
     const topFitStudy = rankedStudies[0] || null;
     const topFit = topFitStudy ? computeStudyFit(topFitStudy, safe.profile, prefs) : null;
 
@@ -2043,8 +2189,29 @@
       .filter(({ ss }) => ['accepted_needs_availability', 'accepted_ready'].includes(ss.phase))
       .sort((a, b) => new Date(b.app.updated_at || b.app.applied_at) - new Date(a.app.updated_at || a.app.applied_at))[0];
 
+    const cancelledApp = apps
+      .map(app => ({ app, ts: getIsoTime(app.updated_at || app.applied_at) || 0 }))
+      .filter(({ app }) => isCompanyCancelledApp(app))
+      .sort((a, b) => b.ts - a.ts)[0];
+
+    const missedApp = apps
+      .map(app => ({ app, ss: getSessionStatus(app, (app.studies || {}).duration_minutes || null) }))
+      .filter(({ ss }) => ss.phase === 'ended_missed')
+      .sort((a, b) => new Date(b.app.scheduled_at || b.app.updated_at || b.app.applied_at) - new Date(a.app.scheduled_at || a.app.updated_at || a.app.applied_at))[0];
+
+    const rejectedAfterWait = apps
+      .map(app => ({ app, ts: getIsoTime(app.updated_at || app.applied_at) || 0 }))
+      .filter(({ app }) => isRejectedAfterWaitApp(app))
+      .sort((a, b) => b.ts - a.ts)[0];
+
     const pendingApps = apps.filter(app => app.status === 'pending');
+    const delayedPayment = payments
+      .filter(isDelayedPayment)
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
     const unpaid = payments.find(payment => payment.status !== 'paid');
+    const noStudiesLongTime = hasNoStudiesLongTime(studies, apps, payments);
+    const lowFitContributor = hasLowFitContributor(studies, safe.profile, prefs);
+    const hasStrongMatches = Boolean(topFit && topFit.score >= 3);
 
     let mode = 'exploring';
     let priority = 'browse';
@@ -2052,7 +2219,9 @@
       topFitStudy,
       topFit,
       primaryAppId: null,
-      primaryPaymentId: unpaid?.id || null
+      primaryPaymentId: delayedPayment?.id || unpaid?.id || null,
+      hasStrongMatches,
+      noStudiesAvailable: !studies.length
     };
 
     if (joinableSession) {
@@ -2068,6 +2237,21 @@
       priority = 'selection';
       context.primaryAppId = acceptedWaiting.app.id;
       context.needsAvailability = acceptedWaiting.ss.phase === 'accepted_needs_availability';
+    } else if (delayedPayment) {
+      mode = 'payment_delayed';
+      priority = 'payment';
+    } else if (cancelledApp) {
+      mode = 'company_cancelled';
+      priority = 'resolution';
+      context.primaryAppId = cancelledApp.app.id;
+    } else if (missedApp) {
+      mode = 'missed_session';
+      priority = 'recovery';
+      context.primaryAppId = missedApp.app.id;
+    } else if (rejectedAfterWait) {
+      mode = 'rejected_after_wait';
+      priority = 'recovery';
+      context.primaryAppId = rejectedAfterWait.app.id;
     } else if (pendingApps.length) {
       mode = 'applied_waiting';
       priority = 'applications';
@@ -2075,6 +2259,12 @@
     } else if (unpaid) {
       mode = 'post_session';
       priority = 'payment';
+    } else if (noStudiesLongTime) {
+      mode = 'no_studies_long_time';
+      priority = 'supply';
+    } else if (lowFitContributor) {
+      mode = 'low_fit_contributor';
+      priority = 'matching';
     } else if (!apps.length) {
       mode = 'new_user';
       priority = 'activation';
@@ -2090,7 +2280,11 @@
       flags: {
         hasUpcomingSession: Boolean(joinableSession || scheduledSession),
         hasPendingPayments: Boolean(unpaid),
-        isHighFitUser: Boolean(topFit && topFit.score >= 3)
+        isHighFitUser: hasStrongMatches,
+        hasDelayedPayment: Boolean(delayedPayment),
+        hasLowFitSupply: Boolean(lowFitContributor),
+        hasNoStudiesAvailable: !studies.length,
+        hasFailureState: ['payment_delayed','company_cancelled','missed_session','rejected_after_wait','no_studies_long_time','low_fit_contributor'].includes(mode)
       }
     };
   }
@@ -2127,6 +2321,42 @@
       };
     }
 
+    if (model.mode === 'payment_delayed') {
+      return {
+        main: t('command_payment_delayed_main'),
+        sub: t('command_payment_delayed_sub'),
+        cta: t('command_payment_delayed_cta'),
+        action: { type: 'earnings' }
+      };
+    }
+
+    if (model.mode === 'company_cancelled') {
+      return {
+        main: t('command_company_cancelled_main'),
+        sub: t('command_company_cancelled_sub'),
+        cta: t('command_company_cancelled_cta'),
+        action: { type: 'browse', studyId: _routedLiveStudyId() }
+      };
+    }
+
+    if (model.mode === 'missed_session') {
+      return {
+        main: t('command_missed_main'),
+        sub: t('command_missed_sub'),
+        cta: t('command_missed_cta'),
+        action: { type: 'browse', studyId: _routedLiveStudyId() }
+      };
+    }
+
+    if (model.mode === 'rejected_after_wait') {
+      return {
+        main: t('command_rejected_wait_main'),
+        sub: t('command_rejected_wait_sub'),
+        cta: t('command_rejected_wait_cta'),
+        action: { type: 'browse', studyId: _routedLiveStudyId() }
+      };
+    }
+
     if (model.mode === 'applied_waiting') {
       return {
         main: t('command_pending_main'),
@@ -2151,6 +2381,24 @@
         sub: t('command_payment_sub'),
         cta: t('command_payment_cta'),
         action: { type: 'earnings' }
+      };
+    }
+
+    if (model.mode === 'no_studies_long_time') {
+      return {
+        main: t('command_no_studies_main'),
+        sub: t('command_no_studies_sub'),
+        cta: t('command_no_studies_cta'),
+        action: { type: 'profile' }
+      };
+    }
+
+    if (model.mode === 'low_fit_contributor') {
+      return {
+        main: t('command_low_fit_main'),
+        sub: t('command_low_fit_sub'),
+        cta: t('command_low_fit_cta'),
+        action: { type: 'profile' }
       };
     }
 
@@ -2219,6 +2467,12 @@
       requestAnimationFrame(() => {
         document.getElementById('payment-history-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
+      return;
+    }
+
+    if (action.type === 'profile') {
+      const btn = document.querySelector('.topbar-nav button:nth-child(4)');
+      if (btn) showTab('profile', btn);
       return;
     }
 
@@ -2394,9 +2648,9 @@
     };
   }
 
-  function applyStudyPreferenceBias(studies, prefs) {
+  function applyStudyPreferenceBias(studies, prefs, profileOverride = state.contribData) {
     const list = Array.isArray(studies) ? [...studies] : [];
-    return list.sort((a, b) => computeStudyFit(b, state.contribData, prefs).score - computeStudyFit(a, state.contribData, prefs).score);
+    return list.sort((a, b) => computeStudyFit(b, profileOverride, prefs).score - computeStudyFit(a, profileOverride, prefs).score);
   }
 
   // ─── OPPORTUNITY ROUTING ─────────────────────────────────
@@ -2411,7 +2665,7 @@
     const payments = Array.isArray(s.payments)         ? s.payments         : [];
     const applied  = s.appliedStudies instanceof Set   ? s.appliedStudies  : new Set();
     const profile  = { ...(s.profileData || {}), ...(s.contribData || {}) };
-    const prefs    = getContributorMatchPreferences();
+    const prefs    = getContributorMatchPreferences(profile);
     const now      = Date.now();
 
     const opps = [];
@@ -2443,6 +2697,27 @@
                     priority: 3, reason: 'invitation awaiting accept / decline', score: null });
     });
 
+    // P3.5 — delayed payout
+    payments.filter(isDelayedPayment).forEach(function(p) {
+      opps.push({ type: 'payment_delayed', id: p.id, title: p.studyTitle || 'Payment',
+                  priority: 3.5, reason: 'payment is taking longer than usual', score: null });
+    });
+
+    // P4 — company cancelled
+    apps.filter(isCompanyCancelledApp).forEach(function(app) {
+      opps.push({ type: 'company_cancelled', id: app.id, title: (app.studies || {}).title || 'Study',
+                  priority: 4, reason: 'study cancelled by the study team', score: null });
+    });
+
+    // P4.5 — missed session
+    apps.forEach(function(app) {
+      const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
+      if (ss.phase === 'ended_missed') {
+        opps.push({ type: 'missed_session', id: app.id, title: (app.studies || {}).title || 'Study',
+                    priority: 4.5, reason: 'missed session — no payout for this study', score: null });
+      }
+    });
+
     // P4 — accepted, not yet scheduled
     apps.forEach(function(app) {
       const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
@@ -2454,7 +2729,7 @@
     });
 
     // P5 + P8 — live studies (ranked by fit, split into strong vs ordinary)
-    const ranked = applyStudyPreferenceBias(studies, prefs);
+    const ranked = applyStudyPreferenceBias(studies, prefs, profile);
     ranked.forEach(function(study) {
       if (applied.has(study.id)) return;
       const spotsLeft = (study.spots || 0) - (study.filled || 0);
@@ -2477,11 +2752,24 @@
                   priority: 6, reason: 'application under review', score: null });
     });
 
+    apps.filter(isRejectedAfterWaitApp).forEach(function(app) {
+      opps.push({ type: 'rejected_after_wait', id: app.id, title: (app.studies || {}).title || 'Study',
+                  priority: 6.5, reason: 'rejected after a longer review window', score: null });
+    });
+
     // P7 — unpaid completions
-    payments.filter(function(p) { return p.status !== 'paid'; }).forEach(function(p) {
+    payments.filter(function(p) { return p.status !== 'paid' && !isDelayedPayment(p); }).forEach(function(p) {
       opps.push({ type: 'unpaid_completion', id: p.id, title: p.studyTitle || 'Completed study',
                   priority: 7, reason: 'completed — payment pending', score: null });
     });
+
+    if (hasNoStudiesLongTime(studies, apps, payments)) {
+      opps.push({ type: 'no_studies_long_time', id: 'no-studies', title: 'No studies available',
+                  priority: 7.5, reason: 'no studies have been available for a while', score: null });
+    } else if (hasLowFitContributor(studies, profile, prefs)) {
+      opps.push({ type: 'low_fit_contributor', id: 'low-fit', title: 'No strong matches right now',
+                  priority: 8.5, reason: 'studies exist, but none are a strong fit for this profile', score: null });
+    }
 
     // Sort: priority asc, then score desc within same priority
     opps.sort(function(a, b) {
@@ -2496,10 +2784,16 @@
       joinable_session:          'session_live',
       imminent_session:          'session_soon',
       invited_study:             'invitation_pending',
+      payment_delayed:           'payment_delayed',
+      company_cancelled:         'company_cancelled',
+      missed_session:            'missed_session',
       accepted_awaiting_schedule:'selected',
       strong_fit_live_study:     'strong_match',
       pending_application:       'awaiting_review',
+      rejected_after_wait:       'rejected_after_wait',
       unpaid_completion:         'payment_pending',
+      no_studies_long_time:      'no_studies_long_time',
+      low_fit_contributor:       'low_fit_contributor',
       live_study:                'browsing'
     };
 
@@ -2840,6 +3134,7 @@
     const container = document.getElementById(containerId);
     const prefs = getContributorMatchPreferences();
     const source = containerId === 'dashboard-studies' ? state.studies : subset;
+    const model = getContributorStateModel();
 
     let displayStudies;
     if (containerId === 'dashboard-studies') {
@@ -2851,13 +3146,13 @@
           .filter(function(o) { return o && (o.type === 'strong_fit_live_study' || o.type === 'live_study'); });
         const routedIds  = routedLive.map(function(o) { return o.id; });
         const pinned     = routedIds.map(function(id) { return source.find(function(s) { return s.id === id; }); }).filter(Boolean);
-        const remaining  = applyStudyPreferenceBias(source.filter(function(s) { return !routedIds.includes(s.id); }), prefs);
+        const remaining  = applyStudyPreferenceBias(source.filter(function(s) { return !routedIds.includes(s.id); }), prefs, state.contribData);
         displayStudies   = pinned.concat(remaining).slice(0, 2);
       } else {
-        displayStudies = applyStudyPreferenceBias(source, prefs).slice(0, 2);
+        displayStudies = applyStudyPreferenceBias(source, prefs, state.contribData).slice(0, 2);
       }
     } else {
-      displayStudies = applyStudyPreferenceBias(source, prefs);
+      displayStudies = applyStudyPreferenceBias(source, prefs, state.contribData);
     }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
@@ -2871,6 +3166,15 @@
 
       if (hasLiveStudies) {
         container.innerHTML = `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_browse')}</p>`;
+        return;
+      }
+
+      if (!isDashboard && model.mode === 'no_studies_long_time') {
+        container.innerHTML = `
+          <div class="empty-state" style="padding:4rem 2rem 3rem;max-width:420px">
+            <h3>${t('no_studies_long_time_title')}</h3>
+            <p>${t('no_studies_long_time_sub')}</p>
+          </div>`;
         return;
       }
 
@@ -2905,7 +3209,10 @@
           </div>`;
       return;
     }
-    container.innerHTML = displayStudies.map(job => {
+    const lowFitNote = !isDashboard && model.mode === 'low_fit_contributor'
+      ? `<div style="font-size:13px;color:var(--gray-500);font-weight:300;line-height:1.6;margin-bottom:1rem">${t('low_fit_browse_note')}</div>`
+      : '';
+    container.innerHTML = lowFitNote + displayStudies.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
       return `
       <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
@@ -3446,6 +3753,7 @@
     const now       = Date.now();
     const status    = app.status;
 
+    if (isCompanyCancelledApp(app)) return { phase: 'company_cancelled', label: t('status_company_cancelled'), sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'rejected') return { phase: 'rejected',   label: t('status_rejected'),           sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'declined') return { phase: 'declined',   label: t('status_declined'),            sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'pending')  return { phase: 'pending',    label: t('status_pending'),             sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
@@ -3672,24 +3980,26 @@
 
   function getMyStudiesSectionKey(phase) {
     if (['scheduled','starting_soon'].includes(phase)) return 'upcoming';
-    if (['rejected','declined','ended_joined','ended_missed','completed'].includes(phase)) return 'completed';
+    if (['rejected','declined','ended_joined','ended_missed','completed','company_cancelled'].includes(phase)) return 'completed';
     return 'in_progress';
   }
 
   function getMyStudiesMeaning(app, ss) {
+    const payment = getPaymentForApplication(app?.id);
     switch (ss.phase) {
       case 'invited': return t('my_studies_meaning_invited');
       case 'pending': return t('my_studies_meaning_pending');
       case 'declined': return t('my_studies_meaning_declined');
-      case 'rejected': return t('my_studies_meaning_rejected');
+      case 'company_cancelled': return t('my_studies_meaning_company_cancelled');
+      case 'rejected': return isRejectedAfterWaitApp(app) ? t('my_studies_meaning_rejected_after_wait') : t('my_studies_meaning_rejected');
       case 'accepted_needs_availability': return t('my_studies_meaning_accepted_needs_availability');
       case 'accepted_ready': return t('my_studies_meaning_accepted_ready');
       case 'scheduled': return t('my_studies_meaning_scheduled');
       case 'starting_soon': return t('my_studies_meaning_starting_soon');
       case 'in_progress': return t('my_studies_meaning_in_progress');
-      case 'ended_joined': return t('my_studies_meaning_ended_joined');
+      case 'ended_joined': return isDelayedPayment(payment) ? t('my_studies_meaning_completed_delayed') : t('my_studies_meaning_ended_joined');
       case 'ended_missed': return t('my_studies_meaning_ended_missed');
-      case 'completed': return t('my_studies_meaning_completed');
+      case 'completed': return isDelayedPayment(payment) ? t('my_studies_meaning_completed_delayed') : t('my_studies_meaning_completed');
       default: return '';
     }
   }
@@ -3711,7 +4021,7 @@
     } else if (filter === 'past') {
       apps = apps.filter(a => {
         const phase = getSessionStatus(a, (a.studies || {}).duration_minutes).phase;
-        return ['rejected','declined','ended_joined','ended_missed','completed'].includes(phase);
+        return ['rejected','declined','ended_joined','ended_missed','completed','company_cancelled'].includes(phase);
       });
     }
 
@@ -3768,6 +4078,7 @@
         ended_joined:  'app-status-completed',
         ended_missed:  'app-status-missed',
         completed:     'app-status-pending',
+        company_cancelled: 'app-status-rejected',
         rejected:      'app-status-rejected',
       }[ss.phase] || 'app-status-pending';
 
@@ -3789,6 +4100,8 @@
       } else if (ss.phase === 'pending') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'rejected') {
+        statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
+      } else if (ss.phase === 'company_cancelled') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'accepted_needs_availability') {
         const availabilitySlots = getContributorAvailabilitySlotCount();
@@ -4986,7 +5299,16 @@ async function applyToStudy(studyId, answers = null) {
     const renderRow = (p, isPaid) => {
       const d = p.paid_at || p.created_at;
       const date = d ? new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
-      const statusLabel = esc(p.status === 'paid' ? t('payment_paid') : p.status === 'pending' ? t('payment_pending') : p.status.charAt(0).toUpperCase() + p.status.slice(1));
+      const delayed = isDelayedPayment(p);
+      const statusLabel = esc(
+        p.status === 'paid'
+          ? t('payment_paid')
+          : delayed
+            ? t('payment_delayed')
+            : p.status === 'pending'
+              ? t('payment_pending')
+              : p.status.charAt(0).toUpperCase() + p.status.slice(1)
+      );
       const amtStyle = isPaid ? '' : 'color:var(--amber)';
       return `<div class="history-item">
         <div>
@@ -5006,7 +5328,7 @@ async function applyToStudy(studyId, answers = null) {
       if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">${t('payment_paid')} (${paid.length})</div>`;
       html += paid.map(p => renderRow(p, true)).join('');
     }
-    html += `<div class="payout-note">${t('payout_note')}</div>`;
+    html += `<div class="payout-note">${pending.some(isDelayedPayment) ? t('payout_note_delayed') : t('payout_note')}</div>`;
     section.innerHTML = html;
   }
 
@@ -5313,6 +5635,18 @@ async function applyToStudy(studyId, answers = null) {
       command_selected_sub: 'Scheduling is in progress on the study team side.',
       command_selected_sub_availability: 'Share availability to help move scheduling forward.',
       command_selected_cta: 'View study',
+      command_payment_delayed_main: 'A payment is delayed',
+      command_payment_delayed_sub: 'This payment is taking longer than usual. It will appear once processed.',
+      command_payment_delayed_cta: 'View earnings',
+      command_company_cancelled_main: 'This study was cancelled',
+      command_company_cancelled_sub: 'The study team cancelled it. Your profile is unaffected.',
+      command_company_cancelled_cta: 'Browse other studies',
+      command_missed_main: 'You missed this session',
+      command_missed_sub: 'This session isn’t paid. You can still be matched with future studies.',
+      command_missed_cta: 'Browse studies',
+      command_rejected_wait_main: 'This study closed after review',
+      command_rejected_wait_sub: 'You were considered for longer on this one. Other applications and future matches are unaffected.',
+      command_rejected_wait_cta: 'Browse other studies',
       command_pending_main: 'Your applications are in review',
       command_pending_sub: 'Most contributors apply to a few to get started.',
       command_pending_cta: 'Browse more studies',
@@ -5322,6 +5656,12 @@ async function applyToStudy(studyId, answers = null) {
       command_payment_main: 'Payment on the way',
       command_payment_sub: 'Completed study payments will appear in your earnings.',
       command_payment_cta: 'View earnings',
+      command_no_studies_main: 'No studies are available right now',
+      command_no_studies_sub: 'New studies will appear here when they open.',
+      command_no_studies_cta: 'Review profile',
+      command_low_fit_main: 'No close matches right now',
+      command_low_fit_sub: 'Studies are live, but none quite match your profile right now.',
+      command_low_fit_cta: 'Review profile',
       command_default_main: 'New studies available',
       command_default_sub: 'Browse what fits you best right now.',
       command_default_cta: 'Browse studies',
@@ -5343,11 +5683,21 @@ async function applyToStudy(studyId, answers = null) {
       activity_completed_title: 'Completed {title}',
       activity_completed_sub: 'Payment will appear in your earnings shortly.',
       activity_payment_pending_title: 'Payment pending for {title}',
-      activity_payment_pending_sub: 'A payout is being prepared for this study.',
+      activity_payment_pending_sub: 'This payment is being prepared.',
+      activity_payment_delayed_title: 'Payment delayed: {title}',
+      activity_payment_delayed_sub: 'This payment is taking longer than usual. It will appear once processed.',
       activity_payment_paid_title: 'Payment sent for {title}',
       activity_payment_paid_sub: 'This payment is now reflected in your earnings.',
       activity_rating_title: 'New rating received',
       activity_rating_sub: 'A new rating has been added to your profile.',
+      activity_cancelled_title: 'Cancelled by company: {title}',
+      activity_cancelled_sub: 'Cancelled by the study team. Your profile is unaffected.',
+      activity_rejected_wait_title: 'Closed after review: {title}',
+      activity_rejected_wait_sub: 'You were considered for longer on this one. Other applications are unaffected.',
+      activity_no_supply_title: 'No studies available right now',
+      activity_no_supply_sub: 'New studies will appear here when they open.',
+      activity_low_fit_title: 'No close matches right now',
+      activity_low_fit_sub: 'Studies are live, but none quite match your profile right now.',
       browse_title: 'Available opportunities',
       browse_relevance_generic: 'Relevant to how you use this area',
       browse_relevance_interest: 'Based on your interest in {tag}',
@@ -5598,8 +5948,10 @@ async function applyToStudy(studyId, answers = null) {
       standard_member: 'Standard member',
       payment_none: 'No payment history yet. Complete a study to start earning.',
       payment_pending: 'Pending',
+      payment_delayed: 'Delayed',
       payment_paid: 'Paid',
       payout_note: 'Payments are handled after each completed study. You’ll receive details on how payment is made when your first study is completed.',
+      payout_note_delayed: 'This payout is taking longer than usual. It will appear in your earnings once processed.',
       rating_empty: 'Complete your first study to see your rating breakdown.',
       based_on_studies: 'Based on {count} completed {noun}',
       complete_first_rating: 'Complete your first study to earn a rating',
@@ -5684,19 +6036,23 @@ async function applyToStudy(studyId, answers = null) {
       status_in_progress: 'Session in progress',
       status_ended_joined: 'Session complete',
       status_ended_missed: 'Missed session',
+      status_company_cancelled: 'Company cancelled',
       status_completed_awaiting: 'Completed — awaiting payment',
       my_studies_meaning_invited: 'You have been invited to continue. A response is needed.',
       my_studies_meaning_pending: 'Application received. Nothing is needed from you right now — updates will appear here.',
       my_studies_meaning_declined: 'You passed on this one. Your other matches are unaffected.',
       my_studies_meaning_rejected: 'This study has closed. New matches will continue to appear as they open.',
+      my_studies_meaning_rejected_after_wait: 'This study closed after review. You were considered for longer, and other applications are unaffected.',
+      my_studies_meaning_company_cancelled: 'This study was cancelled by the study team. Your profile is unaffected.',
       my_studies_meaning_accepted_needs_availability: 'You’re selected. Share availability to keep things moving.',
       my_studies_meaning_accepted_ready: 'You’re selected. The study team will confirm a session time — typically within a few days.',
       my_studies_meaning_scheduled: 'You’re confirmed. Details are set below.',
       my_studies_meaning_starting_soon: 'You’re confirmed. Final details are below.',
       my_studies_meaning_in_progress: 'Your session is underway.',
       my_studies_meaning_ended_joined: 'Your participation is complete. Payment will appear in your earnings shortly.',
-      my_studies_meaning_ended_missed: 'Session missed. Your account is still active — new matches will appear as usual.',
+      my_studies_meaning_ended_missed: 'This session was missed, so it isn’t paid. You can still be matched with future studies.',
       my_studies_meaning_completed: 'Study complete. Payment will appear in your earnings shortly.',
+      my_studies_meaning_completed_delayed: 'Study complete. Payment is delayed and will appear once processed.',
       status_paid: 'Paid',
       you_participated: '✓ You participated',
       call_duration_approx: '~{mins} min',
@@ -5727,6 +6083,15 @@ async function applyToStudy(studyId, answers = null) {
       boost_bio_note: 'Not required — only used to find studies relevant to your background.',
       boost_save: 'Save',
       boost_saved_ok: 'Saved',
+      activity_missed_title: 'Session missed: {title}',
+      activity_missed_sub: 'This session was missed, so it isn’t paid. Future matches are still possible.',
+      activity_rejected_title: 'Not selected for {title}',
+      activity_rejected_sub: 'The study moved forward with other contributors. Your other applications are unaffected.',
+      activity_declined_title: 'Declined {title}',
+      activity_declined_sub: 'You passed on this invitation.',
+      no_studies_long_time_title: 'No studies are available right now',
+      no_studies_long_time_sub: 'New studies will appear here when they open.',
+      low_fit_browse_note: 'Studies are live, but none quite match your profile right now.',
     },
     sv: {
       landing_tag: 'Tjäna pengar. Få betyg. Få bättre uppdrag.',
@@ -5775,6 +6140,18 @@ async function applyToStudy(studyId, answers = null) {
       command_selected_sub: 'Schemaläggning pågår hos studieteamet.',
       command_selected_sub_availability: 'Dela din tillgänglighet för att hjälpa schemaläggningen framåt.',
       command_selected_cta: 'Visa studie',
+      command_payment_delayed_main: 'En betalning är försenad',
+      command_payment_delayed_sub: 'Den här betalningen tar längre tid än vanligt. Den visas när den har behandlats.',
+      command_payment_delayed_cta: 'Visa intäkter',
+      command_company_cancelled_main: 'Den här studien ställdes in',
+      command_company_cancelled_sub: 'Studieteamet ställde in den. Din profil påverkas inte.',
+      command_company_cancelled_cta: 'Bläddra bland andra studier',
+      command_missed_main: 'Du missade den här sessionen',
+      command_missed_sub: 'Den här sessionen betalas inte. Du kan fortfarande matchas med framtida studier.',
+      command_missed_cta: 'Bläddra bland studier',
+      command_rejected_wait_main: 'Den här studien stängdes efter granskning',
+      command_rejected_wait_sub: 'Du var kvar längre i urvalet för den här studien. Dina andra ansökningar och framtida matchningar påverkas inte.',
+      command_rejected_wait_cta: 'Bläddra bland andra studier',
       command_pending_main: 'Dina ansökningar granskas',
       command_pending_sub: 'De flesta deltagare ansöker till några studier för att komma igång.',
       command_pending_cta: 'Bläddra bland fler studier',
@@ -5784,6 +6161,12 @@ async function applyToStudy(studyId, answers = null) {
       command_payment_main: 'Betalning på väg',
       command_payment_sub: 'Betalningar för slutförda studier syns i dina intäkter.',
       command_payment_cta: 'Visa intäkter',
+      command_no_studies_main: 'Det finns inga studier tillgängliga just nu',
+      command_no_studies_sub: 'Nya studier visas här när de öppnar.',
+      command_no_studies_cta: 'Se över profil',
+      command_low_fit_main: 'Inga nära matchningar just nu',
+      command_low_fit_sub: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
+      command_low_fit_cta: 'Se över profil',
       command_default_main: 'Nya studier finns tillgängliga',
       command_default_sub: 'Bläddra bland det som passar dig bäst just nu.',
       command_default_cta: 'Bläddra bland studier',
@@ -5805,11 +6188,21 @@ async function applyToStudy(studyId, answers = null) {
       activity_completed_title: 'Slutförde {title}',
       activity_completed_sub: 'Betalningen syns snart i dina intäkter.',
       activity_payment_pending_title: 'Betalning väntar för {title}',
-      activity_payment_pending_sub: 'En utbetalning förbereds för den här studien.',
+      activity_payment_pending_sub: 'Den här betalningen förbereds.',
+      activity_payment_delayed_title: 'Betalning försenad: {title}',
+      activity_payment_delayed_sub: 'Den här betalningen tar längre tid än vanligt. Den visas när den har behandlats.',
       activity_payment_paid_title: 'Betalning skickad för {title}',
       activity_payment_paid_sub: 'Den här betalningen syns nu i dina intäkter.',
       activity_rating_title: 'Nytt betyg mottaget',
       activity_rating_sub: 'Ett nytt betyg har lagts till på din profil.',
+      activity_cancelled_title: 'Inställd av företaget: {title}',
+      activity_cancelled_sub: 'Inställd av studieteamet. Din profil påverkas inte.',
+      activity_rejected_wait_title: 'Stängd efter granskning: {title}',
+      activity_rejected_wait_sub: 'Du var kvar längre i urvalet för den här studien. Dina andra ansökningar påverkas inte.',
+      activity_no_supply_title: 'Inga studier tillgängliga just nu',
+      activity_no_supply_sub: 'Nya studier visas här när de öppnar.',
+      activity_low_fit_title: 'Inga nära matchningar just nu',
+      activity_low_fit_sub: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
       browse_title: 'Tillgängliga studier',
       browse_relevance_generic: 'Relevant för hur du använder det här området',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
@@ -6060,8 +6453,10 @@ async function applyToStudy(studyId, answers = null) {
       standard_member: 'Standardmedlem',
       payment_none: 'Ingen betalningshistorik ännu. Slutför en studie för att börja tjäna.',
       payment_pending: 'Väntande',
+      payment_delayed: 'Försenad',
       payment_paid: 'Betald',
       payout_note: 'Betalningar hanteras efter varje slutförd studie. Du får information om hur betalningen sker när din första studie är slutförd.',
+      payout_note_delayed: 'Den här utbetalningen tar längre tid än vanligt. Den visas i dina intäkter när den har behandlats.',
       rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
       based_on_studies: 'Baserat på {count} slutförda {noun}',
       complete_first_rating: 'Slutför din första studie för att få ett betyg',
@@ -6146,19 +6541,23 @@ async function applyToStudy(studyId, answers = null) {
       status_in_progress: 'Session pågår',
       status_ended_joined: 'Session slutförd',
       status_ended_missed: 'Missad session',
+      status_company_cancelled: 'Inställd av företaget',
       status_completed_awaiting: 'Slutförd — väntar på betalning',
       my_studies_meaning_invited: 'Du har blivit inbjuden att gå vidare. Ett svar behövs.',
       my_studies_meaning_pending: 'Ansökan mottagen. Inget behöver göras just nu — uppdateringar visas här.',
       my_studies_meaning_declined: 'Du tackade nej till den här studien. Dina övriga matchningar påverkas inte.',
       my_studies_meaning_rejected: 'Den här studien är stängd. Nya matchningar fortsätter att visas när de öppnar.',
+      my_studies_meaning_rejected_after_wait: 'Den här studien stängdes efter granskning. Du var kvar längre i urvalet, och dina andra ansökningar påverkas inte.',
+      my_studies_meaning_company_cancelled: 'Den här studien ställdes in av studieteamet. Din profil påverkas inte.',
       my_studies_meaning_accepted_needs_availability: 'Du är utvald. Dela din tillgänglighet för att komma vidare.',
       my_studies_meaning_accepted_ready: 'Du är utvald. Studieteamet bekräftar en tid — vanligtvis inom några dagar.',
       my_studies_meaning_scheduled: 'Du är bekräftad. Detaljerna finns nedan.',
       my_studies_meaning_starting_soon: 'Du är bekräftad. Sista detaljerna finns nedan.',
       my_studies_meaning_in_progress: 'Din session är nu igång.',
       my_studies_meaning_ended_joined: 'Ditt deltagande är slutfört. Betalningen kommer snart att synas i dina intäkter.',
-      my_studies_meaning_ended_missed: 'Session missad. Ditt konto är aktivt — nya matchningar visas som vanligt.',
+      my_studies_meaning_ended_missed: 'Den här sessionen missades, så den betalas inte. Du kan fortfarande matchas med framtida studier.',
       my_studies_meaning_completed: 'Studien är slutförd. Betalningen kommer snart att synas i dina intäkter.',
+      my_studies_meaning_completed_delayed: 'Studien är slutförd. Betalningen är försenad och visas när den har behandlats.',
       status_paid: 'Betald',
       you_participated: '✓ Du deltog',
       call_duration_approx: '~{mins} min',
@@ -6189,6 +6588,15 @@ async function applyToStudy(studyId, answers = null) {
       boost_bio_note: 'Inte obligatoriskt — används bara för att hitta studier relevanta för dig.',
       boost_save: 'Spara',
       boost_saved_ok: 'Sparat',
+      activity_missed_title: 'Session missad: {title}',
+      activity_missed_sub: 'Den här sessionen missades, så den betalas inte. Framtida matchningar är fortfarande möjliga.',
+      activity_rejected_title: 'Inte vald för {title}',
+      activity_rejected_sub: 'Studien gick vidare med andra deltagare. Dina övriga ansökningar påverkas inte.',
+      activity_declined_title: 'Tackade nej till {title}',
+      activity_declined_sub: 'Du valde att inte delta i den här inbjudan.',
+      no_studies_long_time_title: 'Det finns inga studier tillgängliga just nu',
+      no_studies_long_time_sub: 'Nya studier visas här när de öppnar.',
+      low_fit_browse_note: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
     }
   };
 
@@ -6552,6 +6960,125 @@ async function applyToStudy(studyId, answers = null) {
           studies: { title: 'Retail UX study', duration_minutes: 30 },
         }];
         break;
+
+      // ── Failure-state pack ────────────────────────────────────────────────────
+
+      case 'missed_session': {
+        const missedAt = new Date(Date.now() - 3 * 3600000).toISOString();
+        myApplications = [{
+          id: 'sim-miss-1', status: 'accepted',
+          applied_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+          scheduled_at: missedAt,
+          joined_call_at: null,
+          studies: { title: 'UX interview', duration_minutes: 45 },
+        }];
+        contribData = { ...baseContrib, total_studies: 2, total_earned: 900,
+                        rating: 4.3, completion_rate: 67 };
+        break;
+      }
+
+      case 'payment_delayed': {
+        const completedAt = new Date(Date.now() - 7 * 86400000).toISOString();
+        myApplications = [{
+          id: 'sim-pd-1', status: 'completed',
+          applied_at: new Date(Date.now() - 21 * 86400000).toISOString(),
+          scheduled_at: completedAt,
+          joined_call_at: completedAt,
+          studies: { title: 'Consumer banking research', duration_minutes: 60 },
+        }];
+        payments = [{
+          id: 'sim-pd-p1', studyTitle: 'Consumer banking research',
+          amount: 500, status: 'pending',
+          created_at: completedAt, paid_at: null, application_id: 'sim-pd-1', is_delayed: true,
+        }];
+        contribData = { ...baseContrib, total_studies: 4, total_earned: 1800,
+                        rating: 4.9, completion_rate: 100, tier: 'rising' };
+        break;
+      }
+
+      case 'rejected_after_wait': {
+        myApplications = [{
+          id: 'sim-rej-1', status: 'rejected',
+          applied_at: new Date(Date.now() - 21 * 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+          studies: { title: 'Healthcare app research', duration_minutes: 45 },
+        }];
+        contribData = { ...baseContrib, total_studies: 1, total_earned: 450,
+                        rating: 5.0, completion_rate: 100 };
+        break;
+      }
+
+      case 'no_studies_long_time': {
+        const d88 = new Date(Date.now() - 88 * 86400000).toISOString();
+        const d58 = new Date(Date.now() - 58 * 86400000).toISOString();
+        myApplications = [
+          { id: 'sim-nsl-1', status: 'completed',
+            applied_at: new Date(Date.now() - 90 * 86400000).toISOString(),
+            scheduled_at: d88, joined_call_at: d88,
+            studies: { title: 'Mobile UX session', duration_minutes: 45 } },
+          { id: 'sim-nsl-2', status: 'completed',
+            applied_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+            scheduled_at: d58, joined_call_at: d58,
+            studies: { title: 'Banking app feedback', duration_minutes: 60 } },
+        ];
+        payments = [
+          { id: 'sim-nsl-p1', studyTitle: 'Mobile UX session', amount: 400, status: 'paid',
+            created_at: d88, paid_at: new Date(Date.now() - 86 * 86400000).toISOString() },
+          { id: 'sim-nsl-p2', studyTitle: 'Banking app feedback', amount: 500, status: 'paid',
+            created_at: d58, paid_at: new Date(Date.now() - 56 * 86400000).toISOString() },
+        ];
+        studies = [];
+        contribData = { ...baseContrib, total_studies: 2, total_earned: 900,
+                        rating: 4.8, completion_rate: 100, tier: 'rising' };
+        break;
+      }
+
+      case 'company_cancelled': {
+        myApplications = [{
+          id: 'sim-cc-1', status: 'company_cancelled', cancelled_by_company: true,
+          applied_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+          studies: { title: 'E-commerce checkout study', duration_minutes: 45 },
+        }];
+        contribData = { ...baseContrib, total_studies: 3, total_earned: 1350,
+                        rating: 5.0, completion_rate: 100, tier: 'rising' };
+        break;
+      }
+
+      case 'low_fit_contributor': {
+        studies = [
+          { id: 'sim-lf-1', title: 'Mobile banking feature test',
+            format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
+            spots: 8, filled: 2, tags: [{ text: 'Finance', cls: 'tag-blue' }],
+            payType: 'per session', company: 'Fintech team',
+            desc: 'Testing a new feature in a banking application.',
+            featured: false, detail: '', screeningQuestions: null,
+            targetInterests: ['online_banking', 'investing', 'crypto'] },
+          { id: 'sim-lf-2', title: 'B2B SaaS onboarding research',
+            format: 'online', pay: 600, hourlyRate: 800, duration: '45-min online',
+            spots: 5, filled: 1, tags: [{ text: 'Tech', cls: 'tag-blue' }],
+            payType: 'per session', company: 'Enterprise software',
+            desc: 'Understanding how teams adopt new tools.',
+            featured: false, detail: '',
+            screeningQuestions: [{ q: 'Do you manage or use B2B software at work?' }],
+            targetInterests: ['smart_home', 'gaming'] },
+        ];
+        myApplications = [{
+          id: 'sim-lf-a1', status: 'rejected',
+          applied_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+          updated_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+          studies: { title: 'Finance habits survey', duration_minutes: 30 },
+        }];
+        contribData = {
+          ...baseContrib,
+          interests_finance: [],
+          interests_tech: ['podcasts'],
+          interests_lifestyle: ['gardening', 'pets', 'fitness'],
+          total_studies: 0,
+        };
+        break;
+      }
     }
 
     const snapshot = {
@@ -6597,8 +7124,31 @@ async function applyToStudy(studyId, answers = null) {
   // Safe: JS is single-threaded — no async reads happen during synchronous render.
   function rerenderApp() {
     if (!isSimulationActive()) {
+      renderStudies('dashboard-studies', state.studies);
+      renderStudies('studies-list', state.studies);
+      const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+      renderMyApplications(activeFilter);
+      renderPaymentHistory(state.payments);
+      const upcoming = (state.myApplications || [])
+        .filter(a => a.status === 'accepted'
+          && a.scheduled_at
+          && Number.isFinite(new Date(a.scheduled_at).getTime())
+          && new Date(a.scheduled_at).getTime() > Date.now())
+        .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+        .slice(0, 10);
+      renderUpcomingSessions(upcoming);
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
+      if (state.contribData && state.currentUser) {
+        const profile   = { ...(state.profileData || {}), ...(state.contribData || {}) };
+        const stats     = computeUserStats(profile);
+        const tier      = computeTierDisplay(stats.tier, stats.studiesDone);
+        const firstName = state.profileData?.first_name
+                       || state.currentUser?.user_metadata?.first_name
+                       || '';
+        updateDashboard(firstName, stats, tier);
+        updateProfileTab(state.profileData, state.contribData, stats, tier, state.currentUser);
+      }
       return;
     }
 
@@ -6614,6 +7164,18 @@ async function applyToStudy(studyId, answers = null) {
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
       renderStudies('dashboard-studies', state.studies);
+      renderStudies('studies-list', state.studies);
+      const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+      renderMyApplications(activeFilter);
+      renderPaymentHistory(state.payments);
+      const upcoming = (state.myApplications || [])
+        .filter(a => a.status === 'accepted'
+          && a.scheduled_at
+          && Number.isFinite(new Date(a.scheduled_at).getTime())
+          && new Date(a.scheduled_at).getTime() > Date.now())
+        .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+        .slice(0, 10);
+      renderUpcomingSessions(upcoming);
       renderProfileCompletionCard();
       const profile   = { ...(effective.profileData || {}), ...(effective.contribData || {}) };
       const stats     = computeUserStats(profile);
@@ -6656,6 +7218,12 @@ async function applyToStudy(studyId, answers = null) {
         <option value="strong_fit_studies">Strong-fit studies</option>
         <option value="pending_applications">Pending applications</option>
         <option value="zero_supply">Zero supply</option>
+        <option value="missed_session">Missed session</option>
+        <option value="payment_delayed">Payment delayed</option>
+        <option value="rejected_after_wait">Rejected after wait</option>
+        <option value="no_studies_long_time">No studies (long time)</option>
+        <option value="company_cancelled">Company cancelled</option>
+        <option value="low_fit_contributor">Low-fit contributor</option>
       </select>
       <button class="dbg-btn" id="sim-toggle-btn" onclick="toggleSimulation()">▶ run</button>
       <button class="dbg-btn" onclick="refreshDebugPanel()" title="Refresh">↻ refresh</button>
