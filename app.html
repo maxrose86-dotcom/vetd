@@ -4223,7 +4223,7 @@ async function applyToStudy(studyId, answers = null) {
 
     // ── Rating hero ───────────────────────────────────────────
     const hero = document.getElementById('dash-rating-hero');
-    if (studiesDone === 0) {
+    if (studiesDone === 0 && !isSimulationActive()) {
       if (hero) hero.innerHTML =
         `<div class="rating-hero-left" style="flex:1;max-width:none">` +
           `<h2 style="font-family:var(--serif);font-size:26px;letter-spacing:-0.3px;margin-bottom:12px">${esc(t('zero_state_hero_title'))}</h2>` +
@@ -4283,7 +4283,7 @@ async function applyToStudy(studyId, answers = null) {
 
     // ── Stat cards ────────────────────────────────────────────
     const statCards = document.querySelector('.stat-cards');
-    if (statCards) statCards.style.display = (studiesDone === 0 && totalEarned === 0) ? 'none' : '';
+    if (statCards) statCards.style.display = (studiesDone === 0 && totalEarned === 0 && !isSimulationActive()) ? 'none' : '';
 
     document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
     document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? t('complete_first_study') : t('earnings_month');
@@ -4661,6 +4661,7 @@ async function applyToStudy(studyId, answers = null) {
   function renderProfileCompletionCard() {
     const card = document.getElementById('profile-completion-card');
     if (!card) return;
+    if (isSimulationActive()) { card.style.display = 'none'; return; }
     const c = state.contribData;
     if (c?.job_title && c?.industry && c?.experience_level) { card.style.display = 'none'; return; }
     const snoozed = localStorage.getItem('vetd_pc_snooze');
@@ -6433,8 +6434,12 @@ async function applyToStudy(studyId, answers = null) {
 
   // ─── SCENARIO SIMULATOR ──────────────────────────────────────────────────────
 
+  function isSimulationActive() {
+    return !!(state.simulation?.enabled && state.simulation?.scenario);
+  }
+
   function getEffectiveState() {
-    if (!state.simulation.enabled || !state.simulation.scenario) return state;
+    if (!isSimulationActive()) return state;
     return applySimulationScenario(state, state.simulation.scenario);
   }
 
