@@ -334,6 +334,14 @@
   .app-section-title { font-size: 14px; font-weight: 600; color: var(--gray-900); }
   .app-section-sub { font-size: 12px; color: var(--gray-400); font-weight: 300; }
   .app-section-empty { font-size: 12px; color: var(--gray-400); font-weight: 300; padding: 8px 0 4px; }
+  .activity-timeline { background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md); overflow: hidden; }
+  .activity-item { padding: 14px 16px; border-top: 1px solid var(--gray-100); }
+  .activity-item:first-child { border-top: none; }
+  .activity-item-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+  .activity-item-sub { font-size: 12px; color: var(--gray-500); line-height: 1.5; }
+  .activity-item-time { font-size: 11px; color: var(--gray-400); margin-top: 6px; }
+  .activity-item-positive .activity-item-title { color: var(--green-dark); }
+  .activity-empty { font-size: 13px; color: var(--gray-400); font-weight: 300; padding: 1.25rem 0; }
 
   /* ── VIDEO CALL OVERLAY ── */
   #video-call-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #fff; flex-direction: column; }
@@ -551,11 +559,16 @@
   }
   .modal h2 { font-family: var(--serif); font-size: 26px; margin-bottom: 6px; }
   .modal-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 1.5rem; font-weight: 300; }
-  .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
-  .modal-detail { font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-bottom: 1rem; }
-  .modal-fit-line { font-size: 12px; color: var(--gray-500); line-height: 1.6; margin-bottom: 1rem; }
-  .modal-what-block { margin-bottom: 1rem; padding: 0.95rem 1rem; background: #fff; border: 1px solid var(--gray-100); border-radius: 12px; }
-  .modal-what-copy { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
+  .modal-section {
+    margin-bottom: 1rem; padding: 0.95rem 1rem; background: #fff;
+    border: 1px solid var(--gray-100); border-radius: 12px;
+  }
+  .modal-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-400); margin-bottom: 0.75rem; }
+  .modal-section-copy { font-size: 13px; color: var(--gray-700); line-height: 1.6; }
+  .modal-overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 0.9rem; }
+  .modal-overview-item { padding: 10px 12px; background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: 10px; }
+  .modal-overview-label { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
+  .modal-overview-value { font-size: 13px; color: var(--gray-900); font-weight: 500; line-height: 1.4; }
   .modal-next-block {
     margin-bottom: 1rem; padding: 1rem 1.1rem; background: var(--gray-50);
     border: 1px solid var(--gray-100); border-radius: 12px;
@@ -1081,6 +1094,9 @@
           <div id="upcoming-sessions-list"></div>
         </div>
 
+        <div class="section-title" style="margin-top:1.5rem" data-i18n="activity_title">Recent activity</div>
+        <div id="activity-timeline"></div>
+
         <div class="section-title" data-i18n="dash_recommended">Recommended opportunities</div>
         <div id="dashboard-studies"></div>
 
@@ -1319,12 +1335,18 @@
       </div>
       <h2 id="modal-title"></h2>
       <p class="modal-sub" id="modal-company-name"></p>
-      <div class="modal-tags" id="modal-tags"></div>
-      <p class="modal-detail" id="modal-detail"></p>
-      <p class="modal-fit-line" id="modal-fit-line"></p>
-      <div class="modal-what-block">
-        <div class="modal-next-title" data-i18n="modal_what_title">What you’ll do</div>
-        <div class="modal-what-copy" id="modal-what-copy"></div>
+      <div class="modal-section">
+        <div class="modal-section-title" data-i18n="modal_overview_title">Study overview</div>
+        <div class="modal-overview-grid" id="modal-overview-grid"></div>
+        <div class="modal-section-copy" id="modal-detail"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title" data-i18n="modal_what_title">What you’ll do</div>
+        <div class="modal-section-copy" id="modal-what-copy"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title" data-i18n="modal_fit_title">Good fit for</div>
+        <div class="modal-section-copy" id="modal-fit-copy"></div>
       </div>
       <div class="modal-next-block">
         <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
@@ -1662,6 +1684,7 @@
     studies: [],
     appliedStudies: new Set(),
     myApplications: [],
+    payments: [],
     currentUser: null,
     currentUserName: '',
     currentStudy: null,
@@ -1699,6 +1722,116 @@
     } else {
       console.log('[logEvent] insert ok:', payload.event_name);
     }
+  }
+
+  function buildContributorActivityTimeline() {
+    const items = [];
+
+    (state.myApplications || []).forEach(app => {
+      const study = app.studies || {};
+      const title = study.title || t('activity_fallback_study');
+      const ss = getSessionStatus(app, study.duration_minutes || null);
+
+      if (app.applied_at) {
+        items.push({
+          key: `applied-${app.id}`,
+          ts: app.applied_at,
+          title: t('activity_applied_title').replace('{title}', title),
+          sub: t('activity_applied_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (ss.phase === 'invited') {
+        items.push({
+          key: `invited-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_invited_title').replace('{title}', title),
+          sub: t('activity_invited_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (['accepted_needs_availability', 'accepted_ready'].includes(ss.phase)) {
+        items.push({
+          key: `selected-${app.id}`,
+          ts: app.updated_at || app.applied_at,
+          title: t('activity_selected_title').replace('{title}', title),
+          sub: ss.phase === 'accepted_needs_availability'
+            ? t('activity_selected_needs_availability_sub')
+            : t('activity_selected_sub'),
+          tone: 'default'
+        });
+      }
+
+      if (['scheduled', 'starting_soon', 'in_progress'].includes(ss.phase) && app.scheduled_at) {
+        items.push({
+          key: `scheduled-${app.id}`,
+          ts: app.updated_at || app.scheduled_at,
+          title: t('activity_scheduled_title').replace('{title}', title),
+          sub: t('activity_scheduled_sub').replace('{time}', formatSessionTime(app.scheduled_at)),
+          tone: 'default'
+        });
+      }
+
+      if (['ended_joined', 'completed'].includes(ss.phase)) {
+        items.push({
+          key: `completed-${app.id}`,
+          ts: app.updated_at || app.scheduled_at || app.applied_at,
+          title: t('activity_completed_title').replace('{title}', title),
+          sub: t('activity_completed_sub'),
+          tone: 'positive'
+        });
+      }
+    });
+
+    (state.payments || []).forEach(payment => {
+      items.push({
+        key: `payment-${payment.id}`,
+        ts: payment.paid_at || payment.created_at,
+        title: (payment.status === 'paid' ? t('activity_payment_paid_title') : t('activity_payment_pending_title'))
+          .replace('{title}', payment.studyTitle || t('activity_fallback_study')),
+        sub: payment.status === 'paid'
+          ? t('activity_payment_paid_sub')
+          : t('activity_payment_pending_sub'),
+        tone: payment.status === 'paid' ? 'positive' : 'default'
+      });
+    });
+
+    (state.notifications || [])
+      .filter(notif => notif?.notif_type === 'rating_received')
+      .forEach(notif => {
+        const resolved = resolveNotification(notif);
+        items.push({
+          key: `notif-${notif.id}`,
+          ts: notif.created_at,
+          title: resolved.title || t('activity_rating_title'),
+          sub: resolved.body || t('activity_rating_sub'),
+          tone: 'positive'
+        });
+      });
+
+    return items
+      .filter(item => item.ts)
+      .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+      .slice(0, 7);
+  }
+
+  function renderContributorActivityTimeline() {
+    const container = document.getElementById('activity-timeline');
+    if (!container) return;
+    const items = buildContributorActivityTimeline();
+    if (!items.length) {
+      container.innerHTML = `<div class="activity-empty">${t('activity_empty')}</div>`;
+      return;
+    }
+    container.innerHTML = `<div class="activity-timeline">${items.map(item => `
+      <div class="activity-item ${item.tone === 'positive' ? 'activity-item-positive' : ''}">
+        <div class="activity-item-title">${esc(item.title)}</div>
+        <div class="activity-item-sub">${esc(item.sub)}</div>
+        <div class="activity-item-time">${esc(timeAgo(item.ts))}</div>
+      </div>
+    `).join('')}</div>`;
   }
 
   // ─── FUNNEL TRACKING ─────────────────────────────────────
@@ -1970,6 +2103,7 @@
           payType:     s.format === 'online_survey' ? 'per survey' : 'per session',
           hourlyRate:  (pay > 0 && s.duration_minutes > 0) ? Math.round((pay / s.duration_minutes) * 60) : null,
           duration,
+          durationMinutes: s.duration_minutes || null,
           tags,
           spots,
           filled,
@@ -2104,6 +2238,41 @@
     return t('credibility_with').replace('{company}', company);
   }
 
+  function getStudyTypeLabel(study) {
+    const title = String(study?.title || '').toLowerCase();
+    if (study?.payType === 'per survey') return t('modal_kind_survey');
+    if (title.includes('interview')) return t('modal_kind_interview');
+    if (title.includes('feedback') || title.includes('review')) return t('modal_kind_feedback');
+    if (title.includes('test') || title.includes('checkout') || title.includes('onboarding')) return t('modal_kind_testing');
+    return study?.format === 'in-person'
+      ? t('modal_kind_in_person')
+      : t('modal_kind_research');
+  }
+
+  function getStudyOverviewItems(study) {
+    const payTypeLabel = study?.payType === 'per survey' ? t('per_survey') : t('per_session');
+    return [
+      { label: t('modal_overview_type'), value: getStudyTypeLabel(study) },
+      { label: t('modal_overview_format'), value: study?.format === 'in-person' ? t('modal_overview_format_in_person') : t('modal_overview_format_online') },
+      { label: t('modal_overview_duration'), value: study?.durationMinutes ? t('modal_overview_duration_value').replace('{minutes}', study.durationMinutes) : t('modal_overview_duration_short') },
+      {
+        label: t('modal_overview_compensation'),
+        value: study?.pay != null
+          ? t('modal_overview_comp_value').replace('{amount}', fmtPay(study.pay)).replace('{unit}', payTypeLabel)
+          : t('modal_overview_comp_tbd')
+      }
+    ];
+  }
+
+  function renderStudyOverviewItems(study) {
+    return getStudyOverviewItems(study).map(item => `
+      <div class="modal-overview-item">
+        <div class="modal-overview-label">${esc(item.label)}</div>
+        <div class="modal-overview-value">${esc(item.value)}</div>
+      </div>
+    `).join('');
+  }
+
   function formatFitTags(tags) {
     const items = (tags || []).filter(Boolean);
     if (!items.length) return '';
@@ -2127,6 +2296,26 @@
     return study?.format === 'in-person'
       ? t('modal_fit_generic_in_person')
       : t('modal_fit_generic_online');
+  }
+
+  function getStudyGoodFitFor(study) {
+    const tags = Array.isArray(study?.tags) ? study.tags : [];
+    const interestTag = tags.find(tag => tag?.cls === 'tag-blue' && tag?.text);
+    if (interestTag) {
+      return t('modal_good_fit_interest').replace('{tag}', interestTag.text.toLowerCase());
+    }
+
+    const title = String(study?.title || '').toLowerCase();
+    if (title.includes('feedback') || title.includes('review') || title.includes('test')) {
+      return t('modal_good_fit_feedback');
+    }
+    if (title.includes('interview')) {
+      return t('modal_good_fit_interview');
+    }
+
+    if (study?.format === 'in-person') return t('modal_good_fit_in_person');
+    if (study?.durationMinutes && study.durationMinutes <= 45) return t('modal_good_fit_short');
+    return t('modal_good_fit_online');
   }
 
   function getStudyWhatYoullDo(study) {
@@ -2181,15 +2370,16 @@
   // ─── MODAL ──────────────────────────────────────────────
   async function openModal(id) {
     state.currentStudy = state.studies.find(j => j.id == id);
+    const payTypeLabel = state.currentStudy.payType === 'per survey' ? t('per_survey') : t('per_session');
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
     document.getElementById('modal-company-badge').textContent = state.currentStudy.company;
     document.getElementById('modal-title').textContent = state.currentStudy.title;
-    document.getElementById('modal-company-name').textContent = state.currentStudy.company + ' · ' + state.currentStudy.duration;
-    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${state.currentStudy.payType}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
-    document.getElementById('modal-tags').innerHTML = state.currentStudy.tags.map(tag => `<span class="tag ${tag.cls}">${tag.text}</span>`).join('');
+    document.getElementById('modal-company-name').textContent = state.currentStudy.company;
+    document.getElementById('modal-pay-display').innerHTML = `<div class="modal-pay-big">${fmtPay(state.currentStudy.pay)}</div><div class="modal-pay-sub">${payTypeLabel}${state.currentStudy.hourlyRate ? ` · ~${state.currentStudy.hourlyRate} kr/hr` : ''}</div>`;
+    document.getElementById('modal-overview-grid').innerHTML = renderStudyOverviewItems(state.currentStudy);
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
-    document.getElementById('modal-fit-line').textContent = getStudyFitLine(state.currentStudy);
+    document.getElementById('modal-fit-copy').textContent = getStudyGoodFitFor(state.currentStudy);
     document.getElementById('modal-what-copy').textContent = getStudyWhatYoullDo(state.currentStudy);
     document.getElementById('modal-session-note').textContent = getStudySessionConfidence(state.currentStudy);
     const sqArea = document.getElementById('modal-screener-area');
@@ -2614,6 +2804,7 @@
         updateDashboard(firstName, stats, tierDisplay);
       }
       renderMyApplications('all');
+      renderContributorActivityTimeline();
     } catch(err) {
       console.warn('Could not load applications:', err);
     }
@@ -3938,11 +4129,12 @@ async function applyToStudy(studyId, answers = null) {
         }
       }
 
-      renderPaymentHistory(
-        all
-          .filter(p => !p.application_id || studyTitleMap[p.application_id])
-          .map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' }))
-      );
+      const timelinePayments = all
+        .filter(p => !p.application_id || studyTitleMap[p.application_id])
+        .map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' }));
+      state.payments = timelinePayments;
+      renderPaymentHistory(timelinePayments);
+      renderContributorActivityTimeline();
     } catch(err) {
       console.warn('loadPayments error:', err);
     }
@@ -4110,6 +4302,7 @@ async function applyToStudy(studyId, answers = null) {
       dashList.innerHTML = notifs.slice(0, 5).map(notifRow).join('');
       if (notifWrap) notifWrap.style.display = '';
     }
+    renderContributorActivityTimeline();
   }
 
   function toggleNotifPanel() {
@@ -4279,6 +4472,26 @@ async function applyToStudy(studyId, answers = null) {
       dash_completion: 'Completion rate',
       dash_recommended: 'Recommended opportunities',
       dash_notifications: 'Notifications',
+      activity_title: 'Recent activity',
+      activity_empty: 'Your activity on Vetd will appear here as things move forward.',
+      activity_fallback_study: 'Study',
+      activity_applied_title: 'Applied to {title}',
+      activity_applied_sub: 'Your application is in review.',
+      activity_invited_title: 'Invited to {title}',
+      activity_invited_sub: 'You’ve been invited to continue.',
+      activity_selected_title: 'Selected for {title}',
+      activity_selected_sub: 'Scheduling is in progress.',
+      activity_selected_needs_availability_sub: 'Share availability to help schedule the session.',
+      activity_scheduled_title: 'Session confirmed for {title}',
+      activity_scheduled_sub: 'Scheduled for {time}.',
+      activity_completed_title: 'Completed {title}',
+      activity_completed_sub: 'Payment will appear in your earnings shortly.',
+      activity_payment_pending_title: 'Payment pending for {title}',
+      activity_payment_pending_sub: 'A payout is being prepared for this study.',
+      activity_payment_paid_title: 'Payment sent for {title}',
+      activity_payment_paid_sub: 'This payment is now reflected in your earnings.',
+      activity_rating_title: 'New rating received',
+      activity_rating_sub: 'A new rating has been added to your profile.',
       browse_title: 'Available opportunities',
       browse_relevance_generic: 'Relevant to how you use this area',
       browse_relevance_interest: 'Based on your interest in {tag}',
@@ -4287,12 +4500,36 @@ async function applyToStudy(studyId, answers = null) {
       apply_btn: 'Apply',
       modal_apply_cta: 'Apply for study',
       modal_apply_later: 'Not now',
+      modal_overview_title: 'Study overview',
+      modal_overview_type: 'Study type',
+      modal_overview_format: 'Format',
+      modal_overview_duration: 'Duration',
+      modal_overview_compensation: 'Compensation',
+      modal_overview_format_online: 'Online',
+      modal_overview_format_in_person: 'In person',
+      modal_overview_duration_value: '{minutes} min',
+      modal_overview_duration_short: 'Short session',
+      modal_overview_comp_value: '{amount} {unit}',
+      modal_overview_comp_tbd: 'Compensation shared before booking',
+      modal_kind_interview: 'Research interview',
+      modal_kind_feedback: 'Feedback session',
+      modal_kind_testing: 'Product test',
+      modal_kind_survey: 'Online survey',
+      modal_kind_in_person: 'In-person study',
+      modal_kind_research: 'Research session',
       modal_what_title: 'What you’ll do',
       modal_what_short_session: 'a short session',
       modal_what_interview: 'Take part in {duration} about how you use this area today.',
       modal_what_feedback: 'Share feedback in {duration} with the product team.',
       modal_what_test: 'Try the experience in {duration} and talk through what stands out.',
       modal_what_generic: 'Take part in {duration} and share your experience with the team.',
+      modal_fit_title: 'Good fit for',
+      modal_good_fit_interest: 'Good fit for contributors who regularly use {tag}.',
+      modal_good_fit_feedback: 'Good fit for contributors comfortable sharing feedback live.',
+      modal_good_fit_interview: 'Good fit for contributors who can talk through how they use this area today.',
+      modal_good_fit_in_person: 'Good fit for contributors comfortable taking part in person.',
+      modal_good_fit_short: 'Good fit for contributors looking for a short session.',
+      modal_good_fit_online: 'Good fit for contributors comfortable joining sessions online.',
       modal_next_title: 'What happens next',
       modal_next_step_1: 'We review your profile for fit',
       modal_next_step_2: 'If selected, you’ll get an invite to schedule',
@@ -4628,6 +4865,26 @@ async function applyToStudy(studyId, answers = null) {
       dash_completion: 'Slutförandegrad',
       dash_recommended: 'Rekommenderade möjligheter',
       dash_notifications: 'Aviseringar',
+      activity_title: 'Senaste aktivitet',
+      activity_empty: 'Din aktivitet på Vetd visas här när saker börjar hända.',
+      activity_fallback_study: 'Studie',
+      activity_applied_title: 'Ansökte till {title}',
+      activity_applied_sub: 'Din ansökan granskas.',
+      activity_invited_title: 'Inbjuden till {title}',
+      activity_invited_sub: 'Du har blivit inbjuden att gå vidare.',
+      activity_selected_title: 'Utvald för {title}',
+      activity_selected_sub: 'Schemaläggning pågår.',
+      activity_selected_needs_availability_sub: 'Dela din tillgänglighet för att hjälpa till med bokningen.',
+      activity_scheduled_title: 'Session bekräftad för {title}',
+      activity_scheduled_sub: 'Schemalagd till {time}.',
+      activity_completed_title: 'Slutförde {title}',
+      activity_completed_sub: 'Betalningen syns snart i dina intäkter.',
+      activity_payment_pending_title: 'Betalning väntar för {title}',
+      activity_payment_pending_sub: 'En utbetalning förbereds för den här studien.',
+      activity_payment_paid_title: 'Betalning skickad för {title}',
+      activity_payment_paid_sub: 'Den här betalningen syns nu i dina intäkter.',
+      activity_rating_title: 'Nytt betyg mottaget',
+      activity_rating_sub: 'Ett nytt betyg har lagts till på din profil.',
       browse_title: 'Tillgängliga studier',
       browse_relevance_generic: 'Relevant för hur du använder det här området',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
@@ -4636,12 +4893,36 @@ async function applyToStudy(studyId, answers = null) {
       apply_btn: 'Ansök',
       modal_apply_cta: 'Ansök till studie',
       modal_apply_later: 'Inte nu',
+      modal_overview_title: 'Studieöversikt',
+      modal_overview_type: 'Typ av studie',
+      modal_overview_format: 'Format',
+      modal_overview_duration: 'Längd',
+      modal_overview_compensation: 'Ersättning',
+      modal_overview_format_online: 'Digitalt',
+      modal_overview_format_in_person: 'På plats',
+      modal_overview_duration_value: '{minutes} min',
+      modal_overview_duration_short: 'Kort session',
+      modal_overview_comp_value: '{amount} {unit}',
+      modal_overview_comp_tbd: 'Ersättning delas före bokning',
+      modal_kind_interview: 'Forskningsintervju',
+      modal_kind_feedback: 'Feedbacksession',
+      modal_kind_testing: 'Produkttest',
+      modal_kind_survey: 'Digital enkät',
+      modal_kind_in_person: 'Studie på plats',
+      modal_kind_research: 'Forskningssession',
       modal_what_title: 'Det här gör du',
       modal_what_short_session: 'en kort session',
       modal_what_interview: 'Delta i {duration} om hur du använder det här området i dag.',
       modal_what_feedback: 'Dela feedback i {duration} tillsammans med produktteamet.',
       modal_what_test: 'Testa upplevelsen i {duration} och berätta vad som sticker ut.',
       modal_what_generic: 'Delta i {duration} och dela din upplevelse med teamet.',
+      modal_fit_title: 'Passar bra för',
+      modal_good_fit_interest: 'Passar bra för deltagare som regelbundet använder {tag}.',
+      modal_good_fit_feedback: 'Passar bra för deltagare som är bekväma med att dela feedback live.',
+      modal_good_fit_interview: 'Passar bra för deltagare som kan berätta hur de använder det här området i dag.',
+      modal_good_fit_in_person: 'Passar bra för deltagare som är bekväma med att delta på plats.',
+      modal_good_fit_short: 'Passar bra för deltagare som söker en kort session.',
+      modal_good_fit_online: 'Passar bra för deltagare som är bekväma med att delta digitalt.',
       modal_next_title: 'Vad händer nu',
       modal_next_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_next_step_2: 'Om du väljs ut får du en inbjudan att boka tid',
@@ -4996,6 +5277,7 @@ async function applyToStudy(studyId, answers = null) {
     renderStudies('studies-list', state.studies);
     renderStudies('dashboard-studies', state.studies.slice(0, 2));
     if (state.notifications) renderNotifications(state.notifications);
+    renderContributorActivityTimeline();
     if (state.contribData && state.currentUser) {
       const stats       = computeUserStats(state.contribData);
       const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
