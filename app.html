@@ -2141,7 +2141,7 @@
           <div class="job-company">
             <div class="company-badge">${esc(job.company)}</div>
             <div>
-              <div class="job-company-name">${esc(job.company)}</div>
+              <div class="job-company-name">${esc(getStudyCredibilityLine(job))}</div>
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-relevance">${esc(getStudyRelevance(job))}</div>
               <div class="job-snapshot">${esc(getStudySnapshot(job, payTypeLabel))}</div>
@@ -2182,6 +2182,12 @@
 
   function getStudySnapshot(study, payTypeLabel) {
     return study?.duration || payTypeLabel;
+  }
+
+  function getStudyCredibilityLine(study) {
+    const company = study?.company || '';
+    if (!company || company === 'Vetd client') return '';
+    return t('credibility_with').replace('{company}', company);
   }
 
   function formatFitTags(tags) {
@@ -4659,6 +4665,7 @@ async function applyToStudy(studyId, answers = null) {
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
       cookie_decline: 'Decline',
+      credibility_with: 'Research with {company}',
       dash_your_rating: 'Your Vetd rating',
       dash_subtext_new: 'Your profile is live. We\'ll match you with studies that fit.',
       dash_subtext_upcoming: 'You have an upcoming session — check your schedule below.',
@@ -5025,6 +5032,7 @@ async function applyToStudy(studyId, answers = null) {
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
       cookie_decline: 'Avböj',
+      credibility_with: 'Forskning med {company}',
       dash_your_rating: 'Ditt Vetd-betyg',
       dash_subtext_new: 'Din profil är live. Vi matchar dig med studier som passar.',
       dash_subtext_upcoming: 'Du har en kommande session — kolla schemat nedan.',
