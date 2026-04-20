@@ -304,6 +304,7 @@
   .session-card-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
   .session-card-meta { font-size: 12px; color: var(--gray-400); font-weight: 300; }
   .session-card-time { font-size: 12px; color: var(--gray-400); font-weight: 500; margin-top: 3px; }
+  .session-note { font-size: 12px; color: var(--gray-500); margin-top: 6px; }
   .btn-join { padding: 8px 16px; background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--sans); transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
   .btn-join:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,196,122,0.35); }
   .btn-join:disabled { background: var(--gray-200); color: var(--gray-400); cursor: not-allowed; transform: none; box-shadow: none; }
@@ -2995,6 +2996,8 @@
       if (ss.canJoin && s.room_url) {
         const btnLabel = ss.phase === 'in_progress' ? t('rejoin_call') : t('join_call');
         joinBtn = `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" onclick="openVideoCall('${escAttr(s.room_url)}','${escAttr(title)}','${escAttr(s.id)}')">${esc(btnLabel)}</button>`;
+      } else if (ss.canJoin && !s.room_url) {
+        joinBtn = `<div class="session-note">${t('session_link_pending')}</div>`;
       } else if (s.room_url) {
         joinBtn = `<button class="btn-join" data-scheduled-at="${esc(s.scheduled_at)}" disabled>${esc(ss.countdownText || sessionTimeUntil(s.scheduled_at))}</button>`;
       }
@@ -4611,6 +4614,7 @@ async function applyToStudy(studyId, answers = null) {
       call_duration_approx: '~{mins} min',
       payment_processing: 'Payment is being processed',
       rejoin_call: 'Rejoin call',
+      session_link_pending: 'Room link will appear here shortly.',
       session_ended: 'Session ended',
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
@@ -4964,6 +4968,7 @@ async function applyToStudy(studyId, answers = null) {
       call_duration_approx: '~{mins} min',
       payment_processing: 'Betalning behandlas',
       rejoin_call: 'Gå med igen',
+      session_link_pending: 'Länk till sessionen visas här inom kort.',
       session_ended: 'Sessionen avslutad',
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
