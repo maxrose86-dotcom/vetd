@@ -469,6 +469,19 @@
   .reputation-metric { padding: 10px 12px; background: #fff; border: 1px solid var(--gray-100); border-radius: 10px; }
   .reputation-metric-value { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
   .reputation-metric-label { font-size: 11px; color: var(--gray-400); line-height: 1.4; }
+  .match-prefs-surface { background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 1.25rem; }
+  .match-prefs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 1rem; }
+  .match-prefs-head h3 { margin-bottom: 0; }
+  .match-prefs-note { font-size: 11px; color: var(--gray-400); font-weight: 300; }
+  .match-prefs-group + .match-prefs-group { margin-top: 1rem; }
+  .match-prefs-label { font-size: 12px; color: var(--gray-700); font-weight: 500; margin-bottom: 8px; }
+  .match-prefs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .match-pref-chip {
+    border: 1px solid var(--gray-200); background: #fff; color: var(--gray-500);
+    border-radius: 999px; padding: 8px 12px; font-size: 12px; font-family: var(--sans);
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .match-pref-chip.active { border-color: rgba(17,17,17,0.12); background: var(--gray-50); color: var(--gray-900); }
 
   /* ── BOOST CARD ── */
   .boost-card {
@@ -1185,6 +1198,25 @@
             <div class="reputation-metrics" id="reputation-metrics"></div>
           </div>
 
+          <div class="match-prefs-surface">
+            <div class="match-prefs-head">
+              <h3 data-i18n="prefs_title">Match preferences</h3>
+              <div class="match-prefs-note" data-i18n="prefs_note">These shape what you see here.</div>
+            </div>
+            <div class="match-prefs-group">
+              <div class="match-prefs-label" data-i18n="prefs_format_label">Preferred study format</div>
+              <div class="match-prefs-chips" id="prefs-format-chips"></div>
+            </div>
+            <div class="match-prefs-group">
+              <div class="match-prefs-label" data-i18n="prefs_length_label">Preferred session length</div>
+              <div class="match-prefs-chips" id="prefs-length-chips"></div>
+            </div>
+            <div class="match-prefs-group">
+              <div class="match-prefs-label" data-i18n="prefs_focus_label">Focus areas</div>
+              <div class="match-prefs-chips" id="prefs-focus-chips"></div>
+            </div>
+          </div>
+
           <div class="profile-section">
             <h3 data-i18n="prof_personal">Personal details</h3>
             <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_age">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
@@ -1860,6 +1892,128 @@
     `).join('')}</div>`;
   }
 
+  const MATCH_PREFS_STORAGE_KEY = 'vetd_match_prefs';
+
+  function getMatchPreferenceOptions() {
+    return {
+      format: [
+        { value: 'either', label: t('prefs_format_either') },
+        { value: 'online', label: t('prefs_format_online') },
+        { value: 'in_person', label: t('prefs_format_in_person') }
+      ],
+      length: [
+        { value: 'flexible', label: t('prefs_length_flexible') },
+        { value: 'short', label: t('prefs_length_short') },
+        { value: 'medium', label: t('prefs_length_medium') },
+        { value: 'longer', label: t('prefs_length_longer') }
+      ],
+      focus: [
+        { value: 'all', label: t('prefs_focus_all') },
+        { value: 'lifestyle', label: t('prefs_focus_lifestyle') },
+        { value: 'tech', label: t('prefs_focus_tech') },
+        { value: 'finance', label: t('prefs_focus_finance') }
+      ]
+    };
+  }
+
+  function getDefaultMatchPreferences(contrib) {
+    const formats = Array.isArray(contrib?.study_formats) ? contrib.study_formats : [];
+    const hasOnline = formats.some(v => v !== 'in_person');
+    const hasInPerson = formats.includes('in_person');
+    const format = hasInPerson && !hasOnline ? 'in_person' : hasOnline && !hasInPerson ? 'online' : 'either';
+
+    const maxLen = contrib?.max_session_length;
+    const length = maxLen === 'up_to_15' || maxLen === 'up_to_30'
+      ? 'short'
+      : maxLen === 'up_to_60'
+        ? 'medium'
+        : maxLen === 'up_to_90'
+          ? 'longer'
+          : 'flexible';
+
+    const counts = {
+      lifestyle: Array.isArray(contrib?.interests_lifestyle) ? contrib.interests_lifestyle.length : 0,
+      tech: Array.isArray(contrib?.interests_tech) ? contrib.interests_tech.length : 0,
+      finance: Array.isArray(contrib?.interests_finance) ? contrib.interests_finance.length : 0
+    };
+    const sortedFocus = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const focus = sortedFocus[0] && sortedFocus[0][1] > 0 ? sortedFocus[0][0] : 'all';
+
+    return { format, length, focus };
+  }
+
+  function getContributorMatchPreferences(contrib = state.contribData) {
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(MATCH_PREFS_STORAGE_KEY) || 'null');
+    } catch (err) {}
+    const defaults = getDefaultMatchPreferences(contrib);
+    return {
+      format: stored?.format || defaults.format,
+      length: stored?.length || defaults.length,
+      focus: stored?.focus || defaults.focus
+    };
+  }
+
+  function setContributorMatchPreferences(next) {
+    const current = getContributorMatchPreferences();
+    const merged = { ...current, ...next };
+    localStorage.setItem(MATCH_PREFS_STORAGE_KEY, JSON.stringify(merged));
+    renderMatchPreferencesSurface(state.contribData);
+    renderStudies('studies-list', state.studies);
+    renderStudies('dashboard-studies', state.studies);
+  }
+
+  function getStudyFocusArea(study) {
+    const interests = Array.isArray(study?.targetInterests) ? study.targetInterests : [];
+    if (interests.some(v => CHIP_OPTIONS.interests_finance.some(opt => opt.value === v))) return 'finance';
+    if (interests.some(v => CHIP_OPTIONS.interests_tech.some(opt => opt.value === v))) return 'tech';
+    if (interests.some(v => CHIP_OPTIONS.interests_lifestyle.some(opt => opt.value === v))) return 'lifestyle';
+    return 'all';
+  }
+
+  function getStudyLengthBucket(study) {
+    const mins = study?.durationMinutes || 0;
+    if (!mins) return 'flexible';
+    if (mins <= 30) return 'short';
+    if (mins <= 60) return 'medium';
+    return 'longer';
+  }
+
+  function applyStudyPreferenceBias(studies, prefs) {
+    const list = Array.isArray(studies) ? [...studies] : [];
+    return list.sort((a, b) => {
+      const score = study => {
+        let total = 0;
+        if (prefs?.format === 'online' && study.format === 'online') total += 35;
+        if (prefs?.format === 'in_person' && study.format === 'in-person') total += 35;
+        if (prefs?.length && prefs.length !== 'flexible' && getStudyLengthBucket(study) === prefs.length) total += 20;
+        if (prefs?.focus && prefs.focus !== 'all' && getStudyFocusArea(study) === prefs.focus) total += 18;
+        return total;
+      };
+      return score(b) - score(a);
+    });
+  }
+
+  function renderMatchPreferenceChips(containerId, group, selected) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = getMatchPreferenceOptions()[group].map(option => `
+      <button
+        type="button"
+        class="match-pref-chip ${selected === option.value ? 'active' : ''}"
+        onclick="setContributorMatchPreferences({ ${group}: '${escAttr(option.value)}' })"
+      >${esc(option.label)}</button>
+    `).join('');
+  }
+
+  function renderMatchPreferencesSurface(contrib) {
+    const prefs = getContributorMatchPreferences(contrib);
+    renderMatchPreferenceChips('prefs-format-chips', 'format', prefs.format);
+    renderMatchPreferenceChips('prefs-length-chips', 'length', prefs.length);
+    renderMatchPreferenceChips('prefs-focus-chips', 'focus', prefs.focus);
+  }
+
   // ─── FUNNEL TRACKING ─────────────────────────────────────
   async function trackFunnel(eventName, userId) {
     if (!db) return;
@@ -2165,7 +2319,11 @@
   // ─── RENDER STUDIES ─────────────────────────────────────
   function renderStudies(containerId, subset) {
     const container = document.getElementById(containerId);
-    if (!subset.length) {
+    const prefs = getContributorMatchPreferences();
+    const source = containerId === 'dashboard-studies' ? state.studies : subset;
+    const ranked = applyStudyPreferenceBias(source, prefs);
+    const displayStudies = containerId === 'dashboard-studies' ? ranked.slice(0, 2) : ranked;
+    if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
       const hasLiveStudies = state.studies.length > 0;
       if (isDashboard) {
@@ -2211,7 +2369,7 @@
           </div>`;
       return;
     }
-    container.innerHTML = subset.map(job => {
+    container.innerHTML = displayStudies.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
       return `
       <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
@@ -2248,6 +2406,18 @@
   }
 
   function getStudyRelevance(study) {
+    const prefs = getContributorMatchPreferences();
+    if (prefs.focus !== 'all' && getStudyFocusArea(study) === prefs.focus) {
+      const focusKey = {
+        lifestyle: 'prefs_focus_lifestyle',
+        tech: 'prefs_focus_tech',
+        finance: 'prefs_focus_finance'
+      }[prefs.focus];
+      if (focusKey) return t('browse_relevance_focus').replace('{focus}', t(focusKey).toLowerCase());
+    }
+    if (prefs.format === 'online' && study?.format === 'online') return t('browse_relevance_format');
+    if (prefs.format === 'in_person' && study?.format === 'in-person') return t('browse_relevance_in_person');
+    if (prefs.length !== 'flexible' && getStudyLengthBucket(study) === prefs.length) return t('browse_relevance_length');
     const tags = Array.isArray(study?.tags) ? study.tags : [];
     const interestTag = tags.find(tag => tag?.cls === 'tag-blue' && tag?.text);
     if (interestTag) {
@@ -3693,6 +3863,7 @@ async function applyToStudy(studyId, answers = null) {
         </div>
       `).join('');
     }
+    renderMatchPreferencesSurface(contrib);
 
     // Personal detail rows
     if (contrib?.date_of_birth) {
@@ -4649,6 +4820,9 @@ async function applyToStudy(studyId, answers = null) {
       browse_relevance_generic: 'Relevant to how you use this area',
       browse_relevance_interest: 'Based on your interest in {tag}',
       browse_relevance_format: 'Online session that fits your preferences',
+      browse_relevance_in_person: 'In-person study that fits your preferences',
+      browse_relevance_length: 'Fits the session length you prefer',
+      browse_relevance_focus: 'Aligned with your focus on {focus}',
       browse_relevance_short: 'Short session that fits your profile',
       apply_btn: 'Apply',
       modal_apply_cta: 'Apply for study',
@@ -4715,6 +4889,22 @@ async function applyToStudy(studyId, answers = null) {
       filter_video: 'Video',
       filter_person: 'In-person',
       profile_title: 'My profile',
+      prefs_title: 'Matching preferences',
+      prefs_note: 'These shape what you see here.',
+      prefs_format_label: 'Preferred study format',
+      prefs_length_label: 'Preferred session length',
+      prefs_focus_label: 'Focus areas',
+      prefs_format_either: 'Either',
+      prefs_format_online: 'Online',
+      prefs_format_in_person: 'In person',
+      prefs_length_short: 'Short',
+      prefs_length_medium: 'Medium',
+      prefs_length_longer: 'Longer',
+      prefs_length_flexible: 'Flexible',
+      prefs_focus_all: 'All areas',
+      prefs_focus_lifestyle: 'Shopping & lifestyle',
+      prefs_focus_tech: 'Technology & media',
+      prefs_focus_finance: 'Finance & banking',
       prof_personal: 'Personal details',
       reputation_kicker: 'Contributor standing',
       reputation_new_title: 'New contributor',
@@ -5064,6 +5254,9 @@ async function applyToStudy(studyId, answers = null) {
       browse_relevance_generic: 'Relevant för hur du använder det här området',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
       browse_relevance_format: 'Digital session som passar dina preferenser',
+      browse_relevance_in_person: 'Studie på plats som passar dina preferenser',
+      browse_relevance_length: 'Passar den sessionslängd du föredrar',
+      browse_relevance_focus: 'I linje med ditt fokus på {focus}',
       browse_relevance_short: 'Kort session som passar din profil',
       apply_btn: 'Ansök',
       modal_apply_cta: 'Ansök till studie',
@@ -5130,6 +5323,22 @@ async function applyToStudy(studyId, answers = null) {
       filter_video: 'Video',
       filter_person: 'På plats',
       profile_title: 'Min profil',
+      prefs_title: 'Matchningspreferenser',
+      prefs_note: 'De här påverkar det du ser här.',
+      prefs_format_label: 'Föredraget studieformat',
+      prefs_length_label: 'Föredragen sessionslängd',
+      prefs_focus_label: 'Fokusområden',
+      prefs_format_either: 'Båda',
+      prefs_format_online: 'Digitalt',
+      prefs_format_in_person: 'På plats',
+      prefs_length_short: 'Kort',
+      prefs_length_medium: 'Mellan',
+      prefs_length_longer: 'Längre',
+      prefs_length_flexible: 'Flexibel',
+      prefs_focus_all: 'Alla områden',
+      prefs_focus_lifestyle: 'Shopping & livsstil',
+      prefs_focus_tech: 'Teknik & media',
+      prefs_focus_finance: 'Finans & bank',
       prof_personal: 'Personuppgifter',
       reputation_kicker: 'Deltagarstatus',
       reputation_new_title: 'Ny deltagare',
