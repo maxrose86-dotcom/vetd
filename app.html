@@ -6510,6 +6510,31 @@ async function applyToStudy(studyId, answers = null) {
         break;
     }
 
+    // Scenarios that involve sessions or pending apps but don't set s.studies
+    // leave the real studies array untouched — which may be empty for dev/test users.
+    // When empty, renderStudies falls through to renderPreviewStudySection(),
+    // producing an "onboarding/empty" look even though the scenario is active.
+    // Fix: inject a fallback study so the browse section always has content,
+    // unless the scenario explicitly tests zero supply.
+    if (!s.studies.length && scenario !== 'zero_supply') {
+      s.studies = [
+        { id: 'sim-browse-1', title: 'Digital habits research',
+          format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
+          spots: 5, filled: 1, tags: [{ text: 'Tech', cls: 'tag-blue' }],
+          payType: 'per session', company: 'Vetd Research',
+          desc: 'How people interact with digital products day to day.',
+          featured: false, detail: '', screeningQuestions: null,
+          targetInterests: ['smartphones', 'social_media'] },
+        { id: 'sim-browse-2', title: 'Financial app usability',
+          format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
+          spots: 4, filled: 0, tags: [{ text: 'Finance', cls: 'tag-blue' }],
+          payType: 'per session', company: 'Fintech Research',
+          desc: 'Testing the usability of a new budgeting application.',
+          featured: false, detail: '', screeningQuestions: null,
+          targetInterests: ['online_banking', 'budgeting'] }
+      ];
+    }
+
     return s;
   }
 
