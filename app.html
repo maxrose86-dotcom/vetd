@@ -582,6 +582,7 @@
   .modal-next-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-400); margin-bottom: 0.75rem; }
   .modal-next-step { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
   .modal-next-step + .modal-next-step { margin-top: 0.45rem; }
+  .modal-session-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin-top: 10px; }
   .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
   .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
   .modal-buttons { display: flex; gap: 12px; }
@@ -1340,6 +1341,7 @@
         <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
         <div class="modal-next-step" data-i18n="modal_next_step_1">We review your profile for fit</div>
         <div class="modal-next-step" data-i18n="modal_next_step_2">If selected, you’ll get an invite to schedule</div>
+        <div class="modal-session-note" id="modal-session-note"></div>
       </div>
       <div id="modal-screener-area" style="display:none;margin-bottom:1rem"></div>
       <div class="modal-buttons">
@@ -2230,6 +2232,12 @@
     return t('modal_what_generic').replace('{duration}', duration || t('modal_what_short_session'));
   }
 
+  function getStudySessionConfidence(study) {
+    return study?.format === 'in-person'
+      ? t('modal_session_confidence_in_person')
+      : t('modal_session_confidence_online');
+  }
+
   function filterStudies(type, btn) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -2252,6 +2260,7 @@
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
     document.getElementById('modal-fit-line').textContent = getStudyFitLine(state.currentStudy);
     document.getElementById('modal-what-copy').textContent = getStudyWhatYoullDo(state.currentStudy);
+    document.getElementById('modal-session-note').textContent = getStudySessionConfidence(state.currentStudy);
     const sqArea = document.getElementById('modal-screener-area');
     const sqList = state.currentStudy.screeningQuestions;
     if (sqArea) {
@@ -4371,6 +4380,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_next_title: 'What happens next',
       modal_next_step_1: 'We review your profile for fit',
       modal_next_step_2: 'If selected, you’ll get an invite to schedule',
+      modal_session_confidence_online: 'You’ll join a session with the team online. Any updates will appear here.',
+      modal_session_confidence_in_person: 'You’ll meet with the team in person. Any updates will appear here.',
       modal_fit_joiner: ' and ',
       modal_fit_from_tags: 'You may fit this study through {tags}.',
       modal_fit_generic_online: 'This study is open to contributors who fit the research profile and remote format.',
@@ -4738,6 +4749,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_next_title: 'Vad händer nu',
       modal_next_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_next_step_2: 'Om du väljs ut får du en inbjudan att boka tid',
+      modal_session_confidence_online: 'Du deltar i en digital session med teamet. Eventuella uppdateringar syns här.',
+      modal_session_confidence_in_person: 'Du träffar teamet på plats. Eventuella uppdateringar syns här.',
       modal_fit_joiner: ' och ',
       modal_fit_from_tags: 'Du kan passa för den här studien genom {tags}.',
       modal_fit_generic_online: 'Den här studien är öppen för deltagare som passar forskningsprofilen och det digitala formatet.',
