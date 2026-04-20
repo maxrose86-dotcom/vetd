@@ -2925,7 +2925,7 @@
 
   // Lang-aware label lookup for interest chips in profile view
   function getInterestLabel(value) {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     for (const k of ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']) {
       const opt = CHIP_OPTIONS[k].find(o => o.value === value);
       if (opt) return (lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label;
@@ -2934,7 +2934,7 @@
   }
 
   function renderChipGroup(fieldName, opts) {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     const single = fieldName === 'max_session_length' ? ' data-single="true"' : '';
     const chips = opts.map(o => {
       const label = (lang === 'sv' && o.labelSv) ? o.labelSv : o.label;
@@ -2945,7 +2945,7 @@
 
   // Update text of all already-rendered chips in place — no re-render, selection state preserved
   function updateChipLabels() {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     const labelMap = {};
     Object.values(CHIP_OPTIONS).forEach(opts => {
       opts.forEach(o => { labelMap[o.value] = (lang === 'sv' && o.labelSv) ? o.labelSv : o.label; });
@@ -3716,7 +3716,7 @@
   // ─── UPCOMING SESSIONS ───────────────────────────────────
   function formatSessionTime(isoStr) {
     const d = new Date(isoStr);
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
     const dayName = d.toLocaleDateString(locale, { weekday: 'long' });
     const datePart = d.toLocaleDateString(locale, { day: 'numeric', month: 'long' });
@@ -3971,7 +3971,7 @@
     if (sessionStorage.getItem(storageKey)) return;
     if (!confirm(t('cant_attend_confirm'))) return;
 
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
     const formattedDate = scheduledAt
       ? new Date(scheduledAt).toLocaleString(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
@@ -4082,7 +4082,7 @@
       return;
     }
 
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
 
     const renderedApps = apps.map(a => {
@@ -4756,7 +4756,7 @@ async function applyToStudy(studyId, answers = null) {
     // Matching preferences — only show when at least one preference is set
     const prefsSection = document.getElementById('profile-prefs-section');
     if (prefsSection) {
-      const lang = localStorage.getItem('vetd_lang') || 'en';
+      const lang = getCurrentLang();
       const labelFor = (field, val) => {
         const opt = CHIP_OPTIONS[field]?.find(o => o.value === val);
         return opt ? ((lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label) : val;
@@ -6911,13 +6911,17 @@ async function applyToStudy(studyId, answers = null) {
     return sek != null ? `${sek} kr` : 'TBD';
   }
 
+  function getCurrentLang() {
+    return document.documentElement.lang || localStorage.getItem('vetd_lang') || 'en';
+  }
+
   function getUiLocale() {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     return lang === 'sv' ? 'sv-SE' : 'en-GB';
   }
 
   function t(key) {
-    const lang = localStorage.getItem('vetd_lang') || 'en';
+    const lang = getCurrentLang();
     return (LANG[lang] && LANG[lang][key]) || (LANG.en && LANG.en[key]) || key;
   }
 
