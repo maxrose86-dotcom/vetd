@@ -927,30 +927,30 @@
           <p data-i18n="ob_step1_sub">Let's get the basics set up. Takes about 2 minutes.</p>
         </div>
         <div class="field-row">
-          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" placeholder="Sarah" value="" maxlength="50"><div class="field-error" id="err-fname"></div></div>
-          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" placeholder="Johnson" value="" maxlength="50"></div>
+          <div class="field"><label data-i18n="ob_name_label">First name</label><input type="text" id="fname" data-i18n-ph="ob_fname_ph" placeholder="Sarah" value="" maxlength="50"><div class="field-error" id="err-fname"></div></div>
+          <div class="field"><label data-i18n="ob_lname_label">Last name</label><input type="text" id="lname" data-i18n-ph="ob_lname_ph" placeholder="Johnson" value="" maxlength="50"></div>
         </div>
-        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" placeholder="sarah@example.com" maxlength="254"><div class="field-error" id="err-email"></div></div>
+        <div class="field"><label data-i18n="ob_email_label">Email address</label><input type="email" id="email" data-i18n-ph="ob_email_ph" placeholder="sarah@example.com" maxlength="254"><div class="field-error" id="err-email"></div></div>
         <div class="field"><label data-i18n="ob_pass_label">Password</label><input type="password" id="password" data-i18n-ph="ob_pass_ph" placeholder="At least 8 characters" maxlength="128" oninput="checkPasswordStrength(this.value)"><div id="pw-strength-bar" style="height:3px;border-radius:2px;background:#E5E7EB;margin-top:6px;overflow:hidden;display:none"><div id="pw-strength-fill" style="height:100%;width:0;border-radius:2px;transition:width 0.2s,background 0.2s"></div></div><div id="pw-strength-label" style="font-size:11px;margin-top:3px;display:none"></div><div class="field-error" id="err-password"></div></div>
         <div id="email-confirm-msg" style="display:none;background:#DCFFF0;border-radius:12px;padding:1.5rem;text-align:center;margin-top:1rem">
           <div style="font-size:32px;margin-bottom:8px">📧</div>
-          <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px">Check your email</h3>
-          <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
-          <a href="login.html" style="display:inline-block;padding:9px 22px;background:#00C47A;color:#fff;border-radius:100px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif">Go to sign in →</a>
+          <h3 style="font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px" data-i18n="email_confirm_title">Check your email</h3>
+          <p style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:1rem" data-i18n="email_confirm_body">We sent a confirmation link to your email address. Click it to activate your account and continue.</p>
+          <a href="login.html" style="display:inline-block;padding:9px 22px;background:#00C47A;color:#fff;border-radius:100px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Inter',sans-serif" data-i18n="email_confirm_cta">Go to sign in →</a>
         </div>
         <div class="field">
-          <label>How did you hear about us?</label>
+          <label data-i18n="ob_referral_label">How did you hear about us?</label>
           <select id="referral">
-            <option value="">Select an option</option>
-            <option value="social_media">Social media</option>
-            <option value="friend_family">Friend or family</option>
-            <option value="google_search">Google search</option>
-            <option value="online_forum">Online forum</option>
-            <option value="other">Other</option>
+            <option value="" data-i18n="ob_referral_select">Select an option</option>
+            <option value="social_media" data-i18n="ob_referral_social">Social media</option>
+            <option value="friend_family" data-i18n="ob_referral_friend">Friend or family</option>
+            <option value="google_search" data-i18n="ob_referral_google">Google search</option>
+            <option value="online_forum" data-i18n="ob_referral_forum">Online forum</option>
+            <option value="other" data-i18n="ob_referral_other">Other</option>
           </select>
         </div>
         <div class="nav-buttons">
-          <button class="btn-next" onclick="nextStep(1)">Continue →</button>
+          <button class="btn-next" onclick="nextStep(1)" data-i18n="ob_continue">Continue →</button>
         </div>
       </div>
 
@@ -958,44 +958,44 @@
       <div class="onboarding-step" id="step-2">
         <div class="step-header">
           <h2 data-i18n="ob_step2_title">Tell us about yourself</h2>
-          <p>Companies use this to match you with relevant studies. Your data is never sold.</p>
+          <p data-i18n="ob_step2_sub">Companies use this to match you with relevant studies. Your data is never sold.</p>
         </div>
         <div class="field-row">
           <div class="field"><label data-i18n="ob_dob_label">Date of birth</label><input type="date" id="dob"></div>
           <div class="field">
             <label data-i18n="ob_gender_label">Gender</label>
             <select id="gender">
-              <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
-              <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+              <option value="woman" data-i18n="gender_woman">Woman</option><option value="man" data-i18n="gender_man">Man</option><option value="non_binary" data-i18n="gender_non_binary">Non-binary</option>
+              <option value="self_describe" data-i18n="gender_self_describe">Prefer to self-describe</option><option value="prefer_not_to_say" data-i18n="gender_prefer_not">Prefer not to say</option>
             </select>
           </div>
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Country</label>
-            <select id="country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+            <label data-i18n="edit_label_country">Country</label>
+            <select id="country"><option value="United Kingdom" data-i18n="country_uk">United Kingdom</option><option value="Ireland" data-i18n="country_ie">Ireland</option><option value="Sweden" data-i18n="country_se">Sweden</option><option value="United States" data-i18n="country_us">United States</option><option value="Australia" data-i18n="country_au">Australia</option><option value="Canada" data-i18n="country_ca">Canada</option></select>
           </div>
           <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester" maxlength="100"></div>
         </div>
         <div class="field">
-          <label>Employment status</label>
-          <select id="employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+          <label data-i18n="edit_label_employment">Employment status</label>
+          <select id="employment"><option value="full_time" data-i18n="emp_full_time">Employed full-time</option><option value="part_time" data-i18n="emp_part_time">Employed part-time</option><option value="self_employed" data-i18n="emp_self_employed">Self-employed / freelance</option><option value="student" data-i18n="emp_student">Student</option><option value="unemployed" data-i18n="emp_unemployed">Not currently employed</option><option value="retired" data-i18n="emp_retired">Retired</option></select>
         </div>
         <div class="field">
-          <label>Household income (annual, approximate)</label>
-          <select id="income"><option value="under_20k">Under 200 000 kr</option><option value="20k_35k">200 000–349 999 kr</option><option value="35k_60k">350 000–599 999 kr</option><option value="60k_100k">600 000–999 999 kr</option><option value="100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+          <label data-i18n="edit_label_income">Household income (annual, approximate)</label>
+          <select id="income"><option value="under_20k" data-i18n="income_under_20k">Under 200 000 kr</option><option value="20k_35k" data-i18n="income_20k_35k">200 000–349 999 kr</option><option value="35k_60k" data-i18n="income_35k_60k">350 000–599 999 kr</option><option value="60k_100k" data-i18n="income_60k_100k">600 000–999 999 kr</option><option value="100k_plus" data-i18n="income_100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say" data-i18n="gender_prefer_not">Prefer not to say</option></select>
         </div>
         <div class="field">
-          <label>Living situation</label>
+          <label data-i18n="edit_label_living">Living situation</label>
           <div id="ob-chips-living"></div>
         </div>
         <div class="field">
-          <label>Do you have children?</label>
+          <label data-i18n="edit_label_children">Do you have children?</label>
           <div id="ob-chips-children"></div>
         </div>
         <div class="nav-buttons">
-          <button class="btn-back" onclick="prevStep(2)">← Back</button>
-          <button class="btn-next" onclick="nextStep(2)">Continue →</button>
+          <button class="btn-back" onclick="prevStep(2)" data-i18n="ob_back">← Back</button>
+          <button class="btn-next" onclick="nextStep(2)" data-i18n="ob_continue">Continue →</button>
         </div>
       </div>
 
@@ -1003,23 +1003,23 @@
       <div class="onboarding-step" id="step-3">
         <div class="step-header">
           <h2 data-i18n="ob_step3_title">What are you into?</h2>
-          <p>Select everything that applies — the more you share, the better the matches.</p>
+          <p data-i18n="ob_step3_sub">Select everything that applies — the more you share, the better the matches.</p>
         </div>
         <div class="field">
-          <label>Shopping & lifestyle</label>
+          <label data-i18n="edit_label_lifestyle">Shopping & lifestyle</label>
           <div id="ob-chips-lifestyle"></div>
         </div>
         <div class="field">
-          <label>Technology & media</label>
+          <label data-i18n="edit_label_tech">Technology & media</label>
           <div id="ob-chips-tech"></div>
         </div>
         <div class="field">
-          <label>Finance & banking</label>
+          <label data-i18n="edit_label_finance">Finance & banking</label>
           <div id="ob-chips-finance"></div>
         </div>
         <div class="nav-buttons">
-          <button class="btn-back" onclick="prevStep(3)">← Back</button>
-          <button class="btn-next" onclick="nextStep(3)">Continue →</button>
+          <button class="btn-back" onclick="prevStep(3)" data-i18n="ob_back">← Back</button>
+          <button class="btn-next" onclick="nextStep(3)" data-i18n="ob_continue">Continue →</button>
         </div>
       </div>
 
@@ -1027,23 +1027,23 @@
       <div class="onboarding-step" id="step-4">
         <div class="step-header">
           <h2 data-i18n="ob_step4_title">When are you available?</h2>
-          <p>This helps us surface studies that work around your life.</p>
+          <p data-i18n="ob_step4_sub">This helps us surface studies that work around your life.</p>
         </div>
         <div class="field">
-          <label>Preferred study format</label>
+          <label data-i18n="edit_label_formats">Preferred study format</label>
           <div id="ob-chips-formats"></div>
         </div>
         <div class="field">
-          <label>Available times</label>
+          <label data-i18n="edit_label_times">Available times</label>
           <div id="ob-chips-times"></div>
         </div>
         <div class="field">
-          <label>Maximum session length I'm comfortable with</label>
+          <label data-i18n="edit_label_maxlen">Maximum session length I'm comfortable with</label>
           <div id="ob-chips-maxlen"></div>
         </div>
         <div class="nav-buttons">
-          <button class="btn-back" onclick="prevStep(4)">← Back</button>
-          <button class="btn-next" onclick="nextStep(4)">Finish →</button>
+          <button class="btn-back" onclick="prevStep(4)" data-i18n="ob_back">← Back</button>
+          <button class="btn-next" onclick="nextStep(4)" data-i18n="ob_finish">Finish →</button>
         </div>
       </div>
 
@@ -1051,15 +1051,15 @@
       <div class="onboarding-step" id="step-5">
         <div style="text-align:center;padding:2rem 0">
           <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:32px">✓</div>
-          <h2 style="font-family:var(--serif);font-size:36px;margin-bottom:8px">You're all set!</h2>
-          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto">Your profile is live. We've already found <strong style="color:var(--green)">4 studies</strong> that match your interests.</p>
+          <h2 style="font-family:var(--serif);font-size:36px;margin-bottom:8px" data-i18n="ob_done_title">You're all set!</h2>
+          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto"><span data-i18n="ob_done_sub_prefix">Your profile is live. We've already found</span> <strong style="color:var(--green)">4 studies</strong> <span data-i18n="ob_done_sub_suffix">that match your interests.</span></p>
           <div style="background:var(--gray-50);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:2rem;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
-            <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:12px;font-weight:600">Your starting profile</div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Tier</span><span style="font-weight:600">Standard (new member)</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)">Rating</span><span style="color:var(--gray-400)">No ratings yet</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)">Studies matched</span><span style="color:var(--green);font-weight:600">4 waiting</span></div>
+            <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:12px;font-weight:600" data-i18n="ob_done_profile_title">Your starting profile</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)" data-i18n="ob_done_tier_label">Tier</span><span style="font-weight:600" data-i18n="ob_done_tier_value">Standard (new member)</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)" data-i18n="ob_done_rating_label">Rating</span><span style="color:var(--gray-400)" data-i18n="ob_done_rating_value">No ratings yet</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)" data-i18n="ob_done_matches_label">Studies matched</span><span style="color:var(--green);font-weight:600" data-i18n="ob_done_matches_value">4 waiting</span></div>
           </div>
-          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()">Complete your profile to receive invites →</button>
+          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()" data-i18n="ob_done_cta">Complete your profile to receive invites →</button>
         </div>
       </div>
     </div>
@@ -1072,7 +1072,7 @@
     <div class="app-topbar">
       <div class="topbar-brand">
         <a href="index.html" class="topbar-logo" style="text-decoration:none;color:inherit">Vet<span style="color:var(--green)">d</span></a>
-        <span class="topbar-identity">Contributor</span>
+        <span class="topbar-identity" data-i18n="topbar_identity">Contributor</span>
       </div>
       <div class="topbar-nav">
         <button class="active" onclick="showTab('dashboard', this)" data-i18n="nav_dashboard">Dashboard</button>
@@ -1091,7 +1091,7 @@
               <button class="notif-mark-all-btn" onclick="markAllRead()" data-i18n="notif_mark_all">Mark all as read</button>
             </div>
             <div class="notif-panel-body" id="notif-panel-body">
-              <div class="notif-empty">No notifications yet</div>
+              <div class="notif-empty" data-i18n="notif_empty">No notifications yet</div>
             </div>
           </div>
         </div>
@@ -1110,7 +1110,7 @@
       <button onclick="showTab('my-studies', document.querySelector('.topbar-nav button:nth-child(3)')); toggleMobileNav();" data-i18n="nav_my_studies">My Studies</button>
       <button onclick="showTab('profile', document.querySelector('.topbar-nav button:nth-child(4)')); toggleMobileNav();" data-i18n="nav_profile">My profile</button>
       <div style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-top:1px solid var(--gray-100)">
-        <span style="font-size:12px;color:var(--gray-400);font-weight:400">Language:</span>
+        <span style="font-size:12px;color:var(--gray-400);font-weight:400" data-i18n="language_label">Language:</span>
         <button id="lb-en-m" onclick="setLang('en');toggleMobileNav()" style="padding:4px 12px;border-radius:100px;border:1.5px solid var(--gray-200);background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">EN</button>
         <button id="lb-sv-m" onclick="setLang('sv');toggleMobileNav()" style="padding:4px 12px;border-radius:100px;border:1.5px solid var(--gray-200);background:transparent;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);color:var(--gray-700)">SV</button>
       </div>
@@ -1127,7 +1127,7 @@
 
         <div id="dash-rating-hero" class="rating-hero">
           <div class="rating-hero-left">
-            <h2>Your Vetd rating</h2>
+            <h2 data-i18n="dash_your_rating">Your Vetd rating</h2>
             <p id="dash-rating-desc">Complete your first study to earn a rating</p>
             <div style="margin-top:1rem">
               <div id="dash-tier-badge" class="tier-badge">New member</div>
@@ -1194,17 +1194,17 @@
       <div id="tab-studies" style="display:none">
         <div style="margin-bottom:1.5rem">
           <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Available opportunities</h1>
-          <p style="color:var(--gray-400);font-size:14px;font-weight:300">Showing studies matched to your profile</p>
+          <p style="color:var(--gray-400);font-size:14px;font-weight:300" data-i18n="browse_subtitle">Showing studies matched to your profile</p>
         </div>
         <div class="filter-bar">
           <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
           <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
-          <button class="filter-chip" onclick="filterStudies('high-pay', this)">High pay</button>
+          <button class="filter-chip" onclick="filterStudies('high-pay', this)" data-i18n="filter_high_pay">High pay</button>
           <select class="filter-select filter-right">
-            <option>Sort: Best match</option>
-            <option>Sort: Highest pay</option>
-            <option>Sort: Newest</option>
-            <option>Sort: Shortest</option>
+            <option data-i18n="sort_best_match">Sort: Best match</option>
+            <option data-i18n="sort_highest_pay">Sort: Highest pay</option>
+            <option data-i18n="sort_newest">Sort: Newest</option>
+            <option data-i18n="sort_shortest">Sort: Shortest</option>
           </select>
         </div>
         <div id="studies-list"></div>
@@ -1214,15 +1214,15 @@
       <div id="tab-my-studies" style="display:none">
         <div style="margin-bottom:1.5rem">
           <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="my_studies_title">My Studies</h1>
-          <p style="color:var(--gray-400);font-size:14px;font-weight:300">Your application history and upcoming sessions</p>
+          <p style="color:var(--gray-400);font-size:14px;font-weight:300" data-i18n="my_studies_subtitle">Your application history and upcoming sessions</p>
         </div>
         <div class="filter-bar">
-          <button class="filter-chip active" data-filter="all" onclick="filterMyApps('all', this)">All</button>
+          <button class="filter-chip active" data-filter="all" onclick="filterMyApps('all', this)" data-i18n="filter_all_short">All</button>
           <button class="filter-chip" data-filter="active" onclick="filterMyApps('active', this)" data-i18n="filter_active">Active</button>
           <button class="filter-chip" data-filter="past" onclick="filterMyApps('past', this)" data-i18n="filter_past">Past</button>
         </div>
         <div id="my-applications-list">
-          <div style="text-align:center;padding:3rem;color:var(--gray-400)">Loading…</div>
+          <div style="text-align:center;padding:3rem;color:var(--gray-400)" data-i18n="my_studies_loading">Loading…</div>
         </div>
       </div>
 
@@ -1296,7 +1296,7 @@
           <div class="profile-section">
             <h3 data-i18n="prof_interests">My interests & tags</h3>
             <div class="job-tags" id="profile-interests-tags" style="margin-top:4px">
-              <span style="font-size:13px;color:var(--gray-400);font-weight:300">No interests selected yet — edit your profile to add some.</span>
+              <span style="font-size:13px;color:var(--gray-400);font-weight:300" data-i18n="no_interests">No interests selected yet — edit your profile to add some.</span>
             </div>
           </div>
 
@@ -1326,8 +1326,8 @@
           <div class="profile-section" style="margin-bottom:1.5rem">
             <h3 data-i18n="edit_name">Name</h3>
             <div class="field-row" style="margin-top:0.75rem">
-              <div class="field"><label data-i18n="edit_label_fname">First name</label><input type="text" id="edit-fname" maxlength="100" placeholder="First name"></div>
-              <div class="field"><label data-i18n="edit_label_lname">Last name</label><input type="text" id="edit-lname" maxlength="100" placeholder="Last name"></div>
+              <div class="field"><label data-i18n="edit_label_fname">First name</label><input type="text" id="edit-fname" maxlength="100" data-i18n-ph="edit_fname_ph" placeholder="First name"></div>
+              <div class="field"><label data-i18n="edit_label_lname">Last name</label><input type="text" id="edit-lname" maxlength="100" data-i18n-ph="edit_lname_ph" placeholder="Last name"></div>
             </div>
           </div>
 
@@ -1338,25 +1338,25 @@
               <div class="field">
                 <label data-i18n="edit_label_gender">Gender</label>
                 <select id="edit-gender">
-                  <option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option>
-                  <option value="self_describe">Prefer to self-describe</option><option value="prefer_not_to_say">Prefer not to say</option>
+                  <option value="woman" data-i18n="gender_woman">Woman</option><option value="man" data-i18n="gender_man">Man</option><option value="non_binary" data-i18n="gender_non_binary">Non-binary</option>
+                  <option value="self_describe" data-i18n="gender_self_describe">Prefer to self-describe</option><option value="prefer_not_to_say" data-i18n="gender_prefer_not">Prefer not to say</option>
                 </select>
               </div>
             </div>
             <div class="field-row">
               <div class="field">
                 <label data-i18n="edit_label_country">Country</label>
-                <select id="edit-country"><option>United Kingdom</option><option>Ireland</option><option>Sweden</option><option>United States</option><option>Australia</option><option>Canada</option></select>
+                <select id="edit-country"><option value="United Kingdom" data-i18n="country_uk">United Kingdom</option><option value="Ireland" data-i18n="country_ie">Ireland</option><option value="Sweden" data-i18n="country_se">Sweden</option><option value="United States" data-i18n="country_us">United States</option><option value="Australia" data-i18n="country_au">Australia</option><option value="Canada" data-i18n="country_ca">Canada</option></select>
               </div>
-              <div class="field"><label data-i18n="edit_label_city">City / Town</label><input type="text" id="edit-city" placeholder="e.g. Stockholm" maxlength="100"></div>
+              <div class="field"><label data-i18n="edit_label_city">City / Town</label><input type="text" id="edit-city" data-i18n-ph="edit_city_ph" placeholder="e.g. Stockholm" maxlength="100"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_employment">Employment status</label>
-              <select id="edit-employment"><option value="full_time">Employed full-time</option><option value="part_time">Employed part-time</option><option value="self_employed">Self-employed / freelance</option><option value="student">Student</option><option value="unemployed">Not currently employed</option><option value="retired">Retired</option></select>
+              <select id="edit-employment"><option value="full_time" data-i18n="emp_full_time">Employed full-time</option><option value="part_time" data-i18n="emp_part_time">Employed part-time</option><option value="self_employed" data-i18n="emp_self_employed">Self-employed / freelance</option><option value="student" data-i18n="emp_student">Student</option><option value="unemployed" data-i18n="emp_unemployed">Not currently employed</option><option value="retired" data-i18n="emp_retired">Retired</option></select>
             </div>
             <div class="field">
               <label data-i18n="edit_label_income">Household income (annual, approximate)</label>
-              <select id="edit-income"><option value="under_20k">Under 200 000 kr</option><option value="20k_35k">200 000–349 999 kr</option><option value="35k_60k">350 000–599 999 kr</option><option value="60k_100k">600 000–999 999 kr</option><option value="100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say">Prefer not to say</option></select>
+              <select id="edit-income"><option value="under_20k" data-i18n="income_under_20k">Under 200 000 kr</option><option value="20k_35k" data-i18n="income_20k_35k">200 000–349 999 kr</option><option value="35k_60k" data-i18n="income_35k_60k">350 000–599 999 kr</option><option value="60k_100k" data-i18n="income_60k_100k">600 000–999 999 kr</option><option value="100k_plus" data-i18n="income_100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say" data-i18n="gender_prefer_not">Prefer not to say</option></select>
             </div>
             <div class="field">
               <label data-i18n="edit_label_living">Living situation</label>
@@ -1405,10 +1405,10 @@
             <div class="field">
               <label data-i18n="edit_label_frequency">How often would you like to participate?</label>
               <select id="edit-frequency">
-                <option value="once_a_month">Once a month</option>
-                <option value="2_3_per_month">2–3 times a month</option>
-                <option value="weekly">Weekly</option>
-                <option value="as_often_as_possible">As often as possible</option>
+                <option value="once_a_month" data-i18n="freq_once_a_month">Once a month</option>
+                <option value="2_3_per_month" data-i18n="freq_2_3_per_month">2–3 times a month</option>
+                <option value="weekly" data-i18n="freq_weekly">Weekly</option>
+                <option value="as_often_as_possible" data-i18n="freq_as_often">As often as possible</option>
               </select>
             </div>
             <div class="field">
@@ -1420,7 +1420,7 @@
             </div>
             <div class="field">
               <label data-i18n="edit_label_notes">Anything else you'd like us to know?</label>
-              <textarea id="edit-additional_notes" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
+              <textarea id="edit-additional_notes" data-i18n-ph="edit_notes_ph" placeholder="e.g. I'm a nurse, so medical studies would be a great fit..." maxlength="1000"></textarea>
             </div>
           </div>
 
@@ -1498,13 +1498,13 @@
 <div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;padding:2rem;max-width:400px;width:calc(100% - 32px);text-align:center">
     <div style="font-size:32px;margin-bottom:1rem">⚠️</div>
-    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">Delete your account?</h2>
-    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.5">This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.</p>
-    <p style="font-size:13px;margin-bottom:1.5rem">Type <strong>DELETE</strong> to confirm:</p>
-    <input id="delete-confirm-input" type="text" placeholder="Type DELETE" style="width:100%;padding:10px;border:1.5px solid #E5E7EB;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;text-align:center;margin-bottom:1rem">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px" data-i18n="delete_modal_title">Delete your account?</h2>
+    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.5" data-i18n="delete_modal_body">This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.</p>
+    <p style="font-size:13px;margin-bottom:1.5rem"><span data-i18n="delete_modal_confirm_prefix">Type</span> <strong>DELETE</strong> <span data-i18n="delete_modal_confirm_suffix">to confirm:</span></p>
+    <input id="delete-confirm-input" type="text" data-i18n-ph="delete_modal_ph" placeholder="Type DELETE" style="width:100%;padding:10px;border:1.5px solid #E5E7EB;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;text-align:center;margin-bottom:1rem">
     <div style="display:flex;gap:10px">
-      <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px">Cancel</button>
-      <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600">Delete account</button>
+      <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px" data-i18n="delete_modal_cancel">Cancel</button>
+      <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600" data-i18n="delete_modal_delete">Delete account</button>
     </div>
   </div>
 </div>
@@ -1560,11 +1560,12 @@
   function setLoading(btn, loading) {
     if (loading) {
       btn.dataset.originalText = btn.textContent;
-      btn.textContent = 'Saving…';
+      btn.textContent = t('saving_generic');
       btn.disabled = true;
       btn.style.opacity = '0.6';
     } else {
-      btn.textContent = btn.dataset.originalText || 'Continue →';
+      const fallbackKey = btn.dataset.i18n;
+      btn.textContent = btn.dataset.originalText || (fallbackKey ? t(fallbackKey) : '');
       btn.disabled = false;
       btn.style.opacity = '1';
     }
@@ -1587,12 +1588,12 @@
     if (/[0-9]/.test(val)) score++;
     if (/[^A-Za-z0-9]/.test(val)) score++;
     const levels = [
-      { label:'Too short', color:'#DC2626', width:'20%' },
-      { label:'Weak',      color:'#DC2626', width:'30%' },
-      { label:'Fair',      color:'#B45309', width:'55%' },
-      { label:'Good',      color:'#2563EB', width:'75%' },
-      { label:'Strong',    color:'#00C47A', width:'100%'},
-      { label:'Very strong',color:'#00C47A',width:'100%'},
+      { label:t('pw_too_short'),  color:'#DC2626', width:'20%' },
+      { label:t('pw_weak'),       color:'#DC2626', width:'30%' },
+      { label:t('pw_fair'),       color:'#B45309', width:'55%' },
+      { label:t('pw_good'),       color:'#2563EB', width:'75%' },
+      { label:t('pw_strong'),     color:'#00C47A', width:'100%'},
+      { label:t('pw_very_strong'),color:'#00C47A', width:'100%'},
     ];
     const l = levels[Math.min(score, 5)];
     fill.style.width = l.width;
@@ -1623,23 +1624,23 @@
 
     if (!fname) {
       const el = document.getElementById('err-fname');
-      if (el) { el.textContent = 'Please enter your first name'; el.classList.add('show'); }
+      if (el) { el.textContent = t('err_first_name_required'); el.classList.add('show'); }
       valid = false;
     }
 
     if (!email) {
       const el = document.getElementById('err-email');
-      if (el) { el.textContent = 'Please enter your email address'; el.classList.add('show'); }
+      if (el) { el.textContent = t('err_email_required'); el.classList.add('show'); }
       valid = false;
     } else if (!emailRegex.test(email)) {
       const el = document.getElementById('err-email');
-      if (el) { el.textContent = 'Please enter a valid email address'; el.classList.add('show'); }
+      if (el) { el.textContent = t('err_email_invalid'); el.classList.add('show'); }
       valid = false;
     }
 
     if (password.length < 8) {
       const el = document.getElementById('err-password');
-      if (el) { el.textContent = 'Password must be at least 8 characters'; el.classList.add('show'); }
+      if (el) { el.textContent = t('err_password_short'); el.classList.add('show'); }
       valid = false;
     }
 
@@ -2445,7 +2446,7 @@
     if (action.type === 'join') {
       const app = (state.myApplications || []).find(item => item.id === action.appId);
       if (app?.room_url) {
-        openVideoCall(app.room_url, app.studies?.title || 'Video call', app.id);
+        openVideoCall(app.room_url, app.studies?.title || t('video_call_title'), app.id);
         return;
       }
     }
@@ -4302,7 +4303,7 @@
   let _callAppId = null;
 
   function openVideoCall(roomUrl, title, applicationId) {
-    document.getElementById('video-call-title').textContent = title || 'Video call';
+    document.getElementById('video-call-title').textContent = title || t('video_call_title');
     document.getElementById('daily-iframe').src = roomUrl;
     document.getElementById('video-call-overlay').classList.add('open');
     _callAppId = applicationId || null;
@@ -4558,7 +4559,7 @@ async function applyToStudy(studyId, answers = null) {
     // ── Greeting ──────────────────────────────────────────────
     const hour = new Date().getHours();
     const timeGreeting = hour < 12 ? t('good_morning') : hour < 18 ? t('good_afternoon') : t('good_evening');
-    document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'}.`;
+    document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || t('dash_name_fallback')}.`;
 
     // ── State-aware subtext ───────────────────────────────────
     const stateModel = getContributorStateModel();
@@ -5144,7 +5145,7 @@ async function applyToStudy(studyId, answers = null) {
 
     // Always reset save button in case a previous save left it disabled
     const saveBtn = document.getElementById('edit-save-btn');
-    saveBtn.textContent = 'Save changes';
+    saveBtn.textContent = t('edit_save');
     saveBtn.disabled = false;
     saveBtn.style.opacity = '1';
 
@@ -5640,23 +5641,41 @@ async function applyToStudy(studyId, answers = null) {
       ob_step1_title: 'Create your account',
       ob_step1_sub: "Let's get the basics set up. Takes about 2 minutes.",
       ob_step2_title: 'Tell us about yourself',
+      ob_step2_sub: 'Companies use this to match you with relevant studies. Your data is never sold.',
       ob_step3_title: 'What are you into?',
+      ob_step3_sub: 'Select everything that applies — the more you share, the better the matches.',
       ob_step4_title: 'When are you available?',
+      ob_step4_sub: 'This helps us surface studies that work around your life.',
       ob_name_label: 'First name',
+      ob_fname_ph: 'Sarah',
       ob_lname_label: 'Last name',
+      ob_lname_ph: 'Johnson',
       ob_email_label: 'Email address',
+      ob_email_ph: 'sarah@example.com',
       ob_pass_label: 'Password',
       ob_pass_ph: 'At least 8 characters',
       ob_dob_label: 'Date of birth',
       ob_city_label: 'City / Town',
       ob_city_ph: 'e.g. Manchester',
       ob_gender_label: 'Gender',
+      ob_referral_label: 'How did you hear about us?',
+      ob_referral_select: 'Select an option',
+      ob_referral_social: 'Social media',
+      ob_referral_friend: 'Friend or family',
+      ob_referral_google: 'Google search',
+      ob_referral_forum: 'Online forum',
+      ob_referral_other: 'Other',
+      ob_continue: 'Continue →',
+      ob_back: '← Back',
+      ob_finish: 'Finish →',
+      topbar_identity: 'Contributor',
       nav_dashboard: 'Dashboard',
       nav_browse: 'Available opportunities',
       nav_profile: 'My profile',
       nav_notifications: 'Notifications',
       sign_out: 'Sign out',
       dash_welcome: 'Welcome back',
+      dash_name_fallback: 'there',
       dash_studies: 'Studies done',
       dash_earned: 'Total earned',
       dash_rating: 'Your rating',
@@ -5737,6 +5756,36 @@ async function applyToStudy(studyId, answers = null) {
       activity_no_supply_sub: 'New studies will appear here when they open.',
       activity_low_fit_title: 'No close matches right now',
       activity_low_fit_sub: 'Studies are live, but none quite match your profile right now.',
+      browse_subtitle: 'Showing studies matched to your profile',
+      filter_high_pay: 'High pay',
+      sort_best_match: 'Sort: Best match',
+      sort_highest_pay: 'Sort: Highest pay',
+      sort_newest: 'Sort: Newest',
+      sort_shortest: 'Sort: Shortest',
+      my_studies_subtitle: 'Your application history and upcoming sessions',
+      filter_all_short: 'All',
+      language_label: 'Language:',
+      email_confirm_title: 'Check your email',
+      email_confirm_body: 'We sent a confirmation link to your email address. Click it to activate your account and continue.',
+      email_confirm_cta: 'Go to sign in →',
+      ob_done_title: 'You\'re all set!',
+      ob_done_sub_prefix: 'Your profile is live. We\'ve already found',
+      ob_done_sub_suffix: 'that match your interests.',
+      ob_done_profile_title: 'Your starting profile',
+      ob_done_tier_label: 'Tier',
+      ob_done_tier_value: 'Standard (new member)',
+      ob_done_rating_label: 'Rating',
+      ob_done_rating_value: 'No ratings yet',
+      ob_done_matches_label: 'Studies matched',
+      ob_done_matches_value: '4 waiting',
+      ob_done_cta: 'Complete your profile to receive invites →',
+      delete_modal_title: 'Delete your account?',
+      delete_modal_body: 'This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.',
+      delete_modal_confirm_prefix: 'Type',
+      delete_modal_confirm_suffix: 'to confirm:',
+      delete_modal_ph: 'Type DELETE',
+      delete_modal_cancel: 'Cancel',
+      delete_modal_delete: 'Delete account',
       browse_title: 'Available opportunities',
       browse_relevance_generic: 'Relevant to how you use this area',
       browse_relevance_interest: 'Based on your interest in {tag}',
@@ -5856,6 +5905,17 @@ async function applyToStudy(studyId, answers = null) {
       freq_2_3_per_month: '2–3× / month',
       freq_weekly: 'Weekly',
       freq_as_often: 'As often as possible',
+      country_uk: 'United Kingdom',
+      country_ie: 'Ireland',
+      country_se: 'Sweden',
+      country_us: 'United States',
+      country_au: 'Australia',
+      country_ca: 'Canada',
+      income_under_20k: 'Under 200 000 kr',
+      income_20k_35k: '200 000–349 999 kr',
+      income_35k_60k: '350 000–599 999 kr',
+      income_60k_100k: '600 000–999 999 kr',
+      income_100k_plus: '1 000 000 kr+',
       prof_completeness_hint: 'A complete profile improves your study matches.',
       gender_woman: 'Woman',
       gender_man: 'Man',
@@ -5896,11 +5956,14 @@ async function applyToStudy(studyId, answers = null) {
       edit_name: 'Name',
       edit_label_fname: 'First name',
       edit_label_lname: 'Last name',
+      edit_fname_ph: 'First name',
+      edit_lname_ph: 'Last name',
       edit_details: 'Personal details',
       edit_label_dob: 'Date of birth',
       edit_label_gender: 'Gender',
       edit_label_country: 'Country',
       edit_label_city: 'City / Town',
+      edit_city_ph: 'e.g. Stockholm',
       edit_label_employment: 'Employment status',
       edit_label_income: 'Household income (annual, approximate)',
       edit_label_living: 'Living situation',
@@ -5917,8 +5980,40 @@ async function applyToStudy(studyId, answers = null) {
       edit_label_frequency: 'How often would you like to participate?',
       edit_label_minpay: "Minimum pay you'd accept (per hour equivalent)",
       edit_label_notes: "Anything else you'd like us to know?",
+      edit_notes_ph: "e.g. I'm a nurse, so medical studies would be a great fit...",
       edit_cancel: 'Cancel',
       edit_save: 'Save changes',
+      video_call_title: 'Video call',
+      saving_generic: 'Saving…',
+      delete_confirm_required: 'Please type DELETE to confirm',
+      delete_loading: 'Deleting…',
+      delete_failed: 'Could not delete account — contact support',
+      pw_too_short: 'Too short',
+      pw_weak: 'Weak',
+      pw_fair: 'Fair',
+      pw_good: 'Good',
+      pw_strong: 'Strong',
+      pw_very_strong: 'Very strong',
+      err_first_name_required: 'Please enter your first name',
+      err_email_required: 'Please enter your email address',
+      err_email_invalid: 'Please enter a valid email address',
+      err_password_short: 'Password must be at least 8 characters',
+      debug_panel_title: 'Vetd · Contributor State',
+      sim_none: 'No simulation',
+      sim_upcoming_session: 'Upcoming session',
+      sim_accepted_no_availability: 'Accepted, no availability',
+      sim_strong_fit_studies: 'Strong-fit studies',
+      sim_pending_applications: 'Pending applications',
+      sim_zero_supply: 'Zero supply',
+      sim_missed_session: 'Missed session',
+      sim_payment_delayed: 'Payment delayed',
+      sim_rejected_after_wait: 'Rejected after wait',
+      sim_no_studies_long_time: 'No studies (long time)',
+      sim_company_cancelled: 'Company cancelled',
+      sim_low_fit_contributor: 'Low-fit contributor',
+      sim_run: '▶ run',
+      sim_stop: '■ stop',
+      sim_refresh: '↻ refresh',
       limited_availability: 'Limited spots remaining',
       top_match: '★ Top match for you',
       no_studies_dash: 'No studies available right now — you\'re early. New studies are coming soon.',
@@ -6181,23 +6276,41 @@ async function applyToStudy(studyId, answers = null) {
       ob_step1_title: 'Välkommen till Vetd',
       ob_step1_sub: 'Låt oss skapa din profil. Det tar mindre än 3 minuter.',
       ob_step2_title: 'Berätta om dig',
+      ob_step2_sub: 'Företag använder det här för att matcha dig med relevanta studier. Din data säljs aldrig.',
       ob_step3_title: 'Dina intressen',
+      ob_step3_sub: 'Välj allt som passar in — ju mer du delar, desto bättre blir matchningarna.',
       ob_step4_title: 'Tillgänglighet',
+      ob_step4_sub: 'Det hjälper oss att visa studier som fungerar i din vardag.',
       ob_name_label: 'Förnamn',
+      ob_fname_ph: 'Sara',
       ob_lname_label: 'Efternamn',
+      ob_lname_ph: 'Johansson',
       ob_email_label: 'E-postadress',
+      ob_email_ph: 'sara@example.com',
       ob_pass_label: 'Lösenord',
       ob_pass_ph: 'Minst 8 tecken',
       ob_dob_label: 'Födelsedatum',
       ob_city_label: 'Stad',
       ob_city_ph: 't.ex. Stockholm',
       ob_gender_label: 'Kön',
+      ob_referral_label: 'Hur hörde du talas om oss?',
+      ob_referral_select: 'Välj ett alternativ',
+      ob_referral_social: 'Sociala medier',
+      ob_referral_friend: 'Vän eller familj',
+      ob_referral_google: 'Google-sökning',
+      ob_referral_forum: 'Onlineforum',
+      ob_referral_other: 'Annat',
+      ob_continue: 'Fortsätt →',
+      ob_back: '← Tillbaka',
+      ob_finish: 'Slutför →',
+      topbar_identity: 'Deltagare',
       nav_dashboard: 'Översikt',
       nav_browse: 'Bläddra',
       nav_profile: 'Profil',
       nav_notifications: 'Aviseringar',
       sign_out: 'Logga ut',
       dash_welcome: 'Välkommen tillbaka',
+      dash_name_fallback: 'du',
       dash_studies: 'Studier gjorda',
       dash_earned: 'Totalt tjänat',
       dash_rating: 'Ditt betyg',
@@ -6278,6 +6391,36 @@ async function applyToStudy(studyId, answers = null) {
       activity_no_supply_sub: 'Nya studier visas här när de öppnar.',
       activity_low_fit_title: 'Inga nära matchningar just nu',
       activity_low_fit_sub: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
+      browse_subtitle: 'Visar studier som matchar din profil',
+      filter_high_pay: 'Hög ersättning',
+      sort_best_match: 'Sortera: Bästa matchning',
+      sort_highest_pay: 'Sortera: Högst ersättning',
+      sort_newest: 'Sortera: Nyast',
+      sort_shortest: 'Sortera: Kortast',
+      my_studies_subtitle: 'Din ansökningshistorik och kommande sessioner',
+      filter_all_short: 'Alla',
+      language_label: 'Språk:',
+      email_confirm_title: 'Kolla din e-post',
+      email_confirm_body: 'Vi skickade en bekräftelselänk till din e-postadress. Klicka på den för att aktivera ditt konto och fortsätta.',
+      email_confirm_cta: 'Gå till inloggning →',
+      ob_done_title: 'Allt är klart!',
+      ob_done_sub_prefix: 'Din profil är live. Vi har redan hittat',
+      ob_done_sub_suffix: 'som matchar dina intressen.',
+      ob_done_profile_title: 'Din startprofil',
+      ob_done_tier_label: 'Nivå',
+      ob_done_tier_value: 'Standard (ny medlem)',
+      ob_done_rating_label: 'Betyg',
+      ob_done_rating_value: 'Inga betyg ännu',
+      ob_done_matches_label: 'Matchade studier',
+      ob_done_matches_value: '4 väntar',
+      ob_done_cta: 'Slutför din profil för att få inbjudningar →',
+      delete_modal_title: 'Ta bort ditt konto?',
+      delete_modal_body: 'Det här raderar permanent din profil, ansökningshistorik, betyg och betalningshistorik. Åtgärden går inte att ångra.',
+      delete_modal_confirm_prefix: 'Skriv',
+      delete_modal_confirm_suffix: 'för att bekräfta:',
+      delete_modal_ph: 'Skriv DELETE',
+      delete_modal_cancel: 'Avbryt',
+      delete_modal_delete: 'Ta bort konto',
       browse_title: 'Tillgängliga studier',
       browse_relevance_generic: 'Relevant för hur du använder det här området',
       browse_relevance_interest: 'Bygger på ditt intresse för {tag}',
@@ -6397,6 +6540,17 @@ async function applyToStudy(studyId, answers = null) {
       freq_2_3_per_month: '2–3 ggr / mån',
       freq_weekly: 'Varje vecka',
       freq_as_often: 'Så ofta som möjligt',
+      country_uk: 'Storbritannien',
+      country_ie: 'Irland',
+      country_se: 'Sverige',
+      country_us: 'USA',
+      country_au: 'Australien',
+      country_ca: 'Kanada',
+      income_under_20k: 'Under 200 000 kr',
+      income_20k_35k: '200 000–349 999 kr',
+      income_35k_60k: '350 000–599 999 kr',
+      income_60k_100k: '600 000–999 999 kr',
+      income_100k_plus: '1 000 000 kr+',
       prof_completeness_hint: 'En komplett profil ger bättre studiematchningar.',
       gender_woman: 'Kvinna',
       gender_man: 'Man',
@@ -6437,11 +6591,14 @@ async function applyToStudy(studyId, answers = null) {
       edit_name: 'Namn',
       edit_label_fname: 'Förnamn',
       edit_label_lname: 'Efternamn',
+      edit_fname_ph: 'Förnamn',
+      edit_lname_ph: 'Efternamn',
       edit_details: 'Personuppgifter',
       edit_label_dob: 'Födelsedatum',
       edit_label_gender: 'Kön',
       edit_label_country: 'Land',
       edit_label_city: 'Stad',
+      edit_city_ph: 't.ex. Stockholm',
       edit_label_employment: 'Sysselsättningsstatus',
       edit_label_income: 'Hushållsinkomst (årsvis, ungefärlig)',
       edit_label_living: 'Boendesituation',
@@ -6458,8 +6615,40 @@ async function applyToStudy(studyId, answers = null) {
       edit_label_frequency: 'Hur ofta vill du delta?',
       edit_label_minpay: 'Minsta ersättning du accepterar (per timme)',
       edit_label_notes: 'Något annat du vill att vi ska veta?',
+      edit_notes_ph: 't.ex. Jag är sjuksköterska, så medicinska studier skulle passa mig bra...',
       edit_cancel: 'Avbryt',
       edit_save: 'Spara ändringar',
+      video_call_title: 'Videosamtal',
+      saving_generic: 'Sparar…',
+      delete_confirm_required: 'Skriv DELETE för att bekräfta',
+      delete_loading: 'Tar bort…',
+      delete_failed: 'Det gick inte att ta bort kontot — kontakta support',
+      pw_too_short: 'För kort',
+      pw_weak: 'Svagt',
+      pw_fair: 'Okej',
+      pw_good: 'Bra',
+      pw_strong: 'Starkt',
+      pw_very_strong: 'Mycket starkt',
+      err_first_name_required: 'Fyll i ditt förnamn',
+      err_email_required: 'Fyll i din e-postadress',
+      err_email_invalid: 'Fyll i en giltig e-postadress',
+      err_password_short: 'Lösenordet måste vara minst 8 tecken',
+      debug_panel_title: 'Vetd · Deltagartillstånd',
+      sim_none: 'Ingen simulering',
+      sim_upcoming_session: 'Kommande session',
+      sim_accepted_no_availability: 'Antagen, ingen tillgänglighet',
+      sim_strong_fit_studies: 'Starka matchningar',
+      sim_pending_applications: 'Väntande ansökningar',
+      sim_zero_supply: 'Ingen tillgång',
+      sim_missed_session: 'Missad session',
+      sim_payment_delayed: 'Försenad betalning',
+      sim_rejected_after_wait: 'Avvisad efter väntan',
+      sim_no_studies_long_time: 'Inga studier (länge)',
+      sim_company_cancelled: 'Företaget ställde in',
+      sim_low_fit_contributor: 'Låg matchning',
+      sim_run: '▶ kör',
+      sim_stop: '■ stoppa',
+      sim_refresh: '↻ uppdatera',
       limited_availability: 'Begränsat antal platser kvar',
       top_match: '★ Bästa matchning för dig',
       no_studies_dash: 'Inga studier tillgängliga just nu — du är tidig. Nya studier kommer snart.',
@@ -6873,11 +7062,11 @@ async function applyToStudy(studyId, answers = null) {
   }
   async function confirmDeleteAccount() {
     if (document.getElementById('delete-confirm-input').value !== 'DELETE') {
-      showToast('Please type DELETE to confirm', true);
+      showToast(t('delete_confirm_required'), true);
       return;
     }
     const btn = document.querySelector('#delete-modal button:last-child');
-    btn.disabled = true; btn.textContent = 'Deleting…';
+    btn.disabled = true; btn.textContent = t('delete_loading');
     try {
       const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error('Not logged in');
@@ -6888,8 +7077,8 @@ async function applyToStudy(studyId, answers = null) {
     } catch(err) {
       console.error('Delete account error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not delete account — contact support', true);
-      btn.disabled = false; btn.textContent = 'Delete account';
+      showToast(t('delete_failed'), true);
+      btn.disabled = false; btn.textContent = t('delete_modal_delete');
     }
   }
 
@@ -7279,7 +7468,7 @@ async function applyToStudy(studyId, answers = null) {
     state.simulation.enabled = !state.simulation.enabled;
     const btn = document.getElementById('sim-toggle-btn');
     if (btn) {
-      btn.textContent = state.simulation.enabled ? '■ stop' : '▶ run';
+      btn.textContent = state.simulation.enabled ? t('sim_stop') : t('sim_run');
       btn.style.color = state.simulation.enabled ? '#10b981' : '';
     }
     refreshDebugPanel();
@@ -7360,7 +7549,7 @@ async function applyToStudy(studyId, answers = null) {
 <!-- VIDEO CALL OVERLAY -->
 <div id="video-call-overlay">
   <div class="video-top-bar">
-    <span class="video-top-bar-title" id="video-call-title">Video call</span>
+    <span class="video-top-bar-title" id="video-call-title" data-i18n="video_call_title">Video call</span>
     <button class="btn-leave-call" onclick="leaveCall()" data-i18n="leave_call">Leave call</button>
   </div>
   <iframe id="daily-iframe" allow="camera; microphone; fullscreen; display-capture" src=""></iframe>
@@ -7376,24 +7565,24 @@ async function applyToStudy(studyId, answers = null) {
 <!-- DEBUG PANEL — dev-only, Shift+D to open -->
 <div id="debug-panel">
   <div id="debug-panel-header">
-    <span>Vetd · Contributor State</span>
+    <span data-i18n="debug_panel_title">Vetd · Contributor State</span>
     <div>
       <select id="sim-scenario" onchange="setSimulationScenario(this.value)">
-        <option value="">No simulation</option>
-        <option value="upcoming_session">Upcoming session</option>
-        <option value="accepted_no_availability">Accepted, no availability</option>
-        <option value="strong_fit_studies">Strong-fit studies</option>
-        <option value="pending_applications">Pending applications</option>
-        <option value="zero_supply">Zero supply</option>
-        <option value="missed_session">Missed session</option>
-        <option value="payment_delayed">Payment delayed</option>
-        <option value="rejected_after_wait">Rejected after wait</option>
-        <option value="no_studies_long_time">No studies (long time)</option>
-        <option value="company_cancelled">Company cancelled</option>
-        <option value="low_fit_contributor">Low-fit contributor</option>
+        <option value="" data-i18n="sim_none">No simulation</option>
+        <option value="upcoming_session" data-i18n="sim_upcoming_session">Upcoming session</option>
+        <option value="accepted_no_availability" data-i18n="sim_accepted_no_availability">Accepted, no availability</option>
+        <option value="strong_fit_studies" data-i18n="sim_strong_fit_studies">Strong-fit studies</option>
+        <option value="pending_applications" data-i18n="sim_pending_applications">Pending applications</option>
+        <option value="zero_supply" data-i18n="sim_zero_supply">Zero supply</option>
+        <option value="missed_session" data-i18n="sim_missed_session">Missed session</option>
+        <option value="payment_delayed" data-i18n="sim_payment_delayed">Payment delayed</option>
+        <option value="rejected_after_wait" data-i18n="sim_rejected_after_wait">Rejected after wait</option>
+        <option value="no_studies_long_time" data-i18n="sim_no_studies_long_time">No studies (long time)</option>
+        <option value="company_cancelled" data-i18n="sim_company_cancelled">Company cancelled</option>
+        <option value="low_fit_contributor" data-i18n="sim_low_fit_contributor">Low-fit contributor</option>
       </select>
-      <button class="dbg-btn" id="sim-toggle-btn" onclick="toggleSimulation()">▶ run</button>
-      <button class="dbg-btn" onclick="refreshDebugPanel()" title="Refresh">↻ refresh</button>
+      <button class="dbg-btn" id="sim-toggle-btn" onclick="toggleSimulation()" data-i18n="sim_run">▶ run</button>
+      <button class="dbg-btn" onclick="refreshDebugPanel()" title="Refresh" data-i18n="sim_refresh">↻ refresh</button>
       <button class="dbg-btn" onclick="toggleDebugPanel()" title="Close">✕</button>
     </div>
   </div>
