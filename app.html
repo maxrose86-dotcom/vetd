@@ -567,15 +567,16 @@
   .modal-next-step { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
   .modal-next-step + .modal-next-step { margin-top: 0.45rem; }
   .modal-session-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin-top: 10px; }
-  .modal-confirm-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin: -4px 0 1rem; }
-  .modal-next-suggestions { text-align: left; margin: 0 0 1.5rem; }
-  .modal-next-list { display: flex; flex-direction: column; gap: 8px; }
+  .modal-confirm-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin: -4px 0 0.9rem; }
+  .modal-next-suggestions { text-align: left; margin: 0 0 1.35rem; }
+  .modal-next-list { display: flex; flex-direction: column; gap: 6px; }
   .modal-suggestion-item {
     width: 100%; text-align: left; border: 1px solid var(--gray-100); background: #fff;
-    border-radius: 12px; padding: 11px 12px; font-family: var(--sans); cursor: pointer;
+    border-radius: 12px; padding: 12px 12px; font-family: var(--sans); cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .modal-suggestion-item:hover { border-color: rgba(17,17,17,0.12); }
-  .modal-suggestion-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
+  .modal-suggestion-item:hover { border-color: rgba(17,17,17,0.12); background: var(--gray-50); }
+  .modal-suggestion-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 2px; }
   .modal-suggestion-meta { font-size: 12px; color: var(--gray-500); line-height: 1.45; }
   .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
   .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
@@ -3112,6 +3113,7 @@ async function applyToStudy(studyId, answers = null) {
   if (suggestionsWrap && suggestionsList) {
     suggestionsList.innerHTML = renderModalSuggestions(studyId);
     suggestionsWrap.style.display = suggestionsList.innerHTML ? '' : 'none';
+    if (suggestionsList.innerHTML) suggestionsWrap.scrollIntoView({ block: 'nearest' });
   }
   document.getElementById('modal-pre-apply').style.display = 'none';
   document.getElementById('modal-confirmed').style.display = 'block';
@@ -4341,8 +4343,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_confirm_fallback_title: 'this study',
       modal_confirm_step_1: 'We’ll review your profile for fit',
       modal_confirm_step_2: 'If selected, you’ll be invited to schedule',
-      modal_confirm_normalize: 'Most contributors apply to a few studies before being selected.',
-      modal_confirm_continue: 'Continue exploring',
+      modal_confirm_normalize: 'Most contributors apply to a few studies to get started.',
+      modal_confirm_continue: 'Apply to another study',
       modal_confirm_view_studies: 'View my studies',
       modal_close_btn: 'Close',
       applied_badge: 'Applied ✓',
@@ -4693,8 +4695,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_confirm_fallback_title: 'den här studien',
       modal_confirm_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_confirm_step_2: 'Om du väljs ut blir du inbjuden att boka tid',
-      modal_confirm_normalize: 'De flesta deltagare ansöker till några studier innan de blir utvalda.',
-      modal_confirm_continue: 'Fortsätt utforska',
+      modal_confirm_normalize: 'De flesta deltagare ansöker till några studier för att komma igång.',
+      modal_confirm_continue: 'Ansök till en annan studie',
       modal_confirm_view_studies: 'Se mina studier',
       modal_close_btn: 'Stäng',
       applied_badge: 'Ansökt ✓',
