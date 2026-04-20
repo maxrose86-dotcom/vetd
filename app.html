@@ -581,6 +581,9 @@
   .modal-overview-item { padding: 10px 12px; background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: 10px; }
   .modal-overview-label { font-size: 11px; color: var(--gray-400); margin-bottom: 4px; }
   .modal-overview-value { font-size: 13px; color: var(--gray-900); font-weight: 500; line-height: 1.4; }
+  .match-explain-item { font-size: 12px; color: var(--gray-700); line-height: 1.55; margin-top: 4px; }
+  .match-explain-item:first-child { margin-top: 0; }
+  .match-explain-soft { color: var(--gray-400); }
   .modal-next-block {
     margin-bottom: 1rem; padding: 1rem 1.1rem; background: var(--gray-50);
     border: 1px solid var(--gray-100); border-radius: 12px;
@@ -1367,6 +1370,10 @@
         <div class="modal-section-title" data-i18n="modal_fit_title">Good fit for</div>
         <div class="modal-section-copy" id="modal-fit-copy"></div>
       </div>
+      <div class="modal-section">
+        <div class="modal-section-title" data-i18n="modal_match_title">Why this is a fit</div>
+        <div id="modal-match-explain"></div>
+      </div>
       <div class="modal-next-block">
         <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
         <div class="modal-next-step" data-i18n="modal_next_step_1">We review your profile for fit</div>
@@ -2126,6 +2133,11 @@
           tags,
           spots,
           filled,
+          sourceFormat: s.format || null,
+          targetInterests: interests,
+          targetAges: ages,
+          targetGenders: genders,
+          targetLocations: locs,
           format:             FORMAT_FILTER[s.format] || 'online',
           featured:           false,
           detail:             s.description || 'No additional details provided.',
@@ -2337,6 +2349,72 @@
     return t('modal_good_fit_online');
   }
 
+  function getDurationPreferenceMinutes(value) {
+    return ({
+      up_to_15: 15,
+      up_to_30: 30,
+      up_to_60: 60,
+      up_to_90: 90,
+      over_90: Infinity
+    })[value] ?? null;
+  }
+
+  function getStudyMatchExplanation(study, profile) {
+    const items = [];
+    const interests = [
+      ...(Array.isArray(profile?.interests_lifestyle) ? profile.interests_lifestyle : []),
+      ...(Array.isArray(profile?.interests_tech) ? profile.interests_tech : []),
+      ...(Array.isArray(profile?.interests_finance) ? profile.interests_finance : [])
+    ];
+    const targetInterests = Array.isArray(study?.targetInterests) ? study.targetInterests : [];
+    const sharedInterest = targetInterests.find(value => interests.includes(value));
+    if (sharedInterest) {
+      items.push({ text: t('modal_match_interest').replace('{tag}', getInterestLabel(sharedInterest).toLowerCase()) });
+    }
+
+    const formats = Array.isArray(profile?.study_formats) ? profile.study_formats : [];
+    if (study?.sourceFormat && formats.includes(study.sourceFormat)) {
+      items.push({
+        text: study.sourceFormat === 'in_person'
+          ? t('modal_match_format_in_person')
+          : t('modal_match_format_online')
+      });
+    }
+
+    const maxSession = getDurationPreferenceMinutes(profile?.max_session_length);
+    if (maxSession && study?.durationMinutes && study.durationMinutes <= maxSession) {
+      items.push({ text: t('modal_match_duration') });
+    }
+
+    const restrictiveSignals =
+      (Array.isArray(study?.targetAges) && study.targetAges.length && !study.targetAges.includes('any')) ||
+      (Array.isArray(study?.targetGenders) && study.targetGenders.length && !study.targetGenders.includes('any')) ||
+      (Array.isArray(study?.targetLocations) && study.targetLocations.length && !study.targetLocations.includes('remote'));
+    if (restrictiveSignals) {
+      items.push({ text: t('modal_match_soft_narrow'), soft: true });
+    }
+
+    if (Array.isArray(study?.screeningQuestions) && study.screeningQuestions.length) {
+      items.push({ text: t('modal_match_soft_screening'), soft: true });
+    }
+
+    if (study?.spots > 0 && (study.spots - study.filled) <= 3) {
+      items.push({ text: t('modal_match_soft_limited'), soft: true });
+    }
+
+    if (!items.some(item => !item.soft)) {
+      items.unshift({ text: t('modal_match_generic') });
+    }
+
+    return items.slice(0, 3);
+  }
+
+  function renderStudyMatchExplanation(study, profile) {
+    return getStudyMatchExplanation(study, profile).map(item => `
+      <div class="match-explain-item ${item.soft ? 'match-explain-soft' : ''}">${esc(item.text)}</div>
+    `).join('');
+  }
+
   function getStudyWhatYoullDo(study) {
     const title = String(study?.title || '').toLowerCase();
     const duration = study?.duration || '';
@@ -2399,6 +2477,7 @@
     document.getElementById('modal-overview-grid').innerHTML = renderStudyOverviewItems(state.currentStudy);
     document.getElementById('modal-detail').textContent = state.currentStudy.detail;
     document.getElementById('modal-fit-copy').textContent = getStudyGoodFitFor(state.currentStudy);
+    document.getElementById('modal-match-explain').innerHTML = renderStudyMatchExplanation(state.currentStudy, state.contribData);
     document.getElementById('modal-what-copy').textContent = getStudyWhatYoullDo(state.currentStudy);
     document.getElementById('modal-session-note').textContent = getStudySessionConfidence(state.currentStudy);
     const sqArea = document.getElementById('modal-screener-area');
@@ -4604,6 +4683,15 @@ async function applyToStudy(studyId, answers = null) {
       modal_good_fit_in_person: 'Good fit for contributors comfortable taking part in person.',
       modal_good_fit_short: 'Good fit for contributors looking for a short session.',
       modal_good_fit_online: 'Good fit for contributors comfortable joining sessions online.',
+      modal_match_title: 'Why this is a fit',
+      modal_match_interest: 'Based on your interest in {tag}',
+      modal_match_format_online: 'Fits your preference for online studies',
+      modal_match_format_in_person: 'Fits your preference for in-person studies',
+      modal_match_duration: 'Fits the session length you prefer',
+      modal_match_generic: 'Shown because it aligns with the kinds of studies you can take part in',
+      modal_match_soft_narrow: 'This study is looking for a narrower profile',
+      modal_match_soft_screening: 'Selection depends on responses to screening questions',
+      modal_match_soft_limited: 'Spots are limited for this study',
       modal_next_title: 'What happens next',
       modal_next_step_1: 'We review your profile for fit',
       modal_next_step_2: 'If selected, you’ll get an invite to schedule',
@@ -5010,6 +5098,15 @@ async function applyToStudy(studyId, answers = null) {
       modal_good_fit_in_person: 'Passar bra för deltagare som är bekväma med att delta på plats.',
       modal_good_fit_short: 'Passar bra för deltagare som söker en kort session.',
       modal_good_fit_online: 'Passar bra för deltagare som är bekväma med att delta digitalt.',
+      modal_match_title: 'Varför den här passar',
+      modal_match_interest: 'Bygger på ditt intresse för {tag}',
+      modal_match_format_online: 'Passar din preferens för digitala studier',
+      modal_match_format_in_person: 'Passar din preferens för studier på plats',
+      modal_match_duration: 'Passar den sessionslängd du föredrar',
+      modal_match_generic: 'Visas eftersom den stämmer med de typer av studier du kan delta i',
+      modal_match_soft_narrow: 'Den här studien söker en smalare profil',
+      modal_match_soft_screening: 'Urvalet beror också på svaren i screeningfrågorna',
+      modal_match_soft_limited: 'Antalet platser i den här studien är begränsat',
       modal_next_title: 'Vad händer nu',
       modal_next_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_next_step_2: 'Om du väljs ut får du en inbjudan att boka tid',
