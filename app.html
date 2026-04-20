@@ -842,6 +842,12 @@
     font-family: inherit; font-size: 9.5px; color: #484f58;
   }
   .dbg-btn:hover { color: #8b949e; }
+  #sim-scenario {
+    background: #161b22; color: #8b949e; border: 1px solid #21262d;
+    border-radius: 3px; font-size: 9px; padding: 2px 4px;
+    font-family: inherit; cursor: pointer; max-width: 130px;
+  }
+  #sim-scenario:focus { outline: none; border-color: #388bfd; }
   .dbg-section { padding: 10px 14px; border-bottom: 1px solid #161b22; }
   .dbg-title {
     font-size: 9px; font-weight: 700; text-transform: uppercase;
@@ -1806,7 +1812,8 @@
     profileData: null,
     contribData: null,
     notifications: null,
-    routing: null
+    routing: null,
+    simulation: { enabled: false, scenario: null }
   };
 
   function syncContributorHydration() {
@@ -6329,17 +6336,42 @@ async function applyToStudy(studyId, answers = null) {
     const content = document.getElementById('debug-content');
     if (!content) return;
 
-    // Use existing app functions — no reimplementation
-    const safe       = getSafeContributorState();
-    const model      = getContributorStateModel();
-    const prefs      = getContributorMatchPreferences();
-    const nextAction = getContributorNextAction();
-    const timeline   = buildContributorActivityTimeline();
+    const effective    = getEffectiveState();
+    const isSimulating = state.simulation.enabled && !!state.simulation.scenario;
 
-    const fitStudy = state.currentStudy || (Array.isArray(state.studies) && state.studies[0]) || null;
-    const fit      = fitStudy
-      ? computeStudyFit(fitStudy, safe.profile, prefs)
-      : null;
+    // Temp-swap globals so all introspection functions reflect effective state
+    const saved = isSimulating ? {
+      myApplications: state.myApplications,
+      studies:        state.studies,
+      contribData:    state.contribData,
+      payments:       state.payments
+    } : null;
+    if (isSimulating) {
+      state.myApplications = effective.myApplications;
+      state.studies        = effective.studies;
+      state.contribData    = effective.contribData;
+      state.payments       = effective.payments;
+    }
+
+    let safe, model, prefs, nextAction, timeline, fit, routing;
+    try {
+      safe       = getSafeContributorState();
+      model      = getContributorStateModel();
+      prefs      = getContributorMatchPreferences();
+      nextAction = getContributorNextAction();
+      timeline   = buildContributorActivityTimeline();
+      routing    = computeOpportunityRouting(effective);
+
+      const fitStudy = state.currentStudy || (Array.isArray(effective.studies) && effective.studies[0]) || null;
+      fit = fitStudy ? computeStudyFit(fitStudy, safe.profile, prefs) : null;
+    } finally {
+      if (isSimulating) {
+        state.myApplications = saved.myApplications;
+        state.studies        = saved.studies;
+        state.contribData    = saved.contribData;
+        state.payments       = saved.payments;
+      }
+    }
 
     const hydration = {
       isHydrated:      state.isHydrated,
@@ -6352,9 +6384,11 @@ async function applyToStudy(studyId, answers = null) {
       applied_ids:     state.appliedStudies instanceof Set  ? state.appliedStudies.size   : 'pending',
     };
 
-    const routing = state.routing || computeOpportunityRouting(state);
+    const simBanner = isSimulating
+      ? '<div style="padding:8px 14px;background:rgba(16,185,129,0.12);border-bottom:1px solid #21262d;font-size:9px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">⬤ Simulating: ' + esc(state.simulation.scenario) + '</div>'
+      : '';
 
-    content.innerHTML = [
+    content.innerHTML = simBanner + [
       _dbgSection('Hydration',
         _dbgObj(hydration)),
       _dbgSection('Routing · ' + routing.mode,
@@ -6396,6 +6430,125 @@ async function applyToStudy(studyId, answers = null) {
     if (obj == null) return '<span style="color:#484f58">null</span>';
     return '<pre class="dbg-pre">' + esc(JSON.stringify(obj, null, 2)) + '</pre>';
   }
+
+  // ─── SCENARIO SIMULATOR ──────────────────────────────────────────────────────
+
+  function getEffectiveState() {
+    if (!state.simulation.enabled || !state.simulation.scenario) return state;
+    return applySimulationScenario(state, state.simulation.scenario);
+  }
+
+  function applySimulationScenario(base, scenario) {
+    // Deep-clone, handling Set (appliedStudies is not JSON-serialisable)
+    const appliedArr = base.appliedStudies instanceof Set ? Array.from(base.appliedStudies) : [];
+    const s = JSON.parse(JSON.stringify({ ...base, appliedStudies: appliedArr }));
+    s.appliedStudies = new Set(appliedArr);
+    if (!s.contribData) s.contribData = {};
+    if (!s.profileData) s.profileData = {};
+
+    switch (scenario) {
+      case 'upcoming_session':
+        s.myApplications = [{
+          id: 'sim1', status: 'accepted',
+          scheduled_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          room_url: 'https://test.daily.co/sim',
+          studies: { title: 'User interview', duration_minutes: 45 }
+        }];
+        break;
+
+      case 'accepted_no_availability':
+        s.myApplications = [{
+          id: 'sim2', status: 'accepted', scheduled_at: null,
+          studies: { title: 'Fintech study', duration_minutes: 60 }
+        }];
+        s.contribData.available_times = [];
+        break;
+
+      case 'strong_fit_studies':
+        s.studies = [
+          { id: 'st1', title: 'Mobile banking UX',    format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
+            spots: 5, filled: 1, tags: [{ text: 'Finance', cls: 'tag-blue' }], payType: 'per session',
+            company: 'Fintech team', desc: 'Simulated strong-fit study.', featured: false, detail: '', screeningQuestions: null },
+          { id: 'st2', title: 'E-commerce checkout',  format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
+            spots: 3, filled: 0, tags: [{ text: 'Tech', cls: 'tag-blue' }], payType: 'per session',
+            company: 'Retail team', desc: 'Simulated study.', featured: false, detail: '', screeningQuestions: null }
+        ];
+        break;
+
+      case 'zero_supply':
+        s.studies = [];
+        break;
+
+      case 'pending_applications':
+        s.myApplications = [
+          { id: 'sim3', status: 'pending', applied_at: new Date().toISOString(),
+            studies: { title: 'Retail UX study', duration_minutes: 30 } }
+        ];
+        break;
+    }
+
+    return s;
+  }
+
+  function setSimulationScenario(val) {
+    state.simulation.scenario = val || null;
+  }
+
+  function toggleSimulation() {
+    state.simulation.enabled = !state.simulation.enabled;
+    const btn = document.getElementById('sim-toggle-btn');
+    if (btn) {
+      btn.textContent = state.simulation.enabled ? '■ stop' : '▶ run';
+      btn.style.color = state.simulation.enabled ? '#10b981' : '';
+    }
+    refreshDebugPanel();
+    rerenderApp();
+  }
+
+  // Render the app surfaces using effective (possibly simulated) state.
+  // Uses a temporary global swap so all existing render functions work unchanged.
+  // Safe: JS is single-threaded — no async state reads occur during synchronous render.
+  function rerenderApp() {
+    const effective = getEffectiveState();
+    const isSimulating = state.simulation.enabled && state.simulation.scenario;
+
+    if (!isSimulating) {
+      renderContributorCommandSurface();
+      renderContributorActivityTimeline();
+      return;
+    }
+
+    const saved = {
+      myApplications: state.myApplications,
+      studies:        state.studies,
+      contribData:    state.contribData,
+      payments:       state.payments,
+      routing:        state.routing
+    };
+    state.myApplications = effective.myApplications;
+    state.studies        = effective.studies;
+    state.contribData    = effective.contribData;
+    state.payments       = effective.payments;
+    state.routing        = computeOpportunityRouting(effective);
+
+    try {
+      renderContributorCommandSurface();
+      renderContributorActivityTimeline();
+      const profile   = { ...(effective.profileData || {}), ...(effective.contribData || {}) };
+      const stats     = computeUserStats(profile);
+      const tier      = computeTierDisplay(stats.tier, stats.studiesDone);
+      const firstName = (effective.profileData || {}).first_name
+                     || (effective.currentUser || {}).user_metadata?.first_name
+                     || '';
+      updateDashboard(firstName, stats, tier);
+    } finally {
+      state.myApplications = saved.myApplications;
+      state.studies        = saved.studies;
+      state.contribData    = saved.contribData;
+      state.payments       = saved.payments;
+      state.routing        = saved.routing;
+    }
+  }
 </script>
 
 <!-- VIDEO CALL OVERLAY -->
@@ -6419,6 +6572,15 @@ async function applyToStudy(studyId, answers = null) {
   <div id="debug-panel-header">
     <span>Vetd · Contributor State</span>
     <div>
+      <select id="sim-scenario" onchange="setSimulationScenario(this.value)">
+        <option value="">No simulation</option>
+        <option value="upcoming_session">Upcoming session</option>
+        <option value="accepted_no_availability">Accepted, no availability</option>
+        <option value="strong_fit_studies">Strong-fit studies</option>
+        <option value="pending_applications">Pending applications</option>
+        <option value="zero_supply">Zero supply</option>
+      </select>
+      <button class="dbg-btn" id="sim-toggle-btn" onclick="toggleSimulation()">▶ run</button>
       <button class="dbg-btn" onclick="refreshDebugPanel()" title="Refresh">↻ refresh</button>
       <button class="dbg-btn" onclick="toggleDebugPanel()" title="Close">✕</button>
     </div>
