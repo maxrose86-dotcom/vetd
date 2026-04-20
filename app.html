@@ -6446,6 +6446,19 @@ async function applyToStudy(studyId, answers = null) {
     if (!s.contribData) s.contribData = {};
     if (!s.profileData) s.profileData = {};
 
+    // All scenarios: treat as fully onboarded so no onboarding UI bleeds through
+    s.contribData = {
+      ...s.contribData,
+      job_title:        s.contribData.job_title        || 'Product Manager',
+      industry:         s.contribData.industry         || 'Tech',
+      experience_level: s.contribData.experience_level || 'mid',
+      available_times:  (Array.isArray(s.contribData.available_times) && s.contribData.available_times.length)
+                          ? s.contribData.available_times : ['weekday_evening'],
+      study_formats:    (Array.isArray(s.contribData.study_formats) && s.contribData.study_formats.length)
+                          ? s.contribData.study_formats : ['online'],
+      total_studies:    s.contribData.total_studies > 0 ? s.contribData.total_studies : 1,
+    };
+
     switch (scenario) {
       case 'upcoming_session':
         s.myApplications = [{
@@ -6540,6 +6553,7 @@ async function applyToStudy(studyId, answers = null) {
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
       renderStudies('dashboard-studies', state.studies);
+      renderProfileCompletionCard();
       const profile   = { ...(effective.profileData || {}), ...(effective.contribData || {}) };
       const stats     = computeUserStats(profile);
       const tier      = computeTierDisplay(stats.tier, stats.studiesDone);
