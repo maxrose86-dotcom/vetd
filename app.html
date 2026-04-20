@@ -816,6 +816,41 @@
   .cookie-btns{display:flex;gap:8px;flex-shrink:0}
   .cookie-accept{padding:7px 18px;background:#00C47A;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:'Inter',sans-serif}
   .cookie-decline{padding:7px 18px;background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
+
+  /* ── DEBUG PANEL (dev-only, Shift+D) ── */
+  #debug-panel {
+    display: none; position: fixed; top: 0; right: 0; bottom: 0;
+    width: 360px; background: #0d1117; color: #c9d1d9;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 10.5px; overflow-y: auto; z-index: 99998;
+    border-left: 1px solid #21262d;
+    box-shadow: -12px 0 40px rgba(0,0,0,0.5);
+  }
+  #debug-panel.open { display: block; }
+  #debug-panel-header {
+    position: sticky; top: 0; background: #0d1117;
+    padding: 12px 14px 10px; border-bottom: 1px solid #21262d;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #debug-panel-header span {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.14em; color: #3b82f6;
+  }
+  #debug-panel-header div { display: flex; align-items: center; gap: 10px; }
+  .dbg-btn {
+    background: none; border: none; cursor: pointer; padding: 0;
+    font-family: inherit; font-size: 9.5px; color: #484f58;
+  }
+  .dbg-btn:hover { color: #8b949e; }
+  .dbg-section { padding: 10px 14px; border-bottom: 1px solid #161b22; }
+  .dbg-title {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #388bfd; margin-bottom: 7px;
+  }
+  .dbg-pre {
+    margin: 0; white-space: pre-wrap; word-break: break-all;
+    color: #8b949e; line-height: 1.6;
+  }
 </style>
 <script src="https://browser.sentry-cdn.com/8.0.0/bundle.min.js" crossorigin="anonymous"></script>
 <script>
@@ -6133,6 +6168,82 @@ async function applyToStudy(studyId, answers = null) {
       btn.disabled = false; btn.textContent = 'Delete account';
     }
   }
+
+  // ─── DEBUG PANEL ─────────────────────────────────────────────────────────────
+
+  document.addEventListener('keydown', function(e) {
+    if (e.shiftKey && e.key === 'D' && !e.target.matches('input,textarea,[contenteditable]')) {
+      toggleDebugPanel();
+    }
+  });
+
+  function toggleDebugPanel() {
+    const panel = document.getElementById('debug-panel');
+    if (!panel) return;
+    const isOpen = panel.classList.toggle('open');
+    if (isOpen) refreshDebugPanel();
+  }
+
+  function refreshDebugPanel() {
+    const content = document.getElementById('debug-content');
+    if (!content) return;
+
+    // Use existing app functions — no reimplementation
+    const safe       = getSafeContributorState();
+    const model      = getContributorStateModel();
+    const prefs      = getContributorMatchPreferences();
+    const nextAction = getContributorNextAction();
+    const timeline   = buildContributorActivityTimeline();
+
+    const fitStudy = state.currentStudy || (Array.isArray(state.studies) && state.studies[0]) || null;
+    const fit      = fitStudy
+      ? computeStudyFit(fitStudy, safe.profile, prefs)
+      : null;
+
+    const hydration = {
+      isHydrated:      state.isHydrated,
+      profile:         state.hydration.profile,
+      applications:    state.hydration.applications,
+      payments:        state.hydration.payments,
+      studies_loaded:  Array.isArray(state.studies)        ? state.studies.length        : 'pending',
+      apps_loaded:     Array.isArray(state.myApplications) ? state.myApplications.length : 'pending',
+      notifs_loaded:   Array.isArray(state.notifications)  ? state.notifications.length  : 'pending',
+      applied_ids:     state.appliedStudies instanceof Set  ? state.appliedStudies.size   : 'pending',
+    };
+
+    content.innerHTML = [
+      _dbgSection('Hydration',
+        _dbgObj(hydration)),
+      _dbgSection('Mode · Priority · Context',
+        _dbgObj({ mode: model.mode, priority: model.priority, flags: model.flags, context: model.context })),
+      _dbgSection('Next Action',
+        _dbgObj({ main: nextAction.main, sub: nextAction.sub, action: nextAction.action })),
+      _dbgSection('Match Preferences',
+        _dbgObj(prefs)),
+      fit
+        ? _dbgSection('Study Fit · ' + esc((fitStudy.title || '?').slice(0, 28)),
+            _dbgObj({ score: fit.score, positives: fit.positives, softLimits: fit.softLimits, signals: fit.signals }))
+        : _dbgSection('Study Fit',
+            '<span style="color:#484f58">open a study modal to inspect fit</span>'),
+      _dbgSection('Activity Timeline',
+        timeline.length
+          ? timeline.map(function(item) {
+              return '<div style="display:flex;gap:8px;margin-bottom:5px;line-height:1.5">' +
+                '<span style="color:#484f58;flex-shrink:0">' + esc(timeAgo(item.ts)) + '</span>' +
+                '<span style="color:#10b981;flex-shrink:0;min-width:60px">' + esc(item.tone === 'positive' ? '↑' : '·') + '</span>' +
+                '<span style="color:#8b949e">' + esc(item.title) + '</span></div>';
+            }).join('')
+          : '<span style="color:#484f58">no activity yet</span>'),
+    ].join('');
+  }
+
+  function _dbgSection(title, inner) {
+    return '<div class="dbg-section"><div class="dbg-title">' + esc(title) + '</div>' + inner + '</div>';
+  }
+  function _dbgObj(obj) {
+    if (obj == null) return '<span style="color:#484f58">null</span>';
+    return '<pre class="dbg-pre">' + esc(JSON.stringify(obj, null, 2)) + '</pre>';
+  }
 </script>
 
 <!-- VIDEO CALL OVERLAY -->
@@ -6150,6 +6261,17 @@ async function applyToStudy(studyId, answers = null) {
     <button class="cookie-decline" onclick="cookieChoice(false)" data-i18n="cookie_decline">Decline</button>
     <button class="cookie-accept" onclick="cookieChoice(true)" data-i18n="cookie_accept">Accept</button>
   </div>
+</div>
+<!-- DEBUG PANEL — dev-only, Shift+D to open -->
+<div id="debug-panel">
+  <div id="debug-panel-header">
+    <span>Vetd · Contributor State</span>
+    <div>
+      <button class="dbg-btn" onclick="refreshDebugPanel()" title="Refresh">↻ refresh</button>
+      <button class="dbg-btn" onclick="toggleDebugPanel()" title="Close">✕</button>
+    </div>
+  </div>
+  <div id="debug-content"></div>
 </div>
 </body>
 </html>
