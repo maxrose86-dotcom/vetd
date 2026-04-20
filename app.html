@@ -6337,61 +6337,84 @@ async function applyToStudy(studyId, answers = null) {
     const content = document.getElementById('debug-content');
     if (!content) return;
 
+    const isSimulating = isSimulationActive();
     const effective    = getEffectiveState();
-    const isSimulating = state.simulation.enabled && !!state.simulation.scenario;
 
-    // Temp-swap globals so all introspection functions reflect effective state
+    // Full swap — all fields render functions read from state
     const saved = isSimulating ? {
       myApplications: state.myApplications,
       studies:        state.studies,
       contribData:    state.contribData,
-      payments:       state.payments
+      profileData:    state.profileData,
+      payments:       state.payments,
+      appliedStudies: state.appliedStudies,
+      hydration:      state.hydration,
+      isHydrated:     state.isHydrated,
+      notifications:  state.notifications,
+      routing:        state.routing,
     } : null;
     if (isSimulating) {
-      state.myApplications = effective.myApplications;
-      state.studies        = effective.studies;
-      state.contribData    = effective.contribData;
-      state.payments       = effective.payments;
+      Object.assign(state, {
+        myApplications: effective.myApplications,
+        studies:        effective.studies,
+        contribData:    effective.contribData,
+        profileData:    effective.profileData,
+        payments:       effective.payments,
+        appliedStudies: effective.appliedStudies,
+        hydration:      effective.hydration,
+        isHydrated:     effective.isHydrated,
+        notifications:  effective.notifications,
+        routing:        effective.routing,
+      });
     }
 
-    let safe, model, prefs, nextAction, timeline, fit, routing;
+    let safe, model, prefs, nextAction, timeline, fit, fitStudy, routing;
     try {
       safe       = getSafeContributorState();
       model      = getContributorStateModel();
       prefs      = getContributorMatchPreferences();
       nextAction = getContributorNextAction();
       timeline   = buildContributorActivityTimeline();
-      routing    = computeOpportunityRouting(effective);
-
-      const fitStudy = state.currentStudy || (Array.isArray(effective.studies) && effective.studies[0]) || null;
-      fit = fitStudy ? computeStudyFit(fitStudy, safe.profile, prefs) : null;
+      routing    = state.routing || computeOpportunityRouting(effective);
+      fitStudy   = state.currentStudy || (Array.isArray(state.studies) && state.studies[0]) || null;
+      fit        = fitStudy ? computeStudyFit(fitStudy, safe.profile, prefs) : null;
     } finally {
-      if (isSimulating) {
-        state.myApplications = saved.myApplications;
-        state.studies        = saved.studies;
-        state.contribData    = saved.contribData;
-        state.payments       = saved.payments;
-      }
+      if (isSimulating) Object.assign(state, saved);
     }
 
-    const hydration = {
-      isHydrated:      state.isHydrated,
-      profile:         state.hydration.profile,
-      applications:    state.hydration.applications,
-      payments:        state.hydration.payments,
-      studies_loaded:  Array.isArray(state.studies)        ? state.studies.length        : 'pending',
-      apps_loaded:     Array.isArray(state.myApplications) ? state.myApplications.length : 'pending',
-      notifs_loaded:   Array.isArray(state.notifications)  ? state.notifications.length  : 'pending',
-      applied_ids:     state.appliedStudies instanceof Set  ? state.appliedStudies.size   : 'pending',
+    // Real hydration — always from actual state, not snapshot
+    const realHydration = isSimulating ? saved : state;
+    const hydrationInfo = {
+      isHydrated:     realHydration.isHydrated,
+      profile:        realHydration.hydration?.profile,
+      applications:   realHydration.hydration?.applications,
+      payments:       realHydration.hydration?.payments,
+      studies_loaded: Array.isArray(realHydration.studies)        ? realHydration.studies.length        : 'pending',
+      apps_loaded:    Array.isArray(realHydration.myApplications) ? realHydration.myApplications.length : 'pending',
+      notifs_loaded:  Array.isArray(realHydration.notifications)  ? realHydration.notifications.length  : 'pending',
+      applied_ids:    realHydration.appliedStudies instanceof Set  ? realHydration.appliedStudies.size   : 'pending',
     };
 
     const simBanner = isSimulating
       ? '<div style="padding:8px 14px;background:rgba(16,185,129,0.12);border-bottom:1px solid #21262d;font-size:9px;color:#10b981;font-weight:700;text-transform:uppercase;letter-spacing:0.1em">⬤ Simulating: ' + esc(state.simulation.scenario) + '</div>'
       : '';
 
+    const simMetaSection = isSimulating
+      ? _dbgSection('Simulation Snapshot',
+          _dbgObj({
+            scenario:      state.simulation.scenario,
+            source:        'full snapshot — real state not used',
+            studies:       (effective.studies  || []).length,
+            applications:  (effective.myApplications || []).length,
+            payments:      (effective.payments || []).length,
+            notifications: (effective.notifications  || []).length,
+          }))
+      : '';
+
     content.innerHTML = simBanner + [
-      _dbgSection('Hydration',
-        _dbgObj(hydration)),
+      simMetaSection,
+      _dbgSection('Hydration (real state)',
+        _dbgObj(hydrationInfo)),
       _dbgSection('Routing · ' + routing.mode,
         _dbgObj({
           mode:      routing.mode,
@@ -6438,104 +6461,120 @@ async function applyToStudy(studyId, answers = null) {
     return !!(state.simulation?.enabled && state.simulation?.scenario);
   }
 
-  function getEffectiveState() {
-    if (!isSimulationActive()) return state;
-    return applySimulationScenario(state, state.simulation.scenario);
-  }
+  // Returns a complete, self-contained state snapshot for the given scenario.
+  // Does NOT start from the real account state — only the user identity (name)
+  // is inherited so the greeting renders correctly on any account.
+  // This ensures scenarios work identically on empty, partial, or active accounts.
+  function buildScenarioStateSnapshot(scenario) {
+    const firstName = state.currentUser?.user_metadata?.first_name || 'Alex';
+    const lastName  = state.currentUser?.user_metadata?.last_name  || 'Demo';
 
-  function applySimulationScenario(base, scenario) {
-    // Deep-clone, handling Set (appliedStudies is not JSON-serialisable)
-    const appliedArr = base.appliedStudies instanceof Set ? Array.from(base.appliedStudies) : [];
-    const s = JSON.parse(JSON.stringify({ ...base, appliedStudies: appliedArr }));
-    s.appliedStudies = new Set(appliedArr);
-    if (!s.contribData) s.contribData = {};
-    if (!s.profileData) s.profileData = {};
-
-    // All scenarios: treat as fully onboarded so no onboarding UI bleeds through
-    s.contribData = {
-      ...s.contribData,
-      job_title:        s.contribData.job_title        || 'Product Manager',
-      industry:         s.contribData.industry         || 'Tech',
-      experience_level: s.contribData.experience_level || 'mid',
-      available_times:  (Array.isArray(s.contribData.available_times) && s.contribData.available_times.length)
-                          ? s.contribData.available_times : ['weekday_evening'],
-      study_formats:    (Array.isArray(s.contribData.study_formats) && s.contribData.study_formats.length)
-                          ? s.contribData.study_formats : ['online'],
-      total_studies:    s.contribData.total_studies > 0 ? s.contribData.total_studies : 1,
+    // Base fully-onboarded contributor (same across all scenarios unless overridden)
+    const baseContrib = {
+      job_title: 'Product Manager', industry: 'Tech', experience_level: 'mid',
+      available_times: ['weekday_evening', 'weekend_morning'],
+      study_formats: ['online'],
+      interests_finance: ['online_banking', 'investing'],
+      interests_tech: ['smartphones', 'social_media'],
+      interests_lifestyle: [],
+      total_studies: 0, total_earned: 0,
+      rating: null, completion_rate: null, tier: null,
     };
+
+    // Two default browseable studies used as fallback supply
+    const baseStudies = [
+      { id: 'sim-browse-1', title: 'Digital habits research',
+        format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
+        spots: 5, filled: 1, tags: [{ text: 'Tech', cls: 'tag-blue' }],
+        payType: 'per session', company: 'Vetd Research',
+        desc: 'How people interact with digital products day to day.',
+        featured: false, detail: '', screeningQuestions: null,
+        targetInterests: ['smartphones', 'social_media'] },
+      { id: 'sim-browse-2', title: 'Financial app usability',
+        format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
+        spots: 4, filled: 0, tags: [{ text: 'Finance', cls: 'tag-blue' }],
+        payType: 'per session', company: 'Fintech Research',
+        desc: 'Testing the usability of a new budgeting application.',
+        featured: false, detail: '', screeningQuestions: null,
+        targetInterests: ['online_banking', 'budgeting'] },
+    ];
+
+    let contribData    = { ...baseContrib };
+    let studies        = baseStudies;
+    let myApplications = [];
+    let payments       = [];
 
     switch (scenario) {
       case 'upcoming_session':
-        s.myApplications = [{
+        myApplications = [{
           id: 'sim1', status: 'accepted',
           scheduled_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
           room_url: 'https://test.daily.co/sim',
-          studies: { title: 'User interview', duration_minutes: 45 }
+          studies: { title: 'User interview', duration_minutes: 45 },
         }];
+        contribData = { ...baseContrib, total_studies: 3, total_earned: 1350,
+                        rating: 4.8, completion_rate: 100, tier: 'rising' };
         break;
 
       case 'accepted_no_availability':
-        s.myApplications = [{
+        myApplications = [{
           id: 'sim2', status: 'accepted', scheduled_at: null,
-          studies: { title: 'Fintech study', duration_minutes: 60 }
+          studies: { title: 'Fintech study', duration_minutes: 60 },
         }];
-        s.contribData.available_times = [];
+        contribData = { ...baseContrib, available_times: [] };
         break;
 
       case 'strong_fit_studies':
-        // Inject matching interests so computeStudyFit returns score >= 3 (strong_fit_live_study, P5)
-        if (!s.contribData) s.contribData = {};
-        s.contribData.interests_finance  = ['online_banking', 'investing'];
-        s.studies = [
-          { id: 'st1', title: 'Mobile banking UX',    format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
-            spots: 5, filled: 1, tags: [{ text: 'Finance', cls: 'tag-blue' }], payType: 'per session',
-            company: 'Fintech team', desc: 'Simulated strong-fit study.', featured: false, detail: '', screeningQuestions: null,
+        studies = [
+          { id: 'st1', title: 'Mobile banking UX',
+            format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
+            spots: 5, filled: 1, tags: [{ text: 'Finance', cls: 'tag-blue' }],
+            payType: 'per session', company: 'Fintech team',
+            desc: 'Simulated strong-fit study.', featured: false, detail: '', screeningQuestions: null,
             targetInterests: ['online_banking', 'investing'] },
-          { id: 'st2', title: 'E-commerce checkout',  format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
-            spots: 3, filled: 0, tags: [{ text: 'Tech', cls: 'tag-blue' }], payType: 'per session',
-            company: 'Retail team', desc: 'Simulated study.', featured: false, detail: '', screeningQuestions: null,
-            targetInterests: ['online_banking'] }
+          { id: 'st2', title: 'E-commerce checkout',
+            format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
+            spots: 3, filled: 0, tags: [{ text: 'Tech', cls: 'tag-blue' }],
+            payType: 'per session', company: 'Retail team',
+            desc: 'Simulated study.', featured: false, detail: '', screeningQuestions: null,
+            targetInterests: ['online_banking'] },
         ];
+        contribData = { ...baseContrib, interests_finance: ['online_banking', 'investing'] };
         break;
 
       case 'zero_supply':
-        s.studies = [];
+        studies = [];
         break;
 
       case 'pending_applications':
-        s.myApplications = [
-          { id: 'sim3', status: 'pending', applied_at: new Date().toISOString(),
-            studies: { title: 'Retail UX study', duration_minutes: 30 } }
-        ];
+        myApplications = [{
+          id: 'sim3', status: 'pending', applied_at: new Date().toISOString(),
+          studies: { title: 'Retail UX study', duration_minutes: 30 },
+        }];
         break;
     }
 
-    // Scenarios that involve sessions or pending apps but don't set s.studies
-    // leave the real studies array untouched — which may be empty for dev/test users.
-    // When empty, renderStudies falls through to renderPreviewStudySection(),
-    // producing an "onboarding/empty" look even though the scenario is active.
-    // Fix: inject a fallback study so the browse section always has content,
-    // unless the scenario explicitly tests zero supply.
-    if (!s.studies.length && scenario !== 'zero_supply') {
-      s.studies = [
-        { id: 'sim-browse-1', title: 'Digital habits research',
-          format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
-          spots: 5, filled: 1, tags: [{ text: 'Tech', cls: 'tag-blue' }],
-          payType: 'per session', company: 'Vetd Research',
-          desc: 'How people interact with digital products day to day.',
-          featured: false, detail: '', screeningQuestions: null,
-          targetInterests: ['smartphones', 'social_media'] },
-        { id: 'sim-browse-2', title: 'Financial app usability',
-          format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
-          spots: 4, filled: 0, tags: [{ text: 'Finance', cls: 'tag-blue' }],
-          payType: 'per session', company: 'Fintech Research',
-          desc: 'Testing the usability of a new budgeting application.',
-          featured: false, detail: '', screeningQuestions: null,
-          targetInterests: ['online_banking', 'budgeting'] }
-      ];
-    }
+    const snapshot = {
+      currentUser:    state.currentUser,          // identity only
+      profileData:    { first_name: firstName, last_name: lastName },
+      contribData,
+      studies,
+      myApplications,
+      appliedStudies: new Set(),                  // no prior applications in simulation
+      payments,
+      notifications:  [],
+      hydration:      { profile: true, applications: true, payments: true },
+      isHydrated:     true,
+      routing:        null,                       // computed below
+      simulation:     state.simulation,
+    };
+    snapshot.routing = computeOpportunityRouting(snapshot);
+    return snapshot;
+  }
 
-    return s;
+  function getEffectiveState() {
+    if (!isSimulationActive()) return state;
+    return buildScenarioStateSnapshot(state.simulation.scenario);
   }
 
   function setSimulationScenario(val) {
@@ -6553,31 +6592,23 @@ async function applyToStudy(studyId, answers = null) {
     rerenderApp();
   }
 
-  // Render the app surfaces using effective (possibly simulated) state.
-  // Uses a temporary global swap so all existing render functions work unchanged.
-  // Safe: JS is single-threaded — no async state reads occur during synchronous render.
+  // Render contributor surfaces against the effective (snapshot or real) state.
+  // Temporarily replaces ALL state fields read by render functions, then restores.
+  // Safe: JS is single-threaded — no async reads happen during synchronous render.
   function rerenderApp() {
-    const effective = getEffectiveState();
-    const isSimulating = state.simulation.enabled && state.simulation.scenario;
-
-    if (!isSimulating) {
+    if (!isSimulationActive()) {
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
       return;
     }
 
-    const saved = {
-      myApplications: state.myApplications,
-      studies:        state.studies,
-      contribData:    state.contribData,
-      payments:       state.payments,
-      routing:        state.routing
-    };
-    state.myApplications = effective.myApplications;
-    state.studies        = effective.studies;
-    state.contribData    = effective.contribData;
-    state.payments       = effective.payments;
-    state.routing        = computeOpportunityRouting(effective);
+    const effective = getEffectiveState();
+    const SWAP_KEYS = ['myApplications','studies','contribData','profileData',
+                       'payments','appliedStudies','hydration','isHydrated',
+                       'notifications','routing'];
+    const saved = {};
+    SWAP_KEYS.forEach(function(k) { saved[k] = state[k]; });
+    SWAP_KEYS.forEach(function(k) { state[k] = effective[k]; });
 
     try {
       renderContributorCommandSurface();
@@ -6587,16 +6618,12 @@ async function applyToStudy(studyId, answers = null) {
       const profile   = { ...(effective.profileData || {}), ...(effective.contribData || {}) };
       const stats     = computeUserStats(profile);
       const tier      = computeTierDisplay(stats.tier, stats.studiesDone);
-      const firstName = (effective.profileData || {}).first_name
-                     || (effective.currentUser || {}).user_metadata?.first_name
+      const firstName = effective.profileData?.first_name
+                     || effective.currentUser?.user_metadata?.first_name
                      || '';
       updateDashboard(firstName, stats, tier);
     } finally {
-      state.myApplications = saved.myApplications;
-      state.studies        = saved.studies;
-      state.contribData    = saved.contribData;
-      state.payments       = saved.payments;
-      state.routing        = saved.routing;
+      SWAP_KEYS.forEach(function(k) { state[k] = saved[k]; });
     }
   }
 </script>
