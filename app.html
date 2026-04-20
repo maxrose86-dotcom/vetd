@@ -6465,13 +6465,18 @@ async function applyToStudy(studyId, answers = null) {
         break;
 
       case 'strong_fit_studies':
+        // Inject matching interests so computeStudyFit returns score >= 3 (strong_fit_live_study, P5)
+        if (!s.contribData) s.contribData = {};
+        s.contribData.interests_finance  = ['online_banking', 'investing'];
         s.studies = [
           { id: 'st1', title: 'Mobile banking UX',    format: 'online', pay: 500, hourlyRate: 667, duration: '45-min online',
             spots: 5, filled: 1, tags: [{ text: 'Finance', cls: 'tag-blue' }], payType: 'per session',
-            company: 'Fintech team', desc: 'Simulated strong-fit study.', featured: false, detail: '', screeningQuestions: null },
+            company: 'Fintech team', desc: 'Simulated strong-fit study.', featured: false, detail: '', screeningQuestions: null,
+            targetInterests: ['online_banking', 'investing'] },
           { id: 'st2', title: 'E-commerce checkout',  format: 'online', pay: 400, hourlyRate: 533, duration: '45-min online',
             spots: 3, filled: 0, tags: [{ text: 'Tech', cls: 'tag-blue' }], payType: 'per session',
-            company: 'Retail team', desc: 'Simulated study.', featured: false, detail: '', screeningQuestions: null }
+            company: 'Retail team', desc: 'Simulated study.', featured: false, detail: '', screeningQuestions: null,
+            targetInterests: ['online_banking'] }
         ];
         break;
 
@@ -6534,6 +6539,7 @@ async function applyToStudy(studyId, answers = null) {
     try {
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
+      renderStudies('dashboard-studies', state.studies);
       const profile   = { ...(effective.profileData || {}), ...(effective.contribData || {}) };
       const stats     = computeUserStats(profile);
       const tier      = computeTierDisplay(stats.tier, stats.studiesDone);
