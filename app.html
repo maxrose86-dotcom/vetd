@@ -611,6 +611,7 @@
   .empty-state h3 { font-family: var(--serif); font-size: 24px; color: var(--gray-700); margin-bottom: 14px; line-height: 1.25; }
   .empty-state p { font-size: 14px; font-weight: 300; line-height: 1.6; }
   .empty-state .empty-state-secondary { font-size: 12px; color: var(--gray-400); margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+  .payout-note { font-size: 12px; color: var(--gray-400); line-height: 1.55; margin-top: 12px; }
 
   /* ── NOTIFICATION BELL & PANEL ── */
   .notif-wrap { position: relative; }
@@ -3990,7 +3991,7 @@ async function applyToStudy(studyId, answers = null) {
     const section = document.getElementById('payment-history-section');
     if (!section) return;
     if (!payments.length) {
-      section.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300">${t('payment_none')}</p>`;
+      section.innerHTML = `<p style="font-size:13px;color:var(--gray-400);font-weight:300">${t('payment_none')}</p><div class="payout-note">${t('payout_note')}</div>`;
       return;
     }
 
@@ -4022,6 +4023,7 @@ async function applyToStudy(studyId, answers = null) {
       if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">${t('payment_paid')} (${paid.length})</div>`;
       html += paid.map(p => renderRow(p, true)).join('');
     }
+    html += `<div class="payout-note">${t('payout_note')}</div>`;
     section.innerHTML = html;
   }
 
@@ -4507,6 +4509,7 @@ async function applyToStudy(studyId, answers = null) {
       payment_none: 'No payment history yet. Complete a study to start earning.',
       payment_pending: 'Pending',
       payment_paid: 'Paid',
+      payout_note: 'Payments are handled after each completed study. You’ll receive details on how payment is made when your first study is completed.',
       rating_empty: 'Complete your first study to see your rating breakdown.',
       based_on_studies: 'Based on {count} completed {noun}',
       complete_first_rating: 'Complete your first study to earn a rating',
@@ -4859,6 +4862,7 @@ async function applyToStudy(studyId, answers = null) {
       payment_none: 'Ingen betalningshistorik ännu. Slutför en studie för att börja tjäna.',
       payment_pending: 'Väntande',
       payment_paid: 'Betald',
+      payout_note: 'Betalningar hanteras efter varje slutförd studie. Du får information om hur betalningen sker när din första studie är slutförd.',
       rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
       based_on_studies: 'Baserat på {count} slutförda {noun}',
       complete_first_rating: 'Slutför din första studie för att få ett betyg',
