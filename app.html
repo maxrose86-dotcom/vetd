@@ -457,6 +457,18 @@
     padding: 1.25rem;
   }
   .profile-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-400); margin-bottom: 1rem; }
+  .reputation-surface {
+    background: linear-gradient(180deg, #fff 0%, #fbfcfc 100%);
+    border: 1px solid var(--gray-100); border-radius: var(--radius-lg);
+    padding: 1.35rem 1.4rem; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  .reputation-kicker { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray-400); margin-bottom: 8px; }
+  .reputation-title { font-family: var(--serif); font-size: 28px; color: var(--gray-900); margin-bottom: 6px; letter-spacing: -0.02em; }
+  .reputation-sub { font-size: 13px; color: var(--gray-500); line-height: 1.6; max-width: 520px; }
+  .reputation-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 1rem; }
+  .reputation-metric { padding: 10px 12px; background: #fff; border: 1px solid var(--gray-100); border-radius: 10px; }
+  .reputation-metric-value { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
+  .reputation-metric-label { font-size: 11px; color: var(--gray-400); line-height: 1.4; }
 
   /* ── BOOST CARD ── */
   .boost-card {
@@ -1163,6 +1175,13 @@
         <div id="profile-boost-card" style="display:none"></div>
 
         <div class="profile-grid" id="profile-grid">
+          <div class="reputation-surface">
+            <div class="reputation-kicker" data-i18n="reputation_kicker">Contributor standing</div>
+            <div class="reputation-title" id="reputation-title">New contributor</div>
+            <div class="reputation-sub" id="reputation-sub">Complete a few studies to build your standing.</div>
+            <div class="reputation-metrics" id="reputation-metrics"></div>
+          </div>
+
           <div class="profile-section">
             <h3 data-i18n="prof_personal">Personal details</h3>
             <div class="profile-row"><span class="profile-row-label" data-i18n="prof_label_age">Age</span><span id="profile-detail-age" class="profile-row-value">—</span></div>
@@ -3406,6 +3425,46 @@ async function applyToStudy(studyId, answers = null) {
     return { tierLabel, tierClass };
   }
 
+  function getContributorStanding(contrib, stats) {
+    const { studiesDone, totalEarned, rating, completionRate } = stats;
+
+    if (studiesDone >= 5 && rating !== null && rating >= 4.7 && completionRate !== null && completionRate >= 90) {
+      return {
+        title: t('reputation_top_rated_title'),
+        sub: t('reputation_top_rated_sub')
+      };
+    }
+
+    if (studiesDone >= 3 && completionRate !== null && completionRate >= 85) {
+      return {
+        title: t('reputation_trusted_title'),
+        sub: t('reputation_trusted_sub')
+      };
+    }
+
+    if (studiesDone > 0 || totalEarned > 0 || rating !== null) {
+      return {
+        title: t('reputation_building_title'),
+        sub: t('reputation_building_sub')
+      };
+    }
+
+    return {
+      title: t('reputation_new_title'),
+      sub: t('reputation_new_sub')
+    };
+  }
+
+  function getContributorReputationMetrics(stats) {
+    const { studiesDone, totalEarned, rating, completionRate } = stats;
+    return [
+      { value: String(studiesDone), label: t('reputation_metric_studies') },
+      { value: rating !== null ? `${rating.toFixed(1)}★` : '—', label: t('reputation_metric_rating') },
+      { value: completionRate !== null ? `${completionRate}%` : '—', label: t('reputation_metric_reliability') },
+      { value: `${totalEarned} kr`, label: t('reputation_metric_earned') }
+    ];
+  }
+
   function updateDashboard(firstName, stats, tierDisplay) {
     const { studiesDone, totalEarned, rating, completionRate } = stats;
     const { tierLabel, tierClass } = tierDisplay;
@@ -3540,6 +3599,21 @@ async function applyToStudy(studyId, answers = null) {
     statsLineParts.push(`${studiesDone} ${studiesDone === 1 ? 'study' : 'studies'}`);
     statsLineParts.push(`${totalEarned} kr earned`);
     document.getElementById('profile-stats-line').textContent = statsLineParts.join(' · ');
+
+    const standing = getContributorStanding(contrib, stats);
+    const standingTitle = document.getElementById('reputation-title');
+    const standingSub = document.getElementById('reputation-sub');
+    const standingMetrics = document.getElementById('reputation-metrics');
+    if (standingTitle) standingTitle.textContent = standing.title;
+    if (standingSub) standingSub.textContent = standing.sub;
+    if (standingMetrics) {
+      standingMetrics.innerHTML = getContributorReputationMetrics(stats).map(metric => `
+        <div class="reputation-metric">
+          <div class="reputation-metric-value">${esc(metric.value)}</div>
+          <div class="reputation-metric-label">${esc(metric.label)}</div>
+        </div>
+      `).join('');
+    }
 
     // Personal detail rows
     if (contrib?.date_of_birth) {
@@ -4554,6 +4628,19 @@ async function applyToStudy(studyId, answers = null) {
       filter_person: 'In-person',
       profile_title: 'My profile',
       prof_personal: 'Personal details',
+      reputation_kicker: 'Contributor standing',
+      reputation_new_title: 'New contributor',
+      reputation_new_sub: 'Complete a few studies to build your standing on Vetd.',
+      reputation_building_title: 'Building experience',
+      reputation_building_sub: 'Each completed study is strengthening your standing here.',
+      reputation_trusted_title: 'Trusted contributor',
+      reputation_trusted_sub: 'Consistent participation and reliable follow-through are building trust.',
+      reputation_top_rated_title: 'Top-rated contributor',
+      reputation_top_rated_sub: 'Strong feedback and reliable participation are helping you stand out.',
+      reputation_metric_studies: 'Completed studies',
+      reputation_metric_rating: 'Average rating',
+      reputation_metric_reliability: 'Reliability',
+      reputation_metric_earned: 'Total earned',
       prof_label_age: 'Age',
       prof_label_gender: 'Gender',
       prof_label_location: 'Location',
@@ -4947,6 +5034,19 @@ async function applyToStudy(studyId, answers = null) {
       filter_person: 'På plats',
       profile_title: 'Min profil',
       prof_personal: 'Personuppgifter',
+      reputation_kicker: 'Deltagarstatus',
+      reputation_new_title: 'Ny deltagare',
+      reputation_new_sub: 'Slutför några studier för att bygga din ställning på Vetd.',
+      reputation_building_title: 'Bygger erfarenhet',
+      reputation_building_sub: 'Varje slutförd studie stärker din ställning här.',
+      reputation_trusted_title: 'Betrodd deltagare',
+      reputation_trusted_sub: 'Jämnt deltagande och pålitlig närvaro bygger förtroende.',
+      reputation_top_rated_title: 'Högt betygsatt deltagare',
+      reputation_top_rated_sub: 'Stark feedback och pålitligt deltagande hjälper dig att sticka ut.',
+      reputation_metric_studies: 'Slutförda studier',
+      reputation_metric_rating: 'Genomsnittsbetyg',
+      reputation_metric_reliability: 'Tillförlitlighet',
+      reputation_metric_earned: 'Totalt tjänat',
       prof_label_age: 'Ålder',
       prof_label_gender: 'Kön',
       prof_label_location: 'Plats',
