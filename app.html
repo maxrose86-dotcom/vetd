@@ -583,6 +583,16 @@
   .modal-next-step { font-size: 13px; color: var(--gray-700); line-height: 1.55; }
   .modal-next-step + .modal-next-step { margin-top: 0.45rem; }
   .modal-session-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin-top: 10px; }
+  .modal-confirm-note { font-size: 12px; color: var(--gray-500); line-height: 1.55; margin: -4px 0 1rem; }
+  .modal-next-suggestions { text-align: left; margin: 0 0 1.5rem; }
+  .modal-next-list { display: flex; flex-direction: column; gap: 8px; }
+  .modal-suggestion-item {
+    width: 100%; text-align: left; border: 1px solid var(--gray-100); background: #fff;
+    border-radius: 12px; padding: 11px 12px; font-family: var(--sans); cursor: pointer;
+  }
+  .modal-suggestion-item:hover { border-color: rgba(17,17,17,0.12); }
+  .modal-suggestion-title { font-size: 13px; font-weight: 600; color: var(--gray-900); margin-bottom: 3px; }
+  .modal-suggestion-meta { font-size: 12px; color: var(--gray-500); line-height: 1.45; }
   .modal-pay-big { font-family: var(--serif); font-size: 40px; color: var(--green); margin-bottom: 4px; }
   .modal-pay-sub { font-size: 12px; color: var(--gray-400); margin-bottom: 1.5rem; }
   .modal-buttons { display: flex; gap: 12px; }
@@ -1356,6 +1366,11 @@
         <div class="modal-next-title" data-i18n="modal_next_title">What happens next</div>
         <div class="modal-next-step" data-i18n="modal_confirm_step_1">We’ll review your profile for fit</div>
         <div class="modal-next-step" data-i18n="modal_confirm_step_2">If selected, you’ll be invited to schedule</div>
+      </div>
+      <div class="modal-confirm-note" data-i18n="modal_confirm_normalize">Most contributors apply to a few studies before being selected.</div>
+      <div class="modal-next-suggestions" id="modal-next-suggestions" style="display:none">
+        <div class="modal-next-title" data-i18n="modal_confirm_continue">Continue exploring</div>
+        <div class="modal-next-list" id="modal-next-list"></div>
       </div>
       <div class="modal-buttons" style="justify-content:center">
         <button class="modal-close" onclick="closeModal()" data-i18n="modal_close_btn">Close</button>
@@ -2236,6 +2251,25 @@
     return study?.format === 'in-person'
       ? t('modal_session_confidence_in_person')
       : t('modal_session_confidence_online');
+  }
+
+  function renderModalSuggestions(currentStudyId) {
+    const list = (state.studies || [])
+      .filter(study => study && study.id !== currentStudyId && !state.appliedStudies.has(study.id))
+      .slice(0, 2);
+    if (!list.length) return '';
+    return list.map(study => {
+      const metaParts = [
+        study.company,
+        study.duration || '',
+        study.pay != null ? formatCurrency(study.pay) : ''
+      ].filter(Boolean);
+      return `
+        <button type="button" class="modal-suggestion-item" onclick="openModal('${escAttr(String(study.id))}')">
+          <div class="modal-suggestion-title">${esc(study.title)}</div>
+          <div class="modal-suggestion-meta">${metaParts.map(esc).join(' · ')}</div>
+        </button>`;
+    }).join('');
   }
 
   function filterStudies(type, btn) {
@@ -3161,6 +3195,12 @@ async function applyToStudy(studyId, answers = null) {
   const confirmTitle = document.getElementById('modal-confirm-title');
   if (confirmTitle) {
     confirmTitle.textContent = t('modal_confirm_title').replace('{title}', state.currentStudy?.title || t('modal_confirm_fallback_title'));
+  }
+  const suggestionsWrap = document.getElementById('modal-next-suggestions');
+  const suggestionsList = document.getElementById('modal-next-list');
+  if (suggestionsWrap && suggestionsList) {
+    suggestionsList.innerHTML = renderModalSuggestions(studyId);
+    suggestionsWrap.style.display = suggestionsList.innerHTML ? '' : 'none';
   }
   document.getElementById('modal-pre-apply').style.display = 'none';
   document.getElementById('modal-confirmed').style.display = 'block';
@@ -4390,6 +4430,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_confirm_fallback_title: 'this study',
       modal_confirm_step_1: 'We’ll review your profile for fit',
       modal_confirm_step_2: 'If selected, you’ll be invited to schedule',
+      modal_confirm_normalize: 'Most contributors apply to a few studies before being selected.',
+      modal_confirm_continue: 'Continue exploring',
       modal_confirm_view_studies: 'View my studies',
       modal_close_btn: 'Close',
       applied_badge: 'Applied ✓',
@@ -4759,6 +4801,8 @@ async function applyToStudy(studyId, answers = null) {
       modal_confirm_fallback_title: 'den här studien',
       modal_confirm_step_1: 'Vi granskar din profil för att bedöma passform',
       modal_confirm_step_2: 'Om du väljs ut blir du inbjuden att boka tid',
+      modal_confirm_normalize: 'De flesta deltagare ansöker till några studier innan de blir utvalda.',
+      modal_confirm_continue: 'Fortsätt utforska',
       modal_confirm_view_studies: 'Se mina studier',
       modal_close_btn: 'Stäng',
       applied_badge: 'Ansökt ✓',
