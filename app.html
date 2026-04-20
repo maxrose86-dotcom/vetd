@@ -1893,12 +1893,36 @@
   function renderContributorActivityTimeline() {
     const container = document.getElementById('activity-timeline');
     if (!container) return;
+    const model = getContributorStateModel();
     const items = buildContributorActivityTimeline();
+    const primaryPrefixes = {
+      in_session: 'scheduled-',
+      scheduled: 'scheduled-',
+      selected: 'selected-',
+      applied_waiting: 'applied-',
+      post_session: 'payment-',
+      paid: 'payment-'
+    };
+    const primaryId =
+      model.context?.primaryAppId ||
+      model.context?.primaryPaymentId ||
+      null;
+    const primaryPrefix = primaryPrefixes[model.mode];
+    const orderedItems = primaryId && primaryPrefix
+      ? (() => {
+          const matchIndex = items.findIndex(item => item.key === `${primaryPrefix}${primaryId}`);
+          if (matchIndex <= 0) return items;
+          const next = [...items];
+          const [match] = next.splice(matchIndex, 1);
+          next.unshift(match);
+          return next;
+        })()
+      : items;
     if (!items.length) {
       container.innerHTML = `<div class="activity-empty">${t('activity_empty')}</div>`;
       return;
     }
-    container.innerHTML = `<div class="activity-timeline">${items.map(item => `
+    container.innerHTML = `<div class="activity-timeline">${orderedItems.map(item => `
       <div class="activity-item ${item.tone === 'positive' ? 'activity-item-positive' : ''}">
         <div class="activity-item-title">${esc(item.title)}</div>
         <div class="activity-item-sub">${esc(item.sub)}</div>
@@ -1907,7 +1931,7 @@
     `).join('')}</div>`;
   }
 
-  function getContributorNextAction(appState = state) {
+  function getContributorStateModel(appState = state) {
     const apps = Array.isArray(appState.myApplications) ? appState.myApplications : [];
     const payments = Array.isArray(appState.payments) ? appState.payments : [];
     const prefs = getContributorMatchPreferences(appState.contribData || state.contribData);
@@ -1915,49 +1939,106 @@
     const topFitStudy = rankedStudies[0] || null;
     const topFit = topFitStudy ? computeStudyFit(topFitStudy, appState.contribData || state.contribData, prefs) : null;
 
-    const soonSession = apps
+    const joinableSession = apps
       .map(app => ({ app, ss: getSessionStatus(app, (app.studies || {}).duration_minutes || null) }))
-      .filter(({ app, ss }) => ['starting_soon', 'in_progress'].includes(ss.phase) && ss.canJoin && app.room_url)
+      .filter(({ ss }) => ['starting_soon', 'in_progress'].includes(ss.phase) && ss.canJoin)
       .sort((a, b) => new Date(a.app.scheduled_at) - new Date(b.app.scheduled_at))[0];
-    if (soonSession) {
-      return {
-        main: t('command_join_main'),
-        sub: t('command_join_sub'),
-        cta: t('command_join_cta'),
-        action: { type: 'join', appId: soonSession.app.id }
-      };
-    }
 
     const scheduledSession = apps
       .map(app => ({ app, ss: getSessionStatus(app, (app.studies || {}).duration_minutes || null) }))
       .filter(({ ss }) => ss.phase === 'scheduled')
       .sort((a, b) => new Date(a.app.scheduled_at) - new Date(b.app.scheduled_at))[0];
-    if (scheduledSession) {
-      return {
-        main: t('command_scheduled_main'),
-        sub: t('command_scheduled_sub'),
-        cta: t('command_scheduled_cta'),
-        action: { type: 'my_studies', appId: scheduledSession.app.id }
-      };
-    }
 
     const acceptedWaiting = apps
       .map(app => ({ app, ss: getSessionStatus(app, (app.studies || {}).duration_minutes || null) }))
       .filter(({ ss }) => ['accepted_needs_availability', 'accepted_ready'].includes(ss.phase))
       .sort((a, b) => new Date(b.app.updated_at || b.app.applied_at) - new Date(a.app.updated_at || a.app.applied_at))[0];
-    if (acceptedWaiting) {
+
+    const pendingApps = apps.filter(app => app.status === 'pending');
+    const unpaid = payments.find(payment => payment.status !== 'paid');
+
+    let mode = 'exploring';
+    let priority = 'browse';
+    const context = {
+      topFitStudy,
+      topFit,
+      primaryAppId: null,
+      primaryPaymentId: unpaid?.id || null
+    };
+
+    if (joinableSession) {
+      mode = 'in_session';
+      priority = 'session';
+      context.primaryAppId = joinableSession.app.id;
+    } else if (scheduledSession) {
+      mode = 'scheduled';
+      priority = 'session';
+      context.primaryAppId = scheduledSession.app.id;
+    } else if (acceptedWaiting) {
+      mode = 'selected';
+      priority = 'selection';
+      context.primaryAppId = acceptedWaiting.app.id;
+      context.needsAvailability = acceptedWaiting.ss.phase === 'accepted_needs_availability';
+    } else if (pendingApps.length) {
+      mode = 'applied_waiting';
+      priority = 'applications';
+      context.primaryAppId = pendingApps[0].id;
+    } else if (unpaid) {
+      mode = 'post_session';
+      priority = 'payment';
+    } else if (!apps.length) {
+      mode = 'new_user';
+      priority = 'activation';
+    } else if (payments.some(payment => payment.status === 'paid')) {
+      mode = 'paid';
+      priority = 'browse';
+    }
+
+    return {
+      mode,
+      priority,
+      context,
+      flags: {
+        hasUpcomingSession: Boolean(joinableSession || scheduledSession),
+        hasPendingPayments: Boolean(unpaid),
+        isHighFitUser: Boolean(topFit && topFit.score >= 3)
+      }
+    };
+  }
+
+  function getContributorNextAction(appState = state) {
+    const model = getContributorStateModel(appState);
+
+    if (model.mode === 'in_session') {
       return {
-        main: t('command_selected_main'),
-        sub: acceptedWaiting.ss.phase === 'accepted_needs_availability'
-          ? t('command_selected_sub_availability')
-          : t('command_selected_sub'),
-        cta: t('command_selected_cta'),
-        action: { type: acceptedWaiting.ss.phase === 'accepted_needs_availability' ? 'availability' : 'my_studies', appId: acceptedWaiting.app.id }
+        main: t('command_join_main'),
+        sub: t('command_join_sub'),
+        cta: t('command_join_cta'),
+        action: { type: 'join', appId: model.context.primaryAppId }
       };
     }
 
-    const pendingApps = apps.filter(app => app.status === 'pending');
-    if (pendingApps.length) {
+    if (model.mode === 'scheduled') {
+      return {
+        main: t('command_scheduled_main'),
+        sub: t('command_scheduled_sub'),
+        cta: t('command_scheduled_cta'),
+        action: { type: 'my_studies', appId: model.context.primaryAppId }
+      };
+    }
+
+    if (model.mode === 'selected') {
+      return {
+        main: t('command_selected_main'),
+        sub: model.context.needsAvailability
+          ? t('command_selected_sub_availability')
+          : t('command_selected_sub'),
+        cta: t('command_selected_cta'),
+        action: { type: model.context.needsAvailability ? 'availability' : 'my_studies', appId: model.context.primaryAppId }
+      };
+    }
+
+    if (model.mode === 'applied_waiting') {
       return {
         main: t('command_pending_main'),
         sub: t('command_pending_sub'),
@@ -1966,17 +2047,16 @@
       };
     }
 
-    if (!apps.length) {
+    if (model.mode === 'new_user') {
       return {
         main: t('command_first_main'),
-        sub: topFit?.positives?.[0] || t('command_first_sub'),
+        sub: model.context.topFit?.positives?.[0] || t('command_first_sub'),
         cta: t('command_first_cta'),
         action: { type: 'browse' }
       };
     }
 
-    const unpaid = payments.find(payment => payment.status !== 'paid');
-    if (unpaid) {
+    if (model.mode === 'post_session') {
       return {
         main: t('command_payment_main'),
         sub: t('command_payment_sub'),
@@ -1987,18 +2067,21 @@
 
     return {
       main: t('command_default_main'),
-      sub: topFit?.positives?.[0] || t('command_default_sub'),
+      sub: model.context.topFit?.positives?.[0] || t('command_default_sub'),
       cta: t('command_default_cta'),
       action: { type: 'browse' }
     };
   }
 
   function renderContributorCommandSurface() {
+    const model = getContributorStateModel();
     const command = getContributorNextAction();
+    const surface = document.getElementById('dash-command-surface');
     const main = document.getElementById('command-main');
     const sub = document.getElementById('command-sub');
     const cta = document.getElementById('command-cta');
     if (!main || !sub || !cta) return;
+    if (surface) surface.dataset.mode = model.mode;
     main.textContent = command.main;
     sub.textContent = command.sub;
     cta.textContent = command.cta;
@@ -3879,17 +3962,12 @@ async function applyToStudy(studyId, answers = null) {
     document.getElementById('dash-greeting').textContent = `${timeGreeting}, ${firstName || 'there'}.`;
 
     // ── State-aware subtext ───────────────────────────────────
-    const hasUpcoming = (state.myApplications || []).some(
-      a => a.status === 'accepted'
-        && a.scheduled_at
-        && Number.isFinite(new Date(a.scheduled_at).getTime())
-        && new Date(a.scheduled_at).getTime() > Date.now()
-    );
+    const stateModel = getContributorStateModel();
     const subtextEl = document.getElementById('dash-subtext');
     if (subtextEl) {
-      subtextEl.textContent = hasUpcoming
+      subtextEl.textContent = stateModel.flags.hasUpcomingSession
         ? t('dash_subtext_upcoming')
-        : studiesDone > 0
+        : ['selected', 'applied_waiting', 'post_session', 'paid', 'exploring'].includes(stateModel.mode) || studiesDone > 0
           ? t('dash_subtext_active')
           : t('dash_subtext_new');
     }
