@@ -442,10 +442,6 @@
   .tier-verified { background: var(--blue-light); color: #185FA5; }
   .tier-standard { background: var(--amber-light); color: var(--amber); }
 
-  .bankid-logo { width:44px;height:44px;border-radius:10px;background:#1B4A8A;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-  .bankid-logo span { color:#fff;font-size:9px;font-weight:700;text-align:center;line-height:1.25; }
-  .bankid-verified-badge { display:inline-flex;align-items:center;gap:5px;background:#1B4A8A;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;letter-spacing:0.02em; }
-  .bankid-verified-badge-sm { display:inline-flex;align-items:center;gap:4px;background:#1B4A8A;color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;vertical-align:middle; }
 
   .profile-grid { display: flex; flex-direction: column; gap: 14px; }
   .profile-section {
@@ -1037,9 +1033,6 @@
         <div class="dash-welcome">
           <h1 id="dash-greeting">Welcome.</h1>
           <p id="dash-subtext">Browse available studies and apply to start earning.</p>
-          <div style="margin-top:12px">
-            <span id="dash-bankid-badge" class="bankid-verified-badge" style="display:none">🔒 BankID Verified</span>
-          </div>
         </div>
 
         <div id="dash-rating-hero" class="rating-hero">
@@ -1146,7 +1139,6 @@
               <div id="profile-tier-badge" class="tier-badge">New member</div>
               <div id="profile-stats-line" style="font-size:13px;color:var(--gray-400)">0 studies · 0 kr earned</div>
             </div>
-            <div id="profile-bankid-inline" style="margin-top:8px"></div>
             <div id="profile-completeness" style="margin-top:10px"></div>
           </div>
           <button class="btn-back" id="edit-profile-btn" onclick="enterEditMode()" data-i18n="prof_edit_btn">Edit profile</button>
@@ -1378,15 +1370,6 @@
       <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px">Cancel</button>
       <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600">Delete account</button>
     </div>
-  </div>
-</div>
-
-<div id="bankid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:380px;width:calc(100% - 32px);text-align:center">
-    <div class="bankid-logo" style="width:64px;height:64px;border-radius:14px;margin:0 auto 1.25rem"><span style="font-size:13px;font-weight:700">Bank<br>ID</span></div>
-    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px">BankID verification</h2>
-    <p style="font-size:13px;color:#9CA3AF;margin-bottom:1.5rem;line-height:1.6;font-weight:300">BankID integration coming soon — we'll notify you when it's available.</p>
-    <button onclick="closeBankIDModal()" class="btn-primary" style="width:100%">Got it</button>
   </div>
 </div>
 
@@ -3486,22 +3469,7 @@ async function applyToStudy(studyId, answers = null) {
         `<span style="font-size:11px;color:var(--gray-400);font-weight:300">${t('prof_completeness_hint')}</span>`;
     }
 
-    // Re-render BankID inline on lang change
-    updateBankIDStatus(contrib?.bankid_verified === true);
-
     return { fullName, initials };
-  }
-
-  function updateBankIDStatus(verified) {
-    const dashBadge = document.getElementById('dash-bankid-badge');
-    if (dashBadge) dashBadge.style.display = verified ? 'inline-flex' : 'none';
-
-    const inlineEl = document.getElementById('profile-bankid-inline');
-    if (inlineEl) {
-      inlineEl.innerHTML = verified
-        ? '<span class="bankid-verified-badge-sm">✓ BankID Verified</span>'
-        : `<span style="font-size:12px;color:var(--gray-400);font-weight:300">🔒 ${t('prof_identity_coming_soon')}</span>`;
-    }
   }
 
   // ─── LOAD USER PROFILE ──────────────────────────────────
@@ -3527,7 +3495,6 @@ async function applyToStudy(studyId, answers = null) {
       document.getElementById('topbar-avatar').textContent = initials;
 
       updateDashboard(firstName, stats, tierDisplay);
-      updateBankIDStatus(contrib?.bankid_verified === true);
       loadRatingBreakdown();
       renderBoostCard();
       renderProfileCompletionCard();
@@ -3540,15 +3507,6 @@ async function applyToStudy(studyId, answers = null) {
       console.error('Failed to load user profile:', err);
       if (window.Sentry) Sentry.captureException(err);
     }
-  }
-
-  // ─── BANKID MODAL ───────────────────────────────────────
-  function openBankIDModal() {
-    const m = document.getElementById('bankid-modal');
-    m.style.display = 'flex';
-  }
-  function closeBankIDModal() {
-    document.getElementById('bankid-modal').style.display = 'none';
   }
 
   // ─── BOOST CARD ─────────────────────────────────────────
@@ -4376,7 +4334,6 @@ async function applyToStudy(studyId, answers = null) {
       freq_weekly: 'Weekly',
       freq_as_often: 'As often as possible',
       prof_completeness_hint: 'A complete profile improves your study matches.',
-      prof_identity_coming_soon: 'Identity verification coming soon',
       gender_woman: 'Woman',
       gender_man: 'Man',
       gender_non_binary: 'Non-binary',
@@ -4399,10 +4356,6 @@ async function applyToStudy(studyId, answers = null) {
       living_student: 'Student accommodation',
       prof_rating: 'Rating breakdown',
       prof_rating_empty: 'Complete your first study to see your rating breakdown.',
-      prof_identity: 'Identity verification',
-      prof_identity_title: 'Verify your identity',
-      prof_identity_sub: 'Verified contributors get priority access to premium studies',
-      prof_identity_btn: 'Verify with BankID',
       prof_background: 'Background',
       prof_preferences: 'Matching preferences',
       prof_pref_formats: 'Formats',
@@ -4730,7 +4683,6 @@ async function applyToStudy(studyId, answers = null) {
       freq_weekly: 'Varje vecka',
       freq_as_often: 'Så ofta som möjligt',
       prof_completeness_hint: 'En komplett profil ger bättre studiematchningar.',
-      prof_identity_coming_soon: 'Identitetsverifiering kommer snart',
       gender_woman: 'Kvinna',
       gender_man: 'Man',
       gender_non_binary: 'Ickebinär',
@@ -4753,10 +4705,6 @@ async function applyToStudy(studyId, answers = null) {
       living_student: 'Studentboende',
       prof_rating: 'Betygsöversikt',
       prof_rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
-      prof_identity: 'Identitetsverifiering',
-      prof_identity_title: 'Verifiera din identitet',
-      prof_identity_sub: 'Verifierade deltagare får prioriterad tillgång till premiumstudier',
-      prof_identity_btn: 'Verifiera med BankID',
       prof_background: 'Bakgrund',
       prof_preferences: 'Matchningspreferenser',
       prof_pref_formats: 'Format',
