@@ -1805,7 +1805,8 @@
     currentStep: 1,
     profileData: null,
     contribData: null,
-    notifications: null
+    notifications: null,
+    routing: null
   };
 
   function syncContributorHydration() {
@@ -1814,6 +1815,7 @@
       state.hydration.applications &&
       state.hydration.payments
     );
+    state.routing = computeOpportunityRouting(state);
   }
 
   function getSafeContributorState() {
@@ -2132,7 +2134,7 @@
         main: t('command_first_main'),
         sub: model.context.topFit?.positives?.[0] || t('command_first_sub'),
         cta: t('command_first_cta'),
-        action: { type: 'browse' }
+        action: { type: 'browse', studyId: _routedLiveStudyId() }
       };
     }
 
@@ -2149,8 +2151,14 @@
       main: t('command_default_main'),
       sub: model.context.topFit?.positives?.[0] || t('command_default_sub'),
       cta: t('command_default_cta'),
-      action: { type: 'browse' }
+      action: { type: 'browse', studyId: _routedLiveStudyId() }
     };
+  }
+
+  // Returns the primary live study id from routing, if one exists.
+  function _routedLiveStudyId() {
+    const p = state.routing?.primaryOpportunity;
+    return (p && (p.type === 'strong_fit_live_study' || p.type === 'live_study')) ? p.id : null;
   }
 
   function renderContributorCommandSurface() {
@@ -2209,6 +2217,7 @@
 
     const btn = document.querySelector('.topbar-nav button:nth-child(2)');
     if (btn) showTab('studies', btn);
+    if (action.studyId) requestAnimationFrame(function() { openModal(action.studyId); });
   }
 
   const MATCH_PREFS_STORAGE_KEY = 'vetd_match_prefs';
@@ -2381,6 +2390,119 @@
   function applyStudyPreferenceBias(studies, prefs) {
     const list = Array.isArray(studies) ? [...studies] : [];
     return list.sort((a, b) => computeStudyFit(b, state.contribData, prefs).score - computeStudyFit(a, state.contribData, prefs).score);
+  }
+
+  // ─── OPPORTUNITY ROUTING ─────────────────────────────────
+  // One deterministic priority model over all opportunity types.
+  // Surfaces: dashboard studies, command surface, debug panel.
+  // Priority: 1=joinable session → 2=imminent session → 3=invitation
+  //           → 4=accepted/awaiting → 5=strong-fit live → 6=pending app
+  //           → 7=unpaid completion → 8=live study
+  function computeOpportunityRouting(s) {
+    const apps     = Array.isArray(s.myApplications) ? s.myApplications : [];
+    const studies  = Array.isArray(s.studies)         ? s.studies         : [];
+    const payments = Array.isArray(s.payments)         ? s.payments         : [];
+    const applied  = s.appliedStudies instanceof Set   ? s.appliedStudies  : new Set();
+    const profile  = { ...(s.profileData || {}), ...(s.contribData || {}) };
+    const prefs    = getContributorMatchPreferences();
+    const now      = Date.now();
+
+    const opps = [];
+
+    // P1 — joinable now
+    apps.forEach(function(app) {
+      const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
+      if (ss.canJoin && app.room_url)
+        opps.push({ type: 'joinable_session',   id: app.id, title: (app.studies || {}).title || 'Session',
+                    priority: 1, reason: 'session is live and joinable', score: null });
+    });
+
+    // P2 — session within 24 h
+    apps.forEach(function(app) {
+      const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
+      if (ss.phase === 'scheduled' && app.scheduled_at) {
+        const t = new Date(app.scheduled_at).getTime();
+        if (t > now && t <= now + 86400000)
+          opps.push({ type: 'imminent_session',  id: app.id, title: (app.studies || {}).title || 'Session',
+                      priority: 2, reason: 'session within 24 h', score: null });
+      }
+    });
+
+    // P3 — invitations awaiting response
+    apps.forEach(function(app) {
+      const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
+      if (ss.phase === 'invited')
+        opps.push({ type: 'invited_study',       id: app.id, title: (app.studies || {}).title || 'Invitation',
+                    priority: 3, reason: 'invitation awaiting accept / decline', score: null });
+    });
+
+    // P4 — accepted, not yet scheduled
+    apps.forEach(function(app) {
+      const ss = getSessionStatus(app, (app.studies || {}).duration_minutes || null);
+      if (ss.phase === 'accepted_needs_availability' || ss.phase === 'accepted_ready')
+        opps.push({ type: 'accepted_awaiting_schedule', id: app.id, title: (app.studies || {}).title || 'Study',
+                    priority: 4,
+                    reason: ss.phase === 'accepted_needs_availability' ? 'accepted — needs availability' : 'accepted — awaiting scheduling',
+                    score: null });
+    });
+
+    // P5 + P8 — live studies (ranked by fit, split into strong vs ordinary)
+    const ranked = applyStudyPreferenceBias(studies, prefs);
+    ranked.forEach(function(study) {
+      if (applied.has(study.id)) return;
+      const spotsLeft = (study.spots || 0) - (study.filled || 0);
+      if (study.spots > 0 && spotsLeft <= 0) return;
+      const fit = computeStudyFit(study, profile, prefs);
+      const strong = fit.score >= 3;
+      opps.push({
+        type:     strong ? 'strong_fit_live_study' : 'live_study',
+        id:       study.id,
+        title:    study.title,
+        priority: strong ? 5 : 8,
+        reason:   strong ? 'strong fit: ' + (fit.positives[0] || 'matches preferences') : 'available study',
+        score:    fit.score
+      });
+    });
+
+    // P6 — pending applications
+    apps.filter(function(a) { return a.status === 'pending'; }).forEach(function(app) {
+      opps.push({ type: 'pending_application', id: app.id, title: (app.studies || {}).title || 'Study',
+                  priority: 6, reason: 'application under review', score: null });
+    });
+
+    // P7 — unpaid completions
+    payments.filter(function(p) { return p.status !== 'paid'; }).forEach(function(p) {
+      opps.push({ type: 'unpaid_completion', id: p.id, title: p.studyTitle || 'Completed study',
+                  priority: 7, reason: 'completed — payment pending', score: null });
+    });
+
+    // Sort: priority asc, then score desc within same priority
+    opps.sort(function(a, b) {
+      return a.priority !== b.priority ? a.priority - b.priority : (b.score || 0) - (a.score || 0);
+    });
+
+    const primary    = opps[0] || null;
+    const secondary  = opps.slice(1, 4);
+    const quiet      = opps.slice(4);
+
+    const typeToMode = {
+      joinable_session:          'session_live',
+      imminent_session:          'session_soon',
+      invited_study:             'invitation_pending',
+      accepted_awaiting_schedule:'selected',
+      strong_fit_live_study:     'strong_match',
+      pending_application:       'awaiting_review',
+      unpaid_completion:         'payment_pending',
+      live_study:                'browsing'
+    };
+
+    return {
+      primaryOpportunity:    primary,
+      secondaryOpportunities: secondary,
+      quietOpportunities:    quiet,
+      mode:    primary ? (typeToMode[primary.type] || 'exploring') : 'exploring',
+      reasons: opps.slice(0, 6).map(function(o) { return '[p' + o.priority + '] ' + o.type + ' — ' + o.reason; })
+    };
   }
 
   function renderMatchPreferenceChips(containerId, group, selected) {
@@ -2700,6 +2822,8 @@
       });
     } catch(err) {
       console.warn('Could not load studies:', err);
+    } finally {
+      state.routing = computeOpportunityRouting(state);
     }
   }
 
@@ -2709,8 +2833,25 @@
     const container = document.getElementById(containerId);
     const prefs = getContributorMatchPreferences();
     const source = containerId === 'dashboard-studies' ? state.studies : subset;
-    const ranked = applyStudyPreferenceBias(source, prefs);
-    const displayStudies = containerId === 'dashboard-studies' ? ranked.slice(0, 2) : ranked;
+
+    let displayStudies;
+    if (containerId === 'dashboard-studies') {
+      // Use routing layer to determine which studies surface on the dashboard.
+      // Falls back to preference-bias ordering when routing is not yet computed.
+      const routing = state.routing;
+      if (routing) {
+        const routedLive = [routing.primaryOpportunity, ...routing.secondaryOpportunities]
+          .filter(function(o) { return o && (o.type === 'strong_fit_live_study' || o.type === 'live_study'); });
+        const routedIds  = routedLive.map(function(o) { return o.id; });
+        const pinned     = routedIds.map(function(id) { return source.find(function(s) { return s.id === id; }); }).filter(Boolean);
+        const remaining  = applyStudyPreferenceBias(source.filter(function(s) { return !routedIds.includes(s.id); }), prefs);
+        displayStudies   = pinned.concat(remaining).slice(0, 2);
+      } else {
+        displayStudies = applyStudyPreferenceBias(source, prefs).slice(0, 2);
+      }
+    } else {
+      displayStudies = applyStudyPreferenceBias(source, prefs);
+    }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
       const hasLiveStudies = state.studies.length > 0;
@@ -6211,9 +6352,20 @@ async function applyToStudy(studyId, answers = null) {
       applied_ids:     state.appliedStudies instanceof Set  ? state.appliedStudies.size   : 'pending',
     };
 
+    const routing = state.routing || computeOpportunityRouting(state);
+
     content.innerHTML = [
       _dbgSection('Hydration',
         _dbgObj(hydration)),
+      _dbgSection('Routing · ' + routing.mode,
+        _dbgObj({
+          mode:      routing.mode,
+          primary:   routing.primaryOpportunity,
+          secondary: routing.secondaryOpportunities.map(function(o) {
+            return '[p' + o.priority + '] ' + o.type + ': ' + o.title;
+          }),
+          reasons:   routing.reasons
+        })),
       _dbgSection('Mode · Priority · Context',
         _dbgObj({ mode: model.mode, priority: model.priority, flags: model.flags, context: model.context })),
       _dbgSection('Next Action',
