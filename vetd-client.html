@@ -1136,6 +1136,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return typeof role === 'string' ? role.trim().toLowerCase() : '';
   }
 
+  function createBusinessAuthTraceId(prefix) {
+    return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
   async function ensureOwnProfileRole(expectedRole, userOverride = null) {
     if (!db) return { ok: true, source: 'demo' };
 
@@ -1210,6 +1214,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── SIGN UP ────────────────────────────────────────────
   async function signUpClient() {
+    const traceId  = createBusinessAuthTraceId('signup');
     const company  = document.getElementById('auth-company').value.trim();
     const fname    = document.getElementById('auth-fname').value.trim();
     const lname    = document.getElementById('auth-lname').value.trim();
@@ -1232,7 +1237,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         options: { data: { first_name: fname, last_name: lname, company, role: 'client' } }
       });
       if (authErr) throw authErr;
-      console.log('[Vetd business signup] auth signup success', {
+      console.log('[Vetd business signup]', traceId, 'auth signup success', {
         userId: authData?.user?.id || authData?.session?.user?.id || null,
         hasSession: Boolean(authData?.session),
         email
@@ -1242,9 +1247,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         // Email confirmation is disabled — user is immediately authenticated.
         // Create company + client rows now and go straight to the dashboard.
         const roleResult = await ensureOwnProfileRole('client', authData.session.user || authData.user);
-        console.log('[Vetd business signup] profile role result', roleResult);
+        console.log('[Vetd business signup]', traceId, 'profile role result', roleResult);
         if (!roleResult?.ok) {
-          console.error('[Vetd business signup] role mismatch', roleResult);
+          console.error('[Vetd business signup]', traceId, 'role mismatch', roleResult);
           await db.auth.signOut();
           showToast('This email is already linked to a contributor account. Sign in through the contributor portal or use a different work email.', true);
           btn.textContent = 'Create account →'; btn.disabled = false;
@@ -1252,7 +1257,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         }
         const roleCheck = await assertPortalRole('client');
         if (!roleCheck.ok) return;
-        await ensureClientRecords(roleCheck.session.user);
+        await ensureClientRecords(roleCheck.session.user, traceId);
         showToast('Account created! Welcome to Vetd.');
         await goApp();
       } else {
@@ -1271,11 +1276,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   // ─── ENSURE CLIENT RECORDS ──────────────────────────────
   // Called on first sign-in (or after immediate sign-up). Creates companies/clients
   // rows if they don't exist yet. Safe to call multiple times — no-ops if rows exist.
-  async function ensureClientRecords(user) {
+  async function ensureClientRecords(user, traceId = 'bootstrap-no-trace') {
     if (!db || !user) return;
 
     const roleResult = await ensureOwnProfileRole('client', user);
-    console.log('[Vetd business signup] ensureClientRecords profile role result', roleResult);
+    console.log('[Vetd business bootstrap]', traceId, 'ensureClientRecords profile role result', roleResult);
 
     // Check if client row already exists (.maybeSingle returns null without error when no row found)
     const { data: existing } = await db
@@ -1287,13 +1292,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
     // Create company row
     const companyInsertPayload = { name: companyName, created_by: user.id };
-    console.log('[Vetd business signup] company insert attempt', companyInsertPayload);
+    console.log('[Vetd business bootstrap]', traceId, 'company insert attempt', companyInsertPayload);
     const { data: companyData, error: compErr } = await db
       .from('companies').insert(companyInsertPayload).select('id').single();
     if (compErr) {
-      console.error('[Vetd business signup] company insert failed', compErr);
+      console.error('[Vetd business bootstrap]', traceId, 'company insert failed', compErr);
     } else {
-      console.log('[Vetd business signup] company insert success', companyData);
+      console.log('[Vetd business bootstrap]', traceId, 'company insert success', companyData);
     }
     if (compErr) throw compErr;
 
@@ -1302,9 +1307,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const { error: clientErr } = await db
       .from('clients').insert({ id: user.id, company_id: companyData.id });
     if (clientErr) {
-      console.error('[Vetd business signup] client row insert failed', clientErr);
+      console.error('[Vetd business bootstrap]', traceId, 'client row insert failed', clientErr);
     } else {
-      console.log('[Vetd business signup] client row insert success', { id: user.id, company_id: companyData.id });
+      console.log('[Vetd business bootstrap]', traceId, 'client row insert success', { id: user.id, company_id: companyData.id });
     }
     if (clientErr) {
       const { error: cleanupErr } = await db.from('companies').delete().eq('id', companyData.id);
@@ -1315,6 +1320,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── SIGN IN ────────────────────────────────────────────
   async function signInClient() {
+    const traceId  = createBusinessAuthTraceId('signin');
     const email    = document.getElementById('auth-email-login').value.trim();
     const password = document.getElementById('auth-pass-login').value;
 
@@ -1328,9 +1334,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
       const roleResult = await ensureOwnProfileRole('client', data.user);
-      console.log('[Vetd business signin] profile role result', roleResult);
+      console.log('[Vetd business signin]', traceId, 'profile role result', roleResult);
       if (!roleResult?.ok) {
-        console.error('[Vetd business signin] role mismatch', roleResult);
+        console.error('[Vetd business signin]', traceId, 'role mismatch', roleResult);
         await db.auth.signOut();
         showToast('This email is linked to a contributor account. Sign in through the contributor portal instead.', true);
         btn.textContent = 'Sign in →'; btn.disabled = false;
@@ -1339,7 +1345,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const roleCheck = await assertPortalRole('client');
       if (!roleCheck.ok) return;
       // Ensure companies/clients rows exist — creates them on first sign-in after email confirmation
-      await ensureClientRecords(roleCheck.session.user);
+      await ensureClientRecords(roleCheck.session.user, traceId);
       await goApp();
     } catch(err) {
       showToast(err.message || 'Sign-in failed', true);
