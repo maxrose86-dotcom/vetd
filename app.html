@@ -6978,8 +6978,15 @@ async function applyToStudy(studyId, answers = null) {
     }
   }
 
-  function setLang(lang) {
+  function setLang(lang, options = {}) {
+    const shouldReload = options.reload !== false;
+    if (shouldReload && getCurrentLang() === lang) return;
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
+    if (shouldReload) {
+      document.documentElement.lang = lang;
+      window.location.reload();
+      return;
+    }
     document.documentElement.lang = lang;
     // Sync floating toggle (landing/onboarding)
     document.getElementById('lb-en').classList.toggle('active', lang === 'en');
@@ -7030,7 +7037,7 @@ async function applyToStudy(studyId, answers = null) {
   }
 
   initChipGroups();
-  setLang(localStorage.getItem('vetd_lang') || 'sv');
+  setLang(localStorage.getItem('vetd_lang') || 'sv', { reload: false });
 
   // ── MOBILE HAMBURGER NAV ────────────────────────────────
   function toggleMobileNav() {
