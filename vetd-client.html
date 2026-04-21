@@ -1232,11 +1232,24 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         options: { data: { first_name: fname, last_name: lname, company, role: 'client' } }
       });
       if (authErr) throw authErr;
+      console.log('[Vetd business signup] auth signup success', {
+        userId: authData?.user?.id || authData?.session?.user?.id || null,
+        hasSession: Boolean(authData?.session),
+        email
+      });
 
       if (authData.session) {
         // Email confirmation is disabled — user is immediately authenticated.
         // Create company + client rows now and go straight to the dashboard.
-        await ensureOwnProfileRole('client', authData.session.user || authData.user);
+        const roleResult = await ensureOwnProfileRole('client', authData.session.user || authData.user);
+        console.log('[Vetd business signup] profile role result', roleResult);
+        if (!roleResult?.ok) {
+          console.error('[Vetd business signup] role mismatch', roleResult);
+          await db.auth.signOut();
+          showToast('This email is already linked to a contributor account. Sign in through the contributor portal or use a different work email.', true);
+          btn.textContent = 'Create account →'; btn.disabled = false;
+          return;
+        }
         const roleCheck = await assertPortalRole('client');
         if (!roleCheck.ok) return;
         await ensureClientRecords(roleCheck.session.user);
@@ -1261,7 +1274,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   async function ensureClientRecords(user) {
     if (!db || !user) return;
 
-    await ensureOwnProfileRole('client', user);
+    const roleResult = await ensureOwnProfileRole('client', user);
+    console.log('[Vetd business signup] ensureClientRecords profile role result', roleResult);
 
     // Check if client row already exists (.maybeSingle returns null without error when no row found)
     const { data: existing } = await db
@@ -1272,14 +1286,26 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const companyName = user.user_metadata?.company || 'My Company';
 
     // Create company row
+    const companyInsertPayload = { name: companyName, created_by: user.id };
+    console.log('[Vetd business signup] company insert attempt', companyInsertPayload);
     const { data: companyData, error: compErr } = await db
-      .from('companies').insert({ name: companyName }).select('id').single();
+      .from('companies').insert(companyInsertPayload).select('id').single();
+    if (compErr) {
+      console.error('[Vetd business signup] company insert failed', compErr);
+    } else {
+      console.log('[Vetd business signup] company insert success', companyData);
+    }
     if (compErr) throw compErr;
 
     // Create client row — if this fails, clean up the company we just created
     // so that a retry doesn't insert a second orphaned company row.
     const { error: clientErr } = await db
       .from('clients').insert({ id: user.id, company_id: companyData.id });
+    if (clientErr) {
+      console.error('[Vetd business signup] client row insert failed', clientErr);
+    } else {
+      console.log('[Vetd business signup] client row insert success', { id: user.id, company_id: companyData.id });
+    }
     if (clientErr) {
       const { error: cleanupErr } = await db.from('companies').delete().eq('id', companyData.id);
       if (cleanupErr) console.warn('ensureClientRecords: company cleanup failed', cleanupErr);
@@ -1301,7 +1327,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      await ensureOwnProfileRole('client', data.user);
+      const roleResult = await ensureOwnProfileRole('client', data.user);
+      console.log('[Vetd business signin] profile role result', roleResult);
+      if (!roleResult?.ok) {
+        console.error('[Vetd business signin] role mismatch', roleResult);
+        await db.auth.signOut();
+        showToast('This email is linked to a contributor account. Sign in through the contributor portal instead.', true);
+        btn.textContent = 'Sign in →'; btn.disabled = false;
+        return;
+      }
       const roleCheck = await assertPortalRole('client');
       if (!roleCheck.ok) return;
       // Ensure companies/clients rows exist — creates them on first sign-in after email confirmation
