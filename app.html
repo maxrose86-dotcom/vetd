@@ -1856,6 +1856,11 @@
     return Number.isFinite(ts) ? ts : null;
   }
 
+  function _isRecent(value, windowMs) {
+    const ts = getIsoTime(value);
+    return Boolean(ts && (Date.now() - ts) < windowMs);
+  }
+
   function isCompanyCancelledApp(app) {
     const status = normalizePortalRole(app?.status);
     return status === 'cancelled'
@@ -2243,6 +2248,7 @@
     const noStudiesLongTime = hasNoStudiesLongTime(studies, apps, payments);
     const lowFitContributor = hasLowFitContributor(studies, safe.profile, prefs);
     const hasStrongMatches = Boolean(topFit && topFit.score >= 3);
+    const isProfileIncomplete = !!(safe.profile && !(safe.profile.job_title && safe.profile.industry && safe.profile.experience_level));
 
     let mode = 'exploring';
     let priority = 'browse';
@@ -2271,15 +2277,15 @@
     } else if (delayedPayment) {
       mode = 'payment_delayed';
       priority = 'payment';
-    } else if (cancelledApp) {
+    } else if (cancelledApp && _isRecent(cancelledApp.app.updated_at || cancelledApp.app.applied_at, 48 * 3600000)) {
       mode = 'company_cancelled';
       priority = 'resolution';
       context.primaryAppId = cancelledApp.app.id;
-    } else if (missedApp) {
+    } else if (missedApp && _isRecent(missedApp.app.scheduled_at, 24 * 3600000)) {
       mode = 'missed_session';
       priority = 'recovery';
       context.primaryAppId = missedApp.app.id;
-    } else if (rejectedAfterWait) {
+    } else if (rejectedAfterWait && _isRecent(rejectedAfterWait.app.updated_at || rejectedAfterWait.app.applied_at, 48 * 3600000)) {
       mode = 'rejected_after_wait';
       priority = 'recovery';
       context.primaryAppId = rejectedAfterWait.app.id;
@@ -2290,6 +2296,12 @@
     } else if (unpaid) {
       mode = 'post_session';
       priority = 'payment';
+    } else if (hasStrongMatches) {
+      mode = 'strong_fit_live_studies';
+      priority = 'opportunity';
+    } else if (isProfileIncomplete) {
+      mode = 'profile_incomplete';
+      priority = 'activation';
     } else if (noStudiesLongTime) {
       mode = 'no_studies_long_time';
       priority = 'supply';
@@ -2415,12 +2427,30 @@
       };
     }
 
+    if (model.mode === 'strong_fit_live_studies') {
+      return {
+        main: t('command_strong_fit_main'),
+        sub: model.context.topFit?.positives?.[0] || t('command_strong_fit_sub'),
+        cta: t('command_strong_fit_cta'),
+        action: { type: 'browse', studyId: _routedLiveStudyId() }
+      };
+    }
+
+    if (model.mode === 'profile_incomplete') {
+      return {
+        main: t('command_profile_incomplete_main'),
+        sub: t('command_profile_incomplete_sub'),
+        cta: t('command_profile_incomplete_cta'),
+        action: { type: 'profile' }
+      };
+    }
+
     if (model.mode === 'no_studies_long_time') {
       return {
         main: t('command_no_studies_main'),
         sub: t('command_no_studies_sub'),
-        cta: t('command_no_studies_cta'),
-        action: { type: 'profile' }
+        cta: null,
+        action: null
       };
     }
 
@@ -2466,7 +2496,12 @@
     if (surface) surface.dataset.mode = model.mode;
     main.textContent = command.main;
     sub.textContent = command.sub;
-    cta.textContent = command.cta;
+    if (command.cta) {
+      cta.textContent = command.cta;
+      cta.style.display = '';
+    } else {
+      cta.style.display = 'none';
+    }
   }
 
   function runContributorNextAction() {
@@ -5752,12 +5787,17 @@ async function applyToStudy(studyId, answers = null) {
       command_payment_main: 'Payment on the way',
       command_payment_sub: 'Completed study payments will appear in your earnings.',
       command_payment_cta: 'View earnings',
+      command_strong_fit_main: 'A strong match is available',
+      command_strong_fit_sub: 'This study looks like a good fit for your profile.',
+      command_strong_fit_cta: 'See the study',
+      command_profile_incomplete_main: 'Complete your profile',
+      command_profile_incomplete_sub: 'Adding your role and background helps us find better matches.',
+      command_profile_incomplete_cta: 'Complete profile',
       command_no_studies_main: 'No studies are available right now',
       command_no_studies_sub: 'New studies will appear here when they open.',
-      command_no_studies_cta: 'Review profile',
       command_low_fit_main: 'No close matches right now',
       command_low_fit_sub: 'Studies are live, but none quite match your profile right now.',
-      command_low_fit_cta: 'Review profile',
+      command_low_fit_cta: 'Update interests',
       command_default_main: 'New studies available',
       command_default_sub: 'Browse what fits you best right now.',
       command_default_cta: 'Browse studies',
@@ -6387,12 +6427,17 @@ async function applyToStudy(studyId, answers = null) {
       command_payment_main: 'Betalning på väg',
       command_payment_sub: 'Betalningar för slutförda studier syns i dina intäkter.',
       command_payment_cta: 'Visa intäkter',
+      command_strong_fit_main: 'Det finns en stark matchning tillgänglig',
+      command_strong_fit_sub: 'Den här studien verkar passa din profil bra.',
+      command_strong_fit_cta: 'Se studien',
+      command_profile_incomplete_main: 'Komplettera din profil',
+      command_profile_incomplete_sub: 'Lägg till din roll och bakgrund så kan vi hitta bättre matchningar.',
+      command_profile_incomplete_cta: 'Komplettera profil',
       command_no_studies_main: 'Det finns inga studier tillgängliga just nu',
       command_no_studies_sub: 'Nya studier visas här när de öppnar.',
-      command_no_studies_cta: 'Se över profil',
       command_low_fit_main: 'Inga nära matchningar just nu',
       command_low_fit_sub: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
-      command_low_fit_cta: 'Se över profil',
+      command_low_fit_cta: 'Uppdatera intressen',
       command_default_main: 'Nya studier finns tillgängliga',
       command_default_sub: 'Bläddra bland det som passar dig bäst just nu.',
       command_default_cta: 'Bläddra bland studier',
