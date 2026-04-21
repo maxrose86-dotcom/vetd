@@ -2255,6 +2255,7 @@
     const context = {
       topFitStudy,
       topFit,
+      topMatchReasons: topFitStudy ? getStudyMatchReasons(topFitStudy, safe.profile, prefs) : [],
       primaryAppId: null,
       primaryPaymentId: delayedPayment?.id || unpaid?.id || null,
       hasStrongMatches,
@@ -2430,7 +2431,7 @@
     if (model.mode === 'strong_fit_live_studies') {
       return {
         main: t('command_strong_fit_main'),
-        sub: model.context.topFit?.positives?.[0] || t('command_strong_fit_sub'),
+        sub: (model.context.topMatchReasons || [])[0] || t('command_strong_fit_sub'),
         cta: t('command_strong_fit_cta'),
         action: { type: 'browse', studyId: _routedLiveStudyId() }
       };
@@ -2712,6 +2713,80 @@
       positives,
       softLimits
     };
+  }
+
+  // Returns up to 2 specific, grounded reasons why this study matches this user.
+  // Designed for "Why this study?" surfaces. Never returns generic fallback strings.
+  function getStudyMatchReasons(study, profile, prefs) {
+    if (!study || !profile) return [];
+    const fit = computeStudyFit(study, profile, prefs || {});
+    const signals = fit.signals;
+    const candidates = [];
+
+    // 1. Shared interest — strongest signal, names the exact topic
+    if (signals.sharedInterest) {
+      candidates.push({
+        key: 'interest',
+        text: t('match_reason_interest').replace('{tag}', getInterestLabel(signals.sharedInterest))
+      });
+    }
+
+    // 2. Industry correlation — contributor's industry aligns with study's focus area
+    const industry = (profile.industry || '').trim();
+    if (industry && signals.focusArea && signals.focusArea !== 'all') {
+      const FOCUS_INDUSTRIES = {
+        finance: ['finance', 'banking', 'insurance', 'fintech', 'investment', 'accounting'],
+        tech:    ['tech', 'technology', 'software', 'engineering', 'it', 'digital', 'media', 'gaming'],
+      };
+      const matched = (FOCUS_INDUSTRIES[signals.focusArea] || []).some(
+        kw => industry.toLowerCase().includes(kw)
+      );
+      if (matched) {
+        candidates.push({
+          key: 'industry',
+          text: t('match_reason_industry').replace('{industry}', industry)
+        });
+      }
+    }
+
+    // 3. Track record — behavioral signal (more valuable to researcher than generic interest)
+    const totalStudies = parseInt(profile.total_studies, 10) || 0;
+    const completionRate = parseFloat(profile.completion_rate) || 0;
+    if (totalStudies >= 3 && completionRate >= 80) {
+      candidates.push({
+        key: 'track_record',
+        text: t('match_reason_track_record').replace('{n}', String(totalStudies))
+      });
+    } else if (totalStudies >= 1) {
+      candidates.push({ key: 'history', text: t('match_reason_history') });
+    }
+
+    // 4. Explicit focus preference match (user has set a specific focus)
+    if (signals.focusMatch && prefs && prefs.focus && prefs.focus !== 'all') {
+      const focusKey = {
+        lifestyle: 'prefs_focus_lifestyle',
+        tech: 'prefs_focus_tech',
+        finance: 'prefs_focus_finance'
+      }[prefs.focus];
+      if (focusKey) {
+        candidates.push({
+          key: 'focus',
+          text: t('match_reason_focus').replace('{focus}', t(focusKey).toLowerCase())
+        });
+      }
+    }
+
+    // 5. In-person format — opt-in, so worth naming (online is not notable)
+    if (study.format === 'in-person' && signals.formatMatch) {
+      candidates.push({ key: 'format', text: t('match_reason_format_in_person') });
+    }
+
+    // Deduplicate by key, return first 2 only
+    const seen = new Set();
+    return candidates
+      .filter(c => { if (seen.has(c.key)) return false; seen.add(c.key); return true; })
+      .slice(0, 2)
+      .map(c => c.text);
   }
 
   function applyStudyPreferenceBias(studies, prefs, profileOverride = state.contribData) {
@@ -3291,8 +3366,10 @@
   }
 
   function getStudyRelevance(study) {
-    const fit = computeStudyFit(study, state.contribData, getContributorMatchPreferences());
-    return fit.positives[0] || t('browse_relevance_generic');
+    const profile = state.contribData || {};
+    const prefs = getContributorMatchPreferences(profile);
+    const reasons = getStudyMatchReasons(study, profile, prefs);
+    return reasons[0] || '';
   }
 
   function getStudyDurationLabel(study) {
@@ -3440,9 +3517,16 @@
   }
 
   function renderStudyMatchExplanation(study, profile) {
-    return getStudyMatchExplanation(study, profile).map(item => `
-      <div class="match-explain-item ${item.soft ? 'match-explain-soft' : ''}">${esc(item.text)}</div>
-    `).join('');
+    const prefs = getContributorMatchPreferences(profile);
+    const reasons = getStudyMatchReasons(study, profile, prefs);
+    const fit = computeStudyFit(study, profile, prefs);
+    const positiveHtml = reasons.map(text =>
+      `<div class="match-explain-item">${esc(text)}</div>`
+    ).join('');
+    const softHtml = fit.softLimits.map(text =>
+      `<div class="match-explain-item match-explain-soft">${esc(text)}</div>`
+    ).join('');
+    return positiveHtml + softHtml || `<div class="match-explain-item match-explain-soft">${esc(t('modal_match_generic'))}</div>`;
   }
 
   function getStudyWhatYoullDo(study) {
@@ -5905,6 +5989,12 @@ async function applyToStudy(studyId, answers = null) {
       modal_good_fit_in_person: 'Good fit for contributors comfortable taking part in person.',
       modal_good_fit_short: 'Good fit for contributors looking for a short session.',
       modal_good_fit_online: 'Good fit for contributors comfortable joining sessions online.',
+      match_reason_interest: "You're interested in {tag}",
+      match_reason_industry: 'Your background in {industry} is relevant here',
+      match_reason_track_record: "You've completed {n} studies on Vetd — researchers value your track record",
+      match_reason_history: "You've been part of research on Vetd before",
+      match_reason_focus: 'This study is in {focus}, an area you follow',
+      match_reason_format_in_person: "This is an in-person session — you've indicated you're open to these",
       modal_match_title: 'Why this is a fit',
       modal_match_interest: 'Based on your interest in {tag}',
       modal_match_format_online: 'Fits your preference for online studies',
@@ -6545,6 +6635,12 @@ async function applyToStudy(studyId, answers = null) {
       modal_good_fit_in_person: 'Passar bra för deltagare som är bekväma med att delta på plats.',
       modal_good_fit_short: 'Passar bra för deltagare som söker en kort session.',
       modal_good_fit_online: 'Passar bra för deltagare som är bekväma med att delta digitalt.',
+      match_reason_interest: 'Du är intresserad av {tag}',
+      match_reason_industry: 'Din bakgrund inom {industry} är relevant här',
+      match_reason_track_record: 'Du har genomfört {n} studier på Vetd — forskare värdesätter din historik',
+      match_reason_history: 'Du har deltagit i forskning på Vetd tidigare',
+      match_reason_focus: 'Den här studien handlar om {focus}, ett område du följer',
+      match_reason_format_in_person: 'Det här är en session på plats — du har angett att du är öppen för det',
       modal_match_title: 'Varför den här passar',
       modal_match_interest: 'Bygger på ditt intresse för {tag}',
       modal_match_format_online: 'Passar din preferens för digitala studier',
