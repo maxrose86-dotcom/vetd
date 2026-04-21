@@ -3540,12 +3540,44 @@
 }
 
   // ─── NAVIGATION ─────────────────────────────────────────
+  const CONTRIBUTOR_TABS = ['dashboard', 'studies', 'my-studies', 'profile'];
+
+  function persistContributorTab(tab) {
+    if (CONTRIBUTOR_TABS.includes(tab)) sessionStorage.setItem('vetd_active_tab', tab);
+  }
+
+  function getSavedContributorTab() {
+    const tab = sessionStorage.getItem('vetd_active_tab');
+    return CONTRIBUTOR_TABS.includes(tab) ? tab : null;
+  }
+
+  function getCurrentContributorTab() {
+    for (const tab of CONTRIBUTOR_TABS) {
+      const el = document.getElementById('tab-' + tab);
+      if (el && el.style.display !== 'none') return tab;
+    }
+    return null;
+  }
+
+  function getContributorTabButton(tab) {
+    const buttonMap = {
+      dashboard: 1,
+      studies: 2,
+      'my-studies': 3,
+      profile: 4
+    };
+    const index = buttonMap[tab];
+    return index ? document.querySelector(`.topbar-nav button:nth-child(${index})`) : null;
+  }
+
   function showTab(tab, btn) {
     ['dashboard','studies','my-studies','profile'].forEach(tabName => {
       document.getElementById('tab-' + tabName).style.display = tabName === tab ? 'block' : 'none';
     });
     document.querySelectorAll('.topbar-nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    const targetBtn = btn || getContributorTabButton(tab);
+    if (targetBtn) targetBtn.classList.add('active');
+    persistContributorTab(tab);
   }
 
   function startOnboarding() {
@@ -3677,6 +3709,8 @@
     await loadAppliedStudies();
     await loadUserProfile();
     await loadStudies();
+    const savedTab = getSavedContributorTab() || 'dashboard';
+    showTab(savedTab, getContributorTabButton(savedTab));
     renderStudies('dashboard-studies', state.studies.slice(0,2));
     renderStudies('studies-list', state.studies);
     loadNotifications();
@@ -6983,6 +7017,8 @@ async function applyToStudy(studyId, answers = null) {
     if (shouldReload && getCurrentLang() === lang) return;
     if (localStorage.getItem('vetd_cookie_consent') !== 'declined') localStorage.setItem('vetd_lang', lang);
     if (shouldReload) {
+      const activeTab = getCurrentContributorTab();
+      if (activeTab) persistContributorTab(activeTab);
       document.documentElement.lang = lang;
       window.location.reload();
       return;
