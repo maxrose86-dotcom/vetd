@@ -3354,8 +3354,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     clearTimeout(_builderPublishTimer);
     renderBuilderPoolPreview();
     _builderPublishTimer = setTimeout(() => {
-      _builderPublishState = 'published';
-      renderBuilderPoolPreview();
+      (async () => {
+        const saved = await submitStudy('active');
+        _builderPublishState = saved ? 'published' : 'idle';
+        renderBuilderPoolPreview();
+      })();
     }, 900);
   }
 
@@ -3368,14 +3371,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const sessionType = format === 'focus_group' ? 'group' : 'one_to_one';
 
     // Validation before DB insert
-    if (!title) { showToast('Please enter a study title', true); return; }
-    if (title.length > 200) { showToast('Study title must be 200 characters or fewer', true); return; }
-    if (!desc) { showToast('Please enter a study description', true); return; }
-    if (desc.length > 2000) { showToast('Description must be 2000 characters or fewer', true); return; }
+    if (!title) { showToast('Please enter a study title', true); return false; }
+    if (title.length > 200) { showToast('Study title must be 200 characters or fewer', true); return false; }
+    if (!desc) { showToast('Please enter a study description', true); return false; }
+    if (desc.length > 2000) { showToast('Description must be 2000 characters or fewer', true); return false; }
     const payNum = parseFloat(payRaw);
-    if (!payRaw || isNaN(payNum) || payNum <= 0) { showToast('Pay per person must be a positive number', true); return; }
+    if (!payRaw || isNaN(payNum) || payNum <= 0) { showToast('Pay per person must be a positive number', true); return false; }
     const spotsNum = parseInt(spotsRaw, 10);
-    if (!spotsRaw || isNaN(spotsNum) || spotsNum < 1 || !Number.isInteger(spotsNum)) { showToast('Spots must be a positive whole number (at least 1)', true); return; }
+    if (!spotsRaw || isNaN(spotsNum) || spotsNum < 1 || !Number.isInteger(spotsNum)) { showToast('Spots must be a positive whole number (at least 1)', true); return false; }
     const length = document.getElementById('b-length').value;
     const spots  = spotsNum;
     const pay    = Math.round(payNum);
@@ -3390,7 +3393,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : ['remote'];
     const targetInterests = targeting.selectedInterests;
 
-    if (!title) { showToast('Please enter a study title', true); return; }
+    if (!title) { showToast('Please enter a study title', true); return false; }
 
     const publishBtn = document.getElementById('publish-study-btn');
     const draftBtn = document.getElementById('save-draft-btn');
@@ -3401,7 +3404,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       setTimeout(() => {
         showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
       }, 1200);
-      return;
+      return true;
     }
 
     if (publishBtn) {
@@ -3481,10 +3484,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
         await loadStudies(); // runs after tab is visible so _justPublished banner renders in place
       }, 1200);
+      return true;
     } catch(err) {
       console.error(isDraft ? 'Save draft error:' : 'Publish error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast(err.message || t(isDraft ? 'cl_draft_save_failed' : 'cl_publish_failed'), true);
+      return false;
     } finally {
       if (publishBtn) {
         publishBtn.textContent = t('cl_publish_btn');
