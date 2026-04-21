@@ -812,6 +812,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                   </div>
                 </div>
               </div>
+              <div class="section-group" id="customer-behaviors-block" style="display:none">
+                <h3 data-i18n="cl_section_behaviors">Behaviors</h3>
+                <div class="field-inline-note" data-i18n="cl_behaviors_hint">Select behaviors that describe your ideal participant.</div>
+                <div class="chip-group" data-field="customer_behaviors" style="margin-top:10px;flex-wrap:wrap">
+                  <div class="chip" data-value="shops_online"        onclick="tc(this)" data-i18n="cl_chip_behavior_shops_online">Shops online regularly</div>
+                  <div class="chip" data-value="recent_buyer"        onclick="tc(this)" data-i18n="cl_chip_behavior_recent_buyer">Bought in this category recently</div>
+                  <div class="chip" data-value="compares_brands"     onclick="tc(this)" data-i18n="cl_chip_behavior_compares_brands">Compares brands before buying</div>
+                  <div class="chip" data-value="visits_brand_sites"  onclick="tc(this)" data-i18n="cl_chip_behavior_visits_brand_sites">Visits brand websites before purchase</div>
+                  <div class="chip" data-value="buys_premium"        onclick="tc(this)" data-i18n="cl_chip_behavior_buys_premium">Buys premium products</div>
+                  <div class="chip" data-value="seeks_deals"         onclick="tc(this)" data-i18n="cl_chip_behavior_seeks_deals">Looks for deals or discounts</div>
+                </div>
+              </div>
               <div class="section-group">
                 <div class="screening-head">
                   <h3 style="margin:0;border:none;padding:0" data-i18n="cl_section_screening">Screening questions</h3>
@@ -2929,10 +2941,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
     if (industryField) industryField.style.display = isProfessional ? '' : 'none';
     if (experienceField) experienceField.style.display = isProfessional ? '' : 'none';
+    const behaviorsBlock = document.getElementById('customer-behaviors-block');
+    if (behaviorsBlock) behaviorsBlock.style.display = isProfessional ? 'none' : '';
   }
 
   function getSelectedPrimaryInterests() {
     return [...document.querySelectorAll('[data-field="primary_interests"] .chip.on')].map(chip => chip.dataset.value);
+  }
+
+  function getCustomerBehaviors() {
+    return [...document.querySelectorAll('[data-field="customer_behaviors"] .chip.on')].map(c => c.dataset.value);
   }
 
   function toggleExperienceChip(el) {
@@ -3021,7 +3039,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const maxAge = parseInt(document.getElementById('b-age-max')?.value || '70', 10);
     const screeningCount = getScreeningQuestions().length;
     const spots = Math.max(1, parseInt(document.getElementById('b-spots')?.value || '10', 10) || 10);
-    return { audienceType, selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots };
+    const customerBehaviors = audienceType === 'customers' ? getCustomerBehaviors() : [];
+    return { audienceType, selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots, customerBehaviors };
   }
 
   function simulateBuilderMatchPool(targeting) {
@@ -3047,6 +3066,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
     for (let i = 0; i < targeting.screeningCount; i += 1) {
       pool *= 0.86;
+    }
+
+    const behaviorCount = Array.isArray(targeting.customerBehaviors) ? targeting.customerBehaviors.length : 0;
+    for (let i = 0; i < behaviorCount; i += 1) {
+      pool *= 0.89;
     }
 
     const poolCount = Math.max(0, Math.round(pool));
@@ -3090,6 +3114,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const span = Math.max(0, targeting.maxAge - targeting.minAge);
     if (!targeting.selectedInterests.length) return t('cl_match_guidance_choose_interest');
     if (targeting.selectedInterests.length > 2) return t('cl_match_guidance_three_interests');
+    if (Array.isArray(targeting.customerBehaviors) && targeting.customerBehaviors.length >= 3) return t('cl_match_guidance_many_behaviors');
     if (simulation.confidence === 'too_narrow' && targeting.locationMode === 'city' && targeting.city) {
       return t('cl_match_guidance_city_narrow');
     }
@@ -3270,6 +3295,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         values: interestTags
       }
     ];
+
+    if (targeting.customerBehaviors && targeting.customerBehaviors.length) {
+      rows.push({
+        label: t('cl_review_row_behaviors'),
+        type: 'tags',
+        values: targeting.customerBehaviors.map(v => t('cl_chip_behavior_' + v))
+      });
+    }
 
     if (filterTags.length) {
       rows.push({
@@ -3529,6 +3562,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_genders:       null,
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
+        target_behaviors:     targeting.customerBehaviors.length ? targeting.customerBehaviors : null,
         is_test:              companyIsTest,
         min_rating:           null,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
@@ -3537,8 +3571,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       let { error } = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
-      if (error && /audience_type/i.test(error.message || '')) {
-        const { audience_type, ...legacyStudyFields } = studyFields;
+      if (error && /audience_type|target_behaviors/i.test(error.message || '')) {
+        const { audience_type, target_behaviors, ...legacyStudyFields } = studyFields;
         ({ error } = effectiveDraftId
           ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId)
           : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }));
@@ -3693,6 +3727,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     };
     setChips('audience_type', [study.audience_type || 'customers']);
     setChips('primary_interests', study.target_interests);
+    setChips('customer_behaviors', Array.isArray(study.target_behaviors) ? study.target_behaviors : []);
     setChips('match_location_mode', study.target_locations?.[0] === 'remote' ? ['remote'] : (study.target_locations?.length ? ['city'] : ['remote']));
 
     const minAge = document.getElementById('b-age-min');
@@ -5638,6 +5673,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_age_min: 'Min',
       cl_age_max: 'Max',
       cl_age_any: 'Any age',
+      cl_section_behaviors: 'Behaviors',
+      cl_behaviors_hint: 'Select behaviors that describe your ideal participant.',
+      cl_chip_behavior_shops_online: 'Shops online regularly',
+      cl_chip_behavior_recent_buyer: 'Bought in this category recently',
+      cl_chip_behavior_compares_brands: 'Compares brands before buying',
+      cl_chip_behavior_visits_brand_sites: 'Visits brand websites before purchase',
+      cl_chip_behavior_buys_premium: 'Buys premium products',
+      cl_chip_behavior_seeks_deals: 'Looks for deals or discounts',
+      cl_review_row_behaviors: 'Behaviors',
+      cl_match_guidance_many_behaviors: 'Three or more behaviors can narrow your pool quickly.',
       cl_section_screening: 'Screening questions',
       cl_screening_count: '{count} of 2 used',
       cl_label_sq1: 'Screening question 1',
