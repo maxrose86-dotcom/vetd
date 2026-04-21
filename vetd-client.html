@@ -182,6 +182,7 @@ textarea{resize:vertical;min-height:90px}
 .chip:hover{border-color:var(--blue);color:var(--blue)}
 .chip.on{background:var(--blue-light);border-color:var(--blue);color:var(--blue-dark);font-weight:500}
 .targeting-stack{display:flex;flex-direction:column;gap:14px}
+.audience-type-note{font-size:12px;line-height:1.55;color:var(--gray-500);margin-top:8px}
 .field-inline-note{font-size:12px;color:var(--gray-400);margin:-1px 0 10px;font-weight:300;line-height:1.5}
 .interest-domain{padding:12px 14px;border:1px solid var(--gray-100);border-radius:var(--r-md);background:var(--gray-50)}
 .interest-domain-title{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px}
@@ -690,6 +691,17 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 <div class="builder-step-sub" data-i18n="cl_builder_step_1_intro">Define what the study is before you choose the audience.</div>
               </div>
               <div class="section-group">
+                <h3 data-i18n="cl_section_study_type">Study type</h3>
+                <div class="field">
+                  <label data-i18n="cl_label_audience_type">Who is this study for?</label>
+                  <div class="chip-group" data-field="audience_type" data-single="true">
+                    <div class="chip on" data-value="customers" onclick="tc(this)" data-i18n="cl_audience_customers">Customers</div>
+                    <div class="chip" data-value="professionals" onclick="tc(this)" data-i18n="cl_audience_professionals">Professionals</div>
+                  </div>
+                  <div class="audience-type-note" id="audience-type-note"></div>
+                </div>
+              </div>
+              <div class="section-group">
                 <h3 data-i18n="cl_section_basics">Study basics</h3>
                 <div class="field"><label data-i18n="cl_label_title">Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" data-i18n-ph="cl_ph_title" oninput="updatePreview()" maxlength="200"></div>
                 <div class="field"><label data-i18n="cl_label_desc">Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." data-i18n-ph="cl_ph_desc" oninput="updatePreview()" maxlength="2000"></textarea></div>
@@ -749,22 +761,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <div class="builder-step-pane" id="builder-step-pane-2">
               <div class="builder-step-intro">
                 <div class="builder-step-title" data-i18n="cl_builder_step_2_title">Who matters</div>
-                <div class="builder-step-sub" data-i18n="cl_builder_step_2_intro">Define the audience and see how confident Vetd is about filling the study.</div>
+                <div class="builder-step-sub" id="builder-step-2-intro">Define the audience and see how confident Vetd is about filling the study.</div>
               </div>
               <div class="section-group">
-                <h3 data-i18n="cl_section_targeting">Who are you looking for?</h3>
+                <h3 id="builder-targeting-section-title" data-i18n="cl_section_targeting">Who are you looking for?</h3>
                 <div class="field">
                   <label data-i18n="cl_label_primary_interest">Primary interest</label>
-                  <div class="field-inline-note" data-i18n="cl_primary_interest_hint">Pick one or two interests to anchor matching.</div>
+                  <div class="field-inline-note" id="primary-interest-hint">Pick one or two interests to anchor matching.</div>
                   <div id="builder-interest-groups" class="targeting-stack"></div>
                   <div id="primary-interest-warning" class="targeting-note warn" style="display:none"></div>
                 </div>
-                <div class="field">
+                <div class="field" id="professional-industry-field">
                   <label data-i18n="cl_label_industry">Industry</label>
                   <input type="text" id="b-industry" placeholder="e.g. Fintech" data-i18n-ph="cl_ph_industry" oninput="updatePreview()">
                   <div class="industry-suggestions" id="industry-suggestions"></div>
                 </div>
-                <div class="field">
+                <div class="field" id="professional-experience-field">
                   <label data-i18n="cl_label_experience">Experience level</label>
                   <div class="chip-group" data-field="experience_level">
                     <div class="chip" data-value="junior" onclick="toggleExperienceChip(this)" data-i18n="cl_chip_junior">Junior</div>
@@ -2876,6 +2888,49 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     updatePreview();
   }
 
+  function getBuilderAudienceType() {
+    return getChipValues('audience_type')[0] || 'customers';
+  }
+
+  function getBuilderAudienceTypeLabel(audienceType = getBuilderAudienceType()) {
+    return audienceType === 'professionals'
+      ? t('cl_audience_professionals')
+      : t('cl_audience_customers');
+  }
+
+  function renderAudienceTypeUI() {
+    const audienceType = getBuilderAudienceType();
+    const isProfessional = audienceType === 'professionals';
+    const noteEl = document.getElementById('audience-type-note');
+    const step2IntroEl = document.getElementById('builder-step-2-intro');
+    const sectionTitleEl = document.getElementById('builder-targeting-section-title');
+    const primaryInterestHintEl = document.getElementById('primary-interest-hint');
+    const industryField = document.getElementById('professional-industry-field');
+    const experienceField = document.getElementById('professional-experience-field');
+    if (noteEl) {
+      noteEl.textContent = isProfessional
+        ? t('cl_audience_note_professionals')
+        : t('cl_audience_note_customers');
+    }
+    if (step2IntroEl) {
+      step2IntroEl.textContent = isProfessional
+        ? t('cl_builder_step_2_intro_professionals')
+        : t('cl_builder_step_2_intro_customers');
+    }
+    if (sectionTitleEl) {
+      sectionTitleEl.textContent = isProfessional
+        ? t('cl_section_targeting_professionals')
+        : t('cl_section_targeting_customers');
+    }
+    if (primaryInterestHintEl) {
+      primaryInterestHintEl.textContent = isProfessional
+        ? t('cl_primary_interest_hint_professionals')
+        : t('cl_primary_interest_hint_customers');
+    }
+    if (industryField) industryField.style.display = isProfessional ? '' : 'none';
+    if (experienceField) experienceField.style.display = isProfessional ? '' : 'none';
+  }
+
   function getSelectedPrimaryInterests() {
     return [...document.querySelectorAll('[data-field="primary_interests"] .chip.on')].map(chip => chip.dataset.value);
   }
@@ -2952,16 +3007,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   function getBuilderTargetingState() {
+    const audienceType = getBuilderAudienceType();
     const selectedInterests = getSelectedPrimaryInterests();
-    const industry = document.getElementById('b-industry')?.value.trim() || '';
-    const experience = getChipValues('experience_level')[0] || '';
+    const industry = audienceType === 'professionals'
+      ? (document.getElementById('b-industry')?.value.trim() || '')
+      : '';
+    const experience = audienceType === 'professionals'
+      ? (getChipValues('experience_level')[0] || '')
+      : '';
     const locationMode = getChipValues('match_location_mode')[0] || 'remote';
     const city = document.getElementById('b-city')?.value.trim() || '';
     const minAge = parseInt(document.getElementById('b-age-min')?.value || '18', 10);
     const maxAge = parseInt(document.getElementById('b-age-max')?.value || '70', 10);
     const screeningCount = getScreeningQuestions().length;
     const spots = Math.max(1, parseInt(document.getElementById('b-spots')?.value || '10', 10) || 10);
-    return { selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots };
+    return { audienceType, selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots };
   }
 
   function simulateBuilderMatchPool(targeting) {
@@ -3199,6 +3259,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     if (!(targeting.minAge === 18 && targeting.maxAge === 70)) filterTags.push(`${targeting.minAge}-${targeting.maxAge}`);
 
     const rows = [
+      {
+        label: t('cl_review_row_audience'),
+        type: 'text',
+        value: getBuilderAudienceTypeLabel(targeting.audienceType)
+      },
       {
         label: t('cl_review_row_interests'),
         type: 'tags',
@@ -3453,6 +3518,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         description:          desc || null,
         format:               dbFormat,
         session_type:         sessionType,
+        audience_type:        targeting.audienceType,
         duration_minutes:     durationMins,
         spots,
         pay_per_participant:  pay,
@@ -3468,9 +3534,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      null
       };
-      const { error } = effectiveDraftId
+      let { error } = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
+      if (error && /audience_type/i.test(error.message || '')) {
+        const { audience_type, ...legacyStudyFields } = studyFields;
+        ({ error } = effectiveDraftId
+          ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId)
+          : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }));
+      }
       if (error) throw error;
 
       _editingDraftId = null;
@@ -3536,6 +3608,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const formatEl = document.getElementById('b-format'); if (formatEl) formatEl.selectedIndex = 0;
     const lengthEl = document.getElementById('b-length'); if (lengthEl) lengthEl.selectedIndex = 2;
     document.querySelectorAll('#tab-new-study [data-field] .chip').forEach(c => c.classList.remove('on'));
+    const defaultAudience = document.querySelector('#tab-new-study [data-field="audience_type"] .chip[data-value="customers"]');
+    if (defaultAudience) defaultAudience.classList.add('on');
     const defaultLocation = document.querySelector('#tab-new-study [data-field="match_location_mode"] .chip[data-value="remote"]');
     if (defaultLocation) defaultLocation.classList.add('on');
     const ageMin = document.getElementById('b-age-min');
@@ -3617,6 +3691,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         group.querySelectorAll('.chip').forEach(c => { if (valSet.has(c.dataset.value)) c.classList.add('on'); });
       });
     };
+    setChips('audience_type', [study.audience_type || 'customers']);
     setChips('primary_interests', study.target_interests);
     setChips('match_location_mode', study.target_locations?.[0] === 'remote' ? ['remote'] : (study.target_locations?.length ? ['city'] : ['remote']));
 
@@ -3642,6 +3717,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     updateAgeRangeLabel();
     updateScreeningCount();
     updateInterestWarning();
+    renderAudienceTypeUI();
 
     // Enter edit mode: persist in both memory and URL so a page refresh restores state.
     _editingDraftId = studyId;
@@ -4651,6 +4727,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── PREVIEW ────────────────────────────────────────────
   function updatePreview() {
+    renderAudienceTypeUI();
     updateLocationInputState();
     updateAgeRangeLabel();
     updateInterestWarning();
@@ -5521,6 +5598,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_builder_rail_step_1_label: 'What happens next',
       cl_builder_rail_step_1_title: 'Define the audience next',
       cl_builder_rail_step_1_copy: 'Once the basics are in place, Vetd will estimate the pool and show example contributors.',
+      cl_section_study_type: 'Study type',
+      cl_label_audience_type: 'Who is this study for?',
+      cl_audience_customers: 'Customers',
+      cl_audience_professionals: 'Professionals',
+      cl_audience_note_customers: 'Use this when you want feedback from customers, shoppers, or end users.',
+      cl_audience_note_professionals: 'Use this when you need people with professional background or industry context.',
+      cl_builder_step_2_intro_customers: 'Define the customer audience and see how confident Vetd is about filling the study.',
+      cl_builder_step_2_intro_professionals: 'Define the professional audience and see how confident Vetd is about filling the study.',
+      cl_section_targeting_customers: 'Which customers matter most?',
+      cl_section_targeting_professionals: 'Which professionals matter most?',
+      cl_primary_interest_hint_customers: 'Pick one or two customer interests or behaviors to anchor matching.',
+      cl_primary_interest_hint_professionals: 'Pick one or two domain interests to anchor matching.',
       cl_section_basics: 'Study basics',
       cl_label_title: 'Study title',
       cl_ph_title: 'e.g. Online shopping experience research',
@@ -5658,6 +5747,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_published_primary_action: 'Create another study',
       cl_published_context_label: 'Live now',
       cl_published_context_default: 'Untitled study',
+      cl_review_row_audience: 'Audience',
       cl_review_row_interests: 'Interests',
       cl_review_row_filters: 'Filters',
       cl_review_row_spots: 'Spots',
@@ -5998,6 +6088,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_builder_rail_step_1_label: 'Vad händer härnäst',
       cl_builder_rail_step_1_title: 'Definiera målgruppen härnäst',
       cl_builder_rail_step_1_copy: 'När grunderna är satta uppskattar Vetd poolen och visar exempel på deltagare.',
+      cl_section_study_type: 'Studietyp',
+      cl_label_audience_type: 'Vilka är studien för?',
+      cl_audience_customers: 'Kunder',
+      cl_audience_professionals: 'Professionella',
+      cl_audience_note_customers: 'Använd detta när du vill ha feedback från kunder, köpare eller slutanvändare.',
+      cl_audience_note_professionals: 'Använd detta när du behöver personer med professionell bakgrund eller branschkontext.',
+      cl_builder_step_2_intro_customers: 'Definiera kundmålgruppen och se hur säkert Vetd kan fylla studien.',
+      cl_builder_step_2_intro_professionals: 'Definiera den professionella målgruppen och se hur säkert Vetd kan fylla studien.',
+      cl_section_targeting_customers: 'Vilka kunder spelar störst roll?',
+      cl_section_targeting_professionals: 'Vilka professionella spelar störst roll?',
+      cl_primary_interest_hint_customers: 'Välj ett eller två kundintressen eller beteenden som ska styra matchningen.',
+      cl_primary_interest_hint_professionals: 'Välj ett eller två domänintressen som ska styra matchningen.',
       cl_section_basics: 'Grunduppgifter',
       cl_label_title: 'Studietitel',
       cl_ph_title: 't.ex. Undersökning av shoppingupplevelse online',
@@ -6135,6 +6237,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_published_primary_action: 'Skapa en ny studie',
       cl_published_context_label: 'Live nu',
       cl_published_context_default: 'Namnlös studie',
+      cl_review_row_audience: 'Målgrupp',
       cl_review_row_interests: 'Intressen',
       cl_review_row_filters: 'Filter',
       cl_review_row_spots: 'Platser',
