@@ -145,7 +145,31 @@ body{font-family:var(--sans);background:var(--gray-50);color:var(--gray-900);min
 
 /* STUDY BUILDER */
 .builder-wrap{display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start}
+.builder-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem}
+.builder-step-card{padding:14px 16px;border:1px solid var(--gray-100);border-radius:var(--r-lg);background:#fff}
+.builder-step-card.is-current{border-color:var(--blue);background:var(--blue-light)}
+.builder-step-card.is-complete{border-color:var(--green);background:#F0FDF4}
+.builder-step-number{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-400);margin-bottom:6px}
+.builder-step-card.is-current .builder-step-number{color:var(--blue-dark)}
+.builder-step-card.is-complete .builder-step-number{color:var(--green-dark)}
+.builder-step-name{font-size:14px;font-weight:600;color:var(--gray-900)}
+.builder-step-copy{font-size:12px;line-height:1.5;color:var(--gray-500);margin-top:4px}
 .builder-main .section-group{margin-bottom:1.75rem}
+.builder-step-pane{display:none}
+.builder-step-pane.is-active{display:block}
+.builder-step-intro{margin-bottom:1.25rem}
+.builder-step-title{font-family:var(--serif);font-size:26px;line-height:1.1;color:var(--gray-900)}
+.builder-step-sub{font-size:13px;line-height:1.6;color:var(--gray-500);margin-top:7px;max-width:60ch}
+.builder-step-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--gray-100)}
+.builder-step-actions-left{display:flex;gap:10px;align-items:center}
+.builder-step-actions-right{display:flex;gap:10px;align-items:center}
+.builder-step-error{font-size:12px;line-height:1.5;color:var(--coral);margin-top:10px}
+.builder-summary-card{border:1px solid var(--gray-100);border-radius:var(--r-lg);padding:1.1rem 1.15rem;background:#fff}
+.builder-summary-list{display:flex;flex-direction:column;gap:12px}
+.builder-summary-row{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.builder-summary-label{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gray-400);padding-top:3px;min-width:90px}
+.builder-summary-value{flex:1;text-align:right;font-size:13px;line-height:1.5;color:var(--gray-800)}
+.builder-summary-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .section-group h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--gray-400);margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--gray-100)}
 label{display:block;font-size:13px;font-weight:500;color:var(--gray-700);margin-bottom:5px}
 input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:10px 13px;min-height:44px;border:1.5px solid var(--gray-200);border-radius:var(--r-sm);font-family:var(--sans);font-size:13px;color:var(--gray-900);background:#fff;outline:none;transition:border-color 0.15s,box-shadow 0.15s}
@@ -157,6 +181,25 @@ textarea{resize:vertical;min-height:90px}
 .chip{padding:6px 15px;border-radius:100px;border:1px solid var(--gray-200);font-size:12px;cursor:pointer;transition:all 0.15s;background:#fff;color:var(--gray-700);user-select:none;font-family:var(--sans)}
 .chip:hover{border-color:var(--blue);color:var(--blue)}
 .chip.on{background:var(--blue-light);border-color:var(--blue);color:var(--blue-dark);font-weight:500}
+.targeting-stack{display:flex;flex-direction:column;gap:14px}
+.field-inline-note{font-size:12px;color:var(--gray-400);margin:-1px 0 10px;font-weight:300;line-height:1.5}
+.interest-domain{padding:12px 14px;border:1px solid var(--gray-100);border-radius:var(--r-md);background:var(--gray-50)}
+.interest-domain-title{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px}
+.targeting-note{font-size:12px;line-height:1.5;color:var(--gray-500);margin-top:8px}
+.targeting-note.warn{color:#92400E}
+.industry-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.mini-chip{padding:5px 11px;border-radius:100px;border:1px solid var(--gray-200);background:#fff;font-size:11px;color:var(--gray-500);cursor:pointer;font-family:var(--sans);transition:border-color 0.15s,color 0.15s}
+.mini-chip:hover{border-color:var(--blue);color:var(--blue)}
+.range-stack{display:flex;flex-direction:column;gap:10px}
+.range-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.range-value{font-size:12px;color:var(--gray-500);font-weight:500}
+.range-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.range-field{padding:10px 12px;border:1px solid var(--gray-100);border-radius:var(--r-sm);background:var(--gray-50)}
+.range-field label{font-size:11px;color:var(--gray-400);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em}
+.range-field input[type=range]{width:100%;min-height:auto;padding:0;border:none;background:transparent;box-shadow:none}
+.screening-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.screening-count{font-size:12px;color:var(--gray-400);font-weight:500}
+.screening-input + .screening-input{margin-top:10px}
 
 .preview-card{background:var(--gray-900);border-radius:var(--r-xl);padding:1.5rem;color:#fff;position:sticky;top:1.5rem}
 .preview-card h3{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.35);margin-bottom:1.25rem;font-weight:500}
@@ -168,6 +211,34 @@ textarea{resize:vertical;min-height:90px}
 .preview-stat{display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,0.08)}
 .preview-stat-label{color:rgba(255,255,255,0.4)}
 .preview-stat-val{color:#fff;font-weight:500}
+.match-panel-kicker{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.38);margin-bottom:8px;font-weight:600}
+.match-panel-value{font-family:var(--serif);font-size:30px;line-height:1.05;color:#fff}
+.match-panel-state{font-family:var(--serif);font-size:24px;line-height:1.1;color:var(--green-mid)}
+.match-panel-copy{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.68);margin-top:7px}
+.match-panel-guidance{font-size:12px;line-height:1.55;color:#fff;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px}
+.match-panel-fill{font-size:14px;line-height:1.5;color:#fff}
+.match-panel-divider{height:1px;background:rgba(255,255,255,0.08);margin:18px 0}
+.match-preview-list{display:flex;flex-direction:column;gap:10px}
+.match-preview-card{border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px 13px;background:rgba(255,255,255,0.03)}
+.match-preview-name{font-size:14px;font-weight:600;color:#fff}
+.match-preview-role{font-size:12px;line-height:1.45;color:rgba(255,255,255,0.7);margin-top:2px}
+.match-preview-reasons{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.match-preview-reason{font-size:12px;line-height:1.4;color:rgba(255,255,255,0.78)}
+.match-preview-meta{font-size:11px;line-height:1.4;color:rgba(255,255,255,0.48);margin-top:8px}
+.match-preview-empty{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.62)}
+.review-block{display:flex;flex-direction:column;gap:12px}
+.review-state{font-family:var(--serif);font-size:22px;line-height:1.1;color:#fff}
+.review-guidance{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.72)}
+.review-summary{display:flex;flex-direction:column;gap:10px}
+.review-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.review-row-label{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.38);min-width:82px;padding-top:3px}
+.review-row-value{flex:1;text-align:right;font-size:12px;line-height:1.5;color:#fff}
+.review-inline-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.review-tag{padding:4px 10px;border-radius:100px;background:rgba(255,255,255,0.08);font-size:11px;color:rgba(255,255,255,0.72)}
+.review-primary-btn{width:100%;justify-content:center}
+.review-warning{font-size:12px;line-height:1.5;color:#FDE68A}
+.builder-rail-placeholder{display:flex;flex-direction:column;gap:14px}
+.builder-rail-note{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.68)}
 .match-estimate{background:rgba(29,158,117,0.15);border-radius:var(--r-md);padding:0.875rem;margin-top:1rem}
 .match-est-n{font-family:var(--serif);font-size:28px;color:var(--green-mid)}
 .match-est-l{font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px}
@@ -594,145 +665,222 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_post_title">Post a new study</h1><p data-i18n="cl_post_subtitle">Fill in the details below. Your live preview updates as you go.</p></div>
         </div>
+        <div class="builder-steps">
+          <div class="builder-step-card is-current" id="builder-step-card-1">
+            <div class="builder-step-number" data-i18n="cl_builder_step_1_num">Step 1</div>
+            <div class="builder-step-name" data-i18n="cl_builder_step_1_title">Study basics</div>
+            <div class="builder-step-copy" data-i18n="cl_builder_step_1_copy">Define what the study is.</div>
+          </div>
+          <div class="builder-step-card" id="builder-step-card-2">
+            <div class="builder-step-number" data-i18n="cl_builder_step_2_num">Step 2</div>
+            <div class="builder-step-name" data-i18n="cl_builder_step_2_title">Who matters</div>
+            <div class="builder-step-copy" data-i18n="cl_builder_step_2_copy">Define the audience and watch confidence update.</div>
+          </div>
+          <div class="builder-step-card" id="builder-step-card-3">
+            <div class="builder-step-number" data-i18n="cl_builder_step_3_num">Step 3</div>
+            <div class="builder-step-name" data-i18n="cl_builder_step_3_title">Review & publish</div>
+            <div class="builder-step-copy" data-i18n="cl_builder_step_3_copy">Make the launch decision.</div>
+          </div>
+        </div>
         <div class="builder-wrap">
           <div class="builder-main">
-
-            <div class="section-group">
-              <h3 data-i18n="cl_section_basics">Study basics</h3>
-              <div class="field"><label data-i18n="cl_label_title">Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" data-i18n-ph="cl_ph_title" oninput="updatePreview()" maxlength="200"></div>
-              <div class="field"><label data-i18n="cl_label_desc">Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." data-i18n-ph="cl_ph_desc" oninput="updatePreview()" maxlength="2000"></textarea></div>
-              <div class="field-row">
-                <div class="field"><label data-i18n="cl_label_format">Study format</label>
-                  <select id="b-format" onchange="updatePreview()">
-                    <option value="video_call">Video call (1-on-1)</option>
-                    <option value="focus_group">Focus group (online)</option>
-                    <option value="in_person">In-person interview</option>
-                    <option value="online_survey">Online survey</option>
-                    <option value="diary_study">Diary / journal study</option>
-                    <option value="product_testing">Product testing at home</option>
-                  </select>
+            <div class="builder-step-pane is-active" id="builder-step-pane-1">
+              <div class="builder-step-intro">
+                <div class="builder-step-title" data-i18n="cl_builder_step_1_title">Study basics</div>
+                <div class="builder-step-sub" data-i18n="cl_builder_step_1_intro">Define what the study is before you choose the audience.</div>
+              </div>
+              <div class="section-group">
+                <h3 data-i18n="cl_section_basics">Study basics</h3>
+                <div class="field"><label data-i18n="cl_label_title">Study title</label><input type="text" id="b-title" placeholder="e.g. Online shopping experience research" data-i18n-ph="cl_ph_title" oninput="updatePreview()" maxlength="200"></div>
+                <div class="field"><label data-i18n="cl_label_desc">Brief description (shown to contributors)</label><textarea id="b-desc" placeholder="Tell contributors what the study involves and what you're hoping to learn..." data-i18n-ph="cl_ph_desc" oninput="updatePreview()" maxlength="2000"></textarea></div>
+                <div class="field-row">
+                  <div class="field"><label data-i18n="cl_label_format">Study format</label>
+                    <select id="b-format" onchange="updatePreview()">
+                      <option value="video_call">Video call (1-on-1)</option>
+                      <option value="focus_group">Focus group (online)</option>
+                      <option value="in_person">In-person interview</option>
+                      <option value="online_survey">Online survey</option>
+                      <option value="diary_study">Diary / journal study</option>
+                      <option value="product_testing">Product testing at home</option>
+                    </select>
+                  </div>
+                  <div class="field"><label data-i18n="cl_label_length">Session length</label>
+                    <select id="b-length" onchange="updatePreview()">
+                      <option>15 minutes</option>
+                      <option>30 minutes</option>
+                      <option selected>60 minutes</option>
+                      <option>90 minutes</option>
+                      <option>2 hours</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="field"><label data-i18n="cl_label_length">Session length</label>
-                  <select id="b-length" onchange="updatePreview()">
-                    <option>15 minutes</option>
-                    <option>30 minutes</option>
-                    <option selected>60 minutes</option>
-                    <option>90 minutes</option>
-                    <option>2 hours</option>
-                  </select>
+                <div class="field-row">
+                  <div class="field"><label data-i18n="cl_label_spots">Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
+                  <div class="field">
+                    <label data-i18n="cl_label_pay">Pay per participant (kr)</label>
+                    <input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()" placeholder="e.g. £30 Amazon voucher for a 60-minute interview" data-i18n-ph="cl_ph_pay">
+                    <div style="font-size:12px;color:var(--gray-400);margin-top:6px;font-weight:300" data-i18n="cl_label_pay_hint">Be specific. Clear incentive wording increases applications.</div>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field">
+                    <label data-i18n="cl_label_start">Session start date</label>
+                    <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_start_hint">When do you plan to run sessions? Helps Vetd coordinate scheduling.</div>
+                    <input type="date" id="b-start">
+                  </div>
+                  <div class="field">
+                    <label data-i18n="cl_label_close">Application deadline</label>
+                    <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_close_hint">Last day to accept new applicants. After this date your study is flagged as overdue.</div>
+                    <input type="date" id="b-close">
+                  </div>
                 </div>
               </div>
-              <div class="field-row">
-                <div class="field"><label data-i18n="cl_label_spots">Number of participants needed</label><input type="number" id="b-spots" value="10" min="1" oninput="updatePreview()"></div>
-                <div class="field">
-                  <label data-i18n="cl_label_pay">Pay per participant (kr)</label>
-                  <input type="number" id="b-pay" value="450" min="1" oninput="updatePreview()" placeholder="e.g. £30 Amazon voucher for a 60-minute interview" data-i18n-ph="cl_ph_pay">
-                  <div style="font-size:12px;color:var(--gray-400);margin-top:6px;font-weight:300" data-i18n="cl_label_pay_hint">Be specific. Clear incentive wording increases applications.</div>
+              <div class="builder-step-error" id="builder-step-error-1" style="display:none"></div>
+              <div class="builder-step-actions">
+                <div class="builder-step-actions-left">
+                  <button class="btn-outline" id="save-draft-btn" onclick="saveStudyDraft()" data-i18n="cl_save_draft">Save as draft</button>
                 </div>
-              </div>
-              <div class="field-row">
-                <div class="field">
-                  <label data-i18n="cl_label_start">Session start date</label>
-                  <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_start_hint">When do you plan to run sessions? Helps Vetd coordinate scheduling.</div>
-                  <input type="date" id="b-start">
-                </div>
-                <div class="field">
-                  <label data-i18n="cl_label_close">Application deadline</label>
-                  <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_close_hint">Last day to accept new applicants. After this date your study is flagged as overdue.</div>
-                  <input type="date" id="b-close">
-                </div>
-              </div>
-            </div>
-
-            <div class="section-group">
-              <h3 data-i18n="cl_section_targeting">Who are you looking for?</h3>
-              <div class="field"><label data-i18n="cl_label_age">Age range</label>
-                <div class="chip-group" data-field="age_ranges">
-                  <div class="chip" data-value="18_24" onclick="tc(this)">18–24</div>
-                  <div class="chip" data-value="25_34" onclick="tc(this)">25–34</div>
-                  <div class="chip" data-value="35_44" onclick="tc(this)">35–44</div>
-                  <div class="chip" data-value="45_54" onclick="tc(this)">45–54</div>
-                  <div class="chip" data-value="55_64" onclick="tc(this)">55–64</div>
-                  <div class="chip" data-value="65_plus" onclick="tc(this)">65+</div>
-                  <div class="chip on" data-value="any" onclick="tc(this)" data-i18n="cl_chip_any_age">Any age</div>
-                </div>
-              </div>
-              <div class="field"><label data-i18n="cl_label_gender">Gender</label>
-                <div class="chip-group" data-field="genders">
-                  <div class="chip" data-value="woman" onclick="tc(this)" data-i18n="cl_chip_women">Women</div>
-                  <div class="chip" data-value="man" onclick="tc(this)" data-i18n="cl_chip_men">Men</div>
-                  <div class="chip" data-value="non_binary" onclick="tc(this)" data-i18n="cl_chip_nonbinary">Non-binary</div>
-                  <div class="chip on" data-value="any" onclick="tc(this)" data-i18n="cl_chip_any_gender">Any gender</div>
-                </div>
-              </div>
-              <div class="field"><label data-i18n="cl_label_location">Location</label>
-                <div class="chip-group" data-field="locations">
-                  <div class="chip on" data-value="se_any" onclick="tc(this)" data-i18n="cl_chip_uk_any">Sverige — hela</div>
-                  <div class="chip" data-value="stockholm" onclick="tc(this)">Stockholm</div>
-                  <div class="chip" data-value="goteborg" onclick="tc(this)">Göteborg</div>
-                  <div class="chip" data-value="malmo" onclick="tc(this)">Malmö</div>
-                  <div class="chip" data-value="remote" onclick="tc(this)" data-i18n="cl_chip_remote">Remote only</div>
-                </div>
-              </div>
-              <div class="field"><label data-i18n="cl_label_interests">Interests &amp; behaviours (select all that apply)</label>
-                <div class="chip-group" data-field="interests">
-                  <div class="chip" data-value="fashion" onclick="tc(this)" data-i18n="cl_chip_fashion">Fashion &amp; clothing</div>
-                  <div class="chip" data-value="online_shopper" onclick="tc(this)" data-i18n="cl_chip_online_shopper">Online shopper</div>
-                  <div class="chip" data-value="beauty" onclick="tc(this)" data-i18n="cl_chip_beauty">Beauty &amp; skincare</div>
-                  <div class="chip" data-value="brand_customer" onclick="tc(this)" data-i18n="cl_chip_brand_customer">Brand customer</div>
-                  <div class="chip" data-value="sustainability" onclick="tc(this)" data-i18n="cl_chip_sustainability">Sustainability interest</div>
-                  <div class="chip" data-value="social_media" onclick="tc(this)" data-i18n="cl_chip_social_media">Social media user</div>
-                  <div class="chip" data-value="parent" onclick="tc(this)" data-i18n="cl_chip_parent">Parent</div>
-                  <div class="chip" data-value="homeowner" onclick="tc(this)" data-i18n="cl_chip_homeowner">Homeowner</div>
-                </div>
-              </div>
-              <div class="field"><label data-i18n="cl_label_min_rating">Minimum contributor rating</label>
-                <div class="chip-group" data-field="min_rating" data-single="true">
-                  <div class="chip" data-value="0" onclick="tc(this)" data-i18n="cl_chip_any_rating">Any rating</div>
-                  <div class="chip on" data-value="3.0" onclick="tc(this)" data-i18n="cl_chip_3_above">3.0★ and above</div>
-                  <div class="chip" data-value="4.0" onclick="tc(this)" data-i18n="cl_chip_4_above">4.0★ and above</div>
-                  <div class="chip" data-value="4.5" onclick="tc(this)" data-i18n="cl_chip_45_elite">4.5★ Elite only</div>
+                <div class="builder-step-actions-right">
+                  <button class="btn-primary" id="builder-step-1-next" onclick="goToBuilderStep(2)" data-i18n="cl_builder_continue">Continue</button>
                 </div>
               </div>
             </div>
 
-            <div class="section-group">
-              <h3 data-i18n="cl_section_screening">Screening questions</h3>
-              <p style="font-size:13px;color:var(--gray-400);margin:0 0 12px;font-weight:300">Ask up to 3 short questions. Answers appear when reviewing applicants.</p>
-              <div id="screener-rows"></div>
-              <button type="button" id="add-screener-btn" onclick="addScreener()"
-                style="background:none;border:1.5px dashed var(--gray-200);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--gray-400);cursor:pointer;font-family:var(--sans);width:100%;margin-bottom:12px">
-                + Add a question
-              </button>
-              <div class="field">
-                <label data-i18n="cl_label_addreqs">Additional requirements</label>
-                <div style="font-size:12px;color:var(--gray-400);margin:-2px 0 8px;font-weight:300" data-i18n="cl_label_addreqs_hint">Used by Vetd for matching. May be shared with contributors.</div>
-                <textarea id="b-addreqs" placeholder="e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly." data-i18n-ph="cl_ph_addreqs"></textarea>
+            <div class="builder-step-pane" id="builder-step-pane-2">
+              <div class="builder-step-intro">
+                <div class="builder-step-title" data-i18n="cl_builder_step_2_title">Who matters</div>
+                <div class="builder-step-sub" data-i18n="cl_builder_step_2_intro">Define the audience and see how confident Vetd is about filling the study.</div>
+              </div>
+              <div class="section-group">
+                <h3 data-i18n="cl_section_targeting">Who are you looking for?</h3>
+                <div class="field">
+                  <label data-i18n="cl_label_primary_interest">Primary interest</label>
+                  <div class="field-inline-note" data-i18n="cl_primary_interest_hint">Pick one or two interests to anchor matching.</div>
+                  <div id="builder-interest-groups" class="targeting-stack"></div>
+                  <div id="primary-interest-warning" class="targeting-note warn" style="display:none"></div>
+                </div>
+                <div class="field">
+                  <label data-i18n="cl_label_industry">Industry</label>
+                  <input type="text" id="b-industry" placeholder="e.g. Fintech" data-i18n-ph="cl_ph_industry" oninput="updatePreview()">
+                  <div class="industry-suggestions" id="industry-suggestions"></div>
+                </div>
+                <div class="field">
+                  <label data-i18n="cl_label_experience">Experience level</label>
+                  <div class="chip-group" data-field="experience_level">
+                    <div class="chip" data-value="junior" onclick="toggleExperienceChip(this)" data-i18n="cl_chip_junior">Junior</div>
+                    <div class="chip" data-value="mid" onclick="toggleExperienceChip(this)" data-i18n="cl_chip_mid">Mid</div>
+                    <div class="chip" data-value="senior" onclick="toggleExperienceChip(this)" data-i18n="cl_chip_senior">Senior</div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label data-i18n="cl_label_location_pref">Location</label>
+                  <div class="chip-group" data-field="match_location_mode" data-single="true">
+                    <div class="chip on" data-value="remote" onclick="tc(this)" data-i18n="cl_chip_remote_default">Remote</div>
+                    <div class="chip" data-value="city" onclick="tc(this)" data-i18n="cl_chip_city_based">City-based</div>
+                  </div>
+                  <div class="field-inline-note" data-i18n="cl_location_hint">Add a city only if this study needs people in one place.</div>
+                  <input type="text" id="b-city" placeholder="e.g. Stockholm" data-i18n-ph="cl_ph_city" oninput="updatePreview()" style="margin-top:10px" disabled>
+                </div>
+                <div class="field">
+                  <div class="range-stack">
+                    <div class="range-header">
+                      <label style="margin:0" data-i18n="cl_label_age_range">Age range</label>
+                      <div class="range-value" id="age-range-value"></div>
+                    </div>
+                    <div class="range-pair">
+                      <div class="range-field">
+                        <label data-i18n="cl_age_min">Min</label>
+                        <input type="range" id="b-age-min" min="18" max="70" value="18" oninput="syncAgeRange('min')">
+                      </div>
+                      <div class="range-field">
+                        <label data-i18n="cl_age_max">Max</label>
+                        <input type="range" id="b-age-max" min="18" max="70" value="70" oninput="syncAgeRange('max')">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-group">
+                <div class="screening-head">
+                  <h3 style="margin:0;border:none;padding:0" data-i18n="cl_section_screening">Screening questions</h3>
+                  <div class="screening-count" id="screening-count"></div>
+                </div>
+                <div class="field screening-input">
+                  <label data-i18n="cl_label_sq1">Screening question 1</label>
+                  <input type="text" id="b-screening-1" placeholder="e.g. What tools do you use today?" data-i18n-ph="cl_ph_sq1" oninput="updateScreeningCount();updatePreview()" maxlength="200">
+                </div>
+                <div class="field screening-input">
+                  <label data-i18n="cl_label_sq2">Screening question 2</label>
+                  <input type="text" id="b-screening-2" placeholder="e.g. Have you switched providers in the last year?" data-i18n-ph="cl_ph_sq2" oninput="updateScreeningCount();updatePreview()" maxlength="200">
+                </div>
+              </div>
+              <div class="builder-step-error" id="builder-step-error-2" style="display:none"></div>
+              <div class="builder-step-actions">
+                <div class="builder-step-actions-left">
+                  <button class="btn-outline" onclick="goToBuilderStep(1)" data-i18n="cl_builder_back">Back</button>
+                  <button class="btn-outline" onclick="saveStudyDraft()" data-i18n="cl_save_draft">Save as draft</button>
+                </div>
+                <div class="builder-step-actions-right">
+                  <button class="btn-primary" id="builder-step-2-next" onclick="goToBuilderStep(3)" data-i18n="cl_builder_continue">Continue</button>
+                </div>
               </div>
             </div>
 
-            <div style="display:flex;gap:12px">
-              <button class="btn-outline" id="save-draft-btn" onclick="saveStudyDraft()" data-i18n="cl_save_draft">Save as draft</button>
-              <button class="btn-primary btn-green" id="publish-study-btn" onclick="publishStudy()" data-i18n="cl_publish_btn">Publish study →</button>
+            <div class="builder-step-pane" id="builder-step-pane-3">
+              <div class="builder-step-intro">
+                <div class="builder-step-title" data-i18n="cl_builder_step_3_title">Review & publish</div>
+                <div class="builder-step-sub" data-i18n="cl_builder_step_3_intro">Review the study brief and use the right panel to make the launch decision.</div>
+              </div>
+              <div class="builder-summary-card">
+                <div class="builder-summary-list" id="builder-step-3-summary"></div>
+              </div>
+              <div class="builder-step-actions">
+                <div class="builder-step-actions-left">
+                  <button class="btn-outline" onclick="goToBuilderStep(2)" data-i18n="cl_builder_back">Back</button>
+                  <button class="btn-outline" onclick="saveStudyDraft()" data-i18n="cl_save_draft">Save as draft</button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- LIVE PREVIEW -->
+          <!-- LIVE MATCH PANEL -->
           <div class="preview-card">
-            <h3 data-i18n="cl_preview_title">Live preview</h3>
-            <div class="preview-title" id="prev-title">Your study title</div>
-            <div class="preview-pay" id="prev-pay">450 kr</div>
-            <div class="preview-type" id="prev-type">Video call (1-on-1) · 60 minutes</div>
-            <div class="preview-tags" id="prev-tags">
-              <span class="preview-tag">Women 25–44</span>
-              <span class="preview-tag">Fashion &amp; clothing</span>
-              <span class="preview-tag">Online shopper</span>
-              <span class="preview-tag">3.0★ and above</span>
+            <h3 data-i18n="cl_match_panel_title">Live match panel</h3>
+            <div id="builder-rail-step-1" class="builder-rail-placeholder">
+              <div class="match-panel-kicker" data-i18n="cl_builder_rail_step_1_label">What happens next</div>
+              <div class="match-panel-state" data-i18n="cl_builder_rail_step_1_title">Define the audience next</div>
+              <div class="builder-rail-note" data-i18n="cl_builder_rail_step_1_copy">Once the basics are in place, Vetd will estimate the pool and show example contributors.</div>
             </div>
-            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_spots">Spots available</span><span class="preview-stat-val" id="prev-spots">10 participants</span></div>
-            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_budget">Total budget</span><span class="preview-stat-val" id="prev-budget">4 500 kr</span></div>
-            <div class="preview-stat"><span class="preview-stat-label" data-i18n="cl_preview_fee">+ Vetd fee (20%)</span><span class="preview-stat-val" id="prev-fee">900 kr</span></div>
-            <div id="builder-pool-preview" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08)"></div>
+            <div id="builder-rail-step-2">
+              <div class="match-panel-kicker" data-i18n="cl_match_confidence_label">Confidence</div>
+              <div class="match-panel-state" id="match-confidence-label">Too broad</div>
+              <div class="match-panel-copy" id="match-confidence-copy">No useful audience estimate yet.</div>
+              <div class="match-panel-divider"></div>
+              <div class="match-panel-guidance" id="match-guidance-copy">Choose a primary interest so Vetd can estimate a useful audience.</div>
+              <div class="match-panel-divider"></div>
+              <div class="match-panel-kicker" data-i18n="cl_match_fill_label">Expected fill</div>
+              <div class="match-panel-fill" id="match-fill-copy">Choose a primary interest to estimate fill time.</div>
+              <div class="match-panel-divider"></div>
+              <div class="match-panel-kicker" data-i18n="cl_match_preview_label">Match preview</div>
+              <div id="match-preview-list" class="match-preview-list"></div>
+            </div>
+            <div id="builder-rail-step-3" style="display:none">
+              <div class="match-panel-kicker" data-i18n="cl_match_confidence_label">Confidence</div>
+              <div class="match-panel-state" id="match-confidence-label-step3">Too broad</div>
+              <div class="match-panel-copy" id="match-confidence-copy-step3">Choose a primary interest to see how likely this study is to fill.</div>
+              <div class="match-panel-divider"></div>
+              <div class="match-panel-kicker" data-i18n="cl_match_fill_label">Expected fill</div>
+              <div class="match-panel-fill" id="match-fill-copy-step3">Choose a primary interest to estimate fill time.</div>
+              <div class="match-panel-divider"></div>
+              <div class="match-panel-kicker" data-i18n="cl_review_block_label">Review before publish</div>
+              <div class="review-block">
+                <div class="review-state" id="review-state-label">Not ready</div>
+                <div class="review-guidance" id="review-guidance-copy">Add at least one interest to define your audience.</div>
+                <div class="review-summary" id="review-summary"></div>
+                <div class="review-warning" id="review-warning-copy" style="display:none"></div>
+                <button class="btn-primary btn-green review-primary-btn" id="publish-study-btn" onclick="handleBuilderPrimaryAction()" data-i18n="cl_publish_btn">Publish study →</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1242,11 +1390,176 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── LOAD STUDIES ───────────────────────────────────────
   let _studiesCache = null;
-  let _builderContributorPool = null;
-  let _builderContributorPoolPromise = null;
   let _builderPoolPreviewTimer = null;
-  let _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
+  let _builderPoolPreviewState = {
+    poolCount: 0,
+    confidence: 'too_broad',
+    confidenceCopy: 'No useful audience estimate yet.',
+    fillCopy: 'Choose a primary interest to estimate fill time',
+    guidanceCopy: 'Choose a primary interest so Vetd can estimate a useful audience.',
+    previewMatches: []
+  };
+  let _builderPublishState = 'idle';
+  let _builderPublishedSnapshot = null;
+  let _builderPublishTimer = null;
+  let _currentBuilderStep = 1;
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
+  const BUILDER_INTEREST_OPTIONS = [
+    {
+      key: 'interests_lifestyle',
+      titleKey: 'cl_interest_group_lifestyle',
+      options: [
+        { value: 'fashion', labelKey: 'cl_chip_fashion' },
+        { value: 'beauty', labelKey: 'cl_chip_beauty' },
+        { value: 'home', labelKey: 'cl_chip_home' },
+        { value: 'food', labelKey: 'cl_chip_food' },
+        { value: 'fitness', labelKey: 'cl_chip_fitness' },
+        { value: 'sustainability', labelKey: 'cl_chip_sustainability' },
+        { value: 'pets', labelKey: 'cl_chip_pets' },
+        { value: 'travel', labelKey: 'cl_chip_travel' },
+        { value: 'gardening', labelKey: 'cl_chip_gardening' }
+      ]
+    },
+    {
+      key: 'interests_tech',
+      titleKey: 'cl_interest_group_tech',
+      options: [
+        { value: 'smartphones', labelKey: 'cl_chip_smartphones' },
+        { value: 'gaming', labelKey: 'cl_chip_gaming' },
+        { value: 'streaming', labelKey: 'cl_chip_streaming' },
+        { value: 'social_media', labelKey: 'cl_chip_social_media' },
+        { value: 'podcasts', labelKey: 'cl_chip_podcasts' },
+        { value: 'smart_home', labelKey: 'cl_chip_smart_home' }
+      ]
+    },
+    {
+      key: 'interests_finance',
+      titleKey: 'cl_interest_group_finance',
+      options: [
+        { value: 'online_banking', labelKey: 'cl_chip_online_banking' },
+        { value: 'investing', labelKey: 'cl_chip_investing' },
+        { value: 'crypto', labelKey: 'cl_chip_crypto' },
+        { value: 'mortgages', labelKey: 'cl_chip_mortgages' },
+        { value: 'insurance', labelKey: 'cl_chip_insurance' },
+        { value: 'budgeting', labelKey: 'cl_chip_budgeting' }
+      ]
+    }
+  ];
+  const BUILDER_INDUSTRY_SUGGESTIONS = ['fintech', 'ecommerce', 'saas', 'healthcare'];
+  const AGE_BUCKETS = [
+    { key: '18_24', min: 18, max: 24 },
+    { key: '25_34', min: 25, max: 34 },
+    { key: '35_44', min: 35, max: 44 },
+    { key: '45_54', min: 45, max: 54 },
+    { key: '55_64', min: 55, max: 64 },
+    { key: '65_plus', min: 65, max: 99 }
+  ];
+  const BUILDER_MATCH_PREVIEW_CONTRIBUTORS = [
+    {
+      firstName: 'Maria',
+      lastInitial: 'K',
+      role: 'Product Manager',
+      industry: 'Finance',
+      experience: 'senior',
+      city: 'Stockholm',
+      remoteFriendly: true,
+      age: 34,
+      interests: ['online_banking', 'budgeting', 'investing'],
+      studiesCompleted: 4,
+      rating: 4.9
+    },
+    {
+      firstName: 'Jonas',
+      lastInitial: 'L',
+      role: 'Operations Lead',
+      industry: 'E-commerce',
+      experience: 'mid',
+      city: 'Gothenburg',
+      remoteFriendly: true,
+      age: 39,
+      interests: ['fashion', 'food', 'travel'],
+      studiesCompleted: 6,
+      rating: 4.8
+    },
+    {
+      firstName: 'Elin',
+      lastInitial: 'S',
+      role: 'UX Researcher',
+      industry: 'SaaS',
+      experience: 'senior',
+      city: 'Malmo',
+      remoteFriendly: true,
+      age: 31,
+      interests: ['smartphones', 'streaming', 'podcasts'],
+      studiesCompleted: 5,
+      rating: 4.7
+    },
+    {
+      firstName: 'David',
+      lastInitial: 'N',
+      role: 'Customer Success Manager',
+      industry: 'Healthcare',
+      experience: 'mid',
+      city: 'Stockholm',
+      remoteFriendly: true,
+      age: 42,
+      interests: ['insurance', 'fitness', 'smart_home'],
+      studiesCompleted: 3,
+      rating: 4.8
+    },
+    {
+      firstName: 'Sara',
+      lastInitial: 'P',
+      role: 'Growth Marketer',
+      industry: 'Fintech',
+      experience: 'mid',
+      city: 'Uppsala',
+      remoteFriendly: true,
+      age: 29,
+      interests: ['crypto', 'social_media', 'online_banking'],
+      studiesCompleted: 2,
+      rating: 4.6
+    },
+    {
+      firstName: 'Oskar',
+      lastInitial: 'B',
+      role: 'Software Engineer',
+      industry: 'SaaS',
+      experience: 'junior',
+      city: 'Stockholm',
+      remoteFriendly: true,
+      age: 26,
+      interests: ['gaming', 'smartphones', 'smart_home'],
+      studiesCompleted: 4,
+      rating: 4.7
+    },
+    {
+      firstName: 'Nadia',
+      lastInitial: 'R',
+      role: 'Procurement Specialist',
+      industry: 'Retail',
+      experience: 'senior',
+      city: 'Gothenburg',
+      remoteFriendly: false,
+      age: 47,
+      interests: ['home', 'sustainability', 'gardening'],
+      studiesCompleted: 7,
+      rating: 4.9
+    },
+    {
+      firstName: 'Mikael',
+      lastInitial: 'T',
+      role: 'Business Analyst',
+      industry: 'Finance',
+      experience: 'senior',
+      city: 'Stockholm',
+      remoteFriendly: true,
+      age: 45,
+      interests: ['mortgages', 'insurance', 'budgeting'],
+      studiesCompleted: 5,
+      rating: 4.8
+    }
+  ];
 
   function updateClientUrlParams(updates = {}) {
     const p = new URLSearchParams(window.location.search);
@@ -2490,6 +2803,522 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : study?.format;
   }
 
+  function renderBuilderInterestGroups(selectedValues = []) {
+    const container = document.getElementById('builder-interest-groups');
+    if (!container) return;
+    const selected = new Set((selectedValues || []).map(String));
+    container.innerHTML = BUILDER_INTEREST_OPTIONS.map(group => `
+      <div class="interest-domain">
+        <div class="interest-domain-title">${esc(t(group.titleKey))}</div>
+        <div class="chip-group" data-field="primary_interests">
+          ${group.options.map(option => `
+            <div class="chip ${selected.has(option.value) ? 'on' : ''}" data-value="${escAttr(option.value)}" onclick="tc(this)">
+              ${esc(t(option.labelKey))}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderIndustrySuggestions() {
+    const container = document.getElementById('industry-suggestions');
+    if (!container) return;
+    container.innerHTML = BUILDER_INDUSTRY_SUGGESTIONS.map(key => `
+      <button type="button" class="mini-chip" onclick="setIndustrySuggestion('${escAttr(key)}')">${esc(t('cl_industry_' + key))}</button>
+    `).join('');
+  }
+
+  function setIndustrySuggestion(key) {
+    const input = document.getElementById('b-industry');
+    if (!input) return;
+    input.value = t('cl_industry_' + key);
+    updatePreview();
+  }
+
+  function getSelectedPrimaryInterests() {
+    return [...document.querySelectorAll('[data-field="primary_interests"] .chip.on')].map(chip => chip.dataset.value);
+  }
+
+  function toggleExperienceChip(el) {
+    const group = el.closest('.chip-group');
+    const becomingOn = !el.classList.contains('on');
+    group.querySelectorAll('.chip').forEach(chip => chip.classList.remove('on'));
+    if (becomingOn) el.classList.add('on');
+    updatePreview();
+  }
+
+  function syncAgeRange(which) {
+    const minEl = document.getElementById('b-age-min');
+    const maxEl = document.getElementById('b-age-max');
+    if (!minEl || !maxEl) return;
+    let min = parseInt(minEl.value, 10);
+    let max = parseInt(maxEl.value, 10);
+    if (which === 'min' && min > max) {
+      max = min;
+      maxEl.value = String(max);
+    } else if (which === 'max' && max < min) {
+      min = max;
+      minEl.value = String(min);
+    }
+    updatePreview();
+  }
+
+  function updateAgeRangeLabel() {
+    const label = document.getElementById('age-range-value');
+    const minEl = document.getElementById('b-age-min');
+    const maxEl = document.getElementById('b-age-max');
+    if (!label || !minEl || !maxEl) return;
+    const min = parseInt(minEl.value, 10);
+    const max = parseInt(maxEl.value, 10);
+    label.textContent = (min === 18 && max === 70)
+      ? t('cl_age_any')
+      : `${min}-${max}`;
+  }
+
+  function updateLocationInputState() {
+    const cityInput = document.getElementById('b-city');
+    const mode = getChipValues('match_location_mode')[0] || 'remote';
+    if (!cityInput) return;
+    cityInput.disabled = mode !== 'city';
+    if (mode !== 'city') cityInput.value = '';
+  }
+
+  function updateInterestWarning() {
+    const warning = document.getElementById('primary-interest-warning');
+    if (!warning) return;
+    const count = getSelectedPrimaryInterests().length;
+    warning.textContent = t('cl_interest_warning');
+    warning.style.display = count > 2 ? 'block' : 'none';
+  }
+
+  function getScreeningQuestions() {
+    return ['b-screening-1', 'b-screening-2']
+      .map(id => document.getElementById(id)?.value.trim() || '')
+      .filter(Boolean)
+      .map(text => ({ text, type: 'text' }));
+  }
+
+  function updateScreeningCount() {
+    const countEl = document.getElementById('screening-count');
+    if (!countEl) return;
+    countEl.textContent = t('cl_screening_count').replace('{count}', getScreeningQuestions().length);
+  }
+
+  function mapAgeRangeToBuckets(minAge, maxAge) {
+    if (minAge <= 18 && maxAge >= 70) return null;
+    const matches = AGE_BUCKETS.filter(bucket => bucket.max >= minAge && bucket.min <= maxAge).map(bucket => bucket.key);
+    return matches.length ? matches : null;
+  }
+
+  function getBuilderTargetingState() {
+    const selectedInterests = getSelectedPrimaryInterests();
+    const industry = document.getElementById('b-industry')?.value.trim() || '';
+    const experience = getChipValues('experience_level')[0] || '';
+    const locationMode = getChipValues('match_location_mode')[0] || 'remote';
+    const city = document.getElementById('b-city')?.value.trim() || '';
+    const minAge = parseInt(document.getElementById('b-age-min')?.value || '18', 10);
+    const maxAge = parseInt(document.getElementById('b-age-max')?.value || '70', 10);
+    const screeningCount = getScreeningQuestions().length;
+    const spots = Math.max(1, parseInt(document.getElementById('b-spots')?.value || '10', 10) || 10);
+    return { selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots };
+  }
+
+  function simulateBuilderMatchPool(targeting) {
+    if (!targeting.selectedInterests.length) {
+      return { poolCount: 0, confidence: 'too_broad' };
+    }
+
+    let pool = 120;
+    pool *= targeting.selectedInterests.length === 1 ? 0.58 : 0.42;
+    if (targeting.selectedInterests.length > 2) {
+      pool *= 0.78;
+    }
+    if (targeting.industry) pool *= 0.82;
+    if (targeting.experience) pool *= 0.84;
+    if (targeting.locationMode === 'city') pool *= targeting.city ? 0.62 : 0.72;
+
+    const span = Math.max(0, targeting.maxAge - targeting.minAge);
+    if (!(targeting.minAge === 18 && targeting.maxAge === 70)) {
+      if (span <= 12) pool *= 0.62;
+      else if (span <= 24) pool *= 0.78;
+      else pool *= 0.9;
+    }
+
+    for (let i = 0; i < targeting.screeningCount; i += 1) {
+      pool *= 0.86;
+    }
+
+    const poolCount = Math.max(0, Math.round(pool));
+    if (poolCount >= targeting.spots * 4) return { poolCount, confidence: 'strong' };
+    if (poolCount >= targeting.spots * 3) return { poolCount, confidence: 'good' };
+    if (poolCount >= targeting.spots * 2) return { poolCount, confidence: 'limited' };
+    return { poolCount, confidence: 'too_narrow' };
+  }
+
+  function getBuilderConfidenceCopy(confidence) {
+    return {
+      strong: {
+        label: t('cl_match_state_strong'),
+        copy: null,
+        fill: t('cl_match_fill_strong')
+      },
+      good: {
+        label: t('cl_match_state_good'),
+        copy: null,
+        fill: t('cl_match_fill_good')
+      },
+      limited: {
+        label: t('cl_match_state_limited'),
+        copy: null,
+        fill: t('cl_match_fill_limited')
+      },
+      too_narrow: {
+        label: t('cl_match_state_too_narrow'),
+        copy: null,
+        fill: t('cl_match_fill_too_narrow')
+      },
+      too_broad: {
+        label: t('cl_match_state_too_broad'),
+        copy: t('cl_match_confidence_none'),
+        fill: t('cl_match_fill_too_broad')
+      }
+    }[confidence];
+  }
+
+  function getBuilderGuidance(targeting, simulation) {
+    const span = Math.max(0, targeting.maxAge - targeting.minAge);
+    if (!targeting.selectedInterests.length) return t('cl_match_guidance_choose_interest');
+    if (targeting.selectedInterests.length > 2) return t('cl_match_guidance_three_interests');
+    if (simulation.confidence === 'too_narrow' && targeting.locationMode === 'city' && targeting.city) {
+      return t('cl_match_guidance_city_narrow');
+    }
+    if (simulation.confidence === 'too_narrow' && targeting.screeningCount >= 2) {
+      return t('cl_match_guidance_screening_narrow');
+    }
+    if (simulation.confidence === 'too_narrow' && span <= 12) {
+      return t('cl_match_guidance_age_narrow');
+    }
+    if (targeting.locationMode === 'city' && targeting.city) return t('cl_match_guidance_city');
+    if (targeting.screeningCount >= 2) return t('cl_match_guidance_screening');
+    if (targeting.selectedInterests.length === 2) return t('cl_match_guidance_second_interest');
+    if (simulation.confidence === 'limited') return t('cl_match_guidance_limited');
+    return t('cl_match_guidance_well_defined');
+  }
+
+  function getInterestLabelByValue(value) {
+    for (const group of BUILDER_INTEREST_OPTIONS) {
+      const found = group.options.find(option => option.value === value);
+      if (found) return t(found.labelKey);
+    }
+    return value.replace(/_/g, ' ');
+  }
+
+  function normalizeText(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function titleCase(value) {
+    return String(value || '').replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function getBuilderIndustryReason(contributor) {
+    return t('cl_match_reason_industry').replace('{industry}', normalizeText(contributor.industry));
+  }
+
+  function getBuilderLocationReason(contributor) {
+    return t('cl_match_reason_location').replace('{city}', contributor.city);
+  }
+
+  function getBuilderInterestReason(interestValue) {
+    return t('cl_match_reason_interest').replace('{interest}', normalizeText(getInterestLabelByValue(interestValue)));
+  }
+
+  function scorePreviewContributor(contributor, targeting) {
+    const reasons = [];
+    let score = 0;
+    const interestOverlap = targeting.selectedInterests.filter(interest => contributor.interests.includes(interest));
+    if (!interestOverlap.length) return null;
+
+    score += 38 + (interestOverlap.length * 8);
+    reasons.push(getBuilderInterestReason(interestOverlap[0]));
+
+    const typedIndustry = normalizeText(targeting.industry);
+    const contributorIndustry = normalizeText(contributor.industry);
+    if (typedIndustry) {
+      if (contributorIndustry.includes(typedIndustry) || typedIndustry.includes(contributorIndustry)) {
+        score += 16;
+        reasons.push(getBuilderIndustryReason(contributor));
+      } else {
+        score -= 10;
+      }
+    } else {
+      score += 6;
+    }
+
+    if (targeting.experience) {
+      if (contributor.experience === targeting.experience) score += 10;
+      else score -= 4;
+    }
+
+    if (targeting.locationMode === 'city') {
+      const typedCity = normalizeText(targeting.city);
+      const contributorCity = normalizeText(contributor.city);
+      if (typedCity && contributorCity === typedCity) {
+        score += 14;
+        if (reasons.length < 2) reasons.push(getBuilderLocationReason(contributor));
+      } else if (typedCity) {
+        score -= 16;
+      } else if (contributor.remoteFriendly) {
+        score += 2;
+      }
+    } else if (contributor.remoteFriendly) {
+      score += 5;
+      if (reasons.length < 2) reasons.push(t('cl_match_reason_remote'));
+    }
+
+    if (contributor.age >= targeting.minAge && contributor.age <= targeting.maxAge) {
+      score += 8;
+    } else {
+      score -= 18;
+    }
+
+    score += Math.min(8, contributor.studiesCompleted);
+    score += Math.round(contributor.rating);
+
+    return {
+      contributor,
+      score,
+      reasons: reasons.slice(0, 2)
+    };
+  }
+
+  function buildMatchPreview(targeting, simulation) {
+    if (!targeting.selectedInterests.length) {
+      return {
+        mode: 'too_broad',
+        items: []
+      };
+    }
+
+    const ranked = BUILDER_MATCH_PREVIEW_CONTRIBUTORS
+      .map(contributor => scorePreviewContributor(contributor, targeting))
+      .filter(Boolean)
+      .filter(entry => entry.score > 20)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return b.contributor.rating - a.contributor.rating;
+      });
+
+    const limit = simulation.confidence === 'too_narrow' ? 2 : 5;
+    return {
+      mode: simulation.confidence,
+      items: ranked.slice(0, limit)
+    };
+  }
+
+  function getBuilderDecisionModel(confidence) {
+    if (confidence === 'strong' || confidence === 'good') {
+      return {
+        state: 'ready',
+        label: t('cl_review_ready'),
+        guidance: t('cl_review_ready_guidance'),
+        button: t('cl_publish_btn'),
+        warning: ''
+      };
+    }
+    if (confidence === 'limited') {
+      return {
+        state: 'review',
+        label: t('cl_review_review'),
+        guidance: t('cl_review_review_guidance'),
+        button: t('cl_publish_anyway'),
+        warning: t('cl_review_review_warning')
+      };
+    }
+    return {
+      state: 'not_ready',
+      label: t('cl_review_not_ready'),
+      guidance: confidence === 'too_broad'
+        ? t('cl_review_not_ready_broad')
+        : t('cl_review_not_ready_narrow'),
+      button: t('cl_publish_btn'),
+      warning: ''
+    };
+  }
+
+  function getBuilderSummaryRows(targeting) {
+    const formatSelect = document.getElementById('b-format');
+    const formatLabel = formatSelect?.options[formatSelect.selectedIndex]?.text || '';
+    const duration = document.getElementById('b-length')?.value || '';
+    const interestTags = targeting.selectedInterests.slice(0, 2).map(value => getInterestLabelByValue(value));
+    const filterTags = [];
+    if (targeting.industry) filterTags.push(targeting.industry);
+    if (targeting.experience) filterTags.push(titleCase(targeting.experience));
+    if (targeting.locationMode === 'city' && targeting.city) filterTags.push(targeting.city);
+    if (!(targeting.minAge === 18 && targeting.maxAge === 70)) filterTags.push(`${targeting.minAge}-${targeting.maxAge}`);
+
+    const rows = [
+      {
+        label: t('cl_review_row_interests'),
+        type: 'tags',
+        values: interestTags
+      }
+    ];
+
+    if (filterTags.length) {
+      rows.push({
+        label: t('cl_review_row_filters'),
+        type: 'tags',
+        values: filterTags
+      });
+    }
+
+    rows.push(
+      { label: t('cl_review_row_spots'), type: 'text', value: String(targeting.spots) },
+      { label: t('cl_review_row_duration'), type: 'text', value: duration },
+      { label: t('cl_review_row_format'), type: 'text', value: formatLabel },
+      { label: t('cl_review_row_screening'), type: 'text', value: t('cl_review_row_screening_value').replace('{count}', targeting.screeningCount) }
+    );
+
+    return rows;
+  }
+
+  function renderBuilderStep3Summary() {
+    const el = document.getElementById('builder-step-3-summary');
+    if (!el) return;
+    const targeting = getBuilderTargetingState();
+    el.innerHTML = getBuilderSummaryRows(targeting).map(row => `
+      <div class="builder-summary-row">
+        <div class="builder-summary-label">${esc(row.label)}</div>
+        <div class="builder-summary-value">
+          ${row.type === 'tags'
+            ? `<div class="builder-summary-tags">${row.values.map(value => `<span class="review-tag">${esc(value)}</span>`).join('')}</div>`
+            : esc(row.value)}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function getBuilderStepValidation(step) {
+    if (step === 1) {
+      const title = document.getElementById('b-title')?.value.trim() || '';
+      const desc = document.getElementById('b-desc')?.value.trim() || '';
+      const format = document.getElementById('b-format')?.value || '';
+      const length = document.getElementById('b-length')?.value || '';
+      const spots = parseInt(document.getElementById('b-spots')?.value || '0', 10);
+      if (!title) return { valid: false, message: t('cl_builder_step_1_error_title') };
+      if (!desc) return { valid: false, message: t('cl_builder_step_1_error_desc') };
+      if (!format || !length || !spots || spots < 1) return { valid: false, message: t('cl_builder_step_1_error_core') };
+      return { valid: true, message: '' };
+    }
+
+    if (step === 2) {
+      const targeting = getBuilderTargetingState();
+      if (!targeting.selectedInterests.length) return { valid: false, message: t('cl_builder_step_2_error_interest') };
+      if (targeting.locationMode === 'city' && !targeting.city) return { valid: false, message: t('cl_builder_step_2_error_city') };
+      return { valid: true, message: '' };
+    }
+
+    return { valid: true, message: '' };
+  }
+
+  function renderBuilderStepErrors() {
+    [1, 2].forEach(step => {
+      const el = document.getElementById(`builder-step-error-${step}`);
+      if (!el) return;
+      el.style.display = 'none';
+      el.textContent = '';
+    });
+  }
+
+  function renderBuilderStepFlow() {
+    [1, 2, 3].forEach(step => {
+      const pane = document.getElementById(`builder-step-pane-${step}`);
+      const card = document.getElementById(`builder-step-card-${step}`);
+      if (pane) pane.classList.toggle('is-active', step === _currentBuilderStep);
+      if (card) {
+        card.classList.toggle('is-current', step === _currentBuilderStep);
+        card.classList.toggle('is-complete', step < _currentBuilderStep);
+      }
+    });
+
+    const rail1 = document.getElementById('builder-rail-step-1');
+    const rail2 = document.getElementById('builder-rail-step-2');
+    const rail3 = document.getElementById('builder-rail-step-3');
+    if (rail1) rail1.style.display = _currentBuilderStep === 1 ? '' : 'none';
+    if (rail2) rail2.style.display = _currentBuilderStep === 2 ? '' : 'none';
+    if (rail3) rail3.style.display = _currentBuilderStep === 3 ? '' : 'none';
+
+    const step1Next = document.getElementById('builder-step-1-next');
+    const step2Next = document.getElementById('builder-step-2-next');
+    const step1Validation = getBuilderStepValidation(1);
+    const step2Validation = getBuilderStepValidation(2);
+    if (step1Next) step1Next.disabled = !step1Validation.valid;
+    if (step2Next) step2Next.disabled = !step2Validation.valid;
+    const step1Error = document.getElementById('builder-step-error-1');
+    const step2Error = document.getElementById('builder-step-error-2');
+    if (step1Error) {
+      step1Error.textContent = step1Validation.message;
+      step1Error.style.display = _currentBuilderStep === 1 && !step1Validation.valid ? 'block' : 'none';
+    }
+    if (step2Error) {
+      step2Error.textContent = step2Validation.message;
+      step2Error.style.display = _currentBuilderStep === 2 && !step2Validation.valid ? 'block' : 'none';
+    }
+
+    renderBuilderStep3Summary();
+  }
+
+  function goToBuilderStep(step) {
+    if (step > _currentBuilderStep) {
+      const validation = getBuilderStepValidation(_currentBuilderStep);
+      if (!validation.valid) {
+        const errorEl = document.getElementById(`builder-step-error-${_currentBuilderStep}`);
+        if (errorEl) {
+          errorEl.textContent = validation.message;
+          errorEl.style.display = 'block';
+        }
+        return;
+      }
+    }
+    _currentBuilderStep = Math.max(1, Math.min(3, step));
+    renderBuilderStepErrors();
+    renderBuilderStepFlow();
+    renderBuilderPoolPreview();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function getBuilderPublishSnapshot(targeting) {
+    const title = document.getElementById('b-title')?.value.trim() || t('cl_published_context_default');
+    return {
+      title,
+      spots: targeting.spots
+    };
+  }
+
+  function handleBuilderPrimaryAction() {
+    if (_builderPublishState === 'published') {
+      startNewStudy();
+      return;
+    }
+    publishStudy();
+  }
+
+  async function publishStudy() {
+    const decision = getBuilderDecisionModel(_builderPoolPreviewState.confidence);
+    if (decision.state === 'not_ready' || _builderPublishState === 'publishing') return;
+    const targeting = getBuilderTargetingState();
+    _builderPublishedSnapshot = getBuilderPublishSnapshot(targeting);
+    _builderPublishState = 'publishing';
+    clearTimeout(_builderPublishTimer);
+    renderBuilderPoolPreview();
+    _builderPublishTimer = setTimeout(() => {
+      _builderPublishState = 'published';
+      renderBuilderPoolPreview();
+    }, 900);
+  }
+
   async function submitStudy(status) {
     const title  = document.getElementById('b-title').value.trim();
     const desc   = document.getElementById('b-desc').value.trim();
@@ -2512,26 +3341,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const pay    = Math.round(payNum);
     const start  = document.getElementById('b-start').value || null;
     const close  = document.getElementById('b-close').value || null;
-    const addReq = document.getElementById('b-addreqs').value.trim()  || null;
     const dbFormat = getDbStudyFormat(format, sessionType);
-    const screeningQuestions = _screeners
-      .filter(q => q.text.trim())
-      .map(q => {
-        const out = { text: q.text.trim(), type: q.type };
-        if (q.type === 'choice') out.options = q.options.split(',').map(o => o.trim()).filter(Boolean);
-        return out;
-      });
-
-    // Collect chip values
-    // 'any' chips mean "no filter" — strip them and leave the field null if nothing specific remains
-    const rawAges       = getChipValues('age_ranges').filter(v => v !== 'any');
-    const rawGenders    = getChipValues('genders').filter(v => v !== 'any');
-    const targetAges      = rawAges.length    ? rawAges    : null;
-    const targetGenders   = rawGenders.length ? rawGenders : null;
-    const targetLocations = getChipValues('locations');
-    const targetInterests = getChipValues('interests');
-    const minRatingVal    = getChipValues('min_rating')[0];
-    const minRating       = minRatingVal && minRatingVal !== '0' ? parseFloat(minRatingVal) : null;
+    const screeningQuestions = getScreeningQuestions();
+    const targeting = getBuilderTargetingState();
+    const targetAges = mapAgeRangeToBuckets(targeting.minAge, targeting.maxAge);
+    const targetLocations = targeting.locationMode === 'city'
+      ? (targeting.city ? [targeting.city] : ['city'])
+      : ['remote'];
+    const targetInterests = targeting.selectedInterests;
 
     if (!title) { showToast('Please enter a study title', true); return; }
 
@@ -2600,13 +3417,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         close_date:           close,
         status,
         target_age_ranges:    targetAges,
-        target_genders:       targetGenders,
+        target_genders:       null,
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
         is_test:              companyIsTest,
-        min_rating:           minRating,
+        min_rating:           null,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
-        additional_reqs:      addReq
+        additional_reqs:      null
       };
       const { error } = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
@@ -2618,8 +3435,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (!isDraft) {
         _justPublished = true;
         resetBuilderForm(); // clear form immediately so the builder is blank regardless of how the user re-enters it
-      } else {
-        _screeners = []; renderScreenerRows(); // draft save only needs screeners cleared; text/chips stay for continued editing
       }
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
       setTimeout(async () => {
@@ -2642,66 +3457,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
-  async function publishStudy() {
-    await submitStudy('active');
-  }
-
   async function saveStudyDraft() {
     await submitStudy('draft');
   }
 
-  // ─── SCREENER BUILDER ──────────────────────────────────
-  let _screeners = [];
   let _editingDraftId = null; // set when editing an existing draft; cleared on save or leaving builder
-
-  function addScreener() {
-    if (_screeners.length >= 3) { showToast('Max 3 screening questions per study', true); return; }
-    _screeners.push({ text: '', type: 'yesno', options: '' });
-    renderScreenerRows();
-  }
-
-  function removeScreener(idx) {
-    _screeners.splice(idx, 1);
-    renderScreenerRows();
-  }
-
-  function syncScreener(idx, field, value) {
-    if (!_screeners[idx]) return;
-    _screeners[idx][field] = value;
-    if (field === 'type') {
-      const optRow = document.getElementById('sq-opts-' + idx);
-      if (optRow) optRow.style.display = value === 'choice' ? 'block' : 'none';
-    }
-  }
-
-  function renderScreenerRows() {
-    const container = document.getElementById('screener-rows');
-    const addBtn    = document.getElementById('add-screener-btn');
-    if (!container) return;
-    container.innerHTML = _screeners.map((q, i) => `
-      <div style="background:#f9fafb;border:1px solid var(--gray-200);border-radius:8px;padding:12px;margin-bottom:8px">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-          <span style="font-size:12px;font-weight:600;color:var(--gray-400);flex-shrink:0;width:18px">Q${i+1}</span>
-          <input type="text" value="${escAttr(q.text)}" placeholder="e.g. Have you used mobile banking in the last 3 months?"
-            oninput="syncScreener(${i},'text',this.value)" maxlength="200"
-            style="flex:1;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none">
-          <select onchange="syncScreener(${i},'type',this.value)"
-            style="width:auto;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:13px;outline:none;background:#fff;flex-shrink:0">
-            <option value="yesno"  ${q.type==='yesno'  ? 'selected':''}>Yes / No</option>
-            <option value="choice" ${q.type==='choice' ? 'selected':''}>Multiple choice</option>
-            <option value="text"   ${q.type==='text'   ? 'selected':''}>Short text</option>
-          </select>
-          <button type="button" onclick="removeScreener(${i})"
-            style="background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:18px;padding:0;line-height:1;flex-shrink:0">×</button>
-        </div>
-        <div id="sq-opts-${i}" style="display:${q.type==='choice'?'block':'none'}">
-          <input type="text" value="${escAttr(q.options)}" placeholder="Options, comma-separated (e.g. Daily, Weekly, Never)"
-            oninput="syncScreener(${i},'options',this.value)" maxlength="500"
-            style="width:100%;padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;box-sizing:border-box">
-        </div>
-      </div>`).join('');
-    if (addBtn) addBtn.style.display = _screeners.length >= 3 ? 'none' : 'block';
-  }
 
   // ─── DRAFT EDIT ─────────────────────────────────────────
   // Helpers to keep ?draft= URL param in sync with _editingDraftId.
@@ -2719,7 +3479,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   // Called both from startNewStudy() and from submitStudy() on successful publish,
   // so the form is never left populated regardless of how the user re-enters the builder.
   function resetBuilderForm() {
-    ['b-title','b-desc','b-addreqs'].forEach(id => {
+    ['b-title','b-desc','b-industry','b-city','b-screening-1','b-screening-2'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
     ['b-spots','b-pay'].forEach(id => {
@@ -2731,19 +3491,32 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const formatEl = document.getElementById('b-format'); if (formatEl) formatEl.selectedIndex = 0;
     const lengthEl = document.getElementById('b-length'); if (lengthEl) lengthEl.selectedIndex = 2;
     document.querySelectorAll('#tab-new-study [data-field] .chip').forEach(c => c.classList.remove('on'));
-    // Re-apply HTML-default chip selections.
-    const defaultAge = document.querySelector('#tab-new-study [data-field="age_ranges"] .chip[data-value="any"]');
-    if (defaultAge) defaultAge.classList.add('on');
-    const defaultGender = document.querySelector('#tab-new-study [data-field="genders"] .chip[data-value="any"]');
-    if (defaultGender) defaultGender.classList.add('on');
-    const defaultLocation = document.querySelector('#tab-new-study [data-field="locations"] .chip[data-value="se_any"]');
+    const defaultLocation = document.querySelector('#tab-new-study [data-field="match_location_mode"] .chip[data-value="remote"]');
     if (defaultLocation) defaultLocation.classList.add('on');
-    const defaultRating = document.querySelector('#tab-new-study [data-field="min_rating"] .chip[data-value="3.0"]');
-    if (defaultRating) defaultRating.classList.add('on');
-    _screeners = []; renderScreenerRows();
+    const ageMin = document.getElementById('b-age-min');
+    const ageMax = document.getElementById('b-age-max');
+    if (ageMin) ageMin.value = '18';
+    if (ageMax) ageMax.value = '70';
+    updateLocationInputState();
+    updateAgeRangeLabel();
+    updateScreeningCount();
+    updateInterestWarning();
+    _currentBuilderStep = 1;
     clearTimeout(_builderPoolPreviewTimer);
-    _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
+    clearTimeout(_builderPublishTimer);
+    _builderPublishState = 'idle';
+    _builderPublishedSnapshot = null;
+    _builderPoolPreviewState = {
+      poolCount: 0,
+      confidence: 'too_broad',
+      confidenceCopy: t('cl_match_confidence_none'),
+      fillCopy: t('cl_match_fill_too_broad'),
+      guidanceCopy: t('cl_match_guidance_choose_interest'),
+      previewMatches: []
+    };
     renderBuilderPoolPreview();
+    renderBuilderStepErrors();
+    renderBuilderStepFlow();
   }
 
   // Explicit entry point for "Post new study" — ensures edit mode is fully cleared.
@@ -2773,7 +3546,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     setVal('b-pay',     study.pay_per_participant ?? '');
     setVal('b-start',   study.start_date  ? study.start_date.slice(0, 10)  : '');
     setVal('b-close',   study.close_date ? study.close_date.slice(0, 10) : '');
-    setVal('b-addreqs', study.additional_reqs);
+    setVal('b-industry', '');
+    setVal('b-city', '');
+    setVal('b-screening-1', '');
+    setVal('b-screening-2', '');
 
     const formatEl = document.getElementById('b-format');
     const builderFormat = getBuilderStudyFormat(study);
@@ -2785,46 +3561,51 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if ([...lengthEl.options].some(o => o.value === opt || o.text === opt)) lengthEl.value = opt;
     }
 
-    // Prefill chip groups (age, gender, location, interests)
+    // Prefill chip groups (primary interests + location mode)
     const setChips = (field, values) => {
-      const group = document.querySelector(`[data-field="${field}"]`);
-      if (!group) return;
-      group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      const groups = document.querySelectorAll(`[data-field="${field}"]`);
+      if (!groups.length) return;
+      groups.forEach(group => group.querySelectorAll('.chip').forEach(c => c.classList.remove('on')));
       if (!values?.length) return;
       const valSet = new Set(values.map(String));
-      group.querySelectorAll('.chip').forEach(c => { if (valSet.has(c.dataset.value)) c.classList.add('on'); });
+      groups.forEach(group => {
+        group.querySelectorAll('.chip').forEach(c => { if (valSet.has(c.dataset.value)) c.classList.add('on'); });
+      });
     };
-    setChips('age_ranges', study.target_age_ranges);
-    setChips('genders',    study.target_genders);
-    setChips('locations',  study.target_locations);
-    setChips('interests',  study.target_interests);
+    setChips('primary_interests', study.target_interests);
+    setChips('match_location_mode', study.target_locations?.[0] === 'remote' ? ['remote'] : (study.target_locations?.length ? ['city'] : ['remote']));
 
-    // min_rating is a single-select chip group; chip values are "0", "3.0", "4.0", "4.5"
-    const ratingGroup = document.querySelector('[data-field="min_rating"]');
-    if (ratingGroup) {
-      ratingGroup.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
-      const ratingKey = study.min_rating != null ? parseFloat(study.min_rating).toFixed(1) : '0';
-      const ratingChip = ratingGroup.querySelector(`[data-value="${ratingKey}"]`) ||
-                         ratingGroup.querySelector('[data-value="0"]');
-      if (ratingChip) ratingChip.classList.add('on');
+    const minAge = document.getElementById('b-age-min');
+    const maxAge = document.getElementById('b-age-max');
+    if (minAge && maxAge) {
+      const matchingBuckets = Array.isArray(study.target_age_ranges)
+        ? AGE_BUCKETS.filter(bucket => study.target_age_ranges.includes(bucket.key))
+        : [];
+      minAge.value = matchingBuckets.length ? String(Math.min(...matchingBuckets.map(bucket => bucket.min))) : '18';
+      maxAge.value = matchingBuckets.length ? String(Math.max(...matchingBuckets.map(bucket => Math.min(bucket.max, 70)))) : '70';
+    }
+    const cityInput = document.getElementById('b-city');
+    if (cityInput && Array.isArray(study.target_locations) && study.target_locations.length && study.target_locations[0] !== 'remote' && study.target_locations[0] !== 'city') {
+      cityInput.value = study.target_locations[0];
     }
 
     // Prefill screener questions
-    _screeners = Array.isArray(study.screening_questions)
-      ? study.screening_questions.map(q => ({
-          text:    q.text    || '',
-          type:    q.type    || 'yesno',
-          options: Array.isArray(q.options) ? q.options.join(', ') : (q.options || '')
-        }))
-      : [];
-    renderScreenerRows();
+    const questionTexts = Array.isArray(study.screening_questions) ? study.screening_questions.map(q => q?.text || '').filter(Boolean) : [];
+    setVal('b-screening-1', questionTexts[0] || '');
+    setVal('b-screening-2', questionTexts[1] || '');
+    updateLocationInputState();
+    updateAgeRangeLabel();
+    updateScreeningCount();
+    updateInterestWarning();
 
     // Enter edit mode: persist in both memory and URL so a page refresh restores state.
     _editingDraftId = studyId;
     setDraftUrl(studyId);
+    _currentBuilderStep = 1;
+    _builderPublishState = 'idle';
+    _builderPublishedSnapshot = null;
     showTab('new-study', null);
     updatePreview();
-    refreshBuilderPoolPreview();
     window.scrollTo(0, 0);
   }
 
@@ -3714,118 +4495,123 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
-  function getBuilderStudyPreviewPayload() {
-    const format = document.getElementById('b-format')?.value || null;
-    const targetInterests = getChipValues('interests');
-    const minRatingVal = getChipValues('min_rating')[0];
-    const minRating = minRatingVal && minRatingVal !== '0' ? parseFloat(minRatingVal) : null;
-
-    return {
-      format,
-      target_interests: targetInterests.length ? targetInterests : null,
-      min_rating: Number.isFinite(minRating) ? minRating : null
-    };
-  }
-
-  async function ensureBuilderContributorPool() {
-    if (_builderContributorPool) return _builderContributorPool;
-    if (_builderContributorPoolPromise) return _builderContributorPoolPromise;
-    if (!db) return null;
-
-    const SELECT_FIELDS = 'id, rating, total_studies, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times';
-    _builderContributorPoolPromise = db
-      .from('contributors')
-      .select(SELECT_FIELDS)
-      .then(({ data, error }) => {
-        if (error) throw error;
-        _builderContributorPool = data || [];
-        return _builderContributorPool;
-      })
-      .catch(err => {
-        console.warn('Builder contributor pool load failed:', err);
-        return null;
-      })
-      .finally(() => {
-        _builderContributorPoolPromise = null;
-      });
-
-    return _builderContributorPoolPromise;
-  }
-
   function renderBuilderPoolPreview() {
-    const el = document.getElementById('builder-pool-preview');
-    if (!el) return;
+    const confidenceEl = document.getElementById('match-confidence-label');
+    const confidenceStep3El = document.getElementById('match-confidence-label-step3');
+    const confidenceCopyEl = document.getElementById('match-confidence-copy');
+    const confidenceCopyStep3El = document.getElementById('match-confidence-copy-step3');
+    const guidanceEl = document.getElementById('match-guidance-copy');
+    const fillEl = document.getElementById('match-fill-copy');
+    const fillStep3El = document.getElementById('match-fill-copy-step3');
+    const previewListEl = document.getElementById('match-preview-list');
+    const reviewStateEl = document.getElementById('review-state-label');
+    const reviewGuidanceEl = document.getElementById('review-guidance-copy');
+    const reviewSummaryEl = document.getElementById('review-summary');
+    const reviewWarningEl = document.getElementById('review-warning-copy');
+    const publishBtn = document.getElementById('publish-study-btn');
+    if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishBtn) return;
 
-    if (_builderPoolPreviewState.loading) {
-      el.style.display = 'block';
-      el.innerHTML = `<div style="font-size:12px;color:rgba(255,255,255,0.6)">${t('cl_pool_preview_loading')}</div>`;
-      return;
+    const { poolCount, confidence, confidenceCopy, guidanceCopy, fillCopy, previewMatches } = _builderPoolPreviewState;
+    const targeting = getBuilderTargetingState();
+    const decision = getBuilderDecisionModel(confidence);
+    confidenceEl.textContent = getBuilderConfidenceCopy(confidence).label;
+    confidenceCopyEl.textContent = confidenceCopy;
+    guidanceEl.textContent = guidanceCopy;
+    fillEl.textContent = fillCopy;
+    confidenceStep3El.textContent = getBuilderConfidenceCopy(confidence).label;
+    confidenceCopyStep3El.textContent = confidenceCopy;
+    fillStep3El.textContent = fillCopy;
+    if (_builderPublishState === 'publishing') {
+      reviewStateEl.textContent = t('cl_publish_state_publishing');
+      reviewGuidanceEl.textContent = t('cl_publish_state_publishing_sub');
+      reviewSummaryEl.innerHTML = '';
+      reviewWarningEl.style.display = 'none';
+      publishBtn.textContent = t('cl_publishing');
+      publishBtn.disabled = true;
+      publishBtn.style.opacity = '0.7';
+      publishBtn.style.cursor = 'wait';
+    } else if (_builderPublishState === 'published') {
+      const snapshot = _builderPublishedSnapshot || getBuilderPublishSnapshot(targeting);
+      reviewStateEl.textContent = t('cl_publish_state_published');
+      reviewGuidanceEl.textContent = t('cl_publish_state_published_sub');
+      reviewSummaryEl.innerHTML = `
+        <div class="review-row">
+          <div class="review-row-label">${esc(t('cl_published_context_label'))}</div>
+          <div class="review-row-value">${esc(snapshot.title)}</div>
+        </div>
+      `;
+      reviewWarningEl.style.display = 'none';
+      publishBtn.textContent = t('cl_published_primary_action');
+      publishBtn.disabled = false;
+      publishBtn.style.opacity = '1';
+      publishBtn.style.cursor = 'pointer';
+    } else {
+      reviewStateEl.textContent = decision.label;
+      reviewGuidanceEl.textContent = decision.guidance;
+      reviewWarningEl.textContent = decision.warning;
+      reviewWarningEl.style.display = decision.warning ? 'block' : 'none';
+      reviewSummaryEl.innerHTML = '';
+      publishBtn.textContent = decision.button;
+      publishBtn.disabled = decision.state === 'not_ready';
+      publishBtn.style.opacity = decision.state === 'not_ready' ? '0.55' : '1';
+      publishBtn.style.cursor = decision.state === 'not_ready' ? 'not-allowed' : 'pointer';
     }
 
-    const { possibleMatchCount, strongMatchCount } = _builderPoolPreviewState;
-    if (possibleMatchCount == null || strongMatchCount == null) {
-      el.style.display = 'none';
-      el.innerHTML = '';
-      return;
+    if (confidence === 'too_broad') {
+      previewListEl.innerHTML = `<div class="match-preview-empty">${esc(t('cl_match_preview_too_broad'))}</div>`;
+    } else if (!previewMatches.length) {
+      previewListEl.innerHTML = `<div class="match-preview-empty">${esc(t(confidence === 'too_narrow' ? 'cl_match_preview_too_narrow' : 'cl_match_preview_empty'))}</div>`;
+    } else {
+      previewListEl.innerHTML = previewMatches.map(item => {
+        const contributor = item.contributor;
+        const fullName = `${contributor.firstName} ${contributor.lastInitial}.`;
+        const roleLine = `${contributor.role} · ${contributor.industry}`;
+        const metaLine = `${contributor.studiesCompleted} ${t('cl_match_preview_studies')} · ${contributor.rating.toFixed(1)}★`;
+        return `
+          <div class="match-preview-card">
+            <div class="match-preview-name">${esc(fullName)}</div>
+            <div class="match-preview-role">${esc(roleLine)}</div>
+            <div class="match-preview-reasons">
+              ${item.reasons.map(reason => `<div class="match-preview-reason">${esc(reason)}</div>`).join('')}
+            </div>
+            <div class="match-preview-meta">${esc(metaLine)}</div>
+          </div>
+        `;
+      }).join('');
     }
-
-    const warning = possibleMatchCount < 5
-      ? `<div style="margin-top:8px;font-size:11px;color:#FDE68A;line-height:1.45">${t('cl_pool_preview_warning')}</div>`
-      : '';
-
-    el.style.display = 'block';
-    el.innerHTML = `
-      <div style="font-size:12px;color:rgba(255,255,255,0.72);line-height:1.45">~${possibleMatchCount} ${t('cl_preview_match')}</div>
-      <div style="margin-top:4px;font-size:12px;color:#fff;font-weight:600">${strongMatchCount} ${t('cl_pool_preview_strong')}</div>
-      ${warning}`;
-  }
-
-  async function refreshBuilderPoolPreview() {
-    const previewEl = document.getElementById('builder-pool-preview');
-    if (!previewEl || typeof matchScore !== 'function') return;
-
-    _builderPoolPreviewState = { ..._builderPoolPreviewState, loading: true };
-    renderBuilderPoolPreview();
-
-    const study = getBuilderStudyPreviewPayload();
-    const contributors = await ensureBuilderContributorPool();
-    if (!Array.isArray(contributors)) {
-      _builderPoolPreviewState = { loading: false, possibleMatchCount: null, strongMatchCount: null };
-      renderBuilderPoolPreview();
-      return;
-    }
-    const counts = (contributors || []).reduce((acc, contributor) => {
-      const { score } = matchScore(contributor, study);
-      if (score >= 45) acc.possibleMatchCount += 1;
-      if (score >= 75) acc.strongMatchCount += 1;
-      return acc;
-    }, { possibleMatchCount: 0, strongMatchCount: 0 });
-
-    _builderPoolPreviewState = { loading: false, ...counts };
-    renderBuilderPoolPreview();
+    renderBuilderStepFlow();
   }
 
   function scheduleBuilderPoolPreviewUpdate() {
     clearTimeout(_builderPoolPreviewTimer);
     _builderPoolPreviewTimer = setTimeout(() => {
-      refreshBuilderPoolPreview();
-    }, 180);
+      const targeting = getBuilderTargetingState();
+      const simulation = simulateBuilderMatchPool(targeting);
+      const confidenceState = getBuilderConfidenceCopy(simulation.confidence);
+      const preview = buildMatchPreview(targeting, simulation);
+      const confidenceMeta = simulation.confidence === 'too_broad'
+        ? confidenceState.copy
+        : t('cl_match_pool_count').replace('{count}', simulation.poolCount);
+      _builderPoolPreviewState = {
+        poolCount: simulation.poolCount,
+        confidence: simulation.confidence,
+        confidenceCopy: confidenceMeta,
+        guidanceCopy: getBuilderGuidance(targeting, simulation),
+        fillCopy: confidenceState.fill,
+        previewMatches: preview.items
+      };
+      renderBuilderPoolPreview();
+    }, 240);
   }
 
   // ─── PREVIEW ────────────────────────────────────────────
   function updatePreview() {
-    const title  = document.getElementById('b-title').value || 'Your study title';
-    const pay    = parseInt(document.getElementById('b-pay').value)||450;
-    const spots  = parseInt(document.getElementById('b-spots').value)||10;
-    const formatSelect = document.getElementById('b-format');
-    const format = formatSelect?.options[formatSelect.selectedIndex]?.text || formatSelect?.value || '';
-    const length = document.getElementById('b-length').value;
-    document.getElementById('prev-title').textContent  = title;
-    document.getElementById('prev-pay').textContent    = pay + ' kr';
-    document.getElementById('prev-type').textContent   = format + ' · ' + length;
-    document.getElementById('prev-spots').textContent  = spots + ' ' + t('cl_participants_suffix');
-    document.getElementById('prev-budget').textContent = (pay*spots) + ' kr';
-    document.getElementById('prev-fee').textContent    = Math.round(pay*spots*0.2) + ' kr';
+    updateLocationInputState();
+    updateAgeRangeLabel();
+    updateInterestWarning();
+    updateScreeningCount();
+    renderBuilderStepErrors();
+    renderBuilderStepFlow();
     scheduleBuilderPoolPreviewUpdate();
   }
 
@@ -3977,6 +4763,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     if (isSingle) {
       group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
       el.classList.add('on');
+      updatePreview();
       return;
     }
 
@@ -4666,7 +5453,29 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_filter_draft: 'Draft',
       // Study builder
       cl_post_title: 'Post a new study',
-      cl_post_subtitle: 'Fill in the details below. Your live preview updates as you go.',
+      cl_post_subtitle: 'Define the study, then shape the match pool in real time.',
+      cl_builder_step_1_num: 'Step 1',
+      cl_builder_step_1_title: 'Study basics',
+      cl_builder_step_1_copy: 'Define what the study is.',
+      cl_builder_step_1_intro: 'Define what the study is before you choose the audience.',
+      cl_builder_step_2_num: 'Step 2',
+      cl_builder_step_2_title: 'Who matters',
+      cl_builder_step_2_copy: 'Define the audience and watch confidence update.',
+      cl_builder_step_2_intro: 'Define the audience and see how confident Vetd is about filling the study.',
+      cl_builder_step_3_num: 'Step 3',
+      cl_builder_step_3_title: 'Review & publish',
+      cl_builder_step_3_copy: 'Make the launch decision.',
+      cl_builder_step_3_intro: 'Review the study brief and use the right panel to make the launch decision.',
+      cl_builder_continue: 'Continue',
+      cl_builder_back: 'Back',
+      cl_builder_step_1_error_title: 'Add a study title before continuing.',
+      cl_builder_step_1_error_desc: 'Add what you are exploring before continuing.',
+      cl_builder_step_1_error_core: 'Confirm the format, duration, and number of spots before continuing.',
+      cl_builder_step_2_error_interest: 'Add at least one primary interest to define the audience.',
+      cl_builder_step_2_error_city: 'Add a city or switch this study back to remote.',
+      cl_builder_rail_step_1_label: 'What happens next',
+      cl_builder_rail_step_1_title: 'Define the audience next',
+      cl_builder_rail_step_1_copy: 'Once the basics are in place, Vetd will estimate the pool and show example contributors.',
       cl_section_basics: 'Study basics',
       cl_label_title: 'Study title',
       cl_ph_title: 'e.g. Online shopping experience research',
@@ -4682,20 +5491,25 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_label_start_hint: 'When do you plan to run sessions? Helps Vetd coordinate scheduling.',
       cl_label_close: 'Application deadline',
       cl_label_close_hint: 'Last day to accept new applicants. After this date your study is flagged as overdue.',
-      cl_section_targeting: 'Who are you looking for?',
-      cl_label_age: 'Age range',
-      cl_label_gender: 'Gender',
-      cl_label_location: 'Location',
-      cl_label_interests: 'Interests & behaviours (select all that apply)',
-      cl_label_min_rating: 'Minimum contributor rating',
-      cl_section_screening: 'Additional screening',
-      cl_label_sq1: 'Screening question 1 (optional)',
-      cl_ph_sq1: 'e.g. Have you shopped with H&M online in the last 12 months?',
-      cl_label_sq2: 'Screening question 2 (optional)',
-      cl_ph_sq2: 'e.g. How often do you shop for clothes online?',
-      cl_label_addreqs: 'Additional requirements',
-      cl_label_addreqs_hint: 'Used by Vetd for matching. May be shared with contributors.',
-      cl_ph_addreqs: 'e.g. Participants must be comfortable on video call. We prefer people who can articulate their experiences clearly.',
+      cl_section_targeting: 'Define who matters',
+      cl_label_primary_interest: 'Primary interest',
+      cl_primary_interest_hint: 'Pick one or two interests to anchor matching.',
+      cl_interest_warning: 'Three or more interests usually narrows the pool faster than expected.',
+      cl_label_industry: 'Industry',
+      cl_ph_industry: 'e.g. Fintech',
+      cl_label_experience: 'Experience level',
+      cl_label_location_pref: 'Location',
+      cl_location_hint: 'Add a city only if this study needs people in one place.',
+      cl_label_age_range: 'Age range',
+      cl_age_min: 'Min',
+      cl_age_max: 'Max',
+      cl_age_any: 'Any age',
+      cl_section_screening: 'Screening questions',
+      cl_screening_count: '{count} of 2 used',
+      cl_label_sq1: 'Screening question 1',
+      cl_ph_sq1: 'e.g. What tools do you use today?',
+      cl_label_sq2: 'Screening question 2',
+      cl_ph_sq2: 'e.g. Have you switched providers in the last year?',
       cl_save_draft: 'Save as draft',
       cl_saving_draft: 'Saving draft…',
       cl_study_saved_draft: 'Draft saved.',
@@ -4705,12 +5519,17 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_btn: 'Publish study →',
       // Chips
       cl_chip_any_age: 'Any age',
+      cl_chip_junior: 'Junior',
+      cl_chip_mid: 'Mid',
+      cl_chip_senior: 'Senior',
       cl_chip_women: 'Women',
       cl_chip_men: 'Men',
       cl_chip_nonbinary: 'Non-binary',
       cl_chip_any_gender: 'Any gender',
       cl_chip_uk_any: 'Sweden — any',
       cl_chip_remote: 'Remote only',
+      cl_chip_remote_default: 'Remote',
+      cl_chip_city_based: 'City-based',
       cl_chip_any_rating: 'Any rating',
       cl_chip_3_above: '3.0★ and above',
       cl_chip_4_above: '4.0★ and above',
@@ -4718,11 +5537,36 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_chip_fashion: 'Fashion & clothing',
       cl_chip_online_shopper: 'Online shopper',
       cl_chip_beauty: 'Beauty & skincare',
+      cl_chip_home: 'Home & living',
+      cl_chip_food: 'Food & groceries',
+      cl_chip_fitness: 'Fitness & wellness',
       cl_chip_brand_customer: 'Brand customer',
       cl_chip_sustainability: 'Sustainability interest',
       cl_chip_social_media: 'Social media user',
       cl_chip_parent: 'Parent',
       cl_chip_homeowner: 'Homeowner',
+      cl_chip_pets: 'Pets',
+      cl_chip_travel: 'Travel',
+      cl_chip_gardening: 'Gardening',
+      cl_chip_smartphones: 'Smartphones',
+      cl_chip_gaming: 'Gaming',
+      cl_chip_streaming: 'Streaming',
+      cl_chip_podcasts: 'Podcasts',
+      cl_chip_smart_home: 'Smart home',
+      cl_chip_online_banking: 'Online banking',
+      cl_chip_investing: 'Investing',
+      cl_chip_crypto: 'Crypto',
+      cl_chip_mortgages: 'Mortgages',
+      cl_chip_insurance: 'Insurance',
+      cl_chip_budgeting: 'Budgeting',
+      cl_interest_group_lifestyle: 'Lifestyle',
+      cl_interest_group_tech: 'Tech',
+      cl_interest_group_finance: 'Finance',
+      cl_industry_fintech: 'Fintech',
+      cl_industry_ecommerce: 'E-commerce',
+      cl_industry_saas: 'SaaS',
+      cl_industry_healthcare: 'Healthcare',
+      cl_ph_city: 'e.g. Stockholm',
       // Preview
       cl_preview_title: 'Live preview',
       cl_preview_spots: 'Spots available',
@@ -4732,6 +5576,73 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_pool_preview_strong: 'strong matches',
       cl_pool_preview_loading: 'Checking contributor pool…',
       cl_pool_preview_warning: 'Small eligible pool — consider broadening targeting or format requirements.',
+      cl_match_panel_title: 'Live match panel',
+      cl_match_pool_label: 'Pool estimate',
+      cl_match_pool_count: '~{count} contributors match',
+      cl_match_pool_empty: 'Choose a primary interest',
+      cl_match_pool_empty_sub: 'Select who matters and the pool estimate updates instantly.',
+      cl_match_pool_support: 'The estimate updates as you tighten or broaden the brief.',
+      cl_match_confidence_label: 'Confidence',
+      cl_match_confidence_none: 'No useful audience estimate yet.',
+      cl_match_fill_label: 'Expected fill',
+      cl_match_preview_label: 'Match preview',
+      cl_match_guidance_choose_interest: 'Choose a primary interest so Vetd can estimate a useful audience.',
+      cl_match_guidance_three_interests: 'Adding a third interest is narrowing the pool quickly.',
+      cl_match_guidance_second_interest: 'Adding a second interest narrows your pool.',
+      cl_match_guidance_city: 'City targeting reduces availability.',
+      cl_match_guidance_city_narrow: 'City targeting is making this harder to fill.',
+      cl_match_guidance_screening: 'Two screening questions may slow fill time.',
+      cl_match_guidance_screening_narrow: 'Two screening questions are making this harder to fill.',
+      cl_match_guidance_age_narrow: 'A narrow age range is making this harder to fill.',
+      cl_match_guidance_limited: 'Broadening one filter will improve fill speed.',
+      cl_match_guidance_well_defined: 'This audience is well defined.',
+      cl_review_block_label: 'Review before publish',
+      cl_review_ready: 'Ready to publish',
+      cl_review_review: 'Review targeting',
+      cl_review_not_ready: 'Not ready',
+      cl_review_ready_guidance: 'Good targeting. You should have enough qualified contributors.',
+      cl_review_review_guidance: 'Your audience is narrow. Broadening one filter will improve fill speed.',
+      cl_review_review_warning: 'You can publish this now, but it may fill more slowly than expected.',
+      cl_review_not_ready_broad: 'Add at least one interest to define your audience.',
+      cl_review_not_ready_narrow: 'Broaden one filter to improve fill speed.',
+      cl_publish_anyway: 'Publish anyway',
+      cl_publish_state_publishing: 'Publishing',
+      cl_publish_state_publishing_sub: 'Making your study live now.',
+      cl_publish_state_published: 'Study published',
+      cl_publish_state_published_sub: 'We\'re now matching and reviewing contributors based on your targeting.',
+      cl_published_primary_action: 'Create another study',
+      cl_published_context_label: 'Live now',
+      cl_published_context_default: 'Untitled study',
+      cl_review_row_interests: 'Interests',
+      cl_review_row_filters: 'Filters',
+      cl_review_row_spots: 'Spots',
+      cl_review_row_duration: 'Duration',
+      cl_review_row_format: 'Format',
+      cl_review_row_screening: 'Screening',
+      cl_review_row_screening_value: '{count} questions',
+      cl_match_state_strong: 'Strong match pool',
+      cl_match_state_strong_sub: 'Broad enough to fill with confidence for the number of spots.',
+      cl_match_state_good: 'Good match pool',
+      cl_match_state_good_sub: 'Healthy pool for the number of spots you need.',
+      cl_match_state_limited: 'Limited match pool',
+      cl_match_state_limited_sub: 'This can likely fill, but tighter filters may slow it down.',
+      cl_match_state_too_narrow: 'Too narrow',
+      cl_match_state_too_narrow_sub: 'Current targeting is likely too narrow for the number of spots.',
+      cl_match_state_too_broad: 'Too broad',
+      cl_match_state_too_broad_sub: 'Choose a primary interest to estimate the pool with confidence.',
+      cl_match_fill_strong: 'Typical fill time: 1-2 days',
+      cl_match_fill_good: 'Typical fill time: 2-3 days',
+      cl_match_fill_limited: 'May take several days',
+      cl_match_fill_too_narrow: 'Unlikely to fill',
+      cl_match_fill_too_broad: 'Choose a primary interest to estimate fill time',
+      cl_match_preview_too_broad: 'Choose a primary interest to see example contributors.',
+      cl_match_preview_too_narrow: 'Only a few contributors look close to this brief right now.',
+      cl_match_preview_empty: 'No clear preview matches yet. Broadening one filter should bring more people into range.',
+      cl_match_preview_studies: 'studies',
+      cl_match_reason_interest: 'Interested in {interest}',
+      cl_match_reason_industry: 'Background in {industry}',
+      cl_match_reason_location: 'Based in {city}',
+      cl_match_reason_remote: 'Comfortable with remote studies',
       // Browse contributors
       cl_browse_title: 'Participants',
       cl_browse_sub: 'Suggested participants',
@@ -5019,7 +5930,29 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_filter_draft: 'Utkast',
       // Study builder
       cl_post_title: 'Publicera en ny studie',
-      cl_post_subtitle: 'Fyll i detaljerna — vi uppskattar din panelstorlek allt eftersom.',
+      cl_post_subtitle: 'Definiera studien och forma matchpoolen i realtid.',
+      cl_builder_step_1_num: 'Steg 1',
+      cl_builder_step_1_title: 'Studiegrunder',
+      cl_builder_step_1_copy: 'Definiera vad studien är.',
+      cl_builder_step_1_intro: 'Definiera vad studien är innan du väljer målgruppen.',
+      cl_builder_step_2_num: 'Steg 2',
+      cl_builder_step_2_title: 'Vilka som spelar roll',
+      cl_builder_step_2_copy: 'Definiera målgruppen och följ säkerheten direkt.',
+      cl_builder_step_2_intro: 'Definiera målgruppen och se hur säkert Vetd kan fylla studien.',
+      cl_builder_step_3_num: 'Steg 3',
+      cl_builder_step_3_title: 'Granska och publicera',
+      cl_builder_step_3_copy: 'Fatta lanseringsbeslutet.',
+      cl_builder_step_3_intro: 'Granska briefen och använd panelen till höger för att fatta lanseringsbeslutet.',
+      cl_builder_continue: 'Fortsätt',
+      cl_builder_back: 'Tillbaka',
+      cl_builder_step_1_error_title: 'Lägg till en studietitel innan du fortsätter.',
+      cl_builder_step_1_error_desc: 'Beskriv vad ni vill utforska innan du fortsätter.',
+      cl_builder_step_1_error_core: 'Bekräfta format, längd och antal platser innan du fortsätter.',
+      cl_builder_step_2_error_interest: 'Lägg till minst ett primärt intresse för att definiera målgruppen.',
+      cl_builder_step_2_error_city: 'Lägg till en stad eller byt tillbaka till distans.',
+      cl_builder_rail_step_1_label: 'Vad händer härnäst',
+      cl_builder_rail_step_1_title: 'Definiera målgruppen härnäst',
+      cl_builder_rail_step_1_copy: 'När grunderna är satta uppskattar Vetd poolen och visar exempel på deltagare.',
       cl_section_basics: 'Grunduppgifter',
       cl_label_title: 'Studietitel',
       cl_ph_title: 't.ex. Undersökning av shoppingupplevelse online',
@@ -5035,20 +5968,25 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_label_start_hint: 'När planerar ni att genomföra sessionerna? Hjälper Vetd att samordna schemaläggning.',
       cl_label_close: 'Sista ansökningsdag',
       cl_label_close_hint: 'Sista dagen att acceptera nya sökande. Efter detta datum flaggas studien som försenad.',
-      cl_section_targeting: 'Vem söker du?',
-      cl_label_age: 'Åldersintervall',
-      cl_label_gender: 'Kön',
-      cl_label_location: 'Plats',
-      cl_label_interests: 'Intressen och beteenden (välj alla som gäller)',
-      cl_label_min_rating: 'Lägsta deltagarnas betyg',
-      cl_section_screening: 'Ytterligare urval',
-      cl_label_sq1: 'Urvalsfråga 1 (valfritt)',
-      cl_ph_sq1: 't.ex. Har du handlat hos H&M online de senaste 12 månaderna?',
-      cl_label_sq2: 'Urvalsfråga 2 (valfritt)',
-      cl_ph_sq2: 't.ex. Hur ofta handlar du kläder online?',
-      cl_label_addreqs: 'Ytterligare krav',
-      cl_label_addreqs_hint: 'Används av Vetd för matchning. Kan delas med deltagare.',
-      cl_ph_addreqs: 't.ex. Deltagare måste vara bekväma med videosamtal. Vi föredrar personer som kan uttrycka sina upplevelser tydligt.',
+      cl_section_targeting: 'Definiera vilka som spelar roll',
+      cl_label_primary_interest: 'Primärt intresse',
+      cl_primary_interest_hint: 'Välj ett eller två intressen som ska styra matchningen.',
+      cl_interest_warning: 'Tre eller fler intressen gör ofta poolen smalare snabbare än man tror.',
+      cl_label_industry: 'Bransch',
+      cl_ph_industry: 't.ex. Fintech',
+      cl_label_experience: 'Erfarenhetsnivå',
+      cl_label_location_pref: 'Plats',
+      cl_location_hint: 'Lägg bara till en stad om studien behöver personer på en viss plats.',
+      cl_label_age_range: 'Åldersintervall',
+      cl_age_min: 'Min',
+      cl_age_max: 'Max',
+      cl_age_any: 'Alla åldrar',
+      cl_section_screening: 'Urvalsfrågor',
+      cl_screening_count: '{count} av 2 använda',
+      cl_label_sq1: 'Urvalsfråga 1',
+      cl_ph_sq1: 't.ex. Vilka verktyg använder du idag?',
+      cl_label_sq2: 'Urvalsfråga 2',
+      cl_ph_sq2: 't.ex. Har du bytt leverantör det senaste året?',
       cl_save_draft: 'Spara som utkast',
       cl_saving_draft: 'Sparar utkast…',
       cl_study_saved_draft: 'Utkast sparat.',
@@ -5058,12 +5996,17 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_btn: 'Publicera studie →',
       // Chips
       cl_chip_any_age: 'Alla åldrar',
+      cl_chip_junior: 'Junior',
+      cl_chip_mid: 'Mid',
+      cl_chip_senior: 'Senior',
       cl_chip_women: 'Kvinnor',
       cl_chip_men: 'Män',
       cl_chip_nonbinary: 'Ickebinär',
       cl_chip_any_gender: 'Alla kön',
       cl_chip_uk_any: 'Sverige — hela',
       cl_chip_remote: 'Enbart distans',
+      cl_chip_remote_default: 'Distans',
+      cl_chip_city_based: 'Stadsbaserad',
       cl_chip_any_rating: 'Alla betyg',
       cl_chip_3_above: '3.0★ och uppåt',
       cl_chip_4_above: '4.0★ och uppåt',
@@ -5071,11 +6014,36 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_chip_fashion: 'Mode & kläder',
       cl_chip_online_shopper: 'E-handlare',
       cl_chip_beauty: 'Skönhet & hudvård',
+      cl_chip_home: 'Hem & boende',
+      cl_chip_food: 'Mat & vardagshandel',
+      cl_chip_fitness: 'Träning & välmående',
       cl_chip_brand_customer: 'Varumärkeskund',
       cl_chip_sustainability: 'Hållbarhetsintresse',
       cl_chip_social_media: 'Sociala medier',
       cl_chip_parent: 'Förälder',
       cl_chip_homeowner: 'Bostadsägare',
+      cl_chip_pets: 'Husdjur',
+      cl_chip_travel: 'Resor',
+      cl_chip_gardening: 'Trädgård',
+      cl_chip_smartphones: 'Smartphones',
+      cl_chip_gaming: 'Gaming',
+      cl_chip_streaming: 'Streaming',
+      cl_chip_podcasts: 'Podcaster',
+      cl_chip_smart_home: 'Smarta hem',
+      cl_chip_online_banking: 'Internetbank',
+      cl_chip_investing: 'Investeringar',
+      cl_chip_crypto: 'Krypto',
+      cl_chip_mortgages: 'Bolån',
+      cl_chip_insurance: 'Försäkring',
+      cl_chip_budgeting: 'Budgetering',
+      cl_interest_group_lifestyle: 'Livsstil',
+      cl_interest_group_tech: 'Teknik',
+      cl_interest_group_finance: 'Ekonomi',
+      cl_industry_fintech: 'Fintech',
+      cl_industry_ecommerce: 'E-handel',
+      cl_industry_saas: 'SaaS',
+      cl_industry_healthcare: 'Hälsa',
+      cl_ph_city: 't.ex. Stockholm',
       // Preview
       cl_preview_title: 'Förhandsgranskning',
       cl_preview_spots: 'Tillgängliga platser',
@@ -5085,6 +6053,73 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_pool_preview_strong: 'starka matchningar',
       cl_pool_preview_loading: 'Kontrollerar deltagarpool…',
       cl_pool_preview_warning: 'Liten möjlig pool — överväg bredare målgrupp eller formatkrav.',
+      cl_match_panel_title: 'Live matchpanel',
+      cl_match_pool_label: 'Poolestimat',
+      cl_match_pool_count: '~{count} deltagare matchar',
+      cl_match_pool_empty: 'Välj ett primärt intresse',
+      cl_match_pool_empty_sub: 'Välj vilka som spelar roll så uppdateras estimatet direkt.',
+      cl_match_pool_support: 'Estimatet uppdateras när du gör briefen bredare eller smalare.',
+      cl_match_confidence_label: 'Säkerhet',
+      cl_match_confidence_none: 'Ingen användbar målgruppsestimering ännu.',
+      cl_match_fill_label: 'Förväntad fyllnad',
+      cl_match_preview_label: 'Matchningsförhandsvisning',
+      cl_match_guidance_choose_interest: 'Välj ett primärt intresse så att Vetd kan uppskatta en användbar målgrupp.',
+      cl_match_guidance_three_interests: 'Ett tredje intresse gör poolen snabbt smalare.',
+      cl_match_guidance_second_interest: 'Ett andra intresse gör poolen smalare.',
+      cl_match_guidance_city: 'Stadstargeting minskar tillgängligheten.',
+      cl_match_guidance_city_narrow: 'Stadstargeting gör den här studien svårare att fylla.',
+      cl_match_guidance_screening: 'Två urvalsfrågor kan göra fyllningen långsammare.',
+      cl_match_guidance_screening_narrow: 'Två urvalsfrågor gör den här studien svårare att fylla.',
+      cl_match_guidance_age_narrow: 'Ett smalt åldersintervall gör den här studien svårare att fylla.',
+      cl_match_guidance_limited: 'Om du breddar ett filter går fyllningen snabbare.',
+      cl_match_guidance_well_defined: 'Den här målgruppen är tydligt definierad.',
+      cl_review_block_label: 'Granska innan publicering',
+      cl_review_ready: 'Redo att publicera',
+      cl_review_review: 'Granska targetingen',
+      cl_review_not_ready: 'Inte redo',
+      cl_review_ready_guidance: 'Bra targeting. Du bör ha tillräckligt många kvalificerade deltagare.',
+      cl_review_review_guidance: 'Målgruppen är smal. Om du breddar ett filter går fyllningen snabbare.',
+      cl_review_review_warning: 'Du kan publicera nu, men studien kan fyllas långsammare än väntat.',
+      cl_review_not_ready_broad: 'Lägg till minst ett intresse för att definiera målgruppen.',
+      cl_review_not_ready_narrow: 'Bredda ett filter för att förbättra fyllhastigheten.',
+      cl_publish_anyway: 'Publicera ändå',
+      cl_publish_state_publishing: 'Publicerar',
+      cl_publish_state_publishing_sub: 'Gör studien live nu.',
+      cl_publish_state_published: 'Studien är publicerad',
+      cl_publish_state_published_sub: 'Vi matchar och granskar nu deltagare utifrån din targeting.',
+      cl_published_primary_action: 'Skapa en ny studie',
+      cl_published_context_label: 'Live nu',
+      cl_published_context_default: 'Namnlös studie',
+      cl_review_row_interests: 'Intressen',
+      cl_review_row_filters: 'Filter',
+      cl_review_row_spots: 'Platser',
+      cl_review_row_duration: 'Längd',
+      cl_review_row_format: 'Format',
+      cl_review_row_screening: 'Urval',
+      cl_review_row_screening_value: '{count} frågor',
+      cl_match_state_strong: 'Stark matchpool',
+      cl_match_state_strong_sub: 'Tillräckligt bred för att fylla studien med god säkerhet.',
+      cl_match_state_good: 'Bra matchpool',
+      cl_match_state_good_sub: 'En hälsosam pool för antalet platser du behöver.',
+      cl_match_state_limited: 'Begränsad matchpool',
+      cl_match_state_limited_sub: 'Det här kan troligen fyllas, men snävare filter kan bromsa det.',
+      cl_match_state_too_narrow: 'För smal',
+      cl_match_state_too_narrow_sub: 'Nuvarande targeting är troligen för smal för antalet platser.',
+      cl_match_state_too_broad: 'För bred',
+      cl_match_state_too_broad_sub: 'Välj ett primärt intresse för att uppskatta poolen med bättre precision.',
+      cl_match_fill_strong: 'Typisk fylltid: 1-2 dagar',
+      cl_match_fill_good: 'Typisk fylltid: 2-3 dagar',
+      cl_match_fill_limited: 'Kan ta flera dagar',
+      cl_match_fill_too_narrow: 'Osannolikt att fylla',
+      cl_match_fill_too_broad: 'Välj ett primärt intresse för att uppskatta fylltiden',
+      cl_match_preview_too_broad: 'Välj ett primärt intresse för att se exempel på deltagare.',
+      cl_match_preview_too_narrow: 'Bara några få deltagare ligger nära den här briefen just nu.',
+      cl_match_preview_empty: 'Inga tydliga förhandsmatchningar ännu. Om du breddar ett filter brukar fler komma i räckhåll.',
+      cl_match_preview_studies: 'studier',
+      cl_match_reason_interest: 'Intresserad av {interest}',
+      cl_match_reason_industry: 'Bakgrund inom {industry}',
+      cl_match_reason_location: 'Bas i {city}',
+      cl_match_reason_remote: 'Bekväm med distansstudier',
       // Browse contributors
       cl_browse_title: 'Deltagare',
       cl_browse_sub: 'Föreslagna deltagare',
@@ -5327,6 +6362,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const k = el.dataset.i18nPh;
       if (LANG[lang] && LANG[lang][k] !== undefined) el.placeholder = LANG[lang][k];
     });
+    renderBuilderInterestGroups(getSelectedPrimaryInterests());
+    renderIndustrySuggestions();
+    updatePreview();
     // Re-render dynamic content with updated language
     if (currentClientUser) {
       loadStudies();
@@ -5337,6 +6375,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   setLang(localStorage.getItem('vetd_lang') || 'en');
+  renderBuilderInterestGroups();
+  renderIndustrySuggestions();
+  updatePreview();
 
   // ─── COOKIE BANNER ─────────────────────────────────────
   // cookie-banner is placed after the script block in the DOM, so defer until
