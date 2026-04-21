@@ -1921,6 +1921,36 @@
     `;
   }
 
+  function renderBrowseZeroSupplyState() {
+    return `<div style="max-width:600px">
+        <div style="margin-bottom:2rem">
+          <h3 style="font-family:var(--serif);font-size:26px;color:var(--gray-900);margin-bottom:12px;line-height:1.3">${t('empty_hero_title')}</h3>
+          <p style="font-size:14px;color:var(--gray-700);font-weight:300;line-height:1.7;margin-bottom:1.25rem;max-width:480px">${t('empty_hero_sub')}</p>
+          <button class="apply-btn" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${t('empty_hero_cta')}</button>
+        </div>
+        <div style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_how_label')}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:var(--gray-700)">${t('empty_step_1')}</span></div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:var(--gray-700)">${t('empty_step_2')}</span></div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:var(--gray-700)">${t('empty_step_3')}</span></div>
+          </div>
+        </div>
+        <div style="margin-bottom:2rem">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
+          ${renderPreviewStudySection()}
+        </div>
+        <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_1')}</div>
+            <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_2')}</div>
+            <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_3')}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   // ─── EVENT LOGGING ───────────────────────────────────────
   const SESSION_ID = sessionStorage.getItem('vetd_sid') || (() => {
     const id = crypto.randomUUID(); sessionStorage.setItem('vetd_sid', id); return id;
@@ -3182,33 +3212,7 @@
 
       container.innerHTML = isDashboard
         ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
-        : `<div style="max-width:600px">
-            <div style="margin-bottom:2rem">
-              <h3 style="font-family:var(--serif);font-size:26px;color:var(--gray-900);margin-bottom:12px;line-height:1.3">${t('empty_hero_title')}</h3>
-              <p style="font-size:14px;color:var(--gray-700);font-weight:300;line-height:1.7;margin-bottom:1.25rem;max-width:480px">${t('empty_hero_sub')}</p>
-              <button class="apply-btn" onclick="const pb=document.querySelector('.topbar-nav [data-i18n=&quot;nav_profile&quot;]');if(pb){showTab('profile',pb);enterEditMode();}">${t('empty_hero_cta')}</button>
-            </div>
-            <div style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
-              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_how_label')}</div>
-              <div style="display:flex;flex-direction:column;gap:10px">
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span><span style="color:var(--gray-700)">${t('empty_step_1')}</span></div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span><span style="color:var(--gray-700)">${t('empty_step_2')}</span></div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="min-width:20px;height:20px;border-radius:50%;background:var(--green-light);color:var(--green-dark);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span><span style="color:var(--gray-700)">${t('empty_step_3')}</span></div>
-              </div>
-            </div>
-            <div style="margin-bottom:2rem">
-              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_upcoming_label')}</div>
-              ${renderPreviewStudySection()}
-            </div>
-            <div style="padding:1.25rem 1.5rem;background:var(--gray-50);border-radius:12px;border:1px solid var(--gray-100)">
-              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);margin-bottom:1rem">${t('empty_early_label')}</div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_1')}</div>
-                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_2')}</div>
-                <div style="font-size:13px;color:var(--gray-700)">${t('empty_early_3')}</div>
-              </div>
-            </div>
-          </div>`;
+        : renderBrowseZeroSupplyState();
       return;
     }
     const lowFitNote = !isDashboard && model.mode === 'low_fit_contributor'
