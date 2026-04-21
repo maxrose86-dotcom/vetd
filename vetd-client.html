@@ -763,6 +763,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 <div class="builder-step-title" data-i18n="cl_builder_step_2_title">Who matters</div>
                 <div class="builder-step-sub" id="builder-step-2-intro">Define the audience and see how confident Vetd is about filling the study.</div>
               </div>
+              <div class="section-group" id="customer-intent-block" style="display:none">
+                <h3 data-i18n="cl_section_customer_intent">Who are you recruiting?</h3>
+                <div class="chip-group" data-field="customer_intent" data-single="true" style="margin-top:10px">
+                  <div class="chip on" data-value="general"            onclick="tc(this)" data-i18n="cl_chip_intent_general">General target audience</div>
+                  <div class="chip"    data-value="category_buyers"    onclick="tc(this)" data-i18n="cl_chip_intent_category_buyers">Category buyers</div>
+                  <div class="chip"    data-value="existing_customers" onclick="tc(this)" data-i18n="cl_chip_intent_existing_customers">Existing customers</div>
+                </div>
+                <div class="field-inline-note" id="customer-intent-hint" style="margin-top:8px"></div>
+              </div>
               <div class="section-group">
                 <h3 id="builder-targeting-section-title" data-i18n="cl_section_targeting">Who are you looking for?</h3>
                 <div class="field">
@@ -2910,6 +2919,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : t('cl_audience_customers');
   }
 
+  function getBuilderAudienceIntent() {
+    return getChipValues('customer_intent')[0] || 'general';
+  }
+
   function renderAudienceTypeUI() {
     const audienceType = getBuilderAudienceType();
     const isProfessional = audienceType === 'professionals';
@@ -2924,25 +2937,24 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         ? t('cl_audience_note_professionals')
         : t('cl_audience_note_customers');
     }
-    if (step2IntroEl) {
-      step2IntroEl.textContent = isProfessional
-        ? t('cl_builder_step_2_intro_professionals')
-        : t('cl_builder_step_2_intro_customers');
-    }
-    if (sectionTitleEl) {
-      sectionTitleEl.textContent = isProfessional
-        ? t('cl_section_targeting_professionals')
-        : t('cl_section_targeting_customers');
-    }
-    if (primaryInterestHintEl) {
-      primaryInterestHintEl.textContent = isProfessional
-        ? t('cl_primary_interest_hint_professionals')
-        : t('cl_primary_interest_hint_customers');
+    if (isProfessional) {
+      if (step2IntroEl) step2IntroEl.textContent = t('cl_builder_step_2_intro_professionals');
+      if (sectionTitleEl) sectionTitleEl.textContent = t('cl_section_targeting_professionals');
+      if (primaryInterestHintEl) primaryInterestHintEl.textContent = t('cl_primary_interest_hint_professionals');
+    } else {
+      const intent = getBuilderAudienceIntent();
+      if (step2IntroEl) step2IntroEl.textContent = t('cl_builder_step_2_intro_intent_' + intent);
+      if (sectionTitleEl) sectionTitleEl.textContent = t('cl_section_targeting_intent_' + intent);
+      if (primaryInterestHintEl) primaryInterestHintEl.textContent = t('cl_primary_interest_hint_intent_' + intent);
+      const intentHintEl = document.getElementById('customer-intent-hint');
+      if (intentHintEl) intentHintEl.textContent = t('cl_intent_hint_' + intent);
     }
     if (industryField) industryField.style.display = isProfessional ? '' : 'none';
     if (experienceField) experienceField.style.display = isProfessional ? '' : 'none';
     const behaviorsBlock = document.getElementById('customer-behaviors-block');
     if (behaviorsBlock) behaviorsBlock.style.display = isProfessional ? 'none' : '';
+    const intentBlock = document.getElementById('customer-intent-block');
+    if (intentBlock) intentBlock.style.display = isProfessional ? 'none' : '';
   }
 
   function getSelectedPrimaryInterests() {
@@ -3040,7 +3052,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const screeningCount = getScreeningQuestions().length;
     const spots = Math.max(1, parseInt(document.getElementById('b-spots')?.value || '10', 10) || 10);
     const customerBehaviors = audienceType === 'customers' ? getCustomerBehaviors() : [];
-    return { audienceType, selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots, customerBehaviors };
+    const customerIntent = audienceType === 'customers' ? getBuilderAudienceIntent() : '';
+    return { audienceType, selectedInterests, industry, experience, locationMode, city, minAge, maxAge, screeningCount, spots, customerBehaviors, customerIntent };
   }
 
   function simulateBuilderMatchPool(targeting) {
@@ -3053,6 +3066,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     if (targeting.selectedInterests.length > 2) {
       pool *= 0.78;
     }
+    if (targeting.customerIntent === 'existing_customers') pool *= 0.72;
+    else if (targeting.customerIntent === 'category_buyers') pool *= 0.88;
     if (targeting.industry) pool *= 0.82;
     if (targeting.experience) pool *= 0.84;
     if (targeting.locationMode === 'city') pool *= targeting.city ? 0.62 : 0.72;
@@ -3288,13 +3303,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         label: t('cl_review_row_audience'),
         type: 'text',
         value: getBuilderAudienceTypeLabel(targeting.audienceType)
-      },
-      {
-        label: t('cl_review_row_interests'),
-        type: 'tags',
-        values: interestTags
       }
     ];
+
+    if (targeting.customerIntent && targeting.customerIntent !== 'general') {
+      rows.push({
+        label: t('cl_review_row_intent'),
+        type: 'text',
+        value: t('cl_chip_intent_' + targeting.customerIntent)
+      });
+    }
+
+    rows.push({
+      label: t('cl_review_row_interests'),
+      type: 'tags',
+      values: interestTags
+    });
 
     if (targeting.customerBehaviors && targeting.customerBehaviors.length) {
       rows.push({
@@ -3563,6 +3587,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
         target_behaviors:     targeting.customerBehaviors.length ? targeting.customerBehaviors : null,
+        target_audience_intent: targeting.customerIntent || null,
         is_test:              companyIsTest,
         min_rating:           null,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
@@ -3571,8 +3596,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       let { error } = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
-      if (error && /audience_type|target_behaviors/i.test(error.message || '')) {
-        const { audience_type, target_behaviors, ...legacyStudyFields } = studyFields;
+      if (error && /audience_type|target_behaviors|target_audience_intent/i.test(error.message || '')) {
+        const { audience_type, target_behaviors, target_audience_intent, ...legacyStudyFields } = studyFields;
         ({ error } = effectiveDraftId
           ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId)
           : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }));
@@ -3646,6 +3671,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     if (defaultAudience) defaultAudience.classList.add('on');
     const defaultLocation = document.querySelector('#tab-new-study [data-field="match_location_mode"] .chip[data-value="remote"]');
     if (defaultLocation) defaultLocation.classList.add('on');
+    const defaultIntent = document.querySelector('#tab-new-study [data-field="customer_intent"] .chip[data-value="general"]');
+    if (defaultIntent) defaultIntent.classList.add('on');
     const ageMin = document.getElementById('b-age-min');
     const ageMax = document.getElementById('b-age-max');
     if (ageMin) ageMin.value = '18';
@@ -3728,6 +3755,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     setChips('audience_type', [study.audience_type || 'customers']);
     setChips('primary_interests', study.target_interests);
     setChips('customer_behaviors', Array.isArray(study.target_behaviors) ? study.target_behaviors : []);
+    setChips('customer_intent', [study.target_audience_intent || 'general']);
     setChips('match_location_mode', study.target_locations?.[0] === 'remote' ? ['remote'] : (study.target_locations?.length ? ['city'] : ['remote']));
 
     const minAge = document.getElementById('b-age-min');
@@ -5673,6 +5701,23 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_age_min: 'Min',
       cl_age_max: 'Max',
       cl_age_any: 'Any age',
+      cl_section_customer_intent: 'Who are you recruiting?',
+      cl_chip_intent_general: 'General target audience',
+      cl_chip_intent_category_buyers: 'Category buyers',
+      cl_chip_intent_existing_customers: 'Existing customers',
+      cl_intent_hint_general: 'Open recruitment — best for exploratory research with a broad population.',
+      cl_intent_hint_category_buyers: 'People who have bought or actively considered products in your category.',
+      cl_intent_hint_existing_customers: 'People who already use or have used your product or brand.',
+      cl_builder_step_2_intro_intent_general: 'Define the audience and see how confident Vetd is about filling the study.',
+      cl_builder_step_2_intro_intent_category_buyers: 'Find people who\'ve bought or researched your category recently.',
+      cl_builder_step_2_intro_intent_existing_customers: 'Reach people already familiar with your product or brand.',
+      cl_section_targeting_intent_general: 'Which customers matter most?',
+      cl_section_targeting_intent_category_buyers: 'Narrow to the right category buyers',
+      cl_section_targeting_intent_existing_customers: 'Refine your customer profile',
+      cl_primary_interest_hint_intent_general: 'Pick one or two interests to anchor matching.',
+      cl_primary_interest_hint_intent_category_buyers: 'Pick interests that reflect your product category.',
+      cl_primary_interest_hint_intent_existing_customers: 'Pick interests that reflect your customer base.',
+      cl_review_row_intent: 'Recruitment type',
       cl_section_behaviors: 'Behaviors',
       cl_behaviors_hint: 'Select behaviors that describe your ideal participant.',
       cl_chip_behavior_shops_online: 'Shops online regularly',
