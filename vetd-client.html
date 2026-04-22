@@ -2387,7 +2387,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         if (a.status === 'pending') {
           actions = `
             <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="pending">${t('cl_schedule_and_confirm')}</button>
-            <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_reject')}</button>`;
+            <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_reject')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
           const _rowNow     = Date.now();
@@ -2514,12 +2514,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             // then use the header-level group scheduling action.
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_cancel_invitation')}</button>`;
           } else {
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
               <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="invited">${t('cl_schedule_and_confirm')}</button>
-              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_cancel_invitation')}</button>`;
           }
         } else if (a.status === 'declined') {
           actions = `
@@ -2669,7 +2669,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         'inline-schedule':        d => openInlineSchedule(d.appId),
         'inline-schedule-launch': d => { cancelInlineSchedule(d.formId); openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode); },
         'inline-schedule-cancel': d => cancelInlineSchedule(d.formId),
-        'update-status':          d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId),
+        'update-status':          d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId, true, false, d.currentStatus || null),
         'video-call':             d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
         'complete':               d => markCompleted(d.appId, d.studyId),
         'did-not-happen':         d => markSessionDidNotHappen(d.appId, d.studyId),
@@ -2685,10 +2685,45 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
-  async function updateApplication(appId, newStatus, studyId, contributorId, suppressToast = false, suppressNotification = false) {
+  async function updateApplication(appId, newStatus, studyId, contributorId, suppressToast = false, suppressNotification = false, previousStatusOverride = null) {
     const row = document.getElementById('approw-' + appId);
     const actionsEl = row?.querySelector('.applicant-actions');
-    if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
+    const previousStatus = previousStatusOverride || row?.querySelector('[data-current-status]')?.dataset.currentStatus || null;
+    const canOptimisticallyUpdate = (newStatus === 'accepted' || newStatus === 'rejected')
+      && (previousStatus === 'pending' || previousStatus === 'invited');
+    const previousCounts = _studiesCache?.appCountMap?.[studyId]
+      ? { ..._studiesCache.appCountMap[studyId] }
+      : null;
+
+    if (canOptimisticallyUpdate && _studiesCache?.appCountMap?.[studyId]) {
+      const nextCounts = { ..._studiesCache.appCountMap[studyId] };
+      if (previousStatus === 'pending') nextCounts.pending = Math.max(0, (nextCounts.pending || 0) - 1);
+      if (previousStatus === 'invited') nextCounts.invited = Math.max(0, (nextCounts.invited || 0) - 1);
+      if (newStatus === 'accepted') {
+        nextCounts.accepted = (nextCounts.accepted || 0) + 1;
+        nextCounts.active_count = (nextCounts.active_count || 0) + 1;
+      }
+      _studiesCache = {
+        ..._studiesCache,
+        appCountMap: {
+          ..._studiesCache.appCountMap,
+          [studyId]: nextCounts
+        }
+      };
+      renderStudiesList();
+    }
+
+    if (canOptimisticallyUpdate && row) {
+      row.style.pointerEvents = 'none';
+      if (newStatus === 'accepted') {
+        row.style.opacity = '0.78';
+        if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-accepted">${t('cl_accepted')}</span>`;
+      } else if (newStatus === 'rejected') {
+        row.remove();
+      }
+    } else if (actionsEl) {
+      actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
+    }
 
     try {
       const guardedStatuses = newStatus === 'accepted' || newStatus === 'rejected'
@@ -2740,24 +2775,53 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       }
 
       if (!suppressToast) showToast(newStatus === 'accepted' ? t('cl_applicant_accepted') : t('cl_applicant_rejected'));
-      // Refresh applicant list in-place
-      await loadApplicants(studyId);
-      // Refresh study list to update counts and progress bar
-      await loadStudies();
+      loadApplicants(studyId).catch(err => {
+        console.error('Background loadApplicants after application update failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadStudies().catch(err => {
+        console.error('Background loadStudies after application update failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
       if (newStatus === 'accepted') {
-        await loadUnscheduledApplications();
+        loadUnscheduledApplications().catch(err => {
+          console.error('Background loadUnscheduledApplications after application update failed:', err);
+          if (window.Sentry) Sentry.captureException(err);
+        });
       }
       // Keep dashboard pending queue in sync so stale rows can't trigger a double-accept
-      loadPendingApplications();
+      loadPendingApplications().catch(err => {
+        console.error('Background loadPendingApplications after application update failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
     } catch(err) {
+      if (canOptimisticallyUpdate && previousCounts && _studiesCache?.appCountMap) {
+        _studiesCache = {
+          ..._studiesCache,
+          appCountMap: {
+            ..._studiesCache.appCountMap,
+            [studyId]: previousCounts
+          }
+        };
+        renderStudiesList();
+      }
       console.error('Update application error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast(t('cl_update_application_failed'), true);
-      await loadApplicants(studyId); // restore buttons
-      await loadStudies();
-      loadPendingApplications();
+      await loadApplicants(studyId); // restore row state
+      loadStudies().catch(err2 => {
+        console.error('Background loadStudies after rollback failed:', err2);
+        if (window.Sentry) Sentry.captureException(err2);
+      });
+      loadPendingApplications().catch(err2 => {
+        console.error('Background loadPendingApplications after rollback failed:', err2);
+        if (window.Sentry) Sentry.captureException(err2);
+      });
       if (newStatus === 'accepted') {
-        await loadUnscheduledApplications();
+        loadUnscheduledApplications().catch(err2 => {
+          console.error('Background loadUnscheduledApplications after rollback failed:', err2);
+          if (window.Sentry) Sentry.captureException(err2);
+        });
       }
     }
   }
