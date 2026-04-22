@@ -73,8 +73,8 @@ body{font-family:var(--sans);background:var(--gray-50);color:var(--gray-900);min
 
 .main-content{flex:1;overflow-y:auto;padding:2rem}
 .tab-pane{display:none}
-.tab-pane.active{display:block;animation:fadeUp 0.25s ease}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tab-pane.active{display:block;animation:tabFadeIn 0.14s ease}
+@keyframes tabFadeIn{from{opacity:0}to{opacity:1}}
 
 /* TOPBAR */
 .page-topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem}
@@ -3204,7 +3204,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const becomingOn = !el.classList.contains('on');
     group.querySelectorAll('.chip').forEach(chip => chip.classList.remove('on'));
     if (becomingOn) el.classList.add('on');
-    updatePreview();
+    updatePreview(60);
   }
 
   function syncAgeRange(which) {
@@ -5259,7 +5259,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     renderBuilderStepFlow();
   }
 
-  function scheduleBuilderPoolPreviewUpdate() {
+  function scheduleBuilderPoolPreviewUpdate(delay = 240) {
     clearTimeout(_builderPoolPreviewTimer);
     _builderPoolPreviewTimer = setTimeout(() => {
       const targeting = getBuilderTargetingState();
@@ -5278,11 +5278,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         previewMatches: preview.items
       };
       renderBuilderPoolPreview();
-    }, 240);
+    }, delay);
   }
 
   // ─── PREVIEW ────────────────────────────────────────────
-  function updatePreview() {
+  function updatePreview(delay) {
     renderAudienceTypeUI();
     updateLocationInputState();
     updateAgeRangeLabel();
@@ -5290,7 +5290,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     updateScreeningCount();
     renderBuilderStepErrors();
     renderBuilderStepFlow();
-    scheduleBuilderPoolPreviewUpdate();
+    scheduleBuilderPoolPreviewUpdate(delay);
   }
 
   // ─── STUDY WORKSPACE HELPERS ────────────────────────────
@@ -5451,7 +5451,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     if (isSingle) {
       group.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
       el.classList.add('on');
-      updatePreview();
+      updatePreview(60);
       return;
     }
 
@@ -5474,7 +5474,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
 
     el.classList.toggle('on');
-    updatePreview();
+    updatePreview(60);
   }
 
   function showToast(msg, isError = false) {
