@@ -5128,6 +5128,34 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── MARK APPLICATION AS COMPLETED ──────────────────────
   async function markCompleted(appId, studyId) {
+    const row = document.getElementById('approw-' + appId);
+    const actionsEl = row?.querySelector('.applicant-actions');
+    const previousCounts = _studiesCache?.appCountMap?.[studyId]
+      ? { ..._studiesCache.appCountMap[studyId] }
+      : null;
+
+    if (_studiesCache?.appCountMap?.[studyId]) {
+      const nextCounts = { ..._studiesCache.appCountMap[studyId] };
+      nextCounts.accepted = Math.max(0, (nextCounts.accepted || 0) - 1);
+      nextCounts.scheduled = Math.max(0, (nextCounts.scheduled || 0) - 1);
+      nextCounts.ready_to_complete = Math.max(0, (nextCounts.ready_to_complete || 0) - 1);
+      if (nextCounts.stale_sessions > 0) nextCounts.stale_sessions -= 1;
+      _studiesCache = {
+        ..._studiesCache,
+        appCountMap: {
+          ..._studiesCache.appCountMap,
+          [studyId]: nextCounts
+        }
+      };
+      renderStudiesList();
+    }
+
+    if (row) {
+      row.style.pointerEvents = 'none';
+      row.style.opacity = '0.78';
+      if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
+    }
+
     try {
       // Mark application as completed
       const { error } = await db.from('applications')
@@ -5159,18 +5187,49 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         }
       }
 
-      showToast(t('cl_marked_completed'));
-      await loadApplicants(studyId);
-      await loadStudies();
-      await loadRateList();
-      loadClientBudget();
-      await loadReadyToCompleteSessions();
-      await loadUnscheduledApplications();
-      loadUpcomingSessions();
+      loadApplicants(studyId).catch(err => {
+        console.error('Background loadApplicants after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadStudies().catch(err => {
+        console.error('Background loadStudies after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadRateList().catch(err => {
+        console.error('Background loadRateList after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadClientBudget().catch(err => {
+        console.error('Background loadClientBudget after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadReadyToCompleteSessions().catch(err => {
+        console.error('Background loadReadyToCompleteSessions after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadUnscheduledApplications().catch(err => {
+        console.error('Background loadUnscheduledApplications after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadUpcomingSessions().catch(err => {
+        console.error('Background loadUpcomingSessions after markCompleted failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
     } catch(err) {
+      if (previousCounts && _studiesCache?.appCountMap) {
+        _studiesCache = {
+          ..._studiesCache,
+          appCountMap: {
+            ..._studiesCache.appCountMap,
+            [studyId]: previousCounts
+          }
+        };
+        renderStudiesList();
+      }
       console.error('markCompleted error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast(t('cl_update_application_failed'), true);
+      await loadApplicants(studyId);
     }
   }
 
