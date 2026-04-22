@@ -1052,14 +1052,14 @@
         <div style="text-align:center;padding:2rem 0">
           <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:32px">✓</div>
           <h2 style="font-family:var(--serif);font-size:36px;margin-bottom:8px" data-i18n="ob_done_title">You're all set!</h2>
-          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto"><span data-i18n="ob_done_sub_prefix">Your profile is live. We've already found</span> <strong style="color:var(--green)">4 studies</strong> <span data-i18n="ob_done_sub_suffix">that match your interests.</span></p>
+          <p style="color:var(--gray-400);margin-bottom:2rem;font-weight:300;max-width:360px;margin-left:auto;margin-right:auto" data-i18n="ob_done_body">Studies are matched to your profile. Browse what's available to get started.</p>
           <div style="background:var(--gray-50);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:2rem;text-align:left;max-width:380px;margin-left:auto;margin-right:auto">
             <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-400);margin-bottom:12px;font-weight:600" data-i18n="ob_done_profile_title">Your starting profile</div>
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)" data-i18n="ob_done_tier_label">Tier</span><span style="font-weight:600" data-i18n="ob_done_tier_value">Standard (new member)</span></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--gray-100)"><span style="color:var(--gray-400)" data-i18n="ob_done_rating_label">Rating</span><span style="color:var(--gray-400)" data-i18n="ob_done_rating_value">No ratings yet</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)" data-i18n="ob_done_matches_label">Studies matched</span><span style="color:var(--green);font-weight:600" data-i18n="ob_done_matches_value">4 waiting</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--gray-400)" data-i18n="ob_done_matches_label">Studies matched</span><span style="color:var(--gray-400);font-weight:400" data-i18n="ob_done_matches_value">Ready to browse</span></div>
           </div>
-          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()" data-i18n="ob_done_cta">Complete your profile to receive invites →</button>
+          <button class="btn-primary" style="font-size:15px;padding:14px 40px" onclick="goToApp()" data-i18n="ob_done_cta">Browse available studies →</button>
         </div>
       </div>
     </div>
@@ -4324,7 +4324,7 @@
         in_progress:   'app-status-in-progress',
         ended_joined:  'app-status-completed',
         ended_missed:  'app-status-missed',
-        completed:     'app-status-pending',
+        completed:     'app-status-completed',
         company_cancelled: 'app-status-rejected',
         rejected:      'app-status-rejected',
       }[ss.phase] || 'app-status-pending';
@@ -5988,16 +5988,15 @@ async function applyToStudy(studyId, answers = null) {
       email_confirm_body: 'We sent a confirmation link to your email address. Click it to activate your account and continue.',
       email_confirm_cta: 'Go to sign in →',
       ob_done_title: 'You\'re all set!',
-      ob_done_sub_prefix: 'Your profile is live. We\'ve already found',
-      ob_done_sub_suffix: 'that match your interests.',
+      ob_done_body: 'Studies are matched to your profile. Browse what\'s available to get started.',
       ob_done_profile_title: 'Your starting profile',
       ob_done_tier_label: 'Tier',
       ob_done_tier_value: 'Standard (new member)',
       ob_done_rating_label: 'Rating',
       ob_done_rating_value: 'No ratings yet',
       ob_done_matches_label: 'Studies matched',
-      ob_done_matches_value: '4 waiting',
-      ob_done_cta: 'Complete your profile to receive invites →',
+      ob_done_matches_value: 'Ready to browse',
+      ob_done_cta: 'Browse available studies →',
       delete_modal_title: 'Delete your account?',
       delete_modal_body: 'This will permanently delete your profile, application history, ratings, and payment records. This action cannot be undone.',
       delete_modal_confirm_prefix: 'Type',
@@ -6634,16 +6633,15 @@ async function applyToStudy(studyId, answers = null) {
       email_confirm_body: 'Vi skickade en bekräftelselänk till din e-postadress. Klicka på den för att aktivera ditt konto och fortsätta.',
       email_confirm_cta: 'Gå till inloggning →',
       ob_done_title: 'Allt är klart!',
-      ob_done_sub_prefix: 'Din profil är live. Vi har redan hittat',
-      ob_done_sub_suffix: 'som matchar dina intressen.',
+      ob_done_body: 'Studier matchas mot din profil. Bläddra bland tillgängliga studier för att komma igång.',
       ob_done_profile_title: 'Din startprofil',
       ob_done_tier_label: 'Nivå',
       ob_done_tier_value: 'Standard (ny medlem)',
       ob_done_rating_label: 'Betyg',
       ob_done_rating_value: 'Inga betyg ännu',
       ob_done_matches_label: 'Matchade studier',
-      ob_done_matches_value: '4 väntar',
-      ob_done_cta: 'Slutför din profil för att få inbjudningar →',
+      ob_done_matches_value: 'Redo att utforska',
+      ob_done_cta: 'Se tillgängliga studier →',
       delete_modal_title: 'Ta bort ditt konto?',
       delete_modal_body: 'Det här raderar permanent din profil, ansökningshistorik, betyg och betalningshistorik. Åtgärden går inte att ångra.',
       delete_modal_confirm_prefix: 'Skriv',
