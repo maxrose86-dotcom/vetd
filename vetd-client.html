@@ -653,8 +653,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         </div>
 
         <div class="filter-bar" id="study-ws-nav" style="margin-bottom:1.5rem">
-          <button class="fc on" onclick="switchStudySection('people',this)">Participants</button>
-          <button class="fc" onclick="switchStudySection('settings',this)">Study setup</button>
+          <button class="fc on" onclick="switchStudySection('people',this)" data-i18n="cl_study_ws_people">Participants</button>
+          <button class="fc" onclick="switchStudySection('settings',this)" data-i18n="cl_study_ws_details">Details</button>
         </div>
 
         <!-- PEOPLE (unified workflow surface) -->
@@ -697,7 +697,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       <div class="tab-pane active" id="tab-studies">
         <div class="page-topbar">
           <div class="page-title"><h1 data-i18n="cl_my_studies">Your studies</h1><p id="studies-subtitle"></p></div>
-          <button class="btn-primary" onclick="startNewStudy()" data-i18n="cl_post_new_btn">＋ Post new study</button>
+          <button class="btn-primary" onclick="startNewStudy()" data-i18n="cl_post_new_btn">＋ New study</button>
         </div>
         <div id="studies-list">
           <div style="text-align:center;padding:3rem;color:var(--gray-400)">
@@ -709,7 +709,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       <!-- POST STUDY -->
       <div class="tab-pane" id="tab-new-study">
         <div class="page-topbar">
-          <div class="page-title"><h1 data-i18n="cl_post_title">Post a new study</h1><p data-i18n="cl_post_subtitle">Fill in the details below. Your live preview updates as you go.</p></div>
+          <div class="page-title"><h1 data-i18n="cl_post_title">New study</h1><p data-i18n="cl_post_subtitle">Fill in the details below. Your live preview updates as you go.</p></div>
         </div>
         <div class="builder-steps">
           <div class="builder-step-card is-current" id="builder-step-card-1">
@@ -1930,8 +1930,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       list.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--gray-400)">
         <div style="font-size:32px;margin-bottom:1rem">📋</div>
         <h3 style="font-family:var(--serif);font-size:22px;color:var(--gray-700);margin-bottom:6px">${t('cl_no_studies') || 'No studies yet'}</h3>
-        <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub') || 'Post your first study to start recruiting participants.'}</p>
-        <button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${esc(t('cl_post_a_study') || 'Post a study')}</button>
+        <p style="font-size:14px;font-weight:300">${t('cl_no_studies_sub') || 'Create your first study to start recruiting participants.'}</p>
+        <button class="btn-primary" style="margin-top:1.5rem" onclick="startNewStudy()">${esc(t('cl_post_a_study') || '＋ New study')}</button>
       </div>`;
       return;
     }
@@ -5325,8 +5325,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (error || !study) throw error || new Error('Study not found');
 
       if (badgeEl) {
-        badgeEl.textContent = study.status;
-        badgeEl.className = `badge badge-${study.status}`;
+        const status = study.status || 'draft';
+        const badgeCls = status === 'active'
+          ? 'badge-green'
+          : status === 'paused'
+            ? 'badge-amber'
+            : status === 'completed'
+              ? 'badge-blue'
+              : 'badge-gray';
+        badgeEl.textContent = status === 'paused'
+          ? `${t('cl_study_status_paused')} · ${t('cl_study_status_paused_sub')}`
+          : t(`cl_study_status_${status}`) || status;
+        badgeEl.className = `badge ${badgeCls}`;
       }
 
       if (overviewEl) {
@@ -5337,10 +5347,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const valStyle   = 'font-size:20px;font-weight:600;color:var(--gray-700)';
         overviewEl.innerHTML = `
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1rem;padding:1.25rem 1.5rem">
-            <div><div style="${labelStyle}">Pay</div><div style="${valStyle}">${esc(pay)}</div></div>
-            <div><div style="${labelStyle}">Spots</div><div style="${valStyle}">${filled}/${spots}</div></div>
-            <div><div style="${labelStyle}">Type</div><div style="${valStyle}">${esc(study.session_type === 'group' ? 'Group' : '1:1')}</div></div>
-            <div><div style="${labelStyle}">Duration</div><div style="${valStyle}">${esc(String(study.duration_minutes || '–'))} min</div></div>
+            <div><div style="${labelStyle}">${esc(t('cl_study_overview_pay'))}</div><div style="${valStyle}">${esc(pay)}</div></div>
+            <div><div style="${labelStyle}">${esc(t('cl_study_overview_spots'))}</div><div style="${valStyle}">${filled}/${spots}</div></div>
+            <div><div style="${labelStyle}">${esc(t('cl_study_overview_format'))}</div><div style="${valStyle}">${esc(t(study.session_type === 'group' ? 'cl_study_overview_format_group' : 'cl_study_overview_format_one_to_one'))}</div></div>
+            <div><div style="${labelStyle}">${esc(t('cl_study_overview_length'))}</div><div style="${valStyle}">${esc(String(study.duration_minutes || '–'))} min</div></div>
           </div>`;
       }
 
@@ -5353,21 +5363,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         settingsEl.innerHTML = `
           <div style="padding:1.25rem 1.5rem">
             <div style="margin-bottom:20px">
-              <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">Study setup</div>
-              <div style="font-size:13px;color:var(--gray-400)">Edit how this study runs and who you recruit.</div>
+              <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">${esc(t('cl_study_details_heading'))}</div>
+              <div style="font-size:13px;color:var(--gray-400)">${esc(t('cl_study_details_sub'))}</div>
             </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-              <button class="btn-outline" data-action="edit-details">Edit study →</button>
-            </div>
-            <div style="font-size:13px;font-weight:500;margin-bottom:12px">Study status</div>
+            ${isDraft ? `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+              <button class="btn-outline" data-action="edit-details">${esc(t('cl_study_primary_edit_draft'))}</button>
+            </div>` : ''}
+            <div style="font-size:13px;font-weight:500;margin-bottom:12px">${esc(t('cl_study_section_status'))}</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
-              ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Publish</button>` : ''}
-              ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">Pause</button>` : ''}
-              ${isPaused     ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">Resume</button>` : ''}
-              ${(isActive || isPaused) ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','completed')">Mark as completed</button>` : ''}
-              ${isCompleted  ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">Reopen</button>` : ''}
-              ${isArchived   ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">Unarchive</button>` : ''}
-              ${!isArchived  ? `<button class="btn-outline" style="color:var(--gray-400)" onclick="setStudyStatus('${esc(studyId)}','archived')">Archive</button>` : ''}
+              ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>` : ''}
+              ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">${esc(t('cl_study_action_pause'))}</button>` : ''}
+              ${isPaused     ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_resume'))}</button>` : ''}
+              ${(isActive || isPaused) ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','completed')">${esc(t('cl_study_action_mark_completed'))}</button>` : ''}
+              ${isCompleted  ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_reopen'))}</button>` : ''}
+              ${isArchived   ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_restore'))}</button>` : ''}
+              ${!isArchived  ? `<button class="btn-outline" style="color:var(--gray-500)" onclick="setStudyStatus('${esc(studyId)}','archived')">${esc(t('cl_study_action_archive'))}</button>` : ''}
             </div>
             ${study.description ? `<div style="font-size:13px;color:var(--gray-500)">${esc(study.description)}</div>` : ''}
           </div>`;
@@ -6097,7 +6107,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_notif_mark_all: 'Mark all as read',
       cl_notif_empty: 'No notifications yet',
       // Dashboard
-      cl_post_new_btn: '＋ Post new study',
+      cl_post_new_btn: '＋ New study',
       cl_stat_active: 'Active studies',
       cl_stat_recruited: 'Participants recruited',
       cl_stat_avg_rating: 'Avg contributor rating',
@@ -6138,6 +6148,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_group_drafts: 'Drafts',
       cl_studies_group_drafts_sub: 'Studies still being shaped before launch.',
       cl_studies_group_drafts_empty: 'No drafts right now.',
+      cl_study_ws_people: 'Participants',
+      cl_study_ws_details: 'Details',
       cl_study_status_active: 'Active',
       cl_study_status_paused: 'Paused',
       cl_study_status_paused_sub: 'Closed to applications',
@@ -6160,7 +6172,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_mark_completed: 'Mark as completed',
       cl_study_action_pause: 'Pause',
       cl_study_action_resume: 'Resume',
+      cl_study_action_publish: 'Publish',
+      cl_study_action_reopen: 'Reopen',
+      cl_study_action_restore: 'Restore',
+      cl_study_action_archive: 'Archive',
       cl_study_action_delete: 'Delete',
+      cl_study_section_status: 'Status',
+      cl_study_details_heading: 'Study details',
+      cl_study_details_sub: 'Review the setup and manage the study status.',
+      cl_study_overview_pay: 'Pay',
+      cl_study_overview_spots: 'Spots',
+      cl_study_overview_format: 'Format',
+      cl_study_overview_length: 'Length',
+      cl_study_overview_format_group: 'Group',
+      cl_study_overview_format_one_to_one: '1:1',
       cl_study_meta_spots: 'spots',
       cl_study_meta_recruited: '{count} recruited',
       cl_study_meta_recruited_of: '{filled} of {spots} recruited',
@@ -6180,7 +6205,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_filter_completed: 'Completed',
       cl_filter_draft: 'Draft',
       // Study builder
-      cl_post_title: 'Post a new study',
+      cl_post_title: 'New study',
       cl_post_subtitle: 'Define the study, then shape the match pool in real time.',
       cl_builder_step_1_num: 'Step 1',
       cl_builder_step_1_title: 'Study basics',
@@ -6616,8 +6641,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_group_modal_sub_reschedule: 'Rescheduling for {count}',
       // Dynamic
       cl_no_studies: 'No studies yet.',
-      cl_no_studies_sub: 'Post your first study to start recruiting participants.',
-      cl_post_a_study: '＋ Post a study',
+      cl_no_studies_sub: 'Create your first study to start recruiting participants.',
+      cl_post_a_study: '＋ New study',
       cl_view_applicants: 'View {count} applicant',
       cl_view_applicants_plural: 'View {count} applicants',
       cl_no_applications: 'No applications yet',
@@ -6710,7 +6735,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_notif_mark_all: 'Markera alla som lästa',
       cl_notif_empty: 'Inga aviseringar ännu',
       // Dashboard
-      cl_post_new_btn: '＋ Skapa ny studie',
+      cl_post_new_btn: '＋ Ny studie',
       cl_stat_active: 'Aktiva studier',
       cl_stat_recruited: 'Rekryterade deltagare',
       cl_stat_avg_rating: 'Snittbetyg deltagare',
@@ -6751,6 +6776,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_group_drafts: 'Utkast',
       cl_studies_group_drafts_sub: 'Studier som fortfarande formas före lansering.',
       cl_studies_group_drafts_empty: 'Inga utkast just nu.',
+      cl_study_ws_people: 'Deltagare',
+      cl_study_ws_details: 'Detaljer',
       cl_study_status_active: 'Aktiv',
       cl_study_status_paused: 'Pausad',
       cl_study_status_paused_sub: 'Stängd för ansökningar',
@@ -6773,7 +6800,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_mark_completed: 'Markera som slutförd',
       cl_study_action_pause: 'Pausa',
       cl_study_action_resume: 'Återuppta',
+      cl_study_action_publish: 'Publicera',
+      cl_study_action_reopen: 'Öppna igen',
+      cl_study_action_restore: 'Återställ',
+      cl_study_action_archive: 'Arkivera',
       cl_study_action_delete: 'Ta bort',
+      cl_study_section_status: 'Status',
+      cl_study_details_heading: 'Studiedetaljer',
+      cl_study_details_sub: 'Granska upplägget och hantera studiens status.',
+      cl_study_overview_pay: 'Ersättning',
+      cl_study_overview_spots: 'Platser',
+      cl_study_overview_format: 'Format',
+      cl_study_overview_length: 'Längd',
+      cl_study_overview_format_group: 'Grupp',
+      cl_study_overview_format_one_to_one: '1:1',
       cl_study_meta_spots: 'platser',
       cl_study_meta_recruited: '{count} rekryterade',
       cl_study_meta_recruited_of: '{filled} av {spots} rekryterade',
@@ -6793,7 +6833,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_filter_completed: 'Slutförda',
       cl_filter_draft: 'Utkast',
       // Study builder
-      cl_post_title: 'Publicera en ny studie',
+      cl_post_title: 'Ny studie',
       cl_post_subtitle: 'Definiera studien och forma matchpoolen i realtid.',
       cl_builder_step_1_num: 'Steg 1',
       cl_builder_step_1_title: 'Studiegrunder',
@@ -7212,8 +7252,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_group_modal_sub_reschedule: 'Omschemaläggning för {count}',
       // Dynamic
       cl_no_studies: 'Inga studier ännu',
-      cl_no_studies_sub: 'Publicera din första studie för att börja rekrytera deltagare.',
-      cl_post_a_study: '＋ Skapa en studie',
+      cl_no_studies_sub: 'Skapa din första studie för att börja rekrytera deltagare.',
+      cl_post_a_study: '＋ Ny studie',
       cl_view_applicants: 'Visa {count} sökande',
       cl_view_applicants_plural: 'Visa {count} sökande',
       cl_no_applications: 'Inga ansökningar ännu',
