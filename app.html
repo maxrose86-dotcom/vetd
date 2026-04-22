@@ -3660,34 +3660,53 @@
     }
   }
 
- async function confirmApply() {
-  if (!state.currentStudy) return;
-  await logEvent('apply_cta_click', state.currentStudy.id);
-  const answers = collectScreenerAnswers();
-  // Validate required screener answers
-  if (Array.isArray(answers)) {
-    const area = document.getElementById('modal-screener-area');
-    // Clear previous errors
-    area.querySelectorAll('.sq-error').forEach(el => el.remove());
-    const questions = state.currentStudy.screeningQuestions;
-    let hasError = false;
-    answers.forEach((ans, i) => {
-      if (ans === '' || ans === null || ans === undefined) {
-        const wrapper = area.querySelector(`[data-sq-idx="${i}"]`);
-        if (wrapper) {
-          const err = document.createElement('div');
-          err.className = 'sq-error';
-          err.style.cssText = 'color:#e53e3e;font-size:12px;margin-top:4px';
-          err.textContent = t('sq_required');
-          wrapper.appendChild(err);
+  async function confirmApply() {
+    if (!state.currentStudy) return;
+
+    const applyBtn = document.querySelector('#apply-modal .modal-apply');
+    if (applyBtn?.disabled) return;
+    if (applyBtn) {
+      applyBtn.disabled = true;
+      applyBtn.dataset.originalText = applyBtn.textContent;
+      applyBtn.textContent = t('saving_generic') || 'Applying…';
+      applyBtn.style.opacity = '0.7';
+    }
+
+    const restoreBtn = () => {
+      if (!applyBtn) return;
+      applyBtn.disabled = false;
+      applyBtn.textContent = applyBtn.dataset.originalText || t('modal_apply_cta');
+      applyBtn.style.opacity = '';
+    };
+
+    await logEvent('apply_cta_click', state.currentStudy.id);
+    const answers = collectScreenerAnswers();
+    // Validate required screener answers
+    if (Array.isArray(answers)) {
+      const area = document.getElementById('modal-screener-area');
+      // Clear previous errors
+      area.querySelectorAll('.sq-error').forEach(el => el.remove());
+      const questions = state.currentStudy.screeningQuestions;
+      let hasError = false;
+      answers.forEach((ans, i) => {
+        if (ans === '' || ans === null || ans === undefined) {
+          const wrapper = area.querySelector(`[data-sq-idx="${i}"]`);
+          if (wrapper) {
+            const err = document.createElement('div');
+            err.className = 'sq-error';
+            err.style.cssText = 'color:#e53e3e;font-size:12px;margin-top:4px';
+            err.textContent = t('sq_required');
+            wrapper.appendChild(err);
+          }
+          hasError = true;
         }
-        hasError = true;
-      }
-    });
-    if (hasError) return;
+      });
+      if (hasError) { restoreBtn(); return; }
+    }
+
+    const ok = await applyToStudy(state.currentStudy.id, answers);
+    if (!ok) restoreBtn();
   }
-  await applyToStudy(state.currentStudy.id, answers);
-}
 
   // ─── NAVIGATION ─────────────────────────────────────────
   const CONTRIBUTOR_TABS = ['dashboard', 'studies', 'my-studies', 'profile'];
@@ -4571,10 +4590,7 @@ async function applyToStudy(studyId, answers = null) {
     state.appliedStudies.add(studyId);
   }
 
-  logEvent('application_intent_submitted', studyId); // fire-and-forget — must not block closeModal
-  renderStudies('studies-list', state.studies);
-  renderStudies('dashboard-studies', state.studies.slice(0, 2));
-  await loadMyApplications();
+  // Show confirmed state immediately — do not wait for reload
   const confirmTitle = document.getElementById('modal-confirm-title');
   if (confirmTitle) {
     confirmTitle.textContent = t('modal_confirm_title').replace('{title}', state.currentStudy?.title || t('modal_confirm_fallback_title'));
@@ -4588,6 +4604,16 @@ async function applyToStudy(studyId, answers = null) {
   }
   document.getElementById('modal-pre-apply').style.display = 'none';
   document.getElementById('modal-confirmed').style.display = 'block';
+
+  // Background sync — fire-and-forget, never blocks confirmed view
+  logEvent('application_intent_submitted', studyId);
+  renderStudies('studies-list', state.studies);
+  renderStudies('dashboard-studies', state.studies.slice(0, 2));
+  loadMyApplications().catch(err => {
+    console.error('Background loadMyApplications after apply failed:', err);
+    if (window.Sentry) Sentry.captureException(err);
+  });
+
   return true;
 }
 
