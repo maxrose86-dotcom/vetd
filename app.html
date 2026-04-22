@@ -1200,11 +1200,11 @@
           <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
           <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
           <button class="filter-chip" onclick="filterStudies('high-pay', this)" data-i18n="filter_high_pay">High pay</button>
-          <select class="filter-select filter-right">
-            <option data-i18n="sort_best_match">Sort: Best match</option>
-            <option data-i18n="sort_highest_pay">Sort: Highest pay</option>
-            <option data-i18n="sort_newest">Sort: Newest</option>
-            <option data-i18n="sort_shortest">Sort: Shortest</option>
+          <select class="filter-select filter-right" onchange="sortStudies(this.value)">
+            <option value="best_match" data-i18n="sort_best_match">Sort: Best match</option>
+            <option value="highest_pay" data-i18n="sort_highest_pay">Sort: Highest pay</option>
+            <option value="newest" data-i18n="sort_newest">Sort: Newest</option>
+            <option value="shortest" data-i18n="sort_shortest">Sort: Shortest</option>
           </select>
         </div>
         <div id="studies-list"></div>
@@ -1793,6 +1793,8 @@
       return false;
     }
   }
+
+  let _studySort = 'best_match';
 
   // ─── STATE ───────────────────────────────────────────────
   const state = {
@@ -3248,7 +3250,8 @@
           format:             FORMAT_FILTER[s.format] || 'online',
           featured:           false,
           detail:             s.description || 'No additional details provided.',
-          screeningQuestions: s.screening_questions || null
+          screeningQuestions: s.screening_questions || null,
+          createdAt:          s.created_at || null
         };
       });
 
@@ -3295,6 +3298,24 @@
       }
     } else {
       displayStudies = applyStudyPreferenceBias(source, prefs, state.contribData);
+      if (containerId === 'studies-list' && _studySort !== 'best_match') {
+        displayStudies = [...displayStudies];
+        switch (_studySort) {
+          case 'highest_pay':
+            displayStudies.sort((a, b) => (b.pay || 0) - (a.pay || 0));
+            break;
+          case 'newest':
+            displayStudies.sort((a, b) => {
+              const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return tb - ta;
+            });
+            break;
+          case 'shortest':
+            displayStudies.sort((a, b) => (a.durationMinutes || 0) - (b.durationMinutes || 0));
+            break;
+        }
+      }
     }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
@@ -3567,6 +3588,16 @@
           <div class="modal-suggestion-meta">${metaParts.map(esc).join(' · ')}</div>
         </button>`;
     }).join('');
+  }
+
+  function sortStudies(sortKey) {
+    _studySort = sortKey;
+    const activeFilter = document.querySelector('#tab-studies .filter-chip.active');
+    const filterType = activeFilter?.getAttribute('onclick')?.match(/filterStudies\('([^']+)'/)?.[1] || 'all';
+    let subset = state.studies;
+    if (filterType === 'online') subset = state.studies.filter(j => j.format === 'online');
+    if (filterType === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
+    renderStudies('studies-list', subset);
   }
 
   function filterStudies(type, btn) {
