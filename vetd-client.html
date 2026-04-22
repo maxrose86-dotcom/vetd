@@ -1894,7 +1894,28 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   async function deleteDraftStudy(studyId) {
-    if (!window.confirm(t('cl_delete_draft_confirm'))) return;
+    const btn = document.querySelector(`[data-action="delete-draft"][data-study-id="${studyId}"]`);
+    if (btn && btn.dataset.confirming !== 'true') {
+      btn.dataset.confirming = 'true';
+      btn.textContent = t('cl_delete_draft_confirm_inline');
+      btn.style.color = 'var(--coral)';
+      btn.style.borderColor = 'var(--coral)';
+      const reset = () => {
+        if (btn.dataset.confirming !== 'true') return;
+        delete btn.dataset.confirming;
+        btn.textContent = t('cl_study_action_delete');
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      };
+      btn._confirmResetTimer = setTimeout(reset, 3000);
+      return;
+    }
+    if (btn) {
+      clearTimeout(btn._confirmResetTimer);
+      delete btn.dataset.confirming;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
     try {
       const { error } = await db.from('studies').update({ status: 'archived' }).eq('id', studyId);
       if (error) throw error;
@@ -2022,9 +2043,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : status === 'completed'
             ? 'badge-blue'
             : 'badge-gray';
-      const statusLabel = status === 'paused'
-        ? `${t('cl_study_status_paused')} · ${t('cl_study_status_paused_sub')}`
-        : (t('cl_study_status_' + status) || STATUS_LABEL[status] || status);
+      const statusLabel = t('cl_study_status_' + status) || STATUS_LABEL[status] || status;
       const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
       const formatLabel = DASH_FORMAT_LABEL[displayFormat] || displayFormat || '';
       const filled = appCountMap[s.id]?.active_count || 0;
@@ -2094,7 +2113,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             ${interestTags.length ? `<div class="study-row-interest-tags">${interestTags.map(tag => `<span class="study-row-interest-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
           </div>
           <div class="study-row-badges">
-            <span class="badge ${badgeCls}">${esc(statusLabel)}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0">
+              <span class="badge ${badgeCls}">${esc(statusLabel)}</span>
+              ${status === 'paused' ? `<span style="font-size:11px;color:var(--gray-400);margin-top:3px;white-space:nowrap">${esc(t('cl_study_status_paused_sub'))}</span>` : ''}
+            </div>
             <span class="badge badge-purple">${esc(audienceLabel)}</span>
             ${matchHint ? `<span class="badge ${matchHint.cls}">${esc(matchHint.label)}</span>` : ''}
           </div>
@@ -5466,9 +5488,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             : status === 'completed'
               ? 'badge-blue'
               : 'badge-gray';
-        badgeEl.textContent = status === 'paused'
-          ? `${t('cl_study_status_paused')} · ${t('cl_study_status_paused_sub')}`
-          : t(`cl_study_status_${status}`) || status;
+        badgeEl.textContent = t(`cl_study_status_${status}`) || status;
         badgeEl.className = `badge ${badgeCls}`;
       }
 
@@ -6381,6 +6401,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_duplicate_success: 'Draft duplicated',
       cl_duplicate_failed: 'Could not duplicate the study.',
       cl_delete_draft_confirm: 'Delete this draft from the Studies list?',
+      cl_delete_draft_confirm_inline: 'Confirm delete?',
       cl_delete_draft_success: 'Draft removed.',
       cl_delete_draft_failed: 'Could not remove the draft.',
       cl_untitled_study: 'Untitled study',
@@ -7014,6 +7035,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_duplicate_success: 'Utkast duplicerat',
       cl_duplicate_failed: 'Kunde inte duplicera studien.',
       cl_delete_draft_confirm: 'Ta bort det här utkastet från Studier?',
+      cl_delete_draft_confirm_inline: 'Bekräfta borttagning?',
       cl_delete_draft_success: 'Utkast borttaget.',
       cl_delete_draft_failed: 'Kunde inte ta bort utkastet.',
       cl_untitled_study: 'Namnlös studie',
