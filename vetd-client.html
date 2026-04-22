@@ -250,6 +250,7 @@ textarea{resize:vertical;min-height:90px}
 .review-inline-tags{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .review-tag{padding:4px 10px;border-radius:100px;background:rgba(255,255,255,0.08);font-size:11px;color:rgba(255,255,255,0.72)}
 .review-primary-btn{width:100%;justify-content:center}
+.review-secondary-btn{width:100%;justify-content:center;margin-top:8px}
 .review-warning{font-size:12px;line-height:1.5;color:#FDE68A}
 .builder-rail-placeholder{display:flex;flex-direction:column;gap:14px}
 .builder-rail-note{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.68)}
@@ -956,6 +957,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 <div class="review-summary" id="review-summary"></div>
                 <div class="review-warning" id="review-warning-copy" style="display:none"></div>
                 <button class="btn-primary btn-green review-primary-btn" id="publish-study-btn" onclick="handleBuilderPrimaryAction()" data-i18n="cl_publish_btn">Publish study →</button>
+                <button class="btn-outline review-secondary-btn" id="publish-secondary-btn" onclick="handleBuilderSecondaryAction()" style="display:none">Start another →</button>
               </div>
             </div>
           </div>
@@ -1993,26 +1995,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       }
     }
 
-    let bannerHtml = '';
-    if (_justPublished && activeStudies.length > 0) {
-      _justPublished = false;
-      const ps = (activeStudies.find(({ s }) => s.id === _justPublishedStudyId) || activeStudies[0]).s;
-      _justPublishedStudyId = null;
-      bannerHtml = `<div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
-          border:1px solid rgba(16,185,129,0.22);border-radius:10px;
-          padding:14px 16px;margin-bottom:16px;
-          display:flex;align-items:center;justify-content:space-between;gap:12px">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">${esc(t('cl_study_live_banner_title'))}</div>
-          <div style="font-size:12px;color:var(--gray-500);margin-top:3px">${esc(t('cl_study_live_banner_sub'))}</div>
-        </div>
-        <button class="btn-outline" style="white-space:nowrap;flex-shrink:0"
-          data-action="invite-study" data-study-id="${esc(ps.id)}" data-study-title="${escAttr(ps.title||'')}">
-          ${esc(t('cl_study_primary_invite'))}
-        </button>
-      </div>`;
-    }
-
     const STATUS_LABEL = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' };
     const renderGroup = (title, subtitle, items, emptyCopy, options = {}) => `
       <section class="study-group">
@@ -2126,7 +2108,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
 
     const completedCollapsed = completedStudies.length >= 3 && !_completedStudiesExpanded;
-    list.innerHTML = bannerHtml + `<div class="study-groups">
+    list.innerHTML = `<div class="study-groups">
       ${renderGroup(
         t('cl_studies_group_published'),
         t('cl_studies_group_published_sub'),
@@ -3931,10 +3913,17 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   function handleBuilderPrimaryAction() {
     if (_builderPublishState === 'published') {
-      startNewStudy();
+      const snapshot = _builderPublishedSnapshot || getBuilderPublishSnapshot(getBuilderTargetingState());
+      if (_justPublishedStudyId) openApplicants(_justPublishedStudyId, snapshot.title || t('cl_published_context_default'));
       return;
     }
     publishStudy();
+  }
+
+  function handleBuilderSecondaryAction() {
+    if (_builderPublishState === 'published') {
+      startNewStudy();
+    }
   }
 
   async function publishStudy() {
@@ -3992,10 +3981,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const isDraft = status === 'draft';
 
     if (!db) {
-      showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
-      setTimeout(() => {
-        showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
-      }, 1200);
+      if (isDraft) showToast(t('cl_study_saved_draft'));
       return true;
     }
 
@@ -4081,13 +4067,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (!isDraft) {
         _justPublished = true;
         _justPublishedStudyId = saveResult?.data?.id || effectiveDraftId || null;
-        resetBuilderForm(); // clear form immediately so the builder is blank regardless of how the user re-enters it
+        loadStudies().catch(err => {
+          console.error('Background loadStudies after publish failed:', err);
+          if (window.Sentry) Sentry.captureException(err);
+        });
       }
-      showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
-      setTimeout(async () => {
-        showTab('studies', document.querySelector('.nav-item[data-tab="studies"]'));
-        await loadStudies(); // runs after tab is visible so _justPublished banner renders in place
-      }, 1200);
+      if (isDraft) showToast(t('cl_study_saved_draft'));
       return true;
     } catch(err) {
       console.error(isDraft ? 'Save draft error:' : 'Publish error:', err);
@@ -5173,7 +5158,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const reviewSummaryEl = document.getElementById('review-summary');
     const reviewWarningEl = document.getElementById('review-warning-copy');
     const publishBtn = document.getElementById('publish-study-btn');
-    if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishBtn) return;
+    const publishSecondaryBtn = document.getElementById('publish-secondary-btn');
+    if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishBtn || !publishSecondaryBtn) return;
 
     const { poolCount, confidence, confidenceCopy, guidance, fillCopy, previewMatches } = _builderPoolPreviewState;
     const targeting = getBuilderTargetingState();
@@ -5213,13 +5199,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewGuidanceEl.textContent = t('cl_publish_state_publishing_sub');
       reviewSummaryEl.innerHTML = '';
       reviewWarningEl.style.display = 'none';
+      publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = t('cl_publishing');
       publishBtn.disabled = true;
       publishBtn.style.opacity = '0.7';
       publishBtn.style.cursor = 'wait';
     } else if (_builderPublishState === 'published') {
       const snapshot = _builderPublishedSnapshot || getBuilderPublishSnapshot(targeting);
-      reviewStateEl.textContent = t('cl_publish_state_published');
+      reviewStateEl.textContent = `${t('cl_publish_state_published')}.`;
       reviewGuidanceEl.textContent = t('cl_publish_state_published_sub');
       reviewSummaryEl.innerHTML = `
         <div class="review-row">
@@ -5232,12 +5219,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       publishBtn.disabled = false;
       publishBtn.style.opacity = '1';
       publishBtn.style.cursor = 'pointer';
+      publishSecondaryBtn.textContent = t('cl_published_secondary_action');
+      publishSecondaryBtn.style.display = 'inline-flex';
     } else {
       reviewStateEl.textContent = decision.label;
       reviewGuidanceEl.textContent = decision.guidance;
       reviewWarningEl.textContent = decision.warning;
       reviewWarningEl.style.display = decision.warning ? 'block' : 'none';
       reviewSummaryEl.innerHTML = '';
+      publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = decision.button;
       publishBtn.disabled = decision.state === 'not_ready';
       publishBtn.style.opacity = decision.state === 'not_ready' ? '0.55' : '1';
@@ -6148,8 +6138,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_group_drafts: 'Drafts',
       cl_studies_group_drafts_sub: 'Studies still being shaped before launch.',
       cl_studies_group_drafts_empty: 'No drafts right now.',
-      cl_study_live_banner_title: 'Your study is live.',
-      cl_study_live_banner_sub: 'Invite matched participants to fill it faster.',
       cl_study_status_active: 'Active',
       cl_study_status_paused: 'Paused',
       cl_study_status_paused_sub: 'Closed to applications',
@@ -6433,8 +6421,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_state_publishing: 'Publishing',
       cl_publish_state_publishing_sub: 'Making your study live now.',
       cl_publish_state_published: 'Study published',
-      cl_publish_state_published_sub: 'We\'re now matching and reviewing contributors based on your targeting.',
-      cl_published_primary_action: 'Create another study',
+      cl_publish_state_published_sub: 'Visible to contributors now. View the study to track responses.',
+      cl_published_primary_action: 'View study →',
+      cl_published_secondary_action: 'Start another →',
       cl_published_context_label: 'Live now',
       cl_published_context_default: 'Untitled study',
       cl_review_row_audience: 'Audience',
@@ -6762,8 +6751,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_group_drafts: 'Utkast',
       cl_studies_group_drafts_sub: 'Studier som fortfarande formas före lansering.',
       cl_studies_group_drafts_empty: 'Inga utkast just nu.',
-      cl_study_live_banner_title: 'Din studie är live.',
-      cl_study_live_banner_sub: 'Bjud in matchade deltagare för att fylla den snabbare.',
       cl_study_status_active: 'Aktiv',
       cl_study_status_paused: 'Pausad',
       cl_study_status_paused_sub: 'Stängd för ansökningar',
@@ -7030,8 +7017,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_state_publishing: 'Publicerar',
       cl_publish_state_publishing_sub: 'Gör studien live nu.',
       cl_publish_state_published: 'Studien är publicerad',
-      cl_publish_state_published_sub: 'Vi matchar och granskar nu deltagare utifrån din targeting.',
-      cl_published_primary_action: 'Skapa en ny studie',
+      cl_publish_state_published_sub: 'Synlig för deltagare nu. Visa studien för att följa svaren.',
+      cl_published_primary_action: 'Visa studie →',
+      cl_published_secondary_action: 'Starta en ny →',
       cl_published_context_label: 'Live nu',
       cl_published_context_default: 'Namnlös studie',
       cl_review_row_audience: 'Målgrupp',
