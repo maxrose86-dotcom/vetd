@@ -252,8 +252,32 @@ textarea{resize:vertical;min-height:90px}
 .study-title-group p{font-size:12px;color:var(--gray-400);font-weight:300}
 .study-meta{display:flex;gap:1.5rem;font-size:12px;color:var(--gray-400);flex-wrap:wrap}
 .study-meta-item strong{color:var(--gray-900);font-weight:600}
+.study-groups{display:flex;flex-direction:column;gap:20px}
+.study-group{display:flex;flex-direction:column;gap:10px}
+.study-group-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding:0 4px}
+.study-group-title{font-size:18px;font-weight:600;color:var(--gray-900)}
+.study-group-sub{font-size:12px;color:var(--gray-400);margin-top:2px}
+.study-group-count{font-size:12px;color:var(--gray-500);font-weight:500;white-space:nowrap}
+.study-row-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.study-row-summary{font-size:12px;line-height:1.5;color:var(--gray-500);margin-top:3px}
+.study-row-intent{font-size:12px;line-height:1.45;color:var(--gray-700);margin-top:8px}
+.study-row-interest-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.study-row-interest-tag{padding:4px 10px;border-radius:100px;background:var(--gray-50);border:1px solid var(--gray-100);font-size:11px;color:var(--gray-700)}
+.study-row-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100)}
+.study-row-secondary-actions{display:flex;gap:8px;flex-wrap:wrap}
+.study-row-secondary-actions .btn-outline,.study-row-primary-action{font-size:13px;padding:7px 14px}
+.study-row-empty{font-size:13px;color:var(--gray-400);padding:1.2rem 0.35rem}
+.study-row-compact{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .prog-bar{height:5px;background:var(--gray-100);border-radius:100px;overflow:hidden;margin-top:10px}
 .prog-fill{height:100%;border-radius:100px}
+
+@media (max-width: 720px){
+  .study-group-head{align-items:flex-start;flex-direction:column}
+  .study-row-badges{justify-content:flex-start}
+  .study-row-actions{align-items:stretch;flex-direction:column}
+  .study-row-primary-action{justify-content:center;width:100%}
+  .study-row-secondary-actions{width:100%}
+}
 
 /* FILTER */
 .filter-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
@@ -1477,6 +1501,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let _builderPublishTimer = null;
   let _currentBuilderStep = 1;
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
+  let _justPublishedStudyId = null;
   const BUILDER_INTEREST_OPTIONS = [
     {
       key: 'interests_lifestyle',
@@ -1724,6 +1749,133 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
+  function getStudyAudienceLabel(study) {
+    return study?.audience_type === 'professionals'
+      ? t('cl_audience_professionals')
+      : t('cl_audience_customers');
+  }
+
+  function getStudyIntentLabel(study) {
+    if (!study || study.audience_type === 'professionals') return '';
+    const intent = typeof study.target_audience_intent === 'string'
+      ? study.target_audience_intent.trim().toLowerCase()
+      : 'general';
+    if (!intent || intent === 'general') return '';
+    return t('cl_chip_intent_' + intent);
+  }
+
+  function getStudyInterestTags(study) {
+    const interests = Array.isArray(study?.target_interests) ? study.target_interests.filter(Boolean) : [];
+    const labels = interests.slice(0, 2).map(value => getInterestLabelByValue(value));
+    if (interests.length > 2) labels.push(t('cl_study_more_interests').replace('{count}', interests.length - 2));
+    return labels;
+  }
+
+  function getStudyListTargetingState(study) {
+    const ageBuckets = Array.isArray(study?.target_age_ranges)
+      ? AGE_BUCKETS.filter(bucket => study.target_age_ranges.includes(bucket.key))
+      : [];
+    const targetLocations = Array.isArray(study?.target_locations) ? study.target_locations : [];
+    const firstLocation = targetLocations[0] || 'remote';
+    return {
+      audienceType: study?.audience_type === 'professionals' ? 'professionals' : 'customers',
+      selectedInterests: Array.isArray(study?.target_interests) ? study.target_interests.filter(Boolean) : [],
+      industry: '',
+      experience: '',
+      locationMode: firstLocation === 'remote' ? 'remote' : 'city',
+      city: firstLocation !== 'remote' && firstLocation !== 'city' ? firstLocation : '',
+      minAge: ageBuckets.length ? Math.min(...ageBuckets.map(bucket => bucket.min)) : 18,
+      maxAge: ageBuckets.length ? Math.max(...ageBuckets.map(bucket => Math.min(bucket.max, 70))) : 70,
+      screeningCount: Array.isArray(study?.screening_questions) ? study.screening_questions.length : 0,
+      spots: Math.max(1, parseInt(study?.spots || '1', 10) || 1),
+      customerBehaviors: study?.audience_type === 'customers' && Array.isArray(study?.target_behaviors) ? study.target_behaviors.filter(Boolean) : [],
+      customerIntent: study?.audience_type === 'customers'
+        ? ((study?.target_audience_intent || 'general') + '').trim().toLowerCase()
+        : ''
+    };
+  }
+
+  function getStudyMatchHint(study) {
+    const targeting = getStudyListTargetingState(study);
+    if (!targeting.selectedInterests.length) return null;
+    const simulation = simulateBuilderMatchPool(targeting);
+    const confidence = getBuilderConfidenceCopy(simulation.confidence);
+    if (!confidence?.label) return null;
+    let cls = 'badge-gray';
+    if (simulation.confidence === 'strong') cls = 'badge-green';
+    else if (simulation.confidence === 'good') cls = 'badge-blue';
+    else if (simulation.confidence === 'limited') cls = 'badge-amber';
+    else if (simulation.confidence === 'too_narrow') cls = 'badge-coral';
+    return { label: confidence.label, cls };
+  }
+
+  async function duplicateStudy(studyId) {
+    try {
+      if (!db) throw new Error('Database unavailable');
+      const cached = _studiesCache?.studies?.find(study => study.id === studyId) || null;
+      let study = cached;
+      if (!study) {
+        const { data, error } = await db.from('studies').select('*').eq('id', studyId).single();
+        if (error) throw error;
+        study = data;
+      }
+      if (!study) throw new Error('Study not found');
+      const copyTitle = study.title ? `${study.title} (${t('cl_duplicate_suffix')})` : t('cl_duplicate_default_title');
+      const studyFields = {
+        created_by: study.created_by,
+        company_id: study.company_id,
+        title: copyTitle,
+        description: study.description,
+        format: study.format,
+        session_type: study.session_type,
+        audience_type: study.audience_type || 'customers',
+        duration_minutes: study.duration_minutes,
+        spots: study.spots,
+        pay_per_participant: study.pay_per_participant,
+        start_date: study.start_date,
+        close_date: study.close_date,
+        status: 'draft',
+        target_age_ranges: study.target_age_ranges,
+        target_genders: study.target_genders,
+        target_locations: study.target_locations,
+        target_interests: study.target_interests,
+        target_behaviors: study.target_behaviors,
+        target_audience_intent: study.target_audience_intent,
+        is_test: study.is_test,
+        min_rating: study.min_rating,
+        screening_questions: study.screening_questions,
+        additional_reqs: study.additional_reqs
+      };
+      let insertRes = await db.from('studies').insert(studyFields).select('id').single();
+      if (insertRes.error && /audience_type|target_behaviors|target_audience_intent/i.test(insertRes.error.message || '')) {
+        const { audience_type, target_behaviors, target_audience_intent, ...legacyStudyFields } = studyFields;
+        insertRes = await db.from('studies').insert(legacyStudyFields).select('id').single();
+      }
+      if (insertRes.error) throw insertRes.error;
+      await loadStudies();
+      showToast(t('cl_duplicate_success'));
+      await openDraftInBuilder(insertRes.data.id);
+    } catch (err) {
+      console.error('duplicateStudy error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(t('cl_duplicate_failed'), true);
+    }
+  }
+
+  async function deleteDraftStudy(studyId) {
+    if (!window.confirm(t('cl_delete_draft_confirm'))) return;
+    try {
+      const { error } = await db.from('studies').update({ status: 'archived' }).eq('id', studyId);
+      if (error) throw error;
+      showToast(t('cl_delete_draft_success'));
+      await loadStudies();
+    } catch (err) {
+      console.error('deleteDraftStudy error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(t('cl_delete_draft_failed'), true);
+    }
+  }
+
   function renderStudiesList() {
     const list = document.getElementById('studies-list');
     if (!list || !_studiesCache) return;
@@ -1732,19 +1884,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     // Update subtitle with live counts
     const subEl = document.getElementById('studies-subtitle');
     if (subEl) {
-      const activeCount    = studies.filter(s => s.status === 'active').length;
-      const pausedCount    = studies.filter(s => s.status === 'paused').length;
+      const activeCount    = studies.filter(s => s.status === 'active' || s.status === 'paused').length;
       const draftCount     = studies.filter(s => s.status === 'draft').length;
-      const completedCount = studies.filter(s => s.status === 'completed').length;
       const parts = [];
-      if (activeCount)    parts.push(`${activeCount} active`);
-      if (pausedCount)    parts.push(`${pausedCount} paused`);
-      if (draftCount)     parts.push(`${draftCount} draft`);
-      if (completedCount) parts.push(`${completedCount} completed`);
+      if (activeCount) parts.push(t('cl_studies_sub_active').replace('{count}', activeCount));
+      if (draftCount)  parts.push(t('cl_studies_sub_draft').replace('{count}', draftCount));
       subEl.textContent = parts.join(' · ') || '';
     }
 
-    // Show all non-archived studies, sorted by action urgency
     const visible = studies.filter(s => (s.status || 'draft') !== 'archived');
 
     if (!visible.length) {
@@ -1757,7 +1904,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       return;
     }
 
-    // Compute CTA info per study (determines sort order and button rendered)
     function getCtaInfo(s) {
       const status = s.status || 'draft';
       const isActive = status === 'active' || status === 'paused';
@@ -1767,31 +1913,31 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (isActive && counts.ready_to_complete > 0) {
         const n = counts.ready_to_complete;
         const label = counts.stale_sessions > 0
-          ? `Resolve ${n} session${n !== 1 ? 's' : ''} →`
-          : `Log ${n} outcome${n !== 1 ? 's' : ''} →`;
+          ? t('cl_study_primary_resolve_sessions').replace('{count}', n)
+          : t('cl_study_primary_log_outcomes').replace('{count}', n);
         return { priority: 1, label, action: 'sessions', style: 'coral' };
       }
       if (isActive && counts.today_count > 0) {
         const time = counts.first_today_at
-          ? new Date(counts.first_today_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          ? new Date(counts.first_today_at).toLocaleTimeString(document.documentElement.lang === 'sv' ? 'sv-SE' : 'en-GB', { hour: '2-digit', minute: '2-digit' })
           : '';
-        return { priority: 2, label: `Session today${time ? ' at ' + time : ''} →`, action: 'sessions', style: 'blue' };
+        return { priority: 2, label: t('cl_study_primary_session_today').replace('{time}', time ? ` ${t('cl_study_primary_at')} ${time}` : ''), action: 'sessions', style: 'blue' };
       }
       if (isActive && unscheduled > 0) {
-        return { priority: 3, label: `Schedule ${unscheduled} session${unscheduled !== 1 ? 's' : ''} →`, action: 'applicants', style: 'amber' };
+        return { priority: 3, label: t('cl_study_primary_schedule_sessions').replace('{count}', unscheduled), action: 'applicants', style: 'amber' };
       }
       if (isActive && counts.pending > 0) {
         const n = counts.pending;
-        return { priority: 4, label: `Review ${n} applicant${n !== 1 ? 's' : ''} →`, action: 'applicants', style: 'blue' };
+        return { priority: 4, label: t('cl_study_primary_review_applicants').replace('{count}', n), action: 'applicants', style: 'blue' };
       }
       if (isActive && counts.active_count < (s.spots || 1)) {
-        return { priority: 5, label: 'Invite participants →', action: 'invite', style: 'ghost' };
+        return { priority: 5, label: t('cl_study_primary_invite'), action: 'invite', style: 'ghost' };
       }
       if (isActive) {
-        return { priority: 6, label: 'View participants →', action: 'view', style: 'ghost' };
+        return { priority: 6, label: t('cl_study_primary_view_participants'), action: 'view', style: 'ghost' };
       }
       if (status === 'draft') {
-        return { priority: 7, label: null, action: 'draft', style: 'draft' };
+        return { priority: 7, label: t('cl_study_primary_edit_draft'), action: 'draft', style: 'ghost' };
       }
       if (status === 'completed') {
         return { priority: 8, label: null, action: null, style: 'muted' };
@@ -1799,115 +1945,167 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       return { priority: 9, label: null, action: null, style: 'muted' };
     }
 
-    // Sort by CTA priority (ascending), tie-break by oldest creation date first
     const sorted = visible
       .map(s => ({ s, cta: getCtaInfo(s) }))
       .sort((a, b) => a.cta.priority !== b.cta.priority
         ? a.cta.priority - b.cta.priority
-        : new Date(a.s.created_at) - new Date(b.s.created_at));
+        : new Date(b.s.created_at || 0) - new Date(a.s.created_at || 0));
 
-    // _justPublished banner — find first active study in sorted list
+    const published = sorted.filter(({ s }) => (s.status || 'draft') !== 'draft');
+    const drafts = sorted.filter(({ s }) => (s.status || 'draft') === 'draft');
+
+    if (_justPublishedStudyId) {
+      const publishedIndex = published.findIndex(({ s }) => s.id === _justPublishedStudyId);
+      if (publishedIndex > 0) {
+        const [justPublishedStudy] = published.splice(publishedIndex, 1);
+        published.unshift(justPublishedStudy);
+      }
+    }
+
     let bannerHtml = '';
-    if (_justPublished && sorted.length > 0) {
+    if (_justPublished && published.length > 0) {
       _justPublished = false;
-      const ps = (sorted.find(({ s }) => s.status === 'active') || sorted[0]).s;
+      const ps = (published.find(({ s }) => s.id === _justPublishedStudyId) || published[0]).s;
+      _justPublishedStudyId = null;
       bannerHtml = `<div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
           border:1px solid rgba(16,185,129,0.22);border-radius:10px;
           padding:14px 16px;margin-bottom:16px;
           display:flex;align-items:center;justify-content:space-between;gap:12px">
         <div>
-          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">Your study is live.</div>
-          <div style="font-size:12px;color:var(--gray-500);margin-top:3px">Invite matched participants to fill it faster.</div>
+          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">${esc(t('cl_study_live_banner_title'))}</div>
+          <div style="font-size:12px;color:var(--gray-500);margin-top:3px">${esc(t('cl_study_live_banner_sub'))}</div>
         </div>
         <button class="btn-outline" style="white-space:nowrap;flex-shrink:0"
           data-action="invite-study" data-study-id="${esc(ps.id)}" data-study-title="${escAttr(ps.title||'')}">
-          Invite participants →
+          ${esc(t('cl_study_primary_invite'))}
         </button>
       </div>`;
     }
 
     const STATUS_LABEL = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' };
+    const renderGroup = (title, subtitle, items, emptyCopy) => `
+      <section class="study-group">
+        <div class="study-group-head">
+          <div>
+            <div class="study-group-title">${esc(title)}</div>
+            <div class="study-group-sub">${esc(subtitle)}</div>
+          </div>
+          <div class="study-group-count">${esc(t('cl_studies_group_count').replace('{count}', items.length))}</div>
+        </div>
+        ${items.length
+          ? items.map(renderStudyRow).join('')
+          : `<div class="study-row-empty">${esc(emptyCopy)}</div>`}
+      </section>`;
 
-    list.innerHTML = bannerHtml + sorted.map(({ s, cta }) => {
+    function renderStudyRow({ s, cta }) {
       const status = s.status || 'draft';
-      const badgeCls = status === 'active' ? 'badge-green' : status === 'paused' ? 'badge-amber' : 'badge-gray';
-      const statusLabel = STATUS_LABEL[status] || status;
+      const badgeCls = status === 'active'
+        ? 'badge-green'
+        : status === 'paused'
+          ? 'badge-amber'
+          : status === 'completed'
+            ? 'badge-blue'
+            : 'badge-gray';
+      const statusLabel = t('cl_study_status_' + status) || STATUS_LABEL[status] || status;
       const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
       const formatLabel = DASH_FORMAT_LABEL[displayFormat] || displayFormat || '';
       const filled = appCountMap[s.id]?.active_count || 0;
       const spots  = s.spots || 0;
+      const audienceLabel = getStudyAudienceLabel(s);
+      const intentLabel = getStudyIntentLabel(s);
+      const interestTags = getStudyInterestTags(s);
+      const matchHint = getStudyMatchHint(s);
 
-      // Secondary metadata line: "{format} · {participant count}" — state-aware
       let participantLabel = null;
       if (spots > 0) {
-        if (status === 'draft') {
-          // Not published yet — a filled/total count is misleading
-          participantLabel = null;
-        } else if (status === 'completed' || status === 'archived') {
-          participantLabel = filled > 0 ? `${filled} recruited` : null;
+        if (status === 'completed' || status === 'archived') {
+          participantLabel = filled > 0 ? t('cl_study_meta_recruited').replace('{count}', filled) : null;
+        } else if (status === 'draft') {
+          participantLabel = `${spots} ${t('cl_study_meta_spots')}`;
         } else {
-          // active or paused
-          participantLabel = `${filled} of ${spots} recruited`;
+          participantLabel = t('cl_study_meta_recruited_of').replace('{filled}', filled).replace('{spots}', spots);
         }
       }
       const secondaryParts = [formatLabel, participantLabel].filter(Boolean);
       if (s.close_date) {
         const closeDate = new Date(s.close_date);
-        const closeFmt  = closeDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const closeFmt  = closeDate.toLocaleDateString(document.documentElement.lang === 'sv' ? 'sv-SE' : 'en-GB', { day: 'numeric', month: 'short' });
         const isPast    = closeDate < new Date() && status === 'active';
-        secondaryParts.push(isPast ? `⚠ Closed ${closeFmt}` : `Closes ${closeFmt}`);
+        secondaryParts.push(isPast ? t('cl_study_meta_closed').replace('{date}', closeFmt) : t('cl_study_meta_closes').replace('{date}', closeFmt));
       }
 
-      // Row onclick — whole row navigates to the logical destination
       const rowClick = status === 'draft'
         ? `openDraftInBuilder('${esc(s.id)}')`
         : `openApplicants('${esc(s.id)}','${escJS(s.title || 'Untitled study')}')`;
+      const primaryActionHtml = cta.label
+        ? (cta.action === 'invite'
+          ? `<button class="btn-primary study-row-primary-action" data-action="invite-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}">${esc(cta.label)}</button>`
+          : cta.action === 'draft'
+            ? `<button class="btn-primary study-row-primary-action" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(cta.label)}</button>`
+            : `<button class="btn-primary study-row-primary-action" data-action="cta-open" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-section="${cta.action === 'sessions' ? 'sessions' : 'applicants'}">${esc(cta.label)}</button>`)
+        : '';
 
-      // CTA button(s) — use data-action for stopPropagation via wireActions
-      let ctaHtml = '';
-      if (cta.style === 'draft') {
-        ctaHtml = `
-          <button class="btn-outline" style="font-size:13px;padding:7px 14px"
-            data-action="cta-draft" data-study-id="${esc(s.id)}">Edit draft</button>
-          <button class="btn-primary btn-green" style="font-size:13px;padding:7px 14px"
-            data-action="cta-draft" data-study-id="${esc(s.id)}">Publish →</button>`;
-      } else if (cta.label && cta.action === 'invite') {
-        ctaHtml = `<button class="btn-outline" style="font-size:13px;padding:7px 14px"
-          data-action="invite-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}">${esc(cta.label)}</button>`;
-      } else if (cta.label && (cta.action === 'sessions' || cta.action === 'applicants' || cta.action === 'view')) {
-        const section = cta.action === 'sessions' ? 'sessions' : 'applicants';
-        let btnStyle;
-        if (cta.style === 'coral') {
-          btnStyle = 'background:var(--coral);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;box-shadow:0 2px 8px rgba(220,38,38,0.2)';
-        } else if (cta.style === 'amber') {
-          btnStyle = 'background:var(--amber-light);color:var(--amber);border:1.5px solid rgba(180,83,9,0.2);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer';
-        } else if (cta.style === 'ghost') {
-          btnStyle = 'background:transparent;border:1.5px solid var(--gray-200);border-radius:10px;padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;color:var(--gray-700)';
-        } else {
-          btnStyle = 'background:linear-gradient(135deg,var(--blue) 0%,var(--blue-dark) 100%);color:#fff;border:none;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;box-shadow:0 2px 8px rgba(37,99,235,0.2)';
-        }
-        ctaHtml = `<button style="${btnStyle}"
-          data-action="cta-open" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title||'')}" data-section="${section}">${esc(cta.label)}</button>`;
-      } else if (cta.label && cta.style === 'muted') {
-        ctaHtml = `<span style="font-size:12px;color:var(--gray-400)">${esc(cta.label)}</span>`;
-      }
+      const secondaryActions = [
+        `<button class="btn-outline" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(t('cl_study_action_edit'))}</button>`,
+        `<button class="btn-outline" data-action="duplicate-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_duplicate'))}</button>`,
+        status === 'active'
+          ? `<button class="btn-outline" data-action="pause-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_pause'))}</button>`
+          : '',
+        status === 'paused'
+          ? `<button class="btn-outline" data-action="resume-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_resume'))}</button>`
+          : '',
+        status === 'draft'
+          ? `<button class="btn-outline" style="color:var(--gray-500)" data-action="delete-draft" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_delete'))}</button>`
+          : ''
+      ].filter(Boolean).join('');
 
       return `<div class="study-row" onclick="${rowClick}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-          <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:600;color:var(--gray-900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Untitled study')}</div>
-            <div style="font-size:12px;color:var(--gray-400);margin-top:3px">${esc(secondaryParts.join(' · '))}</div>
+        <div class="study-row-header" style="gap:12px">
+          <div class="study-title-group" style="flex:1;min-width:0">
+            <h3 class="study-row-compact">${esc(s.title || t('cl_untitled_study'))}</h3>
+            <p class="study-row-summary">${esc(secondaryParts.join(' · '))}</p>
+            ${intentLabel ? `<div class="study-row-intent">${esc(intentLabel)}</div>` : ''}
+            ${interestTags.length ? `<div class="study-row-interest-tags">${interestTags.map(tag => `<span class="study-row-interest-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
           </div>
-          <span class="badge ${badgeCls}" style="flex-shrink:0;margin-top:2px">${statusLabel}</span>
+          <div class="study-row-badges">
+            <span class="badge ${badgeCls}">${esc(statusLabel)}</span>
+            <span class="badge badge-purple">${esc(audienceLabel)}</span>
+            ${matchHint ? `<span class="badge ${matchHint.cls}">${esc(matchHint.label)}</span>` : ''}
+          </div>
         </div>
-        ${ctaHtml ? `<div style="display:flex;gap:8px;margin-top:12px">${ctaHtml}</div>` : ''}
+        <div class="study-row-actions">
+          <div>${primaryActionHtml}</div>
+          <div class="study-row-secondary-actions">${secondaryActions}</div>
+        </div>
       </div>`;
-    }).join('');
+    }
+
+    list.innerHTML = bannerHtml + `<div class="study-groups">
+      ${renderGroup(
+        t('cl_studies_group_published'),
+        t('cl_studies_group_published_sub'),
+        published,
+        t('cl_studies_group_published_empty')
+      )}
+      ${renderGroup(
+        t('cl_studies_group_drafts'),
+        t('cl_studies_group_drafts_sub'),
+        drafts,
+        t('cl_studies_group_drafts_empty')
+      )}
+    </div>`;
 
     wireActions(list, {
       'cta-open':    d => openApplicants(d.studyId, d.studyTitle || 'Study', d.section || 'applicants'),
-      'cta-draft':   d => openDraftInBuilder(d.studyId),
       'invite-study': d => openContributorBrowser(d.studyId, d.studyTitle),
+      'edit-study': d => {
+        if ((d.status || 'draft') === 'draft') openDraftInBuilder(d.studyId);
+        else openApplicants(d.studyId, d.studyTitle || 'Study', 'settings', 'studies');
+      },
+      'duplicate-study': d => duplicateStudy(d.studyId),
+      'pause-study': d => setStudyStatus(d.studyId, 'paused'),
+      'resume-study': d => setStudyStatus(d.studyId, 'active'),
+      'delete-draft': d => deleteDraftStudy(d.studyId),
     });
   }
 
@@ -3593,14 +3791,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      null
       };
-      let { error } = effectiveDraftId
-        ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId)
-        : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields });
+      let saveResult = effectiveDraftId
+        ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId).select('id').single()
+        : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields }).select('id').single();
+      let { error } = saveResult;
       if (error && /audience_type|target_behaviors|target_audience_intent/i.test(error.message || '')) {
         const { audience_type, target_behaviors, target_audience_intent, ...legacyStudyFields } = studyFields;
-        ({ error } = effectiveDraftId
-          ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId)
-          : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }));
+        saveResult = effectiveDraftId
+          ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId).select('id').single()
+          : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }).select('id').single();
+        ({ error } = saveResult);
       }
       if (error) throw error;
 
@@ -3608,6 +3808,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       setDraftUrl(null);
       if (!isDraft) {
         _justPublished = true;
+        _justPublishedStudyId = saveResult?.data?.id || effectiveDraftId || null;
         resetBuilderForm(); // clear form immediately so the builder is blank regardless of how the user re-enters it
       }
       showToast(t(isDraft ? 'cl_study_saved_draft' : 'cl_study_published'));
@@ -5632,6 +5833,51 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_invite: 'Invite',
       // Studies tab
       cl_my_studies: 'Your studies',
+      cl_studies_sub_active: '{count} active',
+      cl_studies_sub_draft: '{count} draft',
+      cl_studies_group_count: '{count} studies',
+      cl_studies_group_published: 'Published studies',
+      cl_studies_group_published_sub: 'Live and managed studies you can act on now.',
+      cl_studies_group_published_empty: 'Published studies will appear here once you launch them.',
+      cl_studies_group_drafts: 'Drafts',
+      cl_studies_group_drafts_sub: 'Studies still being shaped before launch.',
+      cl_studies_group_drafts_empty: 'No drafts right now.',
+      cl_study_live_banner_title: 'Your study is live.',
+      cl_study_live_banner_sub: 'Invite matched participants to fill it faster.',
+      cl_study_status_active: 'Active',
+      cl_study_status_paused: 'Paused',
+      cl_study_status_completed: 'Completed',
+      cl_study_status_archived: 'Archived',
+      cl_study_status_draft: 'Draft',
+      cl_study_status_cancelled: 'Cancelled',
+      cl_study_primary_resolve_sessions: 'Resolve {count} sessions →',
+      cl_study_primary_log_outcomes: 'Log {count} outcomes →',
+      cl_study_primary_session_today: 'Session today{time} →',
+      cl_study_primary_at: 'at',
+      cl_study_primary_schedule_sessions: 'Schedule {count} sessions →',
+      cl_study_primary_review_applicants: 'Review {count} applicants →',
+      cl_study_primary_invite: 'Invite participants →',
+      cl_study_primary_view_participants: 'View participants →',
+      cl_study_primary_edit_draft: 'Continue draft →',
+      cl_study_action_edit: 'Edit',
+      cl_study_action_duplicate: 'Duplicate',
+      cl_study_action_pause: 'Pause',
+      cl_study_action_resume: 'Resume',
+      cl_study_action_delete: 'Delete',
+      cl_study_meta_spots: 'spots',
+      cl_study_meta_recruited: '{count} recruited',
+      cl_study_meta_recruited_of: '{filled} of {spots} recruited',
+      cl_study_meta_closes: 'Closes {date}',
+      cl_study_meta_closed: 'Closed {date}',
+      cl_study_more_interests: '+{count} more',
+      cl_duplicate_suffix: 'copy',
+      cl_duplicate_default_title: 'Study copy',
+      cl_duplicate_success: 'Draft duplicated.',
+      cl_duplicate_failed: 'Could not duplicate the study.',
+      cl_delete_draft_confirm: 'Delete this draft from the Studies list?',
+      cl_delete_draft_success: 'Draft removed.',
+      cl_delete_draft_failed: 'Could not remove the draft.',
+      cl_untitled_study: 'Untitled study',
       cl_filter_all: 'All',
       cl_filter_active: 'Active',
       cl_filter_completed: 'Completed',
@@ -6149,6 +6395,51 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_invite: 'Bjud in',
       // Studies tab
       cl_my_studies: 'Dina studier',
+      cl_studies_sub_active: '{count} aktiva',
+      cl_studies_sub_draft: '{count} utkast',
+      cl_studies_group_count: '{count} studier',
+      cl_studies_group_published: 'Publicerade studier',
+      cl_studies_group_published_sub: 'Live och hanterbara studier som du kan agera på nu.',
+      cl_studies_group_published_empty: 'Publicerade studier visas här när de är lanserade.',
+      cl_studies_group_drafts: 'Utkast',
+      cl_studies_group_drafts_sub: 'Studier som fortfarande formas före lansering.',
+      cl_studies_group_drafts_empty: 'Inga utkast just nu.',
+      cl_study_live_banner_title: 'Din studie är live.',
+      cl_study_live_banner_sub: 'Bjud in matchade deltagare för att fylla den snabbare.',
+      cl_study_status_active: 'Aktiv',
+      cl_study_status_paused: 'Pausad',
+      cl_study_status_completed: 'Slutförd',
+      cl_study_status_archived: 'Arkiverad',
+      cl_study_status_draft: 'Utkast',
+      cl_study_status_cancelled: 'Inställd',
+      cl_study_primary_resolve_sessions: 'Hantera {count} sessioner →',
+      cl_study_primary_log_outcomes: 'Logga {count} utfall →',
+      cl_study_primary_session_today: 'Session idag{time} →',
+      cl_study_primary_at: 'kl.',
+      cl_study_primary_schedule_sessions: 'Schemalägg {count} sessioner →',
+      cl_study_primary_review_applicants: 'Granska {count} sökande →',
+      cl_study_primary_invite: 'Bjud in deltagare →',
+      cl_study_primary_view_participants: 'Visa deltagare →',
+      cl_study_primary_edit_draft: 'Fortsätt med utkast →',
+      cl_study_action_edit: 'Redigera',
+      cl_study_action_duplicate: 'Duplicera',
+      cl_study_action_pause: 'Pausa',
+      cl_study_action_resume: 'Återuppta',
+      cl_study_action_delete: 'Ta bort',
+      cl_study_meta_spots: 'platser',
+      cl_study_meta_recruited: '{count} rekryterade',
+      cl_study_meta_recruited_of: '{filled} av {spots} rekryterade',
+      cl_study_meta_closes: 'Stänger {date}',
+      cl_study_meta_closed: 'Stängde {date}',
+      cl_study_more_interests: '+{count} till',
+      cl_duplicate_suffix: 'kopia',
+      cl_duplicate_default_title: 'Studiekopia',
+      cl_duplicate_success: 'Utkast duplicerat.',
+      cl_duplicate_failed: 'Kunde inte duplicera studien.',
+      cl_delete_draft_confirm: 'Ta bort det här utkastet från Studier?',
+      cl_delete_draft_success: 'Utkast borttaget.',
+      cl_delete_draft_failed: 'Kunde inte ta bort utkastet.',
+      cl_untitled_study: 'Namnlös studie',
       cl_filter_all: 'Alla',
       cl_filter_active: 'Aktiva',
       cl_filter_completed: 'Slutförda',
