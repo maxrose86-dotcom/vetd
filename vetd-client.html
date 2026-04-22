@@ -6045,8 +6045,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   async function markSessionDidNotHappen(appId, studyId) {
+    const row = document.getElementById('approw-' + appId);
+    const btn = row?.querySelector('[data-action="did-not-happen"]');
+    const actionsEl = row?.querySelector('.applicant-actions');
+
+    if (btn?.disabled) return;
+
+    if (btn) btn.disabled = true;
+    if (row) row.style.pointerEvents = 'none';
+    if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
+
     try {
-      const { error } = await db.from('applications')
+      const { data: updatedRows, error } = await db.from('applications')
         .update({
           status: 'no_show',
           scheduled_at: null,
@@ -6059,16 +6069,39 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           updated_at: new Date().toISOString()
         })
         .eq('id', appId)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .select('id');
       if (error) throw error;
+      if (!updatedRows?.length) throw new Error('stale_session_state');
 
       showToast(t('cl_session_reset'));
-      await loadApplicants(studyId);
-      await loadStudies();
-      await loadUnscheduledApplications();
-      await loadReadyToCompleteSessions();
-      loadUpcomingSessions();
+      loadApplicants(studyId).catch(err => {
+        console.error('Background loadApplicants after markSessionDidNotHappen failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadStudies().catch(err => {
+        console.error('Background loadStudies after markSessionDidNotHappen failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadUnscheduledApplications().catch(err => {
+        console.error('Background loadUnscheduledApplications after markSessionDidNotHappen failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadReadyToCompleteSessions().catch(err => {
+        console.error('Background loadReadyToCompleteSessions after markSessionDidNotHappen failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+      loadUpcomingSessions().catch(err => {
+        console.error('Background loadUpcomingSessions after markSessionDidNotHappen failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
     } catch (err) {
+      if (btn) btn.disabled = false;
+      if (row) row.style.pointerEvents = '';
+      loadApplicants(studyId).catch(reloadErr => {
+        console.error('Rollback loadApplicants after markSessionDidNotHappen failed:', reloadErr);
+        if (window.Sentry) Sentry.captureException(reloadErr);
+      });
       console.error('markSessionDidNotHappen error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast(t('cl_update_session_failed'), true);
