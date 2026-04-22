@@ -176,6 +176,10 @@ input[type=text],input[type=number],input[type=date],select,textarea{width:100%;
 input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.12)}
 textarea{resize:vertical;min-height:90px}
 .field{margin-bottom:1.1rem}
+.field.focus-target-active,.section-group.focus-target-active{border-radius:14px;background:rgba(42,110,245,0.04);box-shadow:inset 0 0 0 1px rgba(42,110,245,0.18)}
+.field.focus-target-active{padding:12px}
+.section-group.focus-target-active{padding:16px}
+.focus-target-active label,.focus-target-active h3{color:var(--blue)}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .chip-group{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
 .chip{padding:6px 15px;border-radius:100px;border:1px solid var(--gray-200);font-size:12px;cursor:pointer;transition:all 0.15s;background:#fff;color:var(--gray-700);user-select:none;font-family:var(--sans)}
@@ -185,7 +189,7 @@ textarea{resize:vertical;min-height:90px}
 .audience-type-note{font-size:12px;line-height:1.55;color:var(--gray-500);margin-top:8px}
 .field-inline-note{font-size:12px;color:var(--gray-400);margin:-1px 0 10px;font-weight:300;line-height:1.5}
 .interest-domain{padding:12px 14px;border:1px solid var(--gray-100);border-radius:var(--r-md);background:var(--gray-50)}
-.interest-domain-title{font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--gray-400);margin-bottom:10px}
+.interest-domain-title{font-size:12px;font-weight:600;letter-spacing:0.01em;color:var(--gray-500);margin-bottom:10px}
 .targeting-note{font-size:12px;line-height:1.5;color:var(--gray-500);margin-top:8px}
 .targeting-note.warn{color:#92400E}
 .industry-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
@@ -217,6 +221,15 @@ textarea{resize:vertical;min-height:90px}
 .match-panel-state{font-family:var(--serif);font-size:24px;line-height:1.1;color:var(--green-mid)}
 .match-panel-copy{font-size:12px;line-height:1.55;color:rgba(255,255,255,0.68);margin-top:7px}
 .match-panel-guidance{font-size:12px;line-height:1.55;color:#fff;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px 12px}
+.match-guidance-priority{font-size:10px;line-height:1.2;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:6px;font-weight:700}
+.match-guidance-priority.high{color:#fff}
+.match-guidance-priority.low{color:rgba(255,255,255,0.42)}
+.match-guidance-readiness{font-size:12px;line-height:1.45;color:#fff;margin-bottom:6px;font-weight:600}
+.match-guidance-readiness.can_continue{color:rgba(255,255,255,0.82)}
+.match-guidance-readiness.ready{color:rgba(255,255,255,0.9)}
+.match-guidance-body{color:#fff}
+.match-guidance-action{margin-top:6px;color:rgba(255,255,255,0.72);font-weight:600}
+.match-guidance-tradeoff{margin-top:8px;color:rgba(255,255,255,0.5)}
 .match-panel-fill{font-size:14px;line-height:1.5;color:#fff}
 .match-panel-divider{height:1px;background:rgba(255,255,255,0.08);margin:18px 0}
 .match-preview-list{display:flex;flex-direction:column;gap:10px}
@@ -247,6 +260,12 @@ textarea{resize:vertical;min-height:90px}
 /* STUDY LIST */
 .study-row{background:#fff;border:1px solid var(--gray-100);border-radius:var(--r-lg);padding:1.25rem 1.5rem;margin-bottom:12px;cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s,transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.04)}
 .study-row:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(37,99,235,0.08),0 1px 4px rgba(0,0,0,0.06);transform:translateY(-1px)}
+.study-row-attention-high{border-left:3px solid rgba(180,83,9,0.95);padding-left:calc(1.5rem - 2px)}
+.study-row-attention-medium{border-left:3px solid rgba(217,119,6,0.45);padding-left:calc(1.5rem - 2px)}
+.study-row-completed{cursor:default;border-color:var(--gray-100);box-shadow:0 1px 2px rgba(0,0,0,0.03)}
+.study-row-completed:hover{border-color:var(--gray-100);box-shadow:0 1px 2px rgba(0,0,0,0.03);transform:none}
+.study-row-completed .study-title-group h3{color:var(--gray-700)}
+.study-row-completed .study-row-summary,.study-row-completed .study-row-intent,.study-row-completed .study-row-interest-tag{color:var(--gray-400)}
 .study-row-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 .study-title-group h3{font-size:15px;font-weight:600;margin-bottom:3px}
 .study-title-group p{font-size:12px;color:var(--gray-400);font-weight:300}
@@ -268,6 +287,7 @@ textarea{resize:vertical;min-height:90px}
 .study-row-secondary-actions .btn-outline,.study-row-primary-action{font-size:13px;padding:7px 14px}
 .study-row-empty{font-size:13px;color:var(--gray-400);padding:1.2rem 0.35rem}
 .study-row-compact{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.study-group-toggle{font-size:12px;padding:6px 12px;white-space:nowrap}
 .prog-bar{height:5px;background:var(--gray-100);border-radius:100px;overflow:hidden;margin-top:10px}
 .prog-fill{height:100%;border-radius:100px}
 
@@ -798,7 +818,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               </div>
               <div class="section-group">
                 <h3 id="builder-targeting-section-title" data-i18n="cl_section_targeting">Who are you looking for?</h3>
-                <div class="field">
+                <div class="field" id="builder-interest-field" data-focus-target="interest">
                   <label data-i18n="cl_label_primary_interest">Primary interest</label>
                   <div class="field-inline-note" id="primary-interest-hint">Pick one or two interests to anchor matching.</div>
                   <div id="builder-interest-groups" class="targeting-stack"></div>
@@ -817,7 +837,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                     <div class="chip" data-value="senior" onclick="toggleExperienceChip(this)" data-i18n="cl_chip_senior">Senior</div>
                   </div>
                 </div>
-                <div class="field">
+                <div class="field" id="builder-location-field" data-focus-target="location">
                   <label data-i18n="cl_label_location_pref">Location</label>
                   <div class="chip-group" data-field="match_location_mode" data-single="true">
                     <div class="chip on" data-value="remote" onclick="tc(this)" data-i18n="cl_chip_remote_default">Remote</div>
@@ -826,7 +846,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                   <div class="field-inline-note" data-i18n="cl_location_hint">Add a city only if this study needs people in one place.</div>
                   <input type="text" id="b-city" placeholder="e.g. Stockholm" data-i18n-ph="cl_ph_city" oninput="updatePreview()" style="margin-top:10px" disabled>
                 </div>
-                <div class="field">
+                <div class="field" id="builder-age-field" data-focus-target="age">
                   <div class="range-stack">
                     <div class="range-header">
                       <label style="margin:0" data-i18n="cl_label_age_range">Age range</label>
@@ -845,19 +865,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                   </div>
                 </div>
               </div>
-              <div class="section-group" id="customer-behaviors-block" style="display:none">
+              <div class="section-group" id="customer-behaviors-block" data-focus-target="behavior" style="display:none">
                 <h3 data-i18n="cl_section_behaviors">Behaviors</h3>
                 <div class="field-inline-note" data-i18n="cl_behaviors_hint">Select behaviors that describe your ideal participant.</div>
                 <div class="chip-group" data-field="customer_behaviors" style="margin-top:10px;flex-wrap:wrap">
-                  <div class="chip" data-value="shops_online"        onclick="tc(this)" data-i18n="cl_chip_behavior_shops_online">Shops online regularly</div>
                   <div class="chip" data-value="recent_buyer"        onclick="tc(this)" data-i18n="cl_chip_behavior_recent_buyer">Bought in this category recently</div>
-                  <div class="chip" data-value="compares_brands"     onclick="tc(this)" data-i18n="cl_chip_behavior_compares_brands">Compares brands before buying</div>
-                  <div class="chip" data-value="visits_brand_sites"  onclick="tc(this)" data-i18n="cl_chip_behavior_visits_brand_sites">Visits brand websites before purchase</div>
+                  <div class="chip" data-value="researches_before_buying" onclick="tc(this)" data-i18n="cl_chip_behavior_researches_before_buying">Researches before buying</div>
+                  <div class="chip" data-value="brand_loyal"         onclick="tc(this)" data-i18n="cl_chip_behavior_brand_loyal">Sticks with familiar brands</div>
+                  <div class="chip" data-value="influenced_social"   onclick="tc(this)" data-i18n="cl_chip_behavior_influenced_social">Influenced by social content</div>
                   <div class="chip" data-value="buys_premium"        onclick="tc(this)" data-i18n="cl_chip_behavior_buys_premium">Buys premium products</div>
                   <div class="chip" data-value="seeks_deals"         onclick="tc(this)" data-i18n="cl_chip_behavior_seeks_deals">Looks for deals or discounts</div>
                 </div>
               </div>
-              <div class="section-group">
+              <div class="section-group" id="builder-screening-block" data-focus-target="screening">
                 <div class="screening-head">
                   <h3 style="margin:0;border:none;padding:0" data-i18n="cl_section_screening">Screening questions</h3>
                   <div class="screening-count" id="screening-count"></div>
@@ -1493,7 +1513,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     confidence: 'too_broad',
     confidenceCopy: 'No useful audience estimate yet.',
     fillCopy: 'Choose a primary interest to estimate fill time',
-    guidanceCopy: 'Choose a primary interest so Vetd can estimate a useful audience.',
+    guidance: {
+      explanation: 'Choose a primary interest so Vetd can estimate a useful audience.',
+      action: 'Add one primary interest.',
+      priority: 'high',
+      tradeoff: 'Without it, the pool stays too vague to judge.',
+      readiness: 'fix_first',
+      focusTarget: 'interest'
+    },
     previewMatches: []
   };
   let _builderPublishState = 'idle';
@@ -1502,31 +1529,35 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let _currentBuilderStep = 1;
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
   let _justPublishedStudyId = null;
+  let _completedStudiesExpanded = false;
   const BUILDER_INTEREST_OPTIONS = [
     {
-      key: 'interests_lifestyle',
-      titleKey: 'cl_interest_group_lifestyle',
+      key: 'interests_everyday_consumer',
+      titleKey: 'cl_interest_group_everyday_consumer',
       options: [
-        { value: 'fashion', labelKey: 'cl_chip_fashion' },
-        { value: 'beauty', labelKey: 'cl_chip_beauty' },
-        { value: 'home', labelKey: 'cl_chip_home' },
-        { value: 'food', labelKey: 'cl_chip_food' },
-        { value: 'fitness', labelKey: 'cl_chip_fitness' },
-        { value: 'sustainability', labelKey: 'cl_chip_sustainability' },
-        { value: 'pets', labelKey: 'cl_chip_pets' },
+        { value: 'food_dining', labelKey: 'cl_chip_food_dining' },
+        { value: 'fashion_beauty', labelKey: 'cl_chip_fashion_beauty' },
+        { value: 'home_living', labelKey: 'cl_chip_home_living' },
         { value: 'travel', labelKey: 'cl_chip_travel' },
-        { value: 'gardening', labelKey: 'cl_chip_gardening' }
+        { value: 'pets', labelKey: 'cl_chip_pets' }
       ]
     },
     {
-      key: 'interests_tech',
-      titleKey: 'cl_interest_group_tech',
+      key: 'interests_health_fitness',
+      titleKey: 'cl_interest_group_health_fitness',
       options: [
-        { value: 'smartphones', labelKey: 'cl_chip_smartphones' },
+        { value: 'fitness_sports', labelKey: 'cl_chip_fitness_sports' },
+        { value: 'health_wellness', labelKey: 'cl_chip_health_wellness' }
+      ]
+    },
+    {
+      key: 'interests_technology',
+      titleKey: 'cl_interest_group_technology',
+      options: [
+        { value: 'devices_wearables', labelKey: 'cl_chip_devices_wearables' },
+        { value: 'apps_software', labelKey: 'cl_chip_apps_software' },
+        { value: 'streaming_media', labelKey: 'cl_chip_streaming_media' },
         { value: 'gaming', labelKey: 'cl_chip_gaming' },
-        { value: 'streaming', labelKey: 'cl_chip_streaming' },
-        { value: 'social_media', labelKey: 'cl_chip_social_media' },
-        { value: 'podcasts', labelKey: 'cl_chip_podcasts' },
         { value: 'smart_home', labelKey: 'cl_chip_smart_home' }
       ]
     },
@@ -1534,10 +1565,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       key: 'interests_finance',
       titleKey: 'cl_interest_group_finance',
       options: [
-        { value: 'online_banking', labelKey: 'cl_chip_online_banking' },
+        { value: 'banking_payments', labelKey: 'cl_chip_banking_payments' },
         { value: 'investing', labelKey: 'cl_chip_investing' },
-        { value: 'crypto', labelKey: 'cl_chip_crypto' },
-        { value: 'mortgages', labelKey: 'cl_chip_mortgages' },
         { value: 'insurance', labelKey: 'cl_chip_insurance' },
         { value: 'budgeting', labelKey: 'cl_chip_budgeting' }
       ]
@@ -1562,7 +1591,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Stockholm',
       remoteFriendly: true,
       age: 34,
-      interests: ['online_banking', 'budgeting', 'investing'],
+      interests: ['banking_payments', 'budgeting', 'investing'],
       studiesCompleted: 4,
       rating: 4.9
     },
@@ -1575,7 +1604,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Gothenburg',
       remoteFriendly: true,
       age: 39,
-      interests: ['fashion', 'food', 'travel'],
+      interests: ['fashion_beauty', 'food_dining', 'travel'],
       studiesCompleted: 6,
       rating: 4.8
     },
@@ -1588,7 +1617,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Malmo',
       remoteFriendly: true,
       age: 31,
-      interests: ['smartphones', 'streaming', 'podcasts'],
+      interests: ['devices_wearables', 'streaming_media', 'apps_software'],
       studiesCompleted: 5,
       rating: 4.7
     },
@@ -1601,7 +1630,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Stockholm',
       remoteFriendly: true,
       age: 42,
-      interests: ['insurance', 'fitness', 'smart_home'],
+      interests: ['insurance', 'fitness_sports', 'smart_home'],
       studiesCompleted: 3,
       rating: 4.8
     },
@@ -1614,7 +1643,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Uppsala',
       remoteFriendly: true,
       age: 29,
-      interests: ['crypto', 'social_media', 'online_banking'],
+      interests: ['banking_payments', 'apps_software', 'budgeting'],
       studiesCompleted: 2,
       rating: 4.6
     },
@@ -1627,7 +1656,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Stockholm',
       remoteFriendly: true,
       age: 26,
-      interests: ['gaming', 'smartphones', 'smart_home'],
+      interests: ['gaming', 'devices_wearables', 'smart_home'],
       studiesCompleted: 4,
       rating: 4.7
     },
@@ -1640,7 +1669,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Gothenburg',
       remoteFriendly: false,
       age: 47,
-      interests: ['home', 'sustainability', 'gardening'],
+      interests: ['home_living', 'fashion_beauty', 'food_dining'],
       studiesCompleted: 7,
       rating: 4.9
     },
@@ -1653,7 +1682,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       city: 'Stockholm',
       remoteFriendly: true,
       age: 45,
-      interests: ['mortgages', 'insurance', 'budgeting'],
+      interests: ['banking_payments', 'insurance', 'budgeting'],
       studiesCompleted: 5,
       rating: 4.8
     }
@@ -1766,8 +1795,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   function getStudyInterestTags(study) {
     const interests = Array.isArray(study?.target_interests) ? study.target_interests.filter(Boolean) : [];
-    const labels = interests.slice(0, 2).map(value => getInterestLabelByValue(value));
-    if (interests.length > 2) labels.push(t('cl_study_more_interests').replace('{count}', interests.length - 2));
+    const matchedLabels = interests.map(value => getInterestLabelByValue(value)).filter(Boolean);
+    const labels = matchedLabels.slice(0, 2);
+    if (matchedLabels.length > 2) labels.push(t('cl_study_more_interests').replace('{count}', matchedLabels.length - 2));
     return labels;
   }
 
@@ -1951,21 +1981,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         ? a.cta.priority - b.cta.priority
         : new Date(b.s.created_at || 0) - new Date(a.s.created_at || 0));
 
-    const published = sorted.filter(({ s }) => (s.status || 'draft') !== 'draft');
+    const activeStudies = sorted.filter(({ s }) => !['draft', 'completed'].includes(s.status || 'draft'));
+    const completedStudies = sorted.filter(({ s }) => (s.status || 'draft') === 'completed');
     const drafts = sorted.filter(({ s }) => (s.status || 'draft') === 'draft');
 
     if (_justPublishedStudyId) {
-      const publishedIndex = published.findIndex(({ s }) => s.id === _justPublishedStudyId);
-      if (publishedIndex > 0) {
-        const [justPublishedStudy] = published.splice(publishedIndex, 1);
-        published.unshift(justPublishedStudy);
+      const activeIndex = activeStudies.findIndex(({ s }) => s.id === _justPublishedStudyId);
+      if (activeIndex > 0) {
+        const [justPublishedStudy] = activeStudies.splice(activeIndex, 1);
+        activeStudies.unshift(justPublishedStudy);
       }
     }
 
     let bannerHtml = '';
-    if (_justPublished && published.length > 0) {
+    if (_justPublished && activeStudies.length > 0) {
       _justPublished = false;
-      const ps = (published.find(({ s }) => s.id === _justPublishedStudyId) || published[0]).s;
+      const ps = (activeStudies.find(({ s }) => s.id === _justPublishedStudyId) || activeStudies[0]).s;
       _justPublishedStudyId = null;
       bannerHtml = `<div style="background:linear-gradient(135deg,rgba(16,185,129,0.07),rgba(59,130,246,0.05));
           border:1px solid rgba(16,185,129,0.22);border-radius:10px;
@@ -1983,21 +2014,25 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
 
     const STATUS_LABEL = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' };
-    const renderGroup = (title, subtitle, items, emptyCopy) => `
+    const renderGroup = (title, subtitle, items, emptyCopy, options = {}) => `
       <section class="study-group">
         <div class="study-group-head">
           <div>
             <div class="study-group-title">${esc(title)}</div>
             <div class="study-group-sub">${esc(subtitle)}</div>
           </div>
-          <div class="study-group-count">${esc(t('cl_studies_group_count').replace('{count}', items.length))}</div>
+          ${options.toggleLabel
+            ? `<button class="btn-outline study-group-toggle" data-action="show-completed">${esc(options.toggleLabel)}</button>`
+            : `<div class="study-group-count">${esc(t('cl_studies_group_count').replace('{count}', items.length))}</div>`}
         </div>
-        ${items.length
-          ? items.map(renderStudyRow).join('')
+        ${options.collapsed
+          ? ''
+          : items.length
+          ? items.map(item => (options.renderItem || renderStudyRow)(item)).join('')
           : `<div class="study-row-empty">${esc(emptyCopy)}</div>`}
       </section>`;
 
-    function renderStudyRow({ s, cta }) {
+    function renderStudyRow({ s, cta }, { isCompleted = false } = {}) {
       const status = s.status || 'draft';
       const badgeCls = status === 'active'
         ? 'badge-green'
@@ -2006,7 +2041,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : status === 'completed'
             ? 'badge-blue'
             : 'badge-gray';
-      const statusLabel = t('cl_study_status_' + status) || STATUS_LABEL[status] || status;
+      const statusLabel = status === 'paused'
+        ? `${t('cl_study_status_paused')} · ${t('cl_study_status_paused_sub')}`
+        : (t('cl_study_status_' + status) || STATUS_LABEL[status] || status);
       const displayFormat = s.session_type === 'group' && s.format === 'video_call' ? 'focus_group' : s.format;
       const formatLabel = DASH_FORMAT_LABEL[displayFormat] || displayFormat || '';
       const filled = appCountMap[s.id]?.active_count || 0;
@@ -2037,7 +2074,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const rowClick = status === 'draft'
         ? `openDraftInBuilder('${esc(s.id)}')`
         : `openApplicants('${esc(s.id)}','${escJS(s.title || 'Untitled study')}')`;
-      const primaryActionHtml = cta.label
+      const primaryActionHtml = !isCompleted && cta.label
         ? (cta.action === 'invite'
           ? `<button class="btn-primary study-row-primary-action" data-action="invite-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}">${esc(cta.label)}</button>`
           : cta.action === 'draft'
@@ -2046,8 +2083,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         : '';
 
       const secondaryActions = [
-        `<button class="btn-outline" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(t('cl_study_action_edit'))}</button>`,
+        `<button class="btn-outline" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(t(isCompleted ? 'cl_study_action_view' : 'cl_study_action_edit'))}</button>`,
         `<button class="btn-outline" data-action="duplicate-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_duplicate'))}</button>`,
+        (status === 'active' || status === 'paused')
+          ? `<button class="btn-outline" data-action="complete-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_mark_completed'))}</button>`
+          : '',
         status === 'active'
           ? `<button class="btn-outline" data-action="pause-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_pause'))}</button>`
           : '',
@@ -2059,7 +2099,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : ''
       ].filter(Boolean).join('');
 
-      return `<div class="study-row" onclick="${rowClick}">
+      const attentionClass = !isCompleted && cta.priority <= 3
+        ? (cta.priority === 1 ? ' study-row-attention-high' : ' study-row-attention-medium')
+        : '';
+      const completedClass = isCompleted ? ' study-row-completed' : '';
+
+      return `<div class="study-row${attentionClass}${completedClass}" onclick="${rowClick}">
         <div class="study-row-header" style="gap:12px">
           <div class="study-title-group" style="flex:1;min-width:0">
             <h3 class="study-row-compact">${esc(s.title || t('cl_untitled_study'))}</h3>
@@ -2080,19 +2125,26 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       </div>`;
     }
 
+    const completedCollapsed = completedStudies.length >= 3 && !_completedStudiesExpanded;
     list.innerHTML = bannerHtml + `<div class="study-groups">
       ${renderGroup(
         t('cl_studies_group_published'),
         t('cl_studies_group_published_sub'),
-        published,
+        activeStudies,
         t('cl_studies_group_published_empty')
       )}
-      ${renderGroup(
-        t('cl_studies_group_drafts'),
-        t('cl_studies_group_drafts_sub'),
-        drafts,
-        t('cl_studies_group_drafts_empty')
-      )}
+      ${completedStudies.length
+        ? renderGroup(
+          t('cl_studies_group_completed'),
+          t('cl_studies_group_completed_sub'),
+          completedStudies,
+          t('cl_studies_group_completed_empty'),
+          completedCollapsed
+            ? { collapsed: true, toggleLabel: t('cl_studies_group_completed_toggle').replace('{count}', completedStudies.length) }
+            : { renderItem: item => renderStudyRow(item, { isCompleted: true }) }
+        )
+        : ''}
+      ${renderGroup(t('cl_studies_group_drafts'), t('cl_studies_group_drafts_sub'), drafts, t('cl_studies_group_drafts_empty'))}
     </div>`;
 
     wireActions(list, {
@@ -2103,9 +2155,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         else openApplicants(d.studyId, d.studyTitle || 'Study', 'settings', 'studies');
       },
       'duplicate-study': d => duplicateStudy(d.studyId),
+      'complete-study': d => setStudyStatus(d.studyId, 'completed'),
       'pause-study': d => setStudyStatus(d.studyId, 'paused'),
       'resume-study': d => setStudyStatus(d.studyId, 'active'),
       'delete-draft': d => deleteDraftStudy(d.studyId),
+      'show-completed': () => { _completedStudiesExpanded = true; renderStudiesList(); },
     });
   }
 
@@ -3323,7 +3377,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }[confidence];
   }
 
-  function getBuilderGuidance(targeting, simulation) {
+  function getBuilderGuidanceText(targeting, simulation) {
     const span = Math.max(0, targeting.maxAge - targeting.minAge);
     if (!targeting.selectedInterests.length) return t('cl_match_guidance_choose_interest');
     if (targeting.selectedInterests.length > 2) return t('cl_match_guidance_three_interests');
@@ -3344,12 +3398,227 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return t('cl_match_guidance_well_defined');
   }
 
+  function getCustomerRailDecision(targeting, simulation) {
+    const behaviorCount = Array.isArray(targeting.customerBehaviors) ? targeting.customerBehaviors.length : 0;
+    const hasCity = targeting.locationMode === 'city' && Boolean(targeting.city);
+    const ageSpan = Math.max(0, targeting.maxAge - targeting.minAge);
+    const hasBuyerSignal = Array.isArray(targeting.customerBehaviors)
+      && targeting.customerBehaviors.some(value => ['recent_buyer', 'researches_before_buying'].includes(value));
+
+    if (!targeting.selectedInterests.length) {
+      return {
+        explanation: t('cl_customer_decision_missing_interest_expl'),
+        action: t('cl_customer_decision_missing_interest_action'),
+        priority: 'high',
+        tradeoff: t('cl_customer_decision_missing_interest_tradeoff'),
+        readiness: 'fix_first',
+        focusTarget: 'interest'
+      };
+    }
+
+    if (targeting.customerIntent === 'existing_customers' && behaviorCount === 0) {
+      return {
+        explanation: t('cl_customer_decision_existing_mismatch_expl'),
+        action: t('cl_customer_decision_existing_mismatch_action'),
+        priority: 'high',
+        tradeoff: t('cl_customer_decision_existing_mismatch_tradeoff'),
+        readiness: 'fix_first',
+        focusTarget: 'behavior'
+      };
+    }
+
+    if (targeting.customerIntent === 'category_buyers' && !hasBuyerSignal) {
+      return {
+        explanation: t('cl_customer_decision_category_signal_expl'),
+        action: t('cl_customer_decision_category_signal_action'),
+        priority: 'high',
+        tradeoff: t('cl_customer_decision_category_signal_tradeoff'),
+        readiness: 'fix_first',
+        focusTarget: 'behavior'
+      };
+    }
+
+    if (simulation.confidence === 'too_narrow') {
+      if (hasCity) {
+        return {
+          explanation: t('cl_customer_decision_city_too_narrow_expl'),
+          action: t('cl_customer_decision_city_too_narrow_action'),
+          priority: 'high',
+          tradeoff: t('cl_customer_decision_city_too_narrow_tradeoff'),
+          readiness: 'fix_first',
+          focusTarget: 'location'
+        };
+      }
+      if (targeting.screeningCount >= 2) {
+        return {
+          explanation: t('cl_customer_decision_screening_too_narrow_expl'),
+          action: t('cl_customer_decision_screening_too_narrow_action'),
+          priority: 'high',
+          tradeoff: t('cl_customer_decision_screening_too_narrow_tradeoff'),
+          readiness: 'fix_first',
+          focusTarget: 'screening'
+        };
+      }
+      if (behaviorCount >= 3) {
+        return {
+          explanation: t('cl_customer_decision_behaviors_too_narrow_expl'),
+          action: t('cl_customer_decision_behaviors_too_narrow_action'),
+          priority: 'high',
+          tradeoff: t('cl_customer_decision_behaviors_too_narrow_tradeoff'),
+          readiness: 'fix_first',
+          focusTarget: 'behavior'
+        };
+      }
+      if (targeting.selectedInterests.length > 2) {
+        return {
+          explanation: t('cl_customer_decision_interests_too_narrow_expl'),
+          action: t('cl_customer_decision_interests_too_narrow_action'),
+          priority: 'high',
+          tradeoff: t('cl_customer_decision_interests_too_narrow_tradeoff'),
+          readiness: 'fix_first',
+          focusTarget: 'interest'
+        };
+      }
+      if (ageSpan > 0 && ageSpan <= 12) {
+        return {
+          explanation: t('cl_customer_decision_age_too_narrow_expl'),
+          action: t('cl_customer_decision_age_too_narrow_action'),
+          priority: 'high',
+          tradeoff: t('cl_customer_decision_age_too_narrow_tradeoff'),
+          readiness: 'fix_first',
+          focusTarget: 'age'
+        };
+      }
+      return {
+        explanation: t('cl_customer_decision_generic_too_narrow_expl'),
+        action: t('cl_customer_decision_generic_too_narrow_action'),
+        priority: 'high',
+        tradeoff: t('cl_customer_decision_generic_too_narrow_tradeoff'),
+        readiness: 'fix_first',
+        focusTarget: null
+      };
+    }
+
+    if (simulation.confidence === 'limited') {
+      if (hasCity) {
+        return {
+          explanation: t('cl_customer_decision_city_limited_expl'),
+          action: t('cl_customer_decision_city_limited_action'),
+          priority: 'medium',
+          tradeoff: t('cl_customer_decision_city_limited_tradeoff'),
+          readiness: 'can_continue',
+          focusTarget: 'location'
+        };
+      }
+      if (targeting.screeningCount >= 2) {
+        return {
+          explanation: t('cl_customer_decision_screening_limited_expl'),
+          action: t('cl_customer_decision_screening_limited_action'),
+          priority: 'medium',
+          tradeoff: t('cl_customer_decision_screening_limited_tradeoff'),
+          readiness: 'can_continue',
+          focusTarget: 'screening'
+        };
+      }
+      if (behaviorCount >= 3) {
+        return {
+          explanation: t('cl_customer_decision_behaviors_limited_expl'),
+          action: t('cl_customer_decision_behaviors_limited_action'),
+          priority: 'medium',
+          tradeoff: t('cl_customer_decision_behaviors_limited_tradeoff'),
+          readiness: 'can_continue',
+          focusTarget: 'behavior'
+        };
+      }
+      if (targeting.customerIntent === 'general' && behaviorCount === 0) {
+        return {
+          explanation: t('cl_customer_decision_general_needs_signal_expl'),
+          action: t('cl_customer_decision_general_needs_signal_action'),
+          priority: 'medium',
+          tradeoff: t('cl_customer_decision_general_needs_signal_tradeoff'),
+          readiness: 'can_continue',
+          focusTarget: 'behavior'
+        };
+      }
+      return {
+        explanation: t('cl_customer_decision_limited_ready_expl'),
+        action: t('cl_customer_decision_limited_ready_action'),
+        priority: 'medium',
+        tradeoff: t('cl_customer_decision_limited_ready_tradeoff'),
+        readiness: 'can_continue',
+        focusTarget: null
+      };
+    }
+
+    if (simulation.confidence === 'strong' || simulation.confidence === 'good') {
+      if (targeting.customerIntent === 'general' && behaviorCount === 0 && targeting.selectedInterests.length === 1) {
+        return {
+          explanation: t('cl_customer_decision_general_broad_expl'),
+          action: t('cl_customer_decision_general_broad_action'),
+          priority: 'medium',
+          tradeoff: t('cl_customer_decision_general_broad_tradeoff'),
+          readiness: 'can_continue',
+          focusTarget: 'behavior'
+        };
+      }
+      return {
+        explanation: t('cl_customer_decision_ready_expl'),
+        action: t('cl_customer_decision_ready_action'),
+        priority: 'low',
+        tradeoff: t('cl_customer_decision_ready_tradeoff'),
+        readiness: 'ready',
+        focusTarget: null
+      };
+    }
+
+    return {
+      explanation: getBuilderGuidanceText(targeting, simulation),
+      action: '',
+      priority: '',
+      tradeoff: '',
+      readiness: '',
+      focusTarget: null
+    };
+  }
+
+  function getBuilderRailGuidance(targeting, simulation) {
+    if (targeting.audienceType === 'customers') {
+      return getCustomerRailDecision(targeting, simulation);
+    }
+    return {
+      explanation: getBuilderGuidanceText(targeting, simulation),
+      action: '',
+      priority: '',
+      tradeoff: '',
+      readiness: '',
+      focusTarget: null
+    };
+  }
+
+  function applyBuilderDecisionFocus(focusTarget) {
+    document.querySelectorAll('[data-focus-target].focus-target-active').forEach(el => el.classList.remove('focus-target-active'));
+    if (_currentBuilderStep !== 2 || !focusTarget) return;
+    document.querySelector(`[data-focus-target="${focusTarget}"]`)?.classList.add('focus-target-active');
+  }
+
   function getInterestLabelByValue(value) {
     for (const group of BUILDER_INTEREST_OPTIONS) {
       const found = group.options.find(option => option.value === value);
       if (found) return t(found.labelKey);
     }
-    return value.replace(/_/g, ' ');
+    return '';
+  }
+
+  function getBehaviorLabelByValue(value) {
+    const labelKey = {
+      recent_buyer: 'cl_chip_behavior_recent_buyer',
+      researches_before_buying: 'cl_chip_behavior_researches_before_buying',
+      buys_premium: 'cl_chip_behavior_buys_premium',
+      seeks_deals: 'cl_chip_behavior_seeks_deals',
+      brand_loyal: 'cl_chip_behavior_brand_loyal',
+      influenced_social: 'cl_chip_behavior_influenced_social'
+    }[value];
+    return labelKey ? t(labelKey) : '';
   }
 
   function normalizeText(value) {
@@ -3489,7 +3758,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const formatSelect = document.getElementById('b-format');
     const formatLabel = formatSelect?.options[formatSelect.selectedIndex]?.text || '';
     const duration = document.getElementById('b-length')?.value || '';
-    const interestTags = targeting.selectedInterests.slice(0, 2).map(value => getInterestLabelByValue(value));
+    const interestTags = targeting.selectedInterests.slice(0, 2).map(value => getInterestLabelByValue(value)).filter(Boolean);
     const filterTags = [];
     if (targeting.industry) filterTags.push(targeting.industry);
     if (targeting.experience) filterTags.push(titleCase(targeting.experience));
@@ -3519,11 +3788,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     });
 
     if (targeting.customerBehaviors && targeting.customerBehaviors.length) {
+      const behaviorTags = targeting.customerBehaviors.map(getBehaviorLabelByValue).filter(Boolean);
+      if (behaviorTags.length) {
       rows.push({
         label: t('cl_review_row_behaviors'),
         type: 'tags',
-        values: targeting.customerBehaviors.map(v => t('cl_chip_behavior_' + v))
+        values: behaviorTags
       });
+      }
     }
 
     if (filterTags.length) {
@@ -3892,7 +4164,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       confidence: 'too_broad',
       confidenceCopy: t('cl_match_confidence_none'),
       fillCopy: t('cl_match_fill_too_broad'),
-      guidanceCopy: t('cl_match_guidance_choose_interest'),
+      guidance: {
+        explanation: t('cl_customer_decision_missing_interest_expl'),
+        action: t('cl_customer_decision_missing_interest_action'),
+        priority: 'high',
+        tradeoff: t('cl_customer_decision_missing_interest_tradeoff'),
+        readiness: 'fix_first',
+        focusTarget: 'interest'
+      },
       previewMatches: []
     };
     renderBuilderPoolPreview();
@@ -4896,12 +5175,35 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const publishBtn = document.getElementById('publish-study-btn');
     if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishBtn) return;
 
-    const { poolCount, confidence, confidenceCopy, guidanceCopy, fillCopy, previewMatches } = _builderPoolPreviewState;
+    const { poolCount, confidence, confidenceCopy, guidance, fillCopy, previewMatches } = _builderPoolPreviewState;
     const targeting = getBuilderTargetingState();
     const decision = getBuilderDecisionModel(confidence);
+    const priorityLabel = targeting.audienceType === 'customers'
+      ? guidance?.priority === 'high'
+        ? t('cl_customer_decision_priority_high')
+        : guidance?.priority === 'low'
+          ? t('cl_customer_decision_priority_low')
+          : ''
+      : '';
+    const readinessLabel = targeting.audienceType === 'customers'
+      ? guidance?.readiness === 'fix_first'
+        ? t('cl_customer_decision_readiness_fix_first')
+        : guidance?.readiness === 'can_continue'
+          ? t('cl_customer_decision_readiness_can_continue')
+          : guidance?.readiness === 'ready'
+            ? t('cl_customer_decision_readiness_ready')
+            : ''
+      : '';
+    applyBuilderDecisionFocus(targeting.audienceType === 'customers' ? guidance?.focusTarget || null : null);
     confidenceEl.textContent = getBuilderConfidenceCopy(confidence).label;
     confidenceCopyEl.textContent = confidenceCopy;
-    guidanceEl.textContent = guidanceCopy;
+    guidanceEl.innerHTML = `
+      ${priorityLabel ? `<div class="match-guidance-priority ${escAttr(guidance?.priority || '')}">${esc(priorityLabel)}</div>` : ''}
+      ${readinessLabel ? `<div class="match-guidance-readiness ${escAttr(guidance?.readiness || '')}">${esc(readinessLabel)}</div>` : ''}
+      <div class="match-guidance-body">${esc(guidance?.explanation || '')}</div>
+      ${guidance?.action ? `<div class="match-guidance-action">${esc(guidance.action)}</div>` : ''}
+      ${guidance?.tradeoff ? `<div class="match-guidance-tradeoff">${esc(guidance.tradeoff)}</div>` : ''}
+    `;
     fillEl.textContent = fillCopy;
     confidenceStep3El.textContent = getBuilderConfidenceCopy(confidence).label;
     confidenceCopyStep3El.textContent = confidenceCopy;
@@ -4981,7 +5283,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         poolCount: simulation.poolCount,
         confidence: simulation.confidence,
         confidenceCopy: confidenceMeta,
-        guidanceCopy: getBuilderGuidance(targeting, simulation),
+        guidance: getBuilderRailGuidance(targeting, simulation),
         fillCopy: confidenceState.fill,
         previewMatches: preview.items
       };
@@ -5836,9 +6138,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_sub_active: '{count} active',
       cl_studies_sub_draft: '{count} draft',
       cl_studies_group_count: '{count} studies',
-      cl_studies_group_published: 'Published studies',
-      cl_studies_group_published_sub: 'Live and managed studies you can act on now.',
-      cl_studies_group_published_empty: 'Published studies will appear here once you launch them.',
+      cl_studies_group_published: 'Active studies',
+      cl_studies_group_published_sub: 'Live studies that still need decisions or follow-up.',
+      cl_studies_group_published_empty: 'Active studies will appear here once you launch them.',
+      cl_studies_group_completed: 'Completed',
+      cl_studies_group_completed_sub: 'Finished studies kept here for reference and follow-up.',
+      cl_studies_group_completed_empty: 'Completed studies will appear here.',
+      cl_studies_group_completed_toggle: '{count} completed — show',
       cl_studies_group_drafts: 'Drafts',
       cl_studies_group_drafts_sub: 'Studies still being shaped before launch.',
       cl_studies_group_drafts_empty: 'No drafts right now.',
@@ -5846,6 +6152,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_live_banner_sub: 'Invite matched participants to fill it faster.',
       cl_study_status_active: 'Active',
       cl_study_status_paused: 'Paused',
+      cl_study_status_paused_sub: 'Closed to applications',
       cl_study_status_completed: 'Completed',
       cl_study_status_archived: 'Archived',
       cl_study_status_draft: 'Draft',
@@ -5860,7 +6167,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_primary_view_participants: 'View participants →',
       cl_study_primary_edit_draft: 'Continue draft →',
       cl_study_action_edit: 'Edit',
+      cl_study_action_view: 'View',
       cl_study_action_duplicate: 'Duplicate',
+      cl_study_action_mark_completed: 'Mark as completed',
       cl_study_action_pause: 'Pause',
       cl_study_action_resume: 'Resume',
       cl_study_action_delete: 'Delete',
@@ -5917,7 +6226,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_builder_step_2_intro_professionals: 'Define the professional audience and see how confident Vetd is about filling the study.',
       cl_section_targeting_customers: 'Which customers matter most?',
       cl_section_targeting_professionals: 'Which professionals matter most?',
-      cl_primary_interest_hint_customers: 'Pick one or two customer interests or behaviors to anchor matching.',
+      cl_primary_interest_hint_customers: 'Choose one or two interests that define the audience.',
       cl_primary_interest_hint_professionals: 'Pick one or two domain interests to anchor matching.',
       cl_section_basics: 'Study basics',
       cl_label_title: 'Study title',
@@ -5936,7 +6245,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_label_close_hint: 'Last day to accept new applicants. After this date your study is flagged as overdue.',
       cl_section_targeting: 'Define who matters',
       cl_label_primary_interest: 'Primary interest',
-      cl_primary_interest_hint: 'Pick one or two interests to anchor matching.',
+      cl_primary_interest_hint: 'Choose one or two interests that define the audience.',
       cl_interest_warning: 'Three or more interests usually narrows the pool faster than expected.',
       cl_label_industry: 'Industry',
       cl_ph_industry: 'e.g. Fintech',
@@ -5960,18 +6269,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_section_targeting_intent_general: 'Which customers matter most?',
       cl_section_targeting_intent_category_buyers: 'Narrow to the right category buyers',
       cl_section_targeting_intent_existing_customers: 'Refine your customer profile',
-      cl_primary_interest_hint_intent_general: 'Pick one or two interests to anchor matching.',
-      cl_primary_interest_hint_intent_category_buyers: 'Pick interests that reflect your product category.',
-      cl_primary_interest_hint_intent_existing_customers: 'Pick interests that reflect your customer base.',
+      cl_primary_interest_hint_intent_general: 'Choose one or two interests that define who this is for.',
+      cl_primary_interest_hint_intent_category_buyers: 'Choose interests that match the category you want buyers from.',
+      cl_primary_interest_hint_intent_existing_customers: 'Choose interests that reflect your current customers.',
       cl_review_row_intent: 'Recruitment type',
       cl_section_behaviors: 'Behaviors',
-      cl_behaviors_hint: 'Select behaviors that describe your ideal participant.',
-      cl_chip_behavior_shops_online: 'Shops online regularly',
-      cl_chip_behavior_recent_buyer: 'Bought in this category recently',
-      cl_chip_behavior_compares_brands: 'Compares brands before buying',
-      cl_chip_behavior_visits_brand_sites: 'Visits brand websites before purchase',
-      cl_chip_behavior_buys_premium: 'Buys premium products',
-      cl_chip_behavior_seeks_deals: 'Looks for deals or discounts',
+      cl_behaviors_hint: 'Use behaviors to show how these customers decide.',
+      cl_chip_behavior_recent_buyer: 'Bought recently in this category',
+      cl_chip_behavior_researches_before_buying: 'Researches before buying',
+      cl_chip_behavior_buys_premium: 'Chooses premium products',
+      cl_chip_behavior_seeks_deals: 'Looks for deals',
+      cl_chip_behavior_brand_loyal: 'Returns to familiar brands',
+      cl_chip_behavior_influenced_social: 'Influenced by social content',
       cl_review_row_behaviors: 'Behaviors',
       cl_match_guidance_many_behaviors: 'Three or more behaviors can narrow your pool quickly.',
       cl_section_screening: 'Screening questions',
@@ -6004,33 +6313,25 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_chip_3_above: '3.0★ and above',
       cl_chip_4_above: '4.0★ and above',
       cl_chip_45_elite: '4.5★ Elite only',
-      cl_chip_fashion: 'Fashion & clothing',
-      cl_chip_online_shopper: 'Online shopper',
-      cl_chip_beauty: 'Beauty & skincare',
-      cl_chip_home: 'Home & living',
-      cl_chip_food: 'Food & groceries',
-      cl_chip_fitness: 'Fitness & wellness',
-      cl_chip_brand_customer: 'Brand customer',
-      cl_chip_sustainability: 'Sustainability interest',
-      cl_chip_social_media: 'Social media user',
-      cl_chip_parent: 'Parent',
-      cl_chip_homeowner: 'Homeowner',
+      cl_chip_food_dining: 'Food & dining',
+      cl_chip_fashion_beauty: 'Fashion & beauty',
+      cl_chip_home_living: 'Home & living',
       cl_chip_pets: 'Pets',
       cl_chip_travel: 'Travel',
-      cl_chip_gardening: 'Gardening',
-      cl_chip_smartphones: 'Smartphones',
+      cl_chip_fitness_sports: 'Fitness & sports',
+      cl_chip_health_wellness: 'Health & wellness',
+      cl_chip_devices_wearables: 'Devices & wearables',
+      cl_chip_apps_software: 'Apps & software',
+      cl_chip_streaming_media: 'Streaming & media',
       cl_chip_gaming: 'Gaming',
-      cl_chip_streaming: 'Streaming',
-      cl_chip_podcasts: 'Podcasts',
       cl_chip_smart_home: 'Smart home',
-      cl_chip_online_banking: 'Online banking',
+      cl_chip_banking_payments: 'Banking & payments',
       cl_chip_investing: 'Investing',
-      cl_chip_crypto: 'Crypto',
-      cl_chip_mortgages: 'Mortgages',
       cl_chip_insurance: 'Insurance',
       cl_chip_budgeting: 'Budgeting',
-      cl_interest_group_lifestyle: 'Lifestyle',
-      cl_interest_group_tech: 'Tech',
+      cl_interest_group_everyday_consumer: 'Everyday life',
+      cl_interest_group_health_fitness: 'Health & fitness',
+      cl_interest_group_technology: 'Technology',
       cl_interest_group_finance: 'Finance',
       cl_industry_fintech: 'Fintech',
       cl_industry_ecommerce: 'E-commerce',
@@ -6066,6 +6367,59 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_match_guidance_age_narrow: 'A narrow age range is making this harder to fill.',
       cl_match_guidance_limited: 'Broadening one filter will improve fill speed.',
       cl_match_guidance_well_defined: 'This audience is well defined.',
+      cl_customer_decision_priority_high: 'Recommended',
+      cl_customer_decision_priority_low: 'Optional',
+      cl_customer_decision_readiness_fix_first: 'Address this before review.',
+      cl_customer_decision_readiness_can_continue: 'You can continue with this setup.',
+      cl_customer_decision_readiness_ready: 'This audience is ready for review.',
+      cl_customer_decision_missing_interest_expl: 'Nothing defines who should see this yet.',
+      cl_customer_decision_missing_interest_action: 'Start with one primary interest.',
+      cl_customer_decision_missing_interest_tradeoff: 'Without it, the audience stays too vague to judge.',
+      cl_customer_decision_existing_mismatch_expl: 'Existing customers are selected, but nothing here separates them from new shoppers.',
+      cl_customer_decision_existing_mismatch_action: 'Add one behavior tied to current customers.',
+      cl_customer_decision_existing_mismatch_tradeoff: 'Otherwise you may recruit people outside the study goal.',
+      cl_customer_decision_category_signal_expl: 'Category buyers are selected, but nothing here points to active buying.',
+      cl_customer_decision_category_signal_action: 'Add a behavior like \'recent buyer\' or \'compares brands\'.',
+      cl_customer_decision_category_signal_tradeoff: 'Otherwise the audience may skew toward general interest, not buyers.',
+      cl_customer_decision_city_too_narrow_expl: 'One city is doing most of the narrowing here.',
+      cl_customer_decision_city_too_narrow_action: 'Switch to remote unless the study must stay local.',
+      cl_customer_decision_city_too_narrow_tradeoff: 'Keeping it local will likely slow responses.',
+      cl_customer_decision_screening_too_narrow_expl: 'Two screening questions are doing most of the narrowing here.',
+      cl_customer_decision_screening_too_narrow_action: 'Remove the weaker screening question.',
+      cl_customer_decision_screening_too_narrow_tradeoff: 'Keeping both will likely slow responses.',
+      cl_customer_decision_behaviors_too_narrow_expl: 'Three behaviors are stacked here, and they overlap tightly.',
+      cl_customer_decision_behaviors_too_narrow_action: 'Remove the least essential behavior.',
+      cl_customer_decision_behaviors_too_narrow_tradeoff: 'Keeping all of them will shrink the reachable pool.',
+      cl_customer_decision_interests_too_narrow_expl: 'Too many interests are overlapping here.',
+      cl_customer_decision_interests_too_narrow_action: 'Remove the weakest interest.',
+      cl_customer_decision_interests_too_narrow_tradeoff: 'Keeping all of them will shrink the reachable pool.',
+      cl_customer_decision_age_too_narrow_expl: 'The age range is tighter than the rest of the setup needs.',
+      cl_customer_decision_age_too_narrow_action: 'Widen the age range slightly.',
+      cl_customer_decision_age_too_narrow_tradeoff: 'Keeping it this tight will likely slow responses.',
+      cl_customer_decision_generic_too_narrow_expl: 'The pool is too small for this number of spots.',
+      cl_customer_decision_generic_too_narrow_action: 'Remove the least essential filter.',
+      cl_customer_decision_generic_too_narrow_tradeoff: 'If you keep it as-is, recruitment will likely stall.',
+      cl_customer_decision_city_limited_expl: 'One city is narrowing an otherwise workable pool.',
+      cl_customer_decision_city_limited_action: 'Keep the city only if location matters to the study.',
+      cl_customer_decision_city_limited_tradeoff: 'If not, this will likely fill more slowly.',
+      cl_customer_decision_screening_limited_expl: 'Two screening questions are narrowing an otherwise workable pool.',
+      cl_customer_decision_screening_limited_action: 'Keep both only if each one changes who qualifies.',
+      cl_customer_decision_screening_limited_tradeoff: 'Keeping both will slow responses.',
+      cl_customer_decision_behaviors_limited_expl: 'Three behaviors are doing more narrowing than this brief needs.',
+      cl_customer_decision_behaviors_limited_action: 'Remove the behavior that matters least.',
+      cl_customer_decision_behaviors_limited_tradeoff: 'Keeping all of them will reduce response speed.',
+      cl_customer_decision_general_needs_signal_expl: 'You have one interest, but nothing shows how these customers behave.',
+      cl_customer_decision_general_needs_signal_action: 'Add a behavior like \'compares brands\' or \'shops online\'.',
+      cl_customer_decision_general_needs_signal_tradeoff: 'Without it, fit will be less consistent.',
+      cl_customer_decision_limited_ready_expl: 'One filter is making this pool tighter than it needs to be.',
+      cl_customer_decision_limited_ready_action: 'Continue only if precision matters more than speed.',
+      cl_customer_decision_limited_ready_tradeoff: 'Expect a slower fill.',
+      cl_customer_decision_general_broad_expl: 'There is nothing here yet that separates casual interest from active buyers.',
+      cl_customer_decision_general_broad_action: 'Add one behavior if the study needs a more decisive audience.',
+      cl_customer_decision_general_broad_tradeoff: 'You can continue as-is, but fit will stay broad.',
+      cl_customer_decision_ready_expl: 'The setup defines both who these customers are and how they behave.',
+      cl_customer_decision_ready_action: 'Continue to review.',
+      cl_customer_decision_ready_tradeoff: 'Further tightening is optional.',
       cl_review_block_label: 'Review before publish',
       cl_review_ready: 'Ready to publish',
       cl_review_review: 'Review targeting',
@@ -6398,9 +6752,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_studies_sub_active: '{count} aktiva',
       cl_studies_sub_draft: '{count} utkast',
       cl_studies_group_count: '{count} studier',
-      cl_studies_group_published: 'Publicerade studier',
-      cl_studies_group_published_sub: 'Live och hanterbara studier som du kan agera på nu.',
-      cl_studies_group_published_empty: 'Publicerade studier visas här när de är lanserade.',
+      cl_studies_group_published: 'Aktiva studier',
+      cl_studies_group_published_sub: 'Live-studier som fortfarande behöver beslut eller uppföljning.',
+      cl_studies_group_published_empty: 'Aktiva studier visas här när de är lanserade.',
+      cl_studies_group_completed: 'Slutförda',
+      cl_studies_group_completed_sub: 'Avslutade studier som ligger kvar för överblick och uppföljning.',
+      cl_studies_group_completed_empty: 'Slutförda studier visas här.',
+      cl_studies_group_completed_toggle: '{count} slutförda — visa',
       cl_studies_group_drafts: 'Utkast',
       cl_studies_group_drafts_sub: 'Studier som fortfarande formas före lansering.',
       cl_studies_group_drafts_empty: 'Inga utkast just nu.',
@@ -6408,6 +6766,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_live_banner_sub: 'Bjud in matchade deltagare för att fylla den snabbare.',
       cl_study_status_active: 'Aktiv',
       cl_study_status_paused: 'Pausad',
+      cl_study_status_paused_sub: 'Stängd för ansökningar',
       cl_study_status_completed: 'Slutförd',
       cl_study_status_archived: 'Arkiverad',
       cl_study_status_draft: 'Utkast',
@@ -6422,7 +6781,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_primary_view_participants: 'Visa deltagare →',
       cl_study_primary_edit_draft: 'Fortsätt med utkast →',
       cl_study_action_edit: 'Redigera',
+      cl_study_action_view: 'Visa',
       cl_study_action_duplicate: 'Duplicera',
+      cl_study_action_mark_completed: 'Markera som slutförd',
       cl_study_action_pause: 'Pausa',
       cl_study_action_resume: 'Återuppta',
       cl_study_action_delete: 'Ta bort',
@@ -6479,7 +6840,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_builder_step_2_intro_professionals: 'Definiera den professionella målgruppen och se hur säkert Vetd kan fylla studien.',
       cl_section_targeting_customers: 'Vilka kunder spelar störst roll?',
       cl_section_targeting_professionals: 'Vilka professionella spelar störst roll?',
-      cl_primary_interest_hint_customers: 'Välj ett eller två kundintressen eller beteenden som ska styra matchningen.',
+      cl_primary_interest_hint_customers: 'Välj ett eller två intressen som definierar målgruppen.',
       cl_primary_interest_hint_professionals: 'Välj ett eller två domänintressen som ska styra matchningen.',
       cl_section_basics: 'Grunduppgifter',
       cl_label_title: 'Studietitel',
@@ -6498,7 +6859,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_label_close_hint: 'Sista dagen att acceptera nya sökande. Efter detta datum flaggas studien som försenad.',
       cl_section_targeting: 'Definiera vilka som spelar roll',
       cl_label_primary_interest: 'Primärt intresse',
-      cl_primary_interest_hint: 'Välj ett eller två intressen som ska styra matchningen.',
+      cl_primary_interest_hint: 'Välj ett eller två intressen som definierar målgruppen.',
       cl_interest_warning: 'Tre eller fler intressen gör ofta poolen smalare snabbare än man tror.',
       cl_label_industry: 'Bransch',
       cl_ph_industry: 't.ex. Fintech',
@@ -6509,6 +6870,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_age_min: 'Min',
       cl_age_max: 'Max',
       cl_age_any: 'Alla åldrar',
+      cl_section_behaviors: 'Beteenden',
+      cl_behaviors_hint: 'Använd beteenden för att visa hur de här kunderna fattar beslut.',
+      cl_chip_behavior_recent_buyer: 'Har köpt i kategorin nyligen',
+      cl_chip_behavior_researches_before_buying: 'Gör research före köp',
+      cl_chip_behavior_buys_premium: 'Väljer premiumprodukter',
+      cl_chip_behavior_seeks_deals: 'Letar efter erbjudanden',
+      cl_chip_behavior_brand_loyal: 'Återvänder till välkända varumärken',
+      cl_chip_behavior_influenced_social: 'Påverkas av innehåll i sociala medier',
+      cl_review_row_behaviors: 'Beteenden',
+      cl_match_guidance_many_behaviors: 'Tre eller fler beteenden kan göra poolen smalare snabbt.',
       cl_section_screening: 'Urvalsfrågor',
       cl_screening_count: '{count} av 2 använda',
       cl_label_sq1: 'Urvalsfråga 1',
@@ -6539,33 +6910,25 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_chip_3_above: '3.0★ och uppåt',
       cl_chip_4_above: '4.0★ och uppåt',
       cl_chip_45_elite: '4.5★ Enbart Elite',
-      cl_chip_fashion: 'Mode & kläder',
-      cl_chip_online_shopper: 'E-handlare',
-      cl_chip_beauty: 'Skönhet & hudvård',
-      cl_chip_home: 'Hem & boende',
-      cl_chip_food: 'Mat & vardagshandel',
-      cl_chip_fitness: 'Träning & välmående',
-      cl_chip_brand_customer: 'Varumärkeskund',
-      cl_chip_sustainability: 'Hållbarhetsintresse',
-      cl_chip_social_media: 'Sociala medier',
-      cl_chip_parent: 'Förälder',
-      cl_chip_homeowner: 'Bostadsägare',
+      cl_chip_food_dining: 'Mat & restaurang',
+      cl_chip_fashion_beauty: 'Mode & skönhet',
+      cl_chip_home_living: 'Hem & boende',
       cl_chip_pets: 'Husdjur',
       cl_chip_travel: 'Resor',
-      cl_chip_gardening: 'Trädgård',
-      cl_chip_smartphones: 'Smartphones',
+      cl_chip_fitness_sports: 'Träning & sport',
+      cl_chip_health_wellness: 'Hälsa & välmående',
+      cl_chip_devices_wearables: 'Enheter & wearables',
+      cl_chip_apps_software: 'Appar & mjukvara',
+      cl_chip_streaming_media: 'Streaming & media',
       cl_chip_gaming: 'Gaming',
-      cl_chip_streaming: 'Streaming',
-      cl_chip_podcasts: 'Podcaster',
       cl_chip_smart_home: 'Smarta hem',
-      cl_chip_online_banking: 'Internetbank',
+      cl_chip_banking_payments: 'Bank och betalningar',
       cl_chip_investing: 'Investeringar',
-      cl_chip_crypto: 'Krypto',
-      cl_chip_mortgages: 'Bolån',
       cl_chip_insurance: 'Försäkring',
       cl_chip_budgeting: 'Budgetering',
-      cl_interest_group_lifestyle: 'Livsstil',
-      cl_interest_group_tech: 'Teknik',
+      cl_interest_group_everyday_consumer: 'Vardagsliv',
+      cl_interest_group_health_fitness: 'Hälsa & träning',
+      cl_interest_group_technology: 'Teknik',
       cl_interest_group_finance: 'Ekonomi',
       cl_industry_fintech: 'Fintech',
       cl_industry_ecommerce: 'E-handel',
@@ -6601,6 +6964,59 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_match_guidance_age_narrow: 'Ett smalt åldersintervall gör den här studien svårare att fylla.',
       cl_match_guidance_limited: 'Om du breddar ett filter går fyllningen snabbare.',
       cl_match_guidance_well_defined: 'Den här målgruppen är tydligt definierad.',
+      cl_customer_decision_priority_high: 'Rekommenderat',
+      cl_customer_decision_priority_low: 'Valfritt',
+      cl_customer_decision_readiness_fix_first: 'Åtgärda det här innan granskning.',
+      cl_customer_decision_readiness_can_continue: 'Du kan fortsätta med det här upplägget.',
+      cl_customer_decision_readiness_ready: 'Den här målgruppen är redo för granskning.',
+      cl_customer_decision_missing_interest_expl: 'Ingenting här definierar ännu vilka som ska se studien.',
+      cl_customer_decision_missing_interest_action: 'Börja med ett primärt intresse.',
+      cl_customer_decision_missing_interest_tradeoff: 'Utan det förblir målgruppen för vag för att bedöma.',
+      cl_customer_decision_existing_mismatch_expl: 'Befintliga kunder är valda, men inget här skiljer dem från nya kunder.',
+      cl_customer_decision_existing_mismatch_action: 'Lägg till ett beteende som pekar på nuvarande kunder.',
+      cl_customer_decision_existing_mismatch_tradeoff: 'Annars kan du rekrytera personer utanför studiens mål.',
+      cl_customer_decision_category_signal_expl: 'Kategoriköpare är valda, men inget här pekar på aktivt köpintresse.',
+      cl_customer_decision_category_signal_action: 'Lägg till ett beteende som \'nylig köpare\' eller \'jämför varumärken\'.',
+      cl_customer_decision_category_signal_tradeoff: 'Annars kan målgruppen luta åt allmänt intresse i stället för köpare.',
+      cl_customer_decision_city_too_narrow_expl: 'En enda stad står för det mesta av avsmalningen här.',
+      cl_customer_decision_city_too_narrow_action: 'Byt till distans om studien inte måste vara lokal.',
+      cl_customer_decision_city_too_narrow_tradeoff: 'Att hålla det lokalt kommer sannolikt att bromsa svaren.',
+      cl_customer_decision_screening_too_narrow_expl: 'Två urvalsfrågor står för det mesta av avsmalningen här.',
+      cl_customer_decision_screening_too_narrow_action: 'Ta bort den svagare urvalsfrågan.',
+      cl_customer_decision_screening_too_narrow_tradeoff: 'Att behålla båda kommer sannolikt att bromsa svaren.',
+      cl_customer_decision_behaviors_too_narrow_expl: 'Tre beteenden är staplade här och överlappar hårt.',
+      cl_customer_decision_behaviors_too_narrow_action: 'Ta bort det minst viktiga beteendet.',
+      cl_customer_decision_behaviors_too_narrow_tradeoff: 'Att behålla alla krymper den nåbara poolen.',
+      cl_customer_decision_interests_too_narrow_expl: 'För många intressen överlappar här.',
+      cl_customer_decision_interests_too_narrow_action: 'Ta bort det minst viktiga intresset.',
+      cl_customer_decision_interests_too_narrow_tradeoff: 'Att behålla alla krymper den nåbara poolen.',
+      cl_customer_decision_age_too_narrow_expl: 'Åldersintervallet är snävare än resten av upplägget kräver.',
+      cl_customer_decision_age_too_narrow_action: 'Bredda åldersintervallet lite.',
+      cl_customer_decision_age_too_narrow_tradeoff: 'Att hålla det så här snävt kommer sannolikt att bromsa svaren.',
+      cl_customer_decision_generic_too_narrow_expl: 'Poolen är för liten för så många platser.',
+      cl_customer_decision_generic_too_narrow_action: 'Ta bort det minst viktiga filtret.',
+      cl_customer_decision_generic_too_narrow_tradeoff: 'Om du behåller det som det är kommer rekryteringen sannolikt att stanna av.',
+      cl_customer_decision_city_limited_expl: 'En enda stad gör en annars möjlig pool smalare.',
+      cl_customer_decision_city_limited_action: 'Behåll staden bara om platsen påverkar studien.',
+      cl_customer_decision_city_limited_tradeoff: 'Om inte kommer fyllningen sannolikt att gå långsammare.',
+      cl_customer_decision_screening_limited_expl: 'Två urvalsfrågor smalnar av en annars möjlig pool.',
+      cl_customer_decision_screening_limited_action: 'Behåll båda bara om varje fråga ändrar vem som kvalar in.',
+      cl_customer_decision_screening_limited_tradeoff: 'Att behålla båda kommer att bromsa svaren.',
+      cl_customer_decision_behaviors_limited_expl: 'Tre beteenden snävar in mer än briefen kräver.',
+      cl_customer_decision_behaviors_limited_action: 'Ta bort beteendet som betyder minst.',
+      cl_customer_decision_behaviors_limited_tradeoff: 'Att behålla alla minskar svarstakten.',
+      cl_customer_decision_general_needs_signal_expl: 'Du har ett intresse, men inget visar hur de här kunderna beter sig.',
+      cl_customer_decision_general_needs_signal_action: 'Lägg till ett beteende som \'jämför varumärken\' eller \'handlar online\'.',
+      cl_customer_decision_general_needs_signal_tradeoff: 'Utan det blir träffsäkerheten mindre jämn.',
+      cl_customer_decision_limited_ready_expl: 'Ett filter gör poolen snävare än den behöver vara.',
+      cl_customer_decision_limited_ready_action: 'Fortsätt bara om precision är viktigare än hastighet.',
+      cl_customer_decision_limited_ready_tradeoff: 'Räkna med långsammare fyllnad.',
+      cl_customer_decision_general_broad_expl: 'Inget här skiljer ännu allmänt intresse från verkliga köpare.',
+      cl_customer_decision_general_broad_action: 'Lägg till ett beteende om studien behöver en mer avgränsad målgrupp.',
+      cl_customer_decision_general_broad_tradeoff: 'Du kan fortsätta som det är, men träffsäkerheten förblir bred.',
+      cl_customer_decision_ready_expl: 'Upplägget definierar både vilka kunder det gäller och hur de beter sig.',
+      cl_customer_decision_ready_action: 'Fortsätt till granskning.',
+      cl_customer_decision_ready_tradeoff: 'Ytterligare åtstramning är valfri.',
       cl_review_block_label: 'Granska innan publicering',
       cl_review_ready: 'Redo att publicera',
       cl_review_review: 'Granska targetingen',
