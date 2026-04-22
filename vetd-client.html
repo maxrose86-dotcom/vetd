@@ -1532,6 +1532,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
   let _justPublishedStudyId = null;
   let _completedStudiesExpanded = false;
+  let _studyStatusInFlight = false;
   const BUILDER_INTEREST_OPTIONS = [
     {
       key: 'interests_everyday_consumer',
@@ -2013,6 +2014,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const [justPublishedStudy] = activeStudies.splice(activeIndex, 1);
         activeStudies.unshift(justPublishedStudy);
       }
+      _justPublishedStudyId = null;
     }
 
     const STATUS_LABEL = { active: 'Active', paused: 'Paused', completed: 'Completed', archived: 'Archived', draft: 'Draft', cancelled: 'Cancelled' };
@@ -5219,6 +5221,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         }
       }
 
+      showToast(t('cl_marked_completed'));
       loadApplicants(studyId).catch(err => {
         console.error('Background loadApplicants after markCompleted failed:', err);
         if (window.Sentry) Sentry.captureException(err);
@@ -5547,62 +5550,69 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   async function setStudyStatus(studyId, status) {
-    const cachedStudy = _studiesCache?.studies?.find(study => study.id === studyId) || null;
-    const previousStatus = cachedStudy?.status || null;
-    const canOptimisticallyUpdate = Boolean(
-      cachedStudy && (
-        (previousStatus === 'active' && status === 'paused') ||
-        (previousStatus === 'paused' && status === 'active') ||
-        ((previousStatus === 'active' || previousStatus === 'paused') && status === 'completed')
-      )
-    );
-    const shouldRefreshOpenStudy = _currentTab === 'study'
-      && currentApplicantsStudyId === studyId
-      && document.getElementById('tab-study')?.classList.contains('active');
-
-    if (canOptimisticallyUpdate) {
-      _studiesCache = {
-        ..._studiesCache,
-        studies: _studiesCache.studies.map(study =>
-          study.id === studyId ? { ...study, status } : study
-        )
-      };
-      renderStudiesList();
-    }
-
+    if (_studyStatusInFlight) return;
+    _studyStatusInFlight = true;
     try {
-      const { error } = await db.from('studies').update({ status }).eq('id', studyId);
-      if (error) throw error;
-      const STATUS_TOAST = {
-        paused:    'cl_study_toast_paused',
-        active:    'cl_study_toast_active',
-        completed: 'cl_study_toast_completed',
-        archived:  'cl_study_toast_archived',
-      };
-      showToast(t(STATUS_TOAST[status] || 'cl_study_toast_updated'));
-      if (shouldRefreshOpenStudy) {
-        loadStudyOverview(studyId).catch(err => {
-          console.error('Background loadStudyOverview after status change failed:', err);
-          if (window.Sentry) Sentry.captureException(err);
-        });
-      }
-      loadStudies().catch(err => {
-        console.error('Background loadStudies after status change failed:', err);
-        if (window.Sentry) Sentry.captureException(err);
-      });
-    } catch(err) {
-      if (canOptimisticallyUpdate && previousStatus) {
+      const cachedStudy = _studiesCache?.studies?.find(study => study.id === studyId) || null;
+      const previousStatus = cachedStudy?.status || null;
+      const canOptimisticallyUpdate = Boolean(
+        cachedStudy && (
+          (previousStatus === 'active' && status === 'paused') ||
+          (previousStatus === 'paused' && status === 'active') ||
+          ((previousStatus === 'active' || previousStatus === 'paused') && status === 'completed')
+        )
+      );
+      const shouldRefreshOpenStudy = _currentTab === 'study'
+        && currentApplicantsStudyId === studyId
+        && document.getElementById('tab-study')?.classList.contains('active');
+
+      if (canOptimisticallyUpdate) {
+        if (status === 'completed') _completedStudiesExpanded = true;
         _studiesCache = {
           ..._studiesCache,
           studies: _studiesCache.studies.map(study =>
-            study.id === studyId ? { ...study, status: previousStatus } : study
+            study.id === studyId ? { ...study, status } : study
           )
         };
         renderStudiesList();
       }
-      console.error('setStudyStatus error:', err);
-      if (window.Sentry) Sentry.captureException(err);
-      showToast("We couldn't update the study. Try again.", true);
+
+      try {
+        const { error } = await db.from('studies').update({ status }).eq('id', studyId);
+        if (error) throw error;
+        const STATUS_TOAST = {
+          paused:    'cl_study_toast_paused',
+          active:    'cl_study_toast_active',
+          completed: 'cl_study_toast_completed',
+          archived:  'cl_study_toast_archived',
+        };
+        showToast(t(STATUS_TOAST[status] || 'cl_study_toast_updated'));
+        if (shouldRefreshOpenStudy) {
+          loadStudyOverview(studyId).catch(err => {
+            console.error('Background loadStudyOverview after status change failed:', err);
+            if (window.Sentry) Sentry.captureException(err);
+          });
+        }
+        loadStudies().catch(err => {
+          console.error('Background loadStudies after status change failed:', err);
+          if (window.Sentry) Sentry.captureException(err);
+        });
+      } catch(err) {
+        if (canOptimisticallyUpdate && previousStatus) {
+          _studiesCache = {
+            ..._studiesCache,
+            studies: _studiesCache.studies.map(study =>
+              study.id === studyId ? { ...study, status: previousStatus } : study
+            )
+          };
+          renderStudiesList();
+        }
+        console.error('setStudyStatus error:', err);
+        if (window.Sentry) Sentry.captureException(err);
+        showToast("We couldn't update the study. Try again.", true);
+      }
+    } finally {
+      _studyStatusInFlight = false;
     }
   }
 
