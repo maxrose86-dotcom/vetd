@@ -1886,7 +1886,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (insertRes.error) throw insertRes.error;
       await loadStudies();
       showToast(t('cl_duplicate_success'));
-      await openDraftInBuilder(insertRes.data.id);
     } catch (err) {
       console.error('duplicateStudy error:', err);
       if (window.Sentry) Sentry.captureException(err);
@@ -2719,7 +2718,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         row.style.opacity = '0.78';
         if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-accepted">${t('cl_accepted')}</span>`;
       } else if (newStatus === 'rejected') {
-        row.remove();
+        const rowHeight = row.offsetHeight;
+        row.style.overflow = 'hidden';
+        row.style.maxHeight = rowHeight + 'px';
+        row.style.transition = 'opacity 0.18s ease, max-height 0.24s ease 0.05s, margin-bottom 0.24s ease 0.05s, padding-top 0.24s ease 0.05s, padding-bottom 0.24s ease 0.05s';
+        requestAnimationFrame(() => {
+          row.style.opacity = '0';
+          row.style.maxHeight = '0';
+          row.style.marginBottom = '0';
+          row.style.paddingTop = '0';
+          row.style.paddingBottom = '0';
+        });
+        setTimeout(() => row.remove(), 280);
       }
     } else if (actionsEl) {
       actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
@@ -5543,7 +5553,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { error } = await db.from('studies').update({ status }).eq('id', studyId);
       if (error) throw error;
-      showToast('Study updated');
+      const STATUS_TOAST = {
+        paused:    'cl_study_toast_paused',
+        active:    'cl_study_toast_active',
+        completed: 'cl_study_toast_completed',
+        archived:  'cl_study_toast_archived',
+      };
+      showToast(t(STATUS_TOAST[status] || 'cl_study_toast_updated'));
       if (shouldRefreshOpenStudy) {
         loadStudyOverview(studyId).catch(err => {
           console.error('Background loadStudyOverview after status change failed:', err);
@@ -6320,6 +6336,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_status_archived: 'Archived',
       cl_study_status_draft: 'Draft',
       cl_study_status_cancelled: 'Cancelled',
+      cl_study_toast_paused: 'Study paused',
+      cl_study_toast_active: 'Study resumed',
+      cl_study_toast_completed: 'Marked as completed',
+      cl_study_toast_archived: 'Study archived',
+      cl_study_toast_updated: 'Study updated',
       cl_study_primary_resolve_sessions: 'Resolve {count} sessions →',
       cl_study_primary_log_outcomes: 'Log {count} outcomes →',
       cl_study_primary_session_today: 'Session today{time} →',
@@ -6357,7 +6378,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_more_interests: '+{count} more',
       cl_duplicate_suffix: 'copy',
       cl_duplicate_default_title: 'Study copy',
-      cl_duplicate_success: 'Draft duplicated.',
+      cl_duplicate_success: 'Draft duplicated',
       cl_duplicate_failed: 'Could not duplicate the study.',
       cl_delete_draft_confirm: 'Delete this draft from the Studies list?',
       cl_delete_draft_success: 'Draft removed.',
@@ -6948,6 +6969,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_status_archived: 'Arkiverad',
       cl_study_status_draft: 'Utkast',
       cl_study_status_cancelled: 'Inställd',
+      cl_study_toast_paused: 'Studie pausad',
+      cl_study_toast_active: 'Studie återupptagen',
+      cl_study_toast_completed: 'Markerad som slutförd',
+      cl_study_toast_archived: 'Studie arkiverad',
+      cl_study_toast_updated: 'Studie uppdaterad',
       cl_study_primary_resolve_sessions: 'Hantera {count} sessioner →',
       cl_study_primary_log_outcomes: 'Logga {count} utfall →',
       cl_study_primary_session_today: 'Session idag{time} →',
@@ -6985,7 +7011,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_more_interests: '+{count} till',
       cl_duplicate_suffix: 'kopia',
       cl_duplicate_default_title: 'Studiekopia',
-      cl_duplicate_success: 'Utkast duplicerat.',
+      cl_duplicate_success: 'Utkast duplicerat',
       cl_duplicate_failed: 'Kunde inte duplicera studien.',
       cl_delete_draft_confirm: 'Ta bort det här utkastet från Studier?',
       cl_delete_draft_success: 'Utkast borttaget.',
