@@ -1816,10 +1816,14 @@
       const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error('Not logged in');
 
+      const lifestyle = getChipValues('interests_lifestyle');
+      const tech      = getChipValues('interests_tech');
+      const finance   = getChipValues('interests_finance');
       const { error } = await db.from('contributors').update({
-        interests_lifestyle: getChipValues('interests_lifestyle'),
-        interests_tech:      getChipValues('interests_tech'),
-        interests_finance:   getChipValues('interests_finance'),
+        interests_lifestyle: lifestyle,
+        interests_tech:      tech,
+        interests_finance:   finance,
+        interests:           [...new Set([...lifestyle, ...tech, ...finance])],
         onboarding_step:     4
       }).eq('id', user.id);
 
@@ -2832,6 +2836,10 @@
   }
 
   function getContributorInterestValues(profile) {
+    // New canonical field wins if populated; legacy fields are the fallback.
+    if (Array.isArray(profile?.interests) && profile.interests.length > 0) {
+      return profile.interests;
+    }
     return [
       ...(Array.isArray(profile?.interests_lifestyle) ? profile.interests_lifestyle : []),
       ...(Array.isArray(profile?.interests_tech) ? profile.interests_tech : []),
@@ -3321,10 +3329,15 @@
     ]
   };
 
-  // Lang-aware label lookup for interest chips in profile view
+  // Lang-aware label lookup for interest chips in profile view.
+  // Searches the new flat 'interests' key first, then legacy keys, then brands.
   function getInterestLabel(value) {
     const lang = getCurrentLang();
-    for (const k of ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']) {
+    const searchKeys = CHIP_OPTIONS.interests
+      ? ['interests', 'interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']
+      : ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands'];
+    for (const k of searchKeys) {
+      if (!CHIP_OPTIONS[k]) continue;
       const opt = CHIP_OPTIONS[k].find(o => o.value === value);
       if (opt) return (lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label;
     }
@@ -5408,10 +5421,8 @@ async function applyToStudy(studyId, answers = null) {
     const tagsContainer = document.getElementById('profile-interests-tags');
     if (tagsContainer) {
       const allTags = [
-        ...(Array.isArray(safeProfile?.interests_lifestyle) ? safeProfile.interests_lifestyle : []).map(v => ({ v, cls: 'tag-green' })),
-        ...(Array.isArray(safeProfile?.interests_tech)      ? safeProfile.interests_tech      : []).map(v => ({ v, cls: 'tag-blue'  })),
-        ...(Array.isArray(safeProfile?.interests_finance)   ? safeProfile.interests_finance   : []).map(v => ({ v, cls: 'tag-amber' })),
-        ...(Array.isArray(safeProfile?.brands)              ? safeProfile.brands              : []).map(v => ({ v, cls: 'tag-gray'  })),
+        ...getContributorInterestValues(safeProfile).map(v => ({ v, cls: 'tag-green' })),
+        ...(Array.isArray(safeProfile?.brands) ? safeProfile.brands : []).map(v => ({ v, cls: 'tag-gray' })),
       ];
       tagsContainer.innerHTML = allTags.length
         ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
@@ -5421,9 +5432,7 @@ async function applyToStudy(studyId, answers = null) {
     // Profile completeness bar
     const compEl = document.getElementById('profile-completeness');
     if (compEl) {
-      const hasInterests = (Array.isArray(safeProfile?.interests_lifestyle) && safeProfile.interests_lifestyle.length) ||
-                           (Array.isArray(safeProfile?.interests_tech)      && safeProfile.interests_tech.length)      ||
-                           (Array.isArray(safeProfile?.interests_finance)   && safeProfile.interests_finance.length);
+      const hasInterests = getContributorInterestValues(safeProfile).length > 0;
       const checks = [
         !!(safeProfile?.date_of_birth && (safeProfile?.city || safeProfile?.country)),
         !!(safeProfile?.job_title && safeProfile?.industry),
@@ -5456,7 +5465,7 @@ async function applyToStudy(studyId, answers = null) {
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level, is_test').eq('id', user.id).single()
+        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level, is_test').eq('id', user.id).single()
       ]);
       state.profileData = profile;
       state.contribData = contrib;
@@ -5495,10 +5504,7 @@ async function applyToStudy(studyId, answers = null) {
       key:      'topics',
       type:     'chips',
       dbFields: { interests_lifestyle: 'interests_lifestyle', interests_tech: 'interests_tech', interests_finance: 'interests_finance' },
-      isComplete: c =>
-        (Array.isArray(c?.interests_lifestyle) && c.interests_lifestyle.length > 0) ||
-        (Array.isArray(c?.interests_tech)       && c.interests_tech.length > 0)      ||
-        (Array.isArray(c?.interests_finance)    && c.interests_finance.length > 0),
+      isComplete: c => getContributorInterestValues(c).length > 0,
     },
     {
       key:      'bio',
@@ -5593,6 +5599,12 @@ async function applyToStudy(studyId, answers = null) {
           const group = body?.querySelector(`[data-field="${field}"]`);
           update[field] = group ? [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value) : [];
         });
+        // Keep flat canonical field in sync
+        update.interests = [...new Set([
+          ...update.interests_lifestyle,
+          ...update.interests_tech,
+          ...update.interests_finance
+        ])];
       } else {
         update[section.dbField] = document.getElementById('boost-ta-bio')?.value.trim() || null;
       }
@@ -5609,10 +5621,8 @@ async function applyToStudy(studyId, answers = null) {
         if (tagsContainer) {
           const c = state.contribData;
           const allTags = [
-            ...(Array.isArray(c?.interests_lifestyle) ? c.interests_lifestyle : []).map(v => ({ v, cls: 'tag-green' })),
-            ...(Array.isArray(c?.interests_tech)      ? c.interests_tech      : []).map(v => ({ v, cls: 'tag-blue'  })),
-            ...(Array.isArray(c?.interests_finance)   ? c.interests_finance   : []).map(v => ({ v, cls: 'tag-amber' })),
-            ...(Array.isArray(c?.brands)              ? c.brands              : []).map(v => ({ v, cls: 'tag-gray'  })),
+            ...getContributorInterestValues(c).map(v => ({ v, cls: 'tag-green' })),
+            ...(Array.isArray(c?.brands) ? c.brands : []).map(v => ({ v, cls: 'tag-gray' })),
           ];
           tagsContainer.innerHTML = allTags.length
             ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
@@ -5831,6 +5841,11 @@ async function applyToStudy(studyId, answers = null) {
           interests_lifestyle: getChipValues('interests_lifestyle', '#profile-edit-form'),
           interests_tech:      getChipValues('interests_tech',      '#profile-edit-form'),
           interests_finance:   getChipValues('interests_finance',   '#profile-edit-form'),
+          interests:           [...new Set([
+            ...getChipValues('interests_lifestyle', '#profile-edit-form'),
+            ...getChipValues('interests_tech',      '#profile-edit-form'),
+            ...getChipValues('interests_finance',   '#profile-edit-form')
+          ])],
           brands:              getChipValues('brands',              '#profile-edit-form'),
           study_formats:       getChipValues('study_formats',       '#profile-edit-form'),
           available_times:     getChipValues('available_times',     '#profile-edit-form'),
