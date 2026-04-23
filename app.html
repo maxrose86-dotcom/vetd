@@ -364,6 +364,28 @@
   .command-main { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-top: 4px; }
   .command-sub { font-size: 13px; color: var(--gray-500); margin-top: 4px; line-height: 1.55; }
   .command-cta { margin-top: 12px; }
+  .next-session-card {
+    margin: 0 0 1rem;
+    padding: 16px;
+    border: 1px solid var(--gray-100);
+    border-radius: 14px;
+    background: #fff;
+  }
+  .next-session-label { font-size: 12px; color: var(--gray-400); }
+  .next-session-title { font-size: 16px; font-weight: 600; color: var(--gray-900); margin-top: 4px; }
+  .next-session-meta { font-size: 13px; color: var(--gray-500); margin-top: 4px; line-height: 1.55; }
+  .next-session-actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .prep-modal-list { margin: 1rem 0 1.25rem; display: flex; flex-direction: column; gap: 10px; }
+  .prep-modal-item {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--gray-700);
+  }
+  .prep-modal-check {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid var(--gray-200); color: var(--green-dark);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; flex-shrink: 0;
+  }
 
   /* ── VIDEO CALL OVERLAY ── */
   #video-call-overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: #fff; flex-direction: column; }
@@ -1177,6 +1199,7 @@
           <div id="command-sub" class="command-sub">Most contributors apply to a few to get started.</div>
           <button id="command-cta" class="apply-btn command-cta" onclick="runContributorNextAction()">Browse studies</button>
         </div>
+        <div id="dash-next-session-wrap" style="display:none"></div>
 
         <div class="stat-cards">
           <div class="stat-card">
@@ -1533,6 +1556,21 @@
     <div style="display:flex;gap:10px">
       <button onclick="closeDeleteModal()" style="flex:1;padding:10px;border-radius:8px;border:1.5px solid #E5E7EB;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px" data-i18n="delete_modal_cancel">Cancel</button>
       <button onclick="confirmDeleteAccount()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#DC2626;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:14px;font-weight:600" data-i18n="delete_modal_delete">Delete account</button>
+    </div>
+  </div>
+</div>
+
+<div id="session-prep-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:420px;width:calc(100% - 32px)">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px" data-i18n="next_session_prepare_title">Get ready for your session</h2>
+    <p style="font-size:13px;color:var(--gray-500);line-height:1.6" data-i18n="next_session_prepare_sub">A quick check now helps the session start smoothly.</p>
+    <div class="prep-modal-list">
+      <div class="prep-modal-item"><span class="prep-modal-check">✓</span><span data-i18n="next_session_check_time">Time confirmed</span></div>
+      <div class="prep-modal-item"><span class="prep-modal-check">✓</span><span data-i18n="next_session_check_device">Device ready</span></div>
+      <div class="prep-modal-item"><span class="prep-modal-check">✓</span><span data-i18n="next_session_check_space">Quiet space</span></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="closeSessionPrepModal()" data-i18n="next_session_prepare_close">Close</button>
     </div>
   </div>
 </div>
@@ -4202,6 +4240,7 @@
     } finally {
       state.hydration.applications = true;
       syncContributorHydration();
+      renderDashboardNextSession();
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
     }
@@ -4521,7 +4560,7 @@
       return {
         sectionKey,
         html: `
-        <div class="${cardClass}">
+        <div id="my-study-card-${esc(a.id)}" class="${cardClass}">
           <div class="app-card-header">
             <div class="app-card-info">
               <div class="app-card-title">${esc(title)}</div>
@@ -4898,6 +4937,101 @@ async function applyToStudy(studyId, answers = null) {
     if (zeroCta) zeroCta.style.display = 'none';
   }
 
+  function getNextUpcomingSession() {
+    const safe = getSafeContributorState();
+    if (!safe.flags.hasApplications) return null;
+    return safe.applications
+      .filter(app =>
+        app &&
+        app.status === 'accepted' &&
+        app.scheduled_at &&
+        Number.isFinite(new Date(app.scheduled_at).getTime()) &&
+        new Date(app.scheduled_at).getTime() > Date.now()
+      )
+      .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))[0] || null;
+  }
+
+  function getNextSessionFormatLabel(app) {
+    return app?.studies?.format === 'in_person' ? t('modal_overview_format_in_person') : t('modal_overview_format_online');
+  }
+
+  function getNextSessionCta(app) {
+    if (!app?.scheduled_at) return { label: t('next_session_cta_view'), action: 'details' };
+    const msUntil = new Date(app.scheduled_at).getTime() - Date.now();
+    const hoursUntil = msUntil / (1000 * 60 * 60);
+    if (hoursUntil <= 0.2) return { label: t('next_session_cta_join'), action: 'join' };
+    if (hoursUntil <= 24) return { label: t('next_session_cta_prepare'), action: 'prepare' };
+    return { label: t('next_session_cta_view'), action: 'details' };
+  }
+
+  function openMyStudyDetails(appId) {
+    const btn = document.querySelector('.topbar-nav button:nth-child(3)');
+    if (btn) showTab('my-studies', btn);
+    requestAnimationFrame(function() {
+      const row = document.getElementById('my-study-card-' + appId);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  function openSessionPrepModal() {
+    const modal = document.getElementById('session-prep-modal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeSessionPrepModal() {
+    const modal = document.getElementById('session-prep-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function handleNextSessionAction(appId) {
+    const app = (state.myApplications || []).find(item => item.id === appId);
+    if (!app) return;
+    const cta = getNextSessionCta(app);
+    if (cta.action === 'join') {
+      if (app.room_url) {
+        openVideoCall(app.room_url, app.studies?.title || t('video_call_title'), app.id);
+      } else {
+        showToast(t('session_link_pending'), true);
+      }
+      return;
+    }
+    if (cta.action === 'prepare') {
+      openSessionPrepModal();
+      return;
+    }
+    openMyStudyDetails(app.id);
+  }
+
+  function renderDashboardNextSession() {
+    const wrap = document.getElementById('dash-next-session-wrap');
+    if (!wrap) return;
+    const nextSession = getNextUpcomingSession();
+    if (!nextSession) {
+      wrap.innerHTML = '';
+      wrap.style.display = 'none';
+      return;
+    }
+
+    const study = nextSession.studies || {};
+    const cta = getNextSessionCta(nextSession);
+    const metaParts = [
+      formatSessionTime(nextSession.scheduled_at),
+      getNextSessionFormatLabel(nextSession)
+    ].filter(Boolean);
+
+    wrap.innerHTML = `
+      <div class="next-session-card">
+        <div class="next-session-label">${esc(t('next_session_label'))}</div>
+        <div class="next-session-title">${esc(study.title || t('video_call_title'))}</div>
+        <div class="next-session-meta">${esc(metaParts.join(' · '))}</div>
+        <div class="next-session-actions">
+          <button class="btn-primary" onclick="handleNextSessionAction('${escAttr(nextSession.id)}')">${esc(cta.label)}</button>
+        </div>
+      </div>
+    `;
+    wrap.style.display = '';
+  }
+
   function updateDashboard(firstName, stats, tierDisplay) {
     const safe = getSafeContributorState();
     const { studiesDone, totalEarned, rating, completionRate } = safe.stats;
@@ -4989,6 +5123,7 @@ async function applyToStudy(studyId, answers = null) {
       ? paidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
       : totalEarned;
     if (statCards) statCards.style.display = '';
+    renderDashboardNextSession();
 
     if (!safe.flags.isHydrated) {
       renderDashboardStatSkeletons();
@@ -6446,6 +6581,16 @@ async function applyToStudy(studyId, answers = null) {
       good_morning: 'Good morning',
       good_afternoon: 'Good afternoon',
       good_evening: 'Good evening',
+      next_session_label: 'Next session',
+      next_session_cta_view: 'View details',
+      next_session_cta_prepare: 'Prepare for session',
+      next_session_cta_join: 'Join session →',
+      next_session_prepare_title: 'Get ready for your session',
+      next_session_prepare_sub: 'A quick check now helps the session start smoothly.',
+      next_session_check_time: 'Time confirmed',
+      next_session_check_device: 'Device ready',
+      next_session_check_space: 'Quiet space',
+      next_session_prepare_close: 'Close',
       no_ratings_yet: 'No ratings yet',
       top_5_pct: 'Top 5% of contributors',
       top_15_pct: 'Top 15% of contributors',
@@ -7105,6 +7250,16 @@ async function applyToStudy(studyId, answers = null) {
       good_morning: 'God morgon',
       good_afternoon: 'God eftermiddag',
       good_evening: 'God kväll',
+      next_session_label: 'Nästa session',
+      next_session_cta_view: 'Visa detaljer',
+      next_session_cta_prepare: 'Förbered sessionen',
+      next_session_cta_join: 'Gå med i session →',
+      next_session_prepare_title: 'Gör dig redo för sessionen',
+      next_session_prepare_sub: 'En snabb kontroll nu hjälper sessionen att börja smidigt.',
+      next_session_check_time: 'Tiden bekräftad',
+      next_session_check_device: 'Enheten redo',
+      next_session_check_space: 'Lugn plats',
+      next_session_prepare_close: 'Stäng',
       no_ratings_yet: 'Inga betyg ännu',
       top_5_pct: 'Topp 5% av deltagare',
       top_15_pct: 'Topp 15% av deltagare',
