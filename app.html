@@ -398,6 +398,12 @@
     color: var(--gray-400);
   }
   .job-company-name { font-size: 12px; color: var(--gray-400); }
+  .job-match-strength {
+    display: inline-flex; align-items: center;
+    font-size: 11px; font-weight: 600; color: var(--green-dark);
+    background: var(--green-light); border-radius: 100px;
+    padding: 4px 9px; margin: 4px 0 6px;
+  }
   .job-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
   .job-snapshot { font-size: 12px; color: var(--gray-700); line-height: 1.35; margin-top: 3px; }
   .job-relevance { font-size: 12px; color: var(--gray-700); line-height: 1.4; margin-top: 3px; }
@@ -405,6 +411,11 @@
   .pay-amount { font-family: var(--serif); font-size: 28px; color: var(--green); }
   .pay-type { font-size: 11px; color: var(--gray-400); }
   .job-desc { font-size: 13px; color: var(--gray-400); line-height: 1.5; margin-bottom: 12px; font-weight: 300; }
+  .job-match-signals { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .match-signal-chip {
+    padding: 4px 10px; border-radius: 100px; font-size: 11px; font-weight: 500;
+    background: rgba(17,17,17,0.04); color: var(--gray-700);
+  }
   .job-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .tag {
     padding: 4px 11px; border-radius: 100px; font-size: 11px; font-weight: 500;
@@ -2808,9 +2819,72 @@
       .map(c => c.text);
   }
 
+  function getStudyPreferenceSortScore(study, profile, prefs) {
+    const fit = computeStudyFit(study, profile, prefs || {});
+    let score = fit.score;
+
+    score += Math.min((study?.pay || 0) * 0.003, 1.2);
+    if (study?.durationMinutes) {
+      score += Math.max(0, 60 - study.durationMinutes) * 0.02;
+    }
+    if (fit.signals.formatMatch) {
+      score += 0.75;
+    }
+
+    return score;
+  }
+
+  function getStudyMatchStrengthLabel(study, profile, prefs, fitOverride = null) {
+    const fit = fitOverride || computeStudyFit(study, profile, prefs || {});
+    if (fit.score >= 3) return t('browse_match_strength_great');
+    if (fit.score >= 1) return t('browse_match_strength_good');
+    return t('browse_match_strength_possible');
+  }
+
+  function getStudyBrowseSignals(study, profile, prefs, fitOverride = null) {
+    const fit = fitOverride || computeStudyFit(study, profile, prefs || {});
+    const contributorInterests = getContributorInterestValues(profile);
+    const targetInterests = Array.isArray(study?.targetInterests) ? study.targetInterests : [];
+    const sharedInterests = targetInterests.filter(value => contributorInterests.includes(value)).slice(0, 2);
+    const candidates = [];
+    const addSignal = function(key, text) {
+      if (!text || candidates.some(candidate => candidate.key === key)) return;
+      candidates.push({ key, text });
+    };
+
+    if (sharedInterests.length) {
+      addSignal('interest', t('browse_signal_interest').replace('{interests}', sharedInterests.map(getInterestLabel).join(', ')));
+    }
+
+    if (fit.signals.formatMatch) {
+      addSignal(
+        'format',
+        study?.format === 'in-person'
+          ? t('browse_signal_format_in_person')
+          : t('browse_signal_format_online')
+      );
+    } else if (study?.format !== 'in-person') {
+      addSignal('remote', t('browse_signal_remote'));
+    }
+
+    if ((study?.hourlyRate || 0) >= 250 || (study?.pay || 0) >= 250) {
+      addSignal('pay', t('browse_signal_high_pay'));
+    }
+
+    if (study?.durationMinutes && study.durationMinutes <= 30) {
+      addSignal('duration', t('browse_signal_short_session'));
+    }
+
+    return candidates.slice(0, 4).map(candidate => candidate.text);
+  }
+
   function applyStudyPreferenceBias(studies, prefs, profileOverride = state.contribData) {
     const list = Array.isArray(studies) ? [...studies] : [];
-    return list.sort((a, b) => computeStudyFit(b, profileOverride, prefs).score - computeStudyFit(a, profileOverride, prefs).score);
+    return list.sort((a, b) => {
+      const scoreDiff = getStudyPreferenceSortScore(b, profileOverride, prefs) - getStudyPreferenceSortScore(a, profileOverride, prefs);
+      if (scoreDiff !== 0) return scoreDiff;
+      return computeStudyFit(b, profileOverride, prefs).score - computeStudyFit(a, profileOverride, prefs).score;
+    });
   }
 
   // ─── OPPORTUNITY ROUTING ─────────────────────────────────
@@ -3369,6 +3443,9 @@
     container.innerHTML = lowFitNote + displayStudies.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
       const displayTags = getStudyDisplayTags(job);
+      const fit = computeStudyFit(job, state.contribData, prefs);
+      const matchStrength = getStudyMatchStrengthLabel(job, state.contribData, prefs, fit);
+      const matchSignals = getStudyBrowseSignals(job, state.contribData, prefs, fit);
       return `
       <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
         ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : ''}
@@ -3377,8 +3454,8 @@
             <div class="company-badge">${esc(job.company)}</div>
             <div>
               <div class="job-company-name">${esc(getStudyCredibilityLine(job))}</div>
+              <div class="job-match-strength">${esc(matchStrength)}</div>
               <div class="job-title">${esc(job.title)}</div>
-              <div class="job-relevance">${esc(getStudyRelevance(job))}</div>
               <div class="job-snapshot">${esc(getStudySnapshot(job, payTypeLabel))}</div>
             </div>
           </div>
@@ -3388,6 +3465,7 @@
           </div>
         </div>
         <div class="job-desc">${esc(job.desc)}</div>
+        ${matchSignals.length ? `<div class="job-match-signals">${matchSignals.map(signal => `<span class="match-signal-chip">${esc(signal)}</span>`).join('')}</div>` : ''}
         <div class="job-tags">${displayTags.map(tag => `<span class="tag ${esc(tag.cls)}">${esc(tag.text)}</span>`).join('')}</div>
         <div class="job-footer">
           <div>
@@ -6080,6 +6158,15 @@ async function applyToStudy(studyId, answers = null) {
       browse_relevance_length: 'Fits the session length you prefer',
       browse_relevance_focus: 'Aligned with your focus on {focus}',
       browse_relevance_short: 'Short session that fits your profile',
+      browse_match_strength_great: 'Great match',
+      browse_match_strength_good: 'Good match',
+      browse_match_strength_possible: 'Possible fit',
+      browse_signal_interest: 'Matches your interests: {interests}',
+      browse_signal_format_online: 'Matches your preferred format',
+      browse_signal_format_in_person: 'Matches your preferred format',
+      browse_signal_remote: 'Remote study',
+      browse_signal_high_pay: 'High pay',
+      browse_signal_short_session: 'Short session',
       apply_btn: 'Apply',
       modal_apply_cta: 'Apply for study',
       modal_apply_later: 'Not now',
@@ -6730,6 +6817,15 @@ async function applyToStudy(studyId, answers = null) {
       browse_relevance_length: 'Passar den sessionslängd du föredrar',
       browse_relevance_focus: 'I linje med ditt fokus på {focus}',
       browse_relevance_short: 'Kort session som passar din profil',
+      browse_match_strength_great: 'Mycket bra match',
+      browse_match_strength_good: 'Bra match',
+      browse_match_strength_possible: 'Möjlig passform',
+      browse_signal_interest: 'Matchar dina intressen: {interests}',
+      browse_signal_format_online: 'Matchar ditt föredragna format',
+      browse_signal_format_in_person: 'Matchar ditt föredragna format',
+      browse_signal_remote: 'Distansstudie',
+      browse_signal_high_pay: 'Hög ersättning',
+      browse_signal_short_session: 'Kort session',
       apply_btn: 'Ansök',
       modal_apply_cta: 'Ansök till studie',
       modal_apply_later: 'Inte nu',
