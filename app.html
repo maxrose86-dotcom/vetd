@@ -537,6 +537,13 @@
     cursor: pointer; transition: all 0.15s ease;
   }
   .match-pref-chip.active { border-color: rgba(17,17,17,0.12); background: var(--gray-50); color: var(--gray-900); }
+  .fit-profile-surface { margin-bottom: 1rem; }
+  .fit-profile-body { font-size: 13px; color: var(--gray-500); line-height: 1.6; }
+  .fit-profile-line + .fit-profile-line { margin-top: 4px; }
+  .fit-profile-controls { margin-top: 1rem; display: flex; flex-direction: column; gap: 12px; }
+  .fit-profile-control-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .fit-profile-control-label { font-size: 12px; color: var(--gray-700); font-weight: 500; min-width: 58px; padding-top: 6px; }
+  .fit-profile-focus-row { margin-top: 4px; }
 
   /* ── BOOST CARD ── */
   .boost-card {
@@ -1247,6 +1254,7 @@
           <h1 style="font-family:var(--serif);font-size:28px;margin-bottom:4px" data-i18n="browse_title">Available opportunities</h1>
           <p style="color:var(--gray-400);font-size:14px;font-weight:300" data-i18n="browse_subtitle">Showing studies matched to your profile</p>
         </div>
+        <div id="fit-profile-surface" class="match-prefs-surface fit-profile-surface"></div>
         <div class="filter-bar">
           <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
           <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
@@ -1861,6 +1869,8 @@
   }
 
   let _studySort = 'best_match';
+  let _studyFilter = 'all';
+  let _fitProfileEditingInterests = false;
 
   // ─── STATE ───────────────────────────────────────────────
   const state = {
@@ -2672,10 +2682,11 @@
       stored = JSON.parse(localStorage.getItem(MATCH_PREFS_STORAGE_KEY) || 'null');
     } catch (err) {}
     const defaults = getDefaultMatchPreferences(contrib);
+    const inlinePrefs = contrib?.match_preferences || {};
     return {
-      format: stored?.format || defaults.format,
-      length: stored?.length || defaults.length,
-      focus: stored?.focus || defaults.focus
+      format: inlinePrefs.format || stored?.format || defaults.format,
+      length: inlinePrefs.length || stored?.length || defaults.length,
+      focus: inlinePrefs.focus || stored?.focus || defaults.focus
     };
   }
 
@@ -2683,9 +2694,125 @@
     const current = getContributorMatchPreferences();
     const merged = { ...current, ...next };
     localStorage.setItem(MATCH_PREFS_STORAGE_KEY, JSON.stringify(merged));
+    state.contribData = { ...(state.contribData || {}), match_preferences: merged };
     renderMatchPreferencesSurface(state.contribData);
-    renderStudies('studies-list', state.studies);
+    renderStudies('studies-list', getStudiesForCurrentBrowseView());
     renderStudies('dashboard-studies', state.studies);
+  }
+
+  function setContributorFitLength(nextLength) {
+    setContributorMatchPreferences({ length: nextLength === 'short' ? 'short' : 'flexible' });
+  }
+
+  function toggleFitProfileInterestEditor() {
+    _fitProfileEditingInterests = !_fitProfileEditingInterests;
+    renderContributorFitProfile();
+  }
+
+  function getStudiesForCurrentBrowseView() {
+    let subset = state.studies;
+    if (_studyFilter === 'online') subset = state.studies.filter(j => j.format === 'online');
+    if (_studyFilter === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
+    return subset;
+  }
+
+  function getContributorFitSummary(visibleStudies = getStudiesForCurrentBrowseView()) {
+    const prefs = getContributorMatchPreferences();
+    const ranked = applyStudyPreferenceBias(visibleStudies, prefs, state.contribData).slice(0, 8);
+    const interestCounts = {};
+
+    ranked.forEach(function(study) {
+      (Array.isArray(study?.targetInterests) ? study.targetInterests : []).forEach(function(interest) {
+        interestCounts[interest] = (interestCounts[interest] || 0) + 1;
+      });
+    });
+
+    const topInterests = Object.entries(interestCounts)
+      .sort(function(a, b) { return b[1] - a[1]; })
+      .slice(0, 3)
+      .map(function(entry) { return getInterestLabel(entry[0]); });
+
+    return {
+      topInterests,
+      format: prefs.format,
+      length: prefs.length
+    };
+  }
+
+  function getFitProfileFormatSummaryLabel(format) {
+    return format === 'in_person'
+      ? t('fit_profile_format_in_person')
+      : format === 'online'
+        ? t('fit_profile_format_online')
+        : t('fit_profile_format_any');
+  }
+
+  function getFitProfileLengthSummaryLabel(length) {
+    return length === 'short'
+      ? t('fit_profile_length_short_summary')
+      : t('fit_profile_length_any_summary');
+  }
+
+  function renderContributorFitProfile(visibleStudies = getStudiesForCurrentBrowseView()) {
+    const surface = document.getElementById('fit-profile-surface');
+    if (!surface) return;
+
+    const summary = getContributorFitSummary(visibleStudies);
+    const prefs = getContributorMatchPreferences();
+    const matchingLine = summary.topInterests.length
+      ? t('fit_profile_matching').replace('{interests}', summary.topInterests.join(', '))
+      : t('fit_profile_matching_fallback');
+
+    surface.innerHTML = `
+      <div class="match-prefs-head">
+        <h3 data-i18n="fit_profile_title">${esc(t('fit_profile_title'))}</h3>
+        <div class="match-prefs-note" data-i18n="fit_profile_note">${esc(t('fit_profile_note'))}</div>
+      </div>
+      <div class="fit-profile-body">
+        <div class="fit-profile-line">${esc(matchingLine)}</div>
+        <div class="fit-profile-line">${esc(t('fit_profile_prefers').replace('{format}', getFitProfileFormatSummaryLabel(summary.format)).replace('{length}', getFitProfileLengthSummaryLabel(summary.length)))}</div>
+      </div>
+      <div class="fit-profile-controls">
+        <div class="fit-profile-control-row">
+          <div class="fit-profile-control-label">${esc(t('fit_profile_interests_label'))}</div>
+          <div>
+            <button type="button" class="match-pref-chip ${_fitProfileEditingInterests ? 'active' : ''}" onclick="toggleFitProfileInterestEditor()">${esc(t('fit_profile_edit_interests'))}</button>
+            <div class="match-prefs-chips fit-profile-focus-row" id="fit-focus-chips" style="display:${_fitProfileEditingInterests ? 'flex' : 'none'}"></div>
+          </div>
+        </div>
+        <div class="fit-profile-control-row">
+          <div class="fit-profile-control-label">${esc(t('fit_profile_format_label'))}</div>
+          <div class="match-prefs-chips" id="fit-format-chips"></div>
+        </div>
+        <div class="fit-profile-control-row">
+          <div class="fit-profile-control-label">${esc(t('fit_profile_length_label'))}</div>
+          <div class="match-prefs-chips" id="fit-length-chips"></div>
+        </div>
+      </div>
+    `;
+
+    renderMatchPreferenceChips('fit-focus-chips', 'focus', prefs.focus);
+
+    const formatChips = document.getElementById('fit-format-chips');
+    if (formatChips) {
+      formatChips.innerHTML = [
+        { value: 'online', label: t('fit_profile_format_online') },
+        { value: 'in_person', label: t('fit_profile_format_in_person') }
+      ].map(function(option) {
+        return `<button type="button" class="match-pref-chip ${prefs.format === option.value ? 'active' : ''}" onclick="setContributorMatchPreferences({ format: '${escAttr(option.value)}' })">${esc(option.label)}</button>`;
+      }).join('');
+    }
+
+    const lengthChips = document.getElementById('fit-length-chips');
+    if (lengthChips) {
+      const compactLength = prefs.length === 'short' ? 'short' : 'any';
+      lengthChips.innerHTML = [
+        { value: 'short', label: t('fit_profile_length_short') },
+        { value: 'any', label: t('fit_profile_length_any') }
+      ].map(function(option) {
+        return `<button type="button" class="match-pref-chip ${compactLength === option.value ? 'active' : ''}" onclick="setContributorFitLength('${escAttr(option.value)}')">${esc(option.label)}</button>`;
+      }).join('');
+    }
   }
 
   function getStudyFocusArea(study) {
@@ -3446,6 +3573,9 @@
         }
       }
     }
+    if (containerId === 'studies-list') {
+      renderContributorFitProfile(displayStudies);
+    }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
       const hasLiveStudies = state.studies.length > 0;
@@ -3725,21 +3855,14 @@
 
   function sortStudies(sortKey) {
     _studySort = sortKey;
-    const activeFilter = document.querySelector('#tab-studies .filter-chip.active');
-    const filterType = activeFilter?.getAttribute('onclick')?.match(/filterStudies\('([^']+)'/)?.[1] || 'all';
-    let subset = state.studies;
-    if (filterType === 'online') subset = state.studies.filter(j => j.format === 'online');
-    if (filterType === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
-    renderStudies('studies-list', subset);
+    renderStudies('studies-list', getStudiesForCurrentBrowseView());
   }
 
   function filterStudies(type, btn) {
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    _studyFilter = type;
+    document.querySelectorAll('#tab-studies .filter-chip').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
-    let subset = state.studies;
-    if (type === 'online') subset = state.studies.filter(j => j.format === 'online');
-    if (type === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
-    renderStudies('studies-list', subset);
+    renderStudies('studies-list', getStudiesForCurrentBrowseView());
   }
 
   // ─── MODAL ──────────────────────────────────────────────
@@ -3784,7 +3907,7 @@
     if (state.currentStudy) {
       const currentIndex = state.studies.findIndex(j => j.id == state.currentStudy.id);
       const nextStudy = state.studies[currentIndex + 1] || null;
-      renderStudies('studies-list', state.studies);
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
       renderStudies('dashboard-studies', state.studies.slice(0, 2));
       const targetEl = nextStudy
         ? document.getElementById('study-card-' + nextStudy.id)
@@ -4014,7 +4137,7 @@
     const savedTab = getSavedContributorTab() || 'dashboard';
     showTab(savedTab, getContributorTabButton(savedTab));
     renderStudies('dashboard-studies', state.studies.slice(0,2));
-    renderStudies('studies-list', state.studies);
+    renderStudies('studies-list', getStudiesForCurrentBrowseView());
     loadNotifications();
     loadPayments();
     loadMyApplications();
@@ -4760,7 +4883,7 @@ async function applyToStudy(studyId, answers = null) {
 
   // Background sync — fire-and-forget, never blocks confirmed view
   logEvent('application_intent_submitted', studyId);
-  renderStudies('studies-list', state.studies);
+  renderStudies('studies-list', getStudiesForCurrentBrowseView());
   renderStudies('dashboard-studies', state.studies.slice(0, 2));
   loadMyApplications().catch(err => {
     console.error('Background loadMyApplications after apply failed:', err);
@@ -6375,6 +6498,22 @@ async function applyToStudy(studyId, answers = null) {
       profile_title: 'My profile',
       prefs_title: 'Matching preferences',
       prefs_note: 'These shape what you see here.',
+      fit_profile_title: 'Your fit profile',
+      fit_profile_note: 'Tune what you see here',
+      fit_profile_matching: 'Matching mostly on: {interests}',
+      fit_profile_matching_fallback: 'Available study themes',
+      fit_profile_prefers: 'Prefers: {format} · {length}',
+      fit_profile_interests_label: 'Interests',
+      fit_profile_edit_interests: 'Edit interests',
+      fit_profile_format_label: 'Format',
+      fit_profile_length_label: 'Length',
+      fit_profile_format_online: 'Online',
+      fit_profile_format_in_person: 'In person',
+      fit_profile_format_any: 'Any format',
+      fit_profile_length_short: 'Short',
+      fit_profile_length_any: 'Any',
+      fit_profile_length_short_summary: 'Short sessions',
+      fit_profile_length_any_summary: 'Any length',
       prefs_format_label: 'Preferred study format',
       prefs_length_label: 'Preferred session length',
       prefs_focus_label: 'Focus areas',
@@ -7044,6 +7183,22 @@ async function applyToStudy(studyId, answers = null) {
       profile_title: 'Min profil',
       prefs_title: 'Matchningspreferenser',
       prefs_note: 'De här påverkar det du ser här.',
+      fit_profile_title: 'Din matchprofil',
+      fit_profile_note: 'Justera det du ser här',
+      fit_profile_matching: 'Matchar främst på: {interests}',
+      fit_profile_matching_fallback: 'Tillgängliga studieteman',
+      fit_profile_prefers: 'Föredrar: {format} · {length}',
+      fit_profile_interests_label: 'Intressen',
+      fit_profile_edit_interests: 'Redigera intressen',
+      fit_profile_format_label: 'Format',
+      fit_profile_length_label: 'Längd',
+      fit_profile_format_online: 'Digitalt',
+      fit_profile_format_in_person: 'På plats',
+      fit_profile_format_any: 'Valfritt format',
+      fit_profile_length_short: 'Kort',
+      fit_profile_length_any: 'Valfri',
+      fit_profile_length_short_summary: 'Korta sessioner',
+      fit_profile_length_any_summary: 'Valfri längd',
       prefs_format_label: 'Föredraget studieformat',
       prefs_length_label: 'Föredragen sessionslängd',
       prefs_focus_label: 'Fokusområden',
@@ -8057,7 +8212,7 @@ async function applyToStudy(studyId, answers = null) {
   function rerenderApp() {
     if (!isSimulationActive()) {
       renderStudies('dashboard-studies', state.studies);
-      renderStudies('studies-list', state.studies);
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
       const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
       renderMyApplications(activeFilter);
       renderPaymentHistory(state.payments);
@@ -8096,7 +8251,7 @@ async function applyToStudy(studyId, answers = null) {
       renderContributorCommandSurface();
       renderContributorActivityTimeline();
       renderStudies('dashboard-studies', state.studies);
-      renderStudies('studies-list', state.studies);
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
       const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
       renderMyApplications(activeFilter);
       renderPaymentHistory(state.payments);
