@@ -4176,7 +4176,6 @@
   async function cantAttend(appId, createdBy, studyTitle, scheduledAt, studyId) {
     const storageKey = 'vetd_cant_attend_' + appId;
     if (sessionStorage.getItem(storageKey)) return;
-    if (!confirm(t('cant_attend_confirm'))) return;
 
     const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
@@ -4198,6 +4197,26 @@
     sessionStorage.setItem(storageKey, '1');
     const el = document.getElementById('cant-attend-' + appId);
     if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
+  }
+
+  // Two-step inline cant-attend confirmation — no modal
+  function showCantAttendConfirm(appId, createdBy, studyTitle, scheduledAt, studyId) {
+    const el = document.getElementById('cant-attend-' + appId);
+    if (!el) return;
+    el.dataset.originalHtml = el.innerHTML;
+    el.innerHTML = `
+      <span style="font-size:12px;color:var(--gray-500);font-weight:500;line-height:1.4">${t('cant_attend_confirm')}</span>
+      <div style="margin-top:6px;display:flex;gap:8px">
+        <button style="padding:6px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--coral);border-radius:8px;color:var(--coral);cursor:pointer;font-family:var(--sans)" onclick="cantAttend('${escAttr(appId)}','${escAttr(createdBy)}','${escAttr(studyTitle)}','${escAttr(scheduledAt)}','${escAttr(studyId)}')">${t('cant_attend_confirm_yes')}</button>
+        <button style="padding:6px 12px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="cancelCantAttend('${escAttr(appId)}')">${t('cant_attend_confirm_cancel')}</button>
+      </div>`;
+  }
+
+  function cancelCantAttend(appId) {
+    const el = document.getElementById('cant-attend-' + appId);
+    if (!el || !el.dataset.originalHtml) return;
+    el.innerHTML = el.dataset.originalHtml;
+    delete el.dataset.originalHtml;
   }
 
   // Two-step inline decline confirmation — no modal
@@ -4379,7 +4398,7 @@
         ].filter(Boolean).join('');
         const cantAttendHtml = sessionStorage.getItem('vetd_cant_attend_' + a.id)
           ? `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`
-          : `<button onclick="cantAttend('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
+          : `<button onclick="showCantAttendConfirm('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
         statusDetail = `<div class="app-schedule-row">
           <strong>${esc(ss.sublabel)}</strong>
           <span class="session-card-time">${esc(ss.countdownText)}</span>
@@ -6359,6 +6378,8 @@ async function applyToStudy(studyId, answers = null) {
       group_session_context: 'You\'ll join a group discussion with other participants',
       cant_attend_btn: "Can't make it?",
       cant_attend_confirm: "This will notify the researcher that you can't attend. Continue?",
+      cant_attend_confirm_yes: 'Yes, notify them',
+      cant_attend_confirm_cancel: 'Cancel',
       cant_attend_sent: 'Researcher notified',
       cant_attend_notif_title: "Contributor can't attend",
       cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
@@ -7004,6 +7025,8 @@ async function applyToStudy(studyId, answers = null) {
       group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',
       cant_attend_btn: 'Kan inte delta?',
       cant_attend_confirm: 'Detta meddelar forskaren att du inte kan delta. Fortsätta?',
+      cant_attend_confirm_yes: 'Ja, meddela dem',
+      cant_attend_confirm_cancel: 'Avbryt',
       cant_attend_sent: 'Forskaren har meddelats',
       cant_attend_notif_title: 'Deltagaren kan inte delta',
       cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
