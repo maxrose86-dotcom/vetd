@@ -283,6 +283,20 @@
   .stat-card-label { font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--gray-400); margin-bottom: 10px; font-weight: 400; }
   .stat-card-num { font-family: var(--serif); font-size: 40px; color: var(--gray-900); }
   .stat-card-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+  .stat-skeleton {
+    height: 14px;
+    width: 60%;
+    background: var(--gray-100);
+    border-radius: 4px;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .stat-card-num .stat-skeleton { height: 30px; width: 46%; }
+  .stat-card-sub .stat-skeleton { width: 72%; }
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
 
   .section-title {
     display: flex; align-items: center; gap: 14px;
@@ -1156,19 +1170,22 @@
         <div class="stat-cards">
           <div class="stat-card">
             <div class="stat-card-label" data-i18n="dash_earned">Total earned</div>
-            <div id="stat-earned" class="stat-card-num">0 kr</div>
-            <div id="stat-earned-sub" class="stat-card-sub">Complete a study to start earning</div>
+            <div id="stat-earned" class="stat-card-num"><div class="stat-skeleton" aria-hidden="true"></div></div>
+            <div id="stat-earned-sub" class="stat-card-sub"><div class="stat-skeleton" aria-hidden="true"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label" data-i18n="dash_studies">Studies done</div>
-            <div id="stat-studies" class="stat-card-num">0</div>
-            <div id="stat-studies-sub" class="stat-card-sub">No studies yet</div>
+            <div id="stat-studies" class="stat-card-num"><div class="stat-skeleton" aria-hidden="true"></div></div>
+            <div id="stat-studies-sub" class="stat-card-sub"><div class="stat-skeleton" aria-hidden="true"></div></div>
           </div>
           <div class="stat-card">
             <div class="stat-card-label" data-i18n="dash_completion">Completion rate</div>
-            <div id="stat-completion" class="stat-card-num">—</div>
-            <div id="stat-completion-sub" class="stat-card-sub">No data yet</div>
+            <div id="stat-completion" class="stat-card-num"><div class="stat-skeleton" aria-hidden="true"></div></div>
+            <div id="stat-completion-sub" class="stat-card-sub"><div class="stat-skeleton" aria-hidden="true"></div></div>
           </div>
+        </div>
+        <div id="dash-zero-cta-wrap" style="display:none;margin:-1rem 0 2rem">
+          <button class="btn-primary" onclick="showTab('studies')" data-i18n="dash_zero_cta">Browse studies →</button>
         </div>
 
         <div id="profile-completion-card" style="display:none"></div>
@@ -4784,6 +4801,25 @@ async function applyToStudy(studyId, answers = null) {
     ];
   }
 
+  function renderDashboardStatSkeletons() {
+    const skeleton = (width = '60%') => `<div class="stat-skeleton" style="width:${width}" aria-hidden="true"></div>`;
+    const earned = document.getElementById('stat-earned');
+    const earnedSub = document.getElementById('stat-earned-sub');
+    const studies = document.getElementById('stat-studies');
+    const studiesSub = document.getElementById('stat-studies-sub');
+    const completion = document.getElementById('stat-completion');
+    const completionSub = document.getElementById('stat-completion-sub');
+    const zeroCta = document.getElementById('dash-zero-cta-wrap');
+
+    if (earned) earned.innerHTML = skeleton('46%');
+    if (earnedSub) earnedSub.innerHTML = skeleton('72%');
+    if (studies) studies.innerHTML = skeleton('34%');
+    if (studiesSub) studiesSub.innerHTML = skeleton('68%');
+    if (completion) completion.innerHTML = skeleton('42%');
+    if (completionSub) completionSub.innerHTML = skeleton('62%');
+    if (zeroCta) zeroCta.style.display = 'none';
+  }
+
   function updateDashboard(firstName, stats, tierDisplay) {
     const safe = getSafeContributorState();
     const { studiesDone, totalEarned, rating, completionRate } = safe.stats;
@@ -4869,17 +4905,32 @@ async function applyToStudy(studyId, answers = null) {
 
     // ── Stat cards ────────────────────────────────────────────
     const statCards = document.querySelector('.stat-cards');
-    if (statCards) statCards.style.display = (studiesDone === 0 && totalEarned === 0 && !isSimulationActive()) ? 'none' : '';
+    const zeroCta = document.getElementById('dash-zero-cta-wrap');
+    const paidPayments = safe.flags.hasPayments ? safe.payments.filter(p => p.status === 'paid') : [];
+    const dashboardEarned = safe.flags.hasPayments
+      ? paidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+      : totalEarned;
+    if (statCards) statCards.style.display = '';
 
-    document.getElementById('stat-earned').textContent     = `${totalEarned} kr`;
-    document.getElementById('stat-earned-sub').textContent = totalEarned === 0 ? t('complete_first_study') : t('earnings_month');
+    if (!safe.flags.isHydrated) {
+      renderDashboardStatSkeletons();
+      renderContributorCommandSurface();
+      return;
+    }
+
+    document.getElementById('stat-earned').textContent     = formatCurrency(dashboardEarned);
+    document.getElementById('stat-earned-sub').textContent = dashboardEarned === 0 ? t('complete_first_study') : t('earnings_month');
 
     document.getElementById('stat-studies').textContent     = studiesDone;
-    document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? t('no_studies_yet') : `${studiesDone} ${t('completed_count')}`;
+    document.getElementById('stat-studies-sub').textContent = studiesDone === 0 ? t('dash_apply_first_study') : `${studiesDone} ${t('completed_count')}`;
 
     document.getElementById('stat-completion').textContent     = completionRate !== null ? `${completionRate}%` : '—';
-    document.getElementById('stat-completion-sub').textContent = completionRate === null ? t('no_data_yet')
+    document.getElementById('stat-completion-sub').textContent = completionRate === null ? t('dash_completion_waiting')
       : completionRate >= 90 ? t('excellent') : completionRate >= 70 ? t('good') : t('keep_it_up');
+
+    if (zeroCta) {
+      zeroCta.style.display = studiesDone === 0 && safe.applications.length === 0 && safe.sessions.length === 0 ? '' : 'none';
+    }
 
     renderContributorCommandSurface();
   }
@@ -5491,15 +5542,7 @@ async function applyToStudy(studyId, answers = null) {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      const all     = payments || [];
-      const paid    = all.filter(p => p.status === 'paid');
-      const totalPaid = paid.reduce((s, p) => s + (p.amount || 0), 0);
-
-      // Update dashboard earnings stat from real payment data
-      document.getElementById('stat-earned').textContent = formatCurrency(totalPaid);
-      document.getElementById('stat-earned-sub').textContent = totalPaid === 0
-        ? 'Complete a study to start earning'
-        : `${paid.length} paid ${paid.length === 1 ? 'study' : 'studies'}`;
+      const all = payments || [];
 
       // Build study title map via applications → studies
       const appIds = all.map(p => p.application_id).filter(Boolean);
@@ -5544,6 +5587,12 @@ async function applyToStudy(studyId, answers = null) {
     } finally {
       state.hydration.payments = true;
       syncContributorHydration();
+      if (state.contribData && state.currentUser) {
+        const stats       = computeUserStats(state.contribData);
+        const tierDisplay = computeTierDisplay(stats.tier, stats.studiesDone);
+        const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
+        updateDashboard(firstName, stats, tierDisplay);
+      }
       renderPaymentHistory(state.payments || []);
       renderContributorActivityTimeline();
       renderContributorCommandSurface();
@@ -6315,6 +6364,9 @@ async function applyToStudy(studyId, answers = null) {
       top_15_pct: 'Top 15% of contributors',
       overall_rating: 'overall rating',
       complete_first_study: 'Complete a study to start earning',
+      dash_apply_first_study: 'Apply to a study to get started',
+      dash_completion_waiting: 'You’ll see your completion rate here',
+      dash_zero_cta: 'Browse studies →',
       earnings_month: '↑ earnings this month',
       no_studies_yet: 'No studies yet',
       completed_count: 'completed',
@@ -6962,6 +7014,9 @@ async function applyToStudy(studyId, answers = null) {
       top_15_pct: 'Topp 15% av deltagare',
       overall_rating: 'övergripande betyg',
       complete_first_study: 'Slutför en studie för att börja tjäna',
+      dash_apply_first_study: 'Ansök till en studie för att komma igång',
+      dash_completion_waiting: 'Här ser du din slutförandegrad',
+      dash_zero_cta: 'Bläddra bland studier →',
       earnings_month: '↑ intäkter denna månad',
       no_studies_yet: 'Inga studier ännu',
       completed_count: 'slutförda',
