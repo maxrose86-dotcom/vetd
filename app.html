@@ -1244,6 +1244,7 @@
           <p style="color:var(--gray-400);font-size:14px;font-weight:300" data-i18n="browse_subtitle">Showing studies matched to your profile</p>
         </div>
         <div id="fit-profile-surface" class="match-prefs-surface fit-profile-surface"></div>
+        <div id="studies-personal-intro"></div>
         <div class="filter-bar">
           <button class="filter-chip active" onclick="filterStudies('all', this)" data-i18n="filter_all">All studies</button>
           <button class="filter-chip" onclick="filterStudies('online', this)" data-i18n="filter_online">Online only</button>
@@ -3584,6 +3585,28 @@
     }
     if (containerId === 'studies-list') {
       renderContributorFitProfile(displayStudies);
+
+      // Personalized intro text
+      const introEl = document.getElementById('studies-personal-intro');
+      if (introEl) {
+        const interestVals = getContributorInterestValues(state.contribData).slice(0, 3);
+        if (interestVals.length) {
+          const labels = interestVals.map(v => getInterestLabel(v));
+          const lang = getCurrentLang();
+          const conj = lang === 'sv' ? 'och' : 'and';
+          const list = labels.length === 1
+            ? labels[0]
+            : labels.length === 2
+              ? labels[0] + ' ' + conj + ' ' + labels[1]
+              : labels[0] + ', ' + labels[1] + ' ' + conj + ' ' + labels[2];
+          introEl.innerHTML = `<p style="font-size:14px;color:var(--gray-500);margin-bottom:12px">${esc(t('studies_personal_intro_prefix').replace('{list}', list))}</p>`;
+        } else {
+          introEl.innerHTML = '';
+        }
+      }
+
+      // Mark top 3 as top picks
+      displayStudies = displayStudies.map((s, i) => i < 3 ? { ...s, isTopPick: true } : s);
     }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
@@ -3625,13 +3648,14 @@
       const matchSignals = getStudyBrowseSignals(job, state.contribData, prefs, fit);
       return `
       <div id="study-card-${esc(String(job.id))}" class="job-card ${job.featured ? 'featured' : ''}" onclick="openModal('${esc(String(job.id))}')">
-        ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : ''}
+        ${job.featured ? `<div style="font-size:11px;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">${t('top_match')}</div>` : job.isTopPick ? `<div style="font-size:11px;color:var(--green);font-weight:500;margin-bottom:4px">${t('study_top_pick')}</div>` : ''}
         <div class="job-header">
           <div class="job-company">
             <div class="company-badge">${esc(job.company)}</div>
             <div>
               <div class="job-company-name">${esc(getStudyCredibilityLine(job))}</div>
               <div class="job-match-strength">${esc(matchStrength)}</div>
+              ${containerId === 'studies-list' ? `<div style="font-size:12px;color:var(--gray-400);margin-top:2px">${t('study_match_basis')}</div>` : ''}
               <div class="job-title">${esc(job.title)}</div>
               <div class="job-snapshot">${esc(getStudySnapshot(job, payTypeLabel))}</div>
             </div>
@@ -6655,6 +6679,9 @@ async function applyToStudy(studyId, answers = null) {
       sim_refresh: '↻ refresh',
       limited_availability: 'Limited spots remaining',
       top_match: '★ Top match for you',
+      study_top_pick: 'Top pick for you',
+      study_match_basis: 'Matched based on your interests and preferences',
+      studies_personal_intro_prefix: "Because you're into {list}",
       no_studies_dash: 'No studies available right now — you\'re early. New studies are coming soon.',
       no_studies_available_title: 'No studies available yet',
       no_studies_available_sub: 'Studies matched to your profile will appear here. You’ll be notified when one opens.',
@@ -7332,6 +7359,9 @@ async function applyToStudy(studyId, answers = null) {
       sim_refresh: '↻ uppdatera',
       limited_availability: 'Begränsat antal platser kvar',
       top_match: '★ Bästa matchning för dig',
+      study_top_pick: 'Toppval för dig',
+      study_match_basis: 'Matchad baserat på dina intressen och preferenser',
+      studies_personal_intro_prefix: 'Baserat på ditt intresse för {list}',
       no_studies_dash: 'Inga studier tillgängliga just nu — du är tidig. Nya studier kommer snart.',
       no_studies_available_title: 'Inga studier tillgängliga ännu',
       no_studies_available_sub: 'Studier som matchar din profil visas här. Du får en notis när en öppnar.',
