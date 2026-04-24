@@ -2081,6 +2081,7 @@ async function loadPayouts() {
     const underReview = all.filter(p => p.status === 'pending_review');
     const approved = all.filter(p => p.status === 'approved');
     const paid = all.filter(p => p.status === 'paid');
+    const approvedContributorCount = new Set(approved.map(p => p.contributor_id).filter(Boolean)).size;
     const now = Date.now();
     const paid30d = paid.filter(p => {
       const paidTs = new Date(p.paid_at || 0).getTime();
@@ -2108,6 +2109,7 @@ async function loadPayouts() {
         <div>Under review: <strong>${fmt(pendingTotal)}</strong></div>
         <div>Approved: <strong>${fmt(approvedTotal)}</strong></div>
         <div>Paid (30d): <strong>${fmt(paidTotal30d)}</strong></div>
+        <div>Ready to pay: <strong>${fmt(approvedTotal)}</strong> across <strong>${approvedContributorCount}</strong> contributors</div>
       `;
     }
 
