@@ -254,6 +254,9 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 .critical-action-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:5px;letter-spacing:0.03em}
 .critical-action-cta{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600;background:var(--bg3);color:var(--text);border:1px solid var(--border2);text-decoration:none;font-family:var(--sans);white-space:nowrap}
 .critical-action-cta:hover{background:var(--bg4)}
+.payout-summary{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 12px;font-size:12px}
+.payout-summary div{color:var(--text2)}
+.payout-summary strong{color:var(--text);font-weight:700}
 
 /* ── MOBILE RESPONSIVENESS ── */
 #adm-hamburger{
@@ -882,6 +885,11 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
   <div class="card">
     <div class="card-title">Payout queue</div>
+    <div class="payout-summary" id="payout-summary">
+      <div>Under review: <strong>—</strong></div>
+      <div>Approved: <strong>—</strong></div>
+      <div>Paid (30d): <strong>—</strong></div>
+    </div>
     <table class="tbl">
       <thead><tr><th>Contributor</th><th>Study</th><th>Amount</th><th>Created</th><th>Status</th><th>Action</th></tr></thead>
       <tbody id="payouts-list">
@@ -2059,6 +2067,7 @@ async function loadContributors() {
 async function loadPayouts() {
   if (!db) return;
   const tbody = document.getElementById('payouts-list');
+  const summary = document.getElementById('payout-summary');
   const fmt = p => formatCurrency(p);
 
   try {
@@ -2072,10 +2081,18 @@ async function loadPayouts() {
     const underReview = all.filter(p => p.status === 'pending_review');
     const approved = all.filter(p => p.status === 'approved');
     const paid = all.filter(p => p.status === 'paid');
+    const now = Date.now();
+    const paid30d = paid.filter(p => {
+      const paidTs = new Date(p.paid_at || 0).getTime();
+      return Number.isFinite(paidTs) && (now - paidTs) <= (30 * 86400000);
+    });
+    const pendingTotal = underReview.reduce((sum, payout) => sum + (payout.amount || 0), 0);
+    const approvedTotal = approved.reduce((sum, payout) => sum + (payout.amount || 0), 0);
+    const paidTotal30d = paid30d.reduce((sum, payout) => sum + (payout.amount || 0), 0);
 
     document.getElementById('stat-paid').textContent      = fmt(paid.reduce((sum, payout) => sum + (payout.amount || 0), 0));
-    document.getElementById('stat-pending').textContent   = fmt(underReview.reduce((sum, payout) => sum + (payout.amount || 0), 0));
-    document.getElementById('stat-hold').textContent      = fmt(approved.reduce((sum, payout) => sum + (payout.amount || 0), 0));
+    document.getElementById('stat-pending').textContent   = fmt(pendingTotal);
+    document.getElementById('stat-hold').textContent      = fmt(approvedTotal);
     document.getElementById('stat-refunded').textContent  = fmt(all.reduce((sum, payout) => sum + (payout.amount || 0), 0));
 
     const paidSub    = document.getElementById('stat-paid-sub');
@@ -2086,6 +2103,13 @@ async function loadPayouts() {
     if (pendingSub) pendingSub.textContent = `${underReview.length} waiting for review`;
     if (holdSub)    holdSub.textContent    = `${approved.length} ready to send`;
     if (totalSub)   totalSub.textContent   = `${all.length} payout${all.length !== 1 ? 's' : ''} total`;
+    if (summary) {
+      summary.innerHTML = `
+        <div>Under review: <strong>${fmt(pendingTotal)}</strong></div>
+        <div>Approved: <strong>${fmt(approvedTotal)}</strong></div>
+        <div>Paid (30d): <strong>${fmt(paidTotal30d)}</strong></div>
+      `;
+    }
 
     if (!tbody) return;
 
