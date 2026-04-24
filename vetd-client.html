@@ -1757,12 +1757,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       let paymentSpendMap = {};
       const allAppIds = allAppRows.map(a => a.id);
       if (allAppIds.length) {
-        const { data: payments } = await db
-          .from('payments')
+        const { data: payouts } = await db
+          .from('payouts')
           .select('application_id, amount, status')
           .in('application_id', allAppIds);
         const appStudyMap = Object.fromEntries(allAppRows.map(a => [a.id, a.study_id]));
-        (payments || []).forEach(p => {
+        (payouts || []).forEach(p => {
           const sid = appStudyMap[p.application_id];
           if (!sid) return;
           if (!paymentSpendMap[sid]) paymentSpendMap[sid] = 0;
@@ -5197,29 +5197,37 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         .eq('id', appId);
       if (error) throw error;
 
-      // Create payment record — fetch study pay and contributor_id
-      const [{ data: study }, { data: app }] = await Promise.all([
-        db.from('studies').select('pay_per_participant').eq('id', studyId).single(),
-        db.from('applications').select('contributor_id').eq('id', appId).single()
-      ]);
-      if (study?.pay_per_participant && app?.contributor_id) {
-        // Guard: only insert payment if none exists for this application
-        const { data: existingPay } = await db
-          .from('payments').select('id').eq('application_id', appId).maybeSingle();
-        if (!existingPay) {
-          const amount      = study.pay_per_participant;
-          const platformFee = Math.round(amount * 0.2);
-          const { error: payErr } = await db.from('payments').insert({
+      // Create payout record in the background. This should never block completion UI.
+      (async function queuePayoutReview() {
+        try {
+          const [{ data: study }, { data: app }] = await Promise.all([
+            db.from('studies').select('pay_per_participant').eq('id', studyId).single(),
+            db.from('applications').select('contributor_id').eq('id', appId).single()
+          ]);
+          if (!study?.pay_per_participant || !app?.contributor_id) return;
+
+          const { data: existingPayout, error: existingErr } = await db
+            .from('payouts')
+            .select('id')
+            .eq('application_id', appId)
+            .maybeSingle();
+          if (existingErr) throw existingErr;
+          if (existingPayout) return;
+
+          const { error: payoutErr } = await db.from('payouts').insert({
+            study_id: studyId,
             application_id: appId,
             contributor_id: app.contributor_id,
-            amount,
-            platform_fee:   platformFee,
-            status:         'pending',
-            created_at:     new Date().toISOString()
+            amount: study.pay_per_participant,
+            status: 'pending_review',
+            created_at: new Date().toISOString()
           });
-          if (payErr) console.warn('Payment insert error:', payErr);
+          if (payoutErr) throw payoutErr;
+        } catch (payoutErr) {
+          console.warn('Payout insert error:', payoutErr);
+          if (window.Sentry) Sentry.captureException(payoutErr);
         }
-      }
+      })();
 
       showToast(t('cl_marked_completed'));
       loadApplicants(studyId).catch(err => {
@@ -5282,10 +5290,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const appIds = (apps || []).map(a => a.id);
       if (!appIds.length) { numEl.textContent = '0 kr'; if (subEl) { subEl.textContent = t('cl_no_payments'); subEl.className = 'stat-sub'; } return; }
 
-      const { data: payments } = await db.from('payments').select('amount, status').in('application_id', appIds);
-      const all     = payments || [];
+      const { data: payouts } = await db.from('payouts').select('amount, status').in('application_id', appIds);
+      const all     = payouts || [];
       const total   = all.reduce((s, p) => s + (p.amount || 0), 0);
-      const pending = all.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s, p) => s + (p.amount || 0), 0);
+      const pending = all.filter(p => p.status === 'pending_review' || p.status === 'approved').reduce((s, p) => s + (p.amount || 0), 0);
 
       numEl.textContent = formatCurrency(total);
       if (subEl) {

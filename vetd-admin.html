@@ -871,21 +871,21 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <!-- PAYOUTS -->
 <div class="tab" id="t-payouts">
   <div class="ph">
-    <div><h1>Payouts</h1><p>Contributor payment management</p></div>
-    <button class="btn btn-green" onclick="showToast('💳 Batch payout of 32 400 kr initiated to 72 contributors')">Run batch payout</button>
+    <div><h1>Payouts</h1><p>Review and release contributor payouts</p></div>
+    <button class="btn" onclick="loadPayouts()">Refresh queue</button>
   </div>
   <div class="stat-grid">
-    <div class="stat g"><div class="stat-label">Paid this month</div><div class="stat-num" id="stat-paid">—</div><div class="stat-sub up" id="stat-paid-sub"> </div></div>
-    <div class="stat b"><div class="stat-label">Pending release</div><div class="stat-num" id="stat-pending">—</div><div class="stat-sub" id="stat-pending-sub"> </div></div>
-    <div class="stat a"><div class="stat-label">Platform fees earned</div><div class="stat-num" id="stat-hold">—</div><div class="stat-sub" id="stat-hold-sub"> </div></div>
-    <div class="stat r"><div class="stat-label">Failed payments</div><div class="stat-num" id="stat-refunded">—</div><div class="stat-sub danger" id="stat-refunded-sub"> </div></div>
+    <div class="stat b"><div class="stat-label">Under review</div><div class="stat-num" id="stat-pending">—</div><div class="stat-sub" id="stat-pending-sub"> </div></div>
+    <div class="stat a"><div class="stat-label">Approved</div><div class="stat-num" id="stat-hold">—</div><div class="stat-sub" id="stat-hold-sub"> </div></div>
+    <div class="stat g"><div class="stat-label">Paid</div><div class="stat-num" id="stat-paid">—</div><div class="stat-sub up" id="stat-paid-sub"> </div></div>
+    <div class="stat r"><div class="stat-label">Total queued</div><div class="stat-num" id="stat-refunded">—</div><div class="stat-sub" id="stat-refunded-sub"> </div></div>
   </div>
   <div class="card">
-    <div class="card-title">Pending payouts</div>
+    <div class="card-title">Payout queue</div>
     <table class="tbl">
-      <thead><tr><th>Contributor</th><th>Study</th><th>Amount</th><th>Completed</th><th>Status</th><th>Action</th></tr></thead>
+      <thead><tr><th>Contributor</th><th>Study</th><th>Amount</th><th>Created</th><th>Status</th><th>Action</th></tr></thead>
       <tbody id="payouts-list">
-        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">Loading payment data…</td></tr>
+        <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">Loading payout queue…</td></tr>
       </tbody>
     </table>
   </div>
@@ -1038,7 +1038,7 @@ async function handleAdminLogin() {
     initUI();
     await runAdminRefreshCycle();
     loadContributors();
-    loadPayouts();
+    await loadPayouts();
     startAdminAutoRefresh();
   } catch(err) {
     errEl.textContent = err.message || 'Sign in failed — check your credentials';
@@ -2062,93 +2062,134 @@ async function loadPayouts() {
   const fmt = p => formatCurrency(p);
 
   try {
-    const { data: payments, error } = await db
-      .from('payments')
-      .select('id, application_id, contributor_id, amount, platform_fee, status, paid_at, created_at')
+    const { data: payouts, error } = await db
+      .from('payouts')
+      .select('id, study_id, application_id, contributor_id, amount, status, created_at, approved_at, paid_at')
       .order('created_at', { ascending: false });
     if (error) throw error;
 
-    const all = payments || [];
-    const totalPaid     = all.filter(p => p.status === 'paid').reduce((s,p) => s + (p.amount||0), 0);
-    const totalPending  = all.filter(p => p.status === 'pending' || p.status === 'processing').reduce((s,p) => s + (p.amount||0), 0);
-    const totalFees     = all.filter(p => p.status === 'paid').reduce((s,p) => s + (p.platform_fee||0), 0);
-    const totalFailed   = all.filter(p => p.status === 'failed').reduce((s,p) => s + (p.amount||0), 0);
-    const paidCount     = all.filter(p => p.status === 'paid').length;
-    const pendingCount  = all.filter(p => p.status === 'pending' || p.status === 'processing').length;
+    const all = payouts || [];
+    const underReview = all.filter(p => p.status === 'pending_review');
+    const approved = all.filter(p => p.status === 'approved');
+    const paid = all.filter(p => p.status === 'paid');
 
-    document.getElementById('stat-paid').textContent      = fmt(totalPaid);
-    document.getElementById('stat-pending').textContent   = fmt(totalPending);
-    document.getElementById('stat-hold').textContent      = fmt(totalFees);
-    document.getElementById('stat-refunded').textContent  = fmt(totalFailed);
+    document.getElementById('stat-paid').textContent      = fmt(paid.reduce((sum, payout) => sum + (payout.amount || 0), 0));
+    document.getElementById('stat-pending').textContent   = fmt(underReview.reduce((sum, payout) => sum + (payout.amount || 0), 0));
+    document.getElementById('stat-hold').textContent      = fmt(approved.reduce((sum, payout) => sum + (payout.amount || 0), 0));
+    document.getElementById('stat-refunded').textContent  = fmt(all.reduce((sum, payout) => sum + (payout.amount || 0), 0));
 
     const paidSub    = document.getElementById('stat-paid-sub');
     const pendingSub = document.getElementById('stat-pending-sub');
     const holdSub    = document.getElementById('stat-hold-sub');
-    if (paidSub)    paidSub.textContent    = `${paidCount} payment${paidCount!==1?'s':''} processed`;
-    if (pendingSub) pendingSub.textContent = `${pendingCount} awaiting release`;
-    if (holdSub)    holdSub.textContent    = `20% cut on ${paidCount} paid`;
+    const totalSub   = document.getElementById('stat-refunded-sub');
+    if (paidSub)    paidSub.textContent    = `${paid.length} payout${paid.length !== 1 ? 's' : ''} released`;
+    if (pendingSub) pendingSub.textContent = `${underReview.length} waiting for review`;
+    if (holdSub)    holdSub.textContent    = `${approved.length} ready to send`;
+    if (totalSub)   totalSub.textContent   = `${all.length} payout${all.length !== 1 ? 's' : ''} total`;
 
     if (!tbody) return;
 
-    const pending = all.filter(p => p.status === 'pending' || p.status === 'processing');
-    if (!pending.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text3);font-family:var(--mono)">No pending payments</td></tr>';
+    if (!all.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--text3);font-family:var(--mono)">No payouts yet</td></tr>';
       return;
     }
 
     // Fetch contributor names
-    const contribIds = [...new Set(pending.map(p => p.contributor_id).filter(Boolean))];
+    const contribIds = [...new Set(all.map(p => p.contributor_id).filter(Boolean))];
     const { data: profiles } = await db.from('profiles').select('id, first_name, last_name').in('id', contribIds);
     const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]));
 
-    // Fetch study titles via applications
-    const appIds = pending.map(p => p.application_id).filter(Boolean);
+    // Fetch study titles via payouts.study_id with applications fallback
+    const appIds = all.map(p => p.application_id).filter(Boolean);
+    const directStudyIds = all.map(p => p.study_id).filter(Boolean);
     let studyTitleMap = {};
+    let appStudyMap = {};
     if (appIds.length) {
       const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
-      const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
-      if (studyIds.length) {
-        const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
-        const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
-        (apps || []).forEach(a => { studyTitleMap[a.id] = sm[a.study_id] || '—'; });
-      }
+      appStudyMap = Object.fromEntries((apps || []).map(app => [app.id, app.study_id]));
+    }
+    const studyIds = [...new Set([
+      ...directStudyIds,
+      ...Object.values(appStudyMap).filter(Boolean)
+    ])];
+    if (studyIds.length) {
+      const { data: studies } = await db.from('studies').select('id, title').in('id', studyIds);
+      const sm = Object.fromEntries((studies || []).map(s => [s.id, s.title]));
+      all.forEach(payout => {
+        const studyId = payout.study_id || appStudyMap[payout.application_id];
+        if (studyId && sm[studyId]) studyTitleMap[payout.id] = sm[studyId];
+      });
     }
 
-    tbody.innerHTML = pending.map(p => {
+    tbody.innerHTML = all.map(p => {
       const prof  = profileMap[p.contributor_id] || {};
       const name  = esc([prof.first_name, prof.last_name].filter(Boolean).join(' ') || 'Unknown');
-      const study = esc(studyTitleMap[p.application_id] || '—');
+      const study = esc(studyTitleMap[p.id] || '—');
       const date  = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) : '—';
-      const statusColor = p.status === 'processing' ? 'color:var(--blue)' : 'color:var(--amber)';
+      const statusLabel = p.status === 'pending_review'
+        ? 'Under review'
+        : p.status === 'approved'
+          ? 'Approved'
+          : 'Paid';
+      const statusColor = p.status === 'paid'
+        ? 'color:var(--green)'
+        : p.status === 'approved'
+          ? 'color:var(--blue)'
+          : 'color:var(--amber)';
+      const actionHtml = p.status === 'pending_review'
+        ? `<button class="btn" style="padding:5px 12px;font-size:11px;background:var(--blue);color:#fff;border:none;border-radius:6px;cursor:pointer" onclick="approvePayout('${p.id}', this)">Approve</button>`
+        : p.status === 'approved'
+          ? `<button class="btn" style="padding:5px 12px;font-size:11px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer" onclick="markPayoutPaid('${p.id}', this)">Mark as paid</button>`
+          : `<span style="color:var(--text3);font-family:var(--mono)">—</span>`;
       return `<tr>
         <td style="font-weight:500">${name}</td>
         <td style="color:var(--text3)">${study}</td>
         <td style="font-family:var(--mono);font-weight:600">${fmt(p.amount)}</td>
         <td style="font-family:var(--mono);font-size:12px;color:var(--text3)">${date}</td>
-        <td><span style="font-family:var(--mono);font-size:12px;${statusColor}">${p.status}</span></td>
-        <td><button class="btn" style="padding:5px 12px;font-size:11px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer" onclick="markAsPaid('${p.id}')">Mark paid</button></td>
+        <td><span style="font-family:var(--mono);font-size:12px;${statusColor}">${statusLabel}</span></td>
+        <td>${actionHtml}</td>
       </tr>`;
     }).join('');
 
   } catch(err) {
     console.warn('loadPayouts error:', err);
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--coral);font-family:var(--mono)">Error loading payment data</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--coral);font-family:var(--mono)">Error loading payout data</td></tr>';
   }
 }
 
-async function markAsPaid(paymentId) {
+async function approvePayout(payoutId, btn) {
   if (!db) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
   try {
-    const { error } = await db.from('payments')
-      .update({ status: 'paid', paid_at: new Date().toISOString() })
-      .eq('id', paymentId);
+    const { error } = await db.from('payouts')
+      .update({ status: 'approved', approved_at: new Date().toISOString() })
+      .eq('id', payoutId);
     if (error) throw error;
-    showToast('Payment marked as paid ✓');
+    showToast('Payout approved');
+    await loadPayouts();
+  } catch(err) {
+    console.error('approvePayout error:', err);
+    if (window.Sentry) Sentry.captureException(err);
+    showToast('Could not approve payout', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Approve'; }
+  }
+}
+
+async function markPayoutPaid(payoutId, btn) {
+  if (!db) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Marking…'; }
+  try {
+    const { error } = await db.from('payouts')
+      .update({ status: 'paid', paid_at: new Date().toISOString() })
+      .eq('id', payoutId);
+    if (error) throw error;
+    showToast('Payout marked as paid');
     loadPayouts();
   } catch(err) {
-    console.error('markAsPaid error:', err);
+    console.error('markPayoutPaid error:', err);
     if (window.Sentry) Sentry.captureException(err);
-    showToast('Could not update payment', true);
+    showToast('Could not update payout', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Mark as paid'; }
   }
 }
 

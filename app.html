@@ -5889,49 +5889,55 @@ async function applyToStudy(studyId, answers = null) {
         contributorIsTest = contributor?.is_test === true;
         state.contribData = { ...(state.contribData || {}), is_test: contributorIsTest };
       }
-      const { data: payments, error } = await db
-        .from('payments')
-        .select('id, amount, status, paid_at, created_at, application_id')
+      const { data: payouts, error } = await db
+        .from('payouts')
+        .select('id, amount, status, paid_at, approved_at, created_at, application_id, study_id')
         .eq('contributor_id', state.currentUser.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      const all = payments || [];
+      const all = payouts || [];
 
-      // Build study title map via applications → studies
+      // Build study title map via study_id first, with applications as fallback.
       const appIds = all.map(p => p.application_id).filter(Boolean);
+      const directStudyIds = all.map(p => p.study_id).filter(Boolean);
       let studyTitleMap = {};
+      let appStudyMap = {};
       if (appIds.length) {
         const { data: apps } = await db.from('applications').select('id, study_id').in('id', appIds);
-        const studyIds = [...new Set((apps || []).map(a => a.study_id).filter(Boolean))];
-        if (studyIds.length) {
-          let studies = null;
-          let studiesError = null;
+        appStudyMap = Object.fromEntries((apps || []).map(app => [app.id, app.study_id]));
+      }
+      const studyIds = [...new Set([
+        ...directStudyIds,
+        ...Object.values(appStudyMap).filter(Boolean)
+      ])];
+      if (studyIds.length) {
+        let studies = null;
+        let studiesError = null;
+        ({ data: studies, error: studiesError } = await db
+          .from('studies')
+          .select('id, title, is_test, companies(name)')
+          .in('id', studyIds)
+          .eq('is_test', contributorIsTest));
 
+        if (studiesError && /is_test/i.test(studiesError.message || '')) {
           ({ data: studies, error: studiesError } = await db
             .from('studies')
-            .select('id, title, is_test, companies(name)')
-            .in('id', studyIds)
-            .eq('is_test', contributorIsTest));
-
-          if (studiesError && /is_test/i.test(studiesError.message || '')) {
-            ({ data: studies, error: studiesError } = await db
-              .from('studies')
-              .select('id, title, companies(name)')
-              .in('id', studyIds));
-          }
-          if (studiesError) throw studiesError;
-
-          const sm = Object.fromEntries((studies || []).filter(s => !shouldHideContributorStudy(s, contributorIsTest)).map(s => [s.id, s.title]));
-          (apps || []).forEach(a => {
-            if (sm[a.study_id]) studyTitleMap[a.id] = sm[a.study_id];
-          });
+            .select('id, title, companies(name)')
+            .in('id', studyIds));
         }
+        if (studiesError) throw studiesError;
+
+        const sm = Object.fromEntries((studies || []).filter(s => !shouldHideContributorStudy(s, contributorIsTest)).map(s => [s.id, s.title]));
+        all.forEach(payout => {
+          const studyId = payout.study_id || appStudyMap[payout.application_id];
+          if (studyId && sm[studyId]) studyTitleMap[payout.id] = sm[studyId];
+        });
       }
 
       const timelinePayments = all
-        .filter(p => !p.application_id || studyTitleMap[p.application_id])
-        .map(p => ({ ...p, studyTitle: studyTitleMap[p.application_id] || 'Study' }));
+        .filter(p => !p.study_id || studyTitleMap[p.id] || !p.application_id || appStudyMap[p.application_id])
+        .map(p => ({ ...p, studyTitle: studyTitleMap[p.id] || 'Study' }));
       state.payments = timelinePayments;
       renderPaymentHistory(timelinePayments);
       renderContributorActivityTimeline();
@@ -5969,23 +5975,33 @@ async function applyToStudy(studyId, answers = null) {
 
     const fmt = amt => formatCurrency(amt);
 
-    const pending = rows.filter(p => p.status !== 'paid');
+    const underReview = rows.filter(p => p.status === 'pending_review');
+    const approved = rows.filter(p => p.status === 'approved');
     const paid    = rows.filter(p => p.status === 'paid');
 
+    const summaryCard = (label, amount, color, count) => `
+      <div style="padding:12px 14px;border-radius:10px;background:var(--gray-50);border:1px solid var(--gray-100)">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:${color};margin-bottom:6px">${esc(label)}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--gray-900)">${fmt(amount)}</div>
+        <div style="font-size:12px;color:var(--gray-500);font-weight:300;margin-top:2px">${count} ${count === 1 ? t('payment_entry_singular') : t('payment_entry_plural')}</div>
+      </div>
+    `;
+
     const renderRow = (p, isPaid) => {
-      const d = p.paid_at || p.created_at;
+      const d = p.paid_at || p.approved_at || p.created_at;
       const date = d ? new Date(d).toLocaleDateString(getUiLocale(), { day:'numeric', month:'short', year:'numeric' }) : '—';
-      const delayed = isDelayedPayment(p);
       const statusLabel = esc(
         p.status === 'paid'
           ? t('payment_paid')
-          : delayed
-            ? t('payment_delayed')
-            : p.status === 'pending'
-              ? t('payment_pending')
-              : p.status.charAt(0).toUpperCase() + p.status.slice(1)
+          : p.status === 'approved'
+            ? t('payment_approved')
+            : t('payment_under_review')
       );
-      const amtStyle = isPaid ? '' : 'color:var(--amber)';
+      const amtStyle = p.status === 'paid'
+        ? 'color:var(--green)'
+        : p.status === 'approved'
+          ? 'color:var(--blue)'
+          : 'color:var(--gray-500)';
       return `<div class="history-item">
         <div>
           <div class="history-title">${esc(p.studyTitle)}</div>
@@ -5996,15 +6012,24 @@ async function applyToStudy(studyId, answers = null) {
     };
 
     let html = '';
-    if (pending.length) {
-      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber);margin-bottom:8px">${t('payment_pending')} (${pending.length})</div>`;
-      html += pending.map(p => renderRow(p, false)).join('');
+    html += `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px">
+      ${summaryCard(t('payment_under_review'), underReview.reduce((sum, payout) => sum + (payout.amount || 0), 0), 'var(--gray-500)', underReview.length)}
+      ${summaryCard(t('payment_approved'), approved.reduce((sum, payout) => sum + (payout.amount || 0), 0), 'var(--blue)', approved.length)}
+      ${summaryCard(t('payment_paid'), paid.reduce((sum, payout) => sum + (payout.amount || 0), 0), 'var(--green)', paid.length)}
+    </div>`;
+    if (underReview.length) {
+      html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--gray-500);margin-bottom:8px">${t('payment_under_review')} (${underReview.length})</div>`;
+      html += underReview.map(p => renderRow(p, false)).join('');
+    }
+    if (approved.length) {
+      if (underReview.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);margin:14px 0 8px">${t('payment_approved')} (${approved.length})</div>`;
+      html += approved.map(p => renderRow(p, false)).join('');
     }
     if (paid.length) {
-      if (pending.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">${t('payment_paid')} (${paid.length})</div>`;
+      if (underReview.length || approved.length) html += `<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin:14px 0 8px">${t('payment_paid')} (${paid.length})</div>`;
       html += paid.map(p => renderRow(p, true)).join('');
     }
-    html += `<div class="payout-note">${pending.some(isDelayedPayment) ? t('payout_note_delayed') : t('payout_note')}</div>`;
+    html += `<div class="payout-note">${t('payout_note')}</div>`;
     section.innerHTML = html;
   }
 
@@ -6762,8 +6787,12 @@ async function applyToStudy(studyId, answers = null) {
       standard_member: 'Standard member',
       payment_none: 'No payment history yet. Complete a study to start earning.',
       payment_pending: 'Pending',
+      payment_under_review: 'Under review',
+      payment_approved: 'Approved for payment',
       payment_delayed: 'Delayed',
       payment_paid: 'Paid',
+      payment_entry_singular: 'entry',
+      payment_entry_plural: 'entries',
       payout_note: 'Payments are handled after each completed study. You’ll receive details on how payment is made when your first study is completed.',
       payout_note_delayed: 'This payout is taking longer than usual. It will appear in your earnings once processed.',
       rating_empty: 'Complete your first study to see your rating breakdown.',
@@ -7442,8 +7471,12 @@ async function applyToStudy(studyId, answers = null) {
       standard_member: 'Standardmedlem',
       payment_none: 'Ingen betalningshistorik ännu. Slutför en studie för att börja tjäna.',
       payment_pending: 'Väntande',
+      payment_under_review: 'Under granskning',
+      payment_approved: 'Godkänd för utbetalning',
       payment_delayed: 'Försenad',
       payment_paid: 'Betald',
+      payment_entry_singular: 'post',
+      payment_entry_plural: 'poster',
       payout_note: 'Betalningar hanteras efter varje slutförd studie. Du får information om hur betalningen sker när din första studie är slutförd.',
       payout_note_delayed: 'Den här utbetalningen tar längre tid än vanligt. Den visas i dina intäkter när den har behandlats.',
       rating_empty: 'Slutför din första studie för att se din betygsöversikt.',
