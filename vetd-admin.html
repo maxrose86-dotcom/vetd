@@ -664,7 +664,7 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 
 <!-- STUDY QUEUE -->
 <div class="tab" id="t-studies-admin">
-  <div class="ph"><div><h1>Study Queue</h1><p>34 active studies · sorted by urgency</p></div></div>
+  <div class="ph"><div><h1>Study Queue</h1><p id="studies-admin-sub">Loading studies…</p></div></div>
   <div class="fbar">
     <button class="fc on" onclick="fc(this)">All</button>
     <button class="fc" onclick="fc(this)">Urgent</button>
@@ -673,12 +673,8 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
   </div>
   <table class="tbl" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
     <thead><tr><th>Study</th><th>Client</th><th>Fill</th><th>Pay</th><th>Deadline</th><th>Matched pool</th><th>Status</th><th>Action</th></tr></thead>
-    <tbody>
-      <tr><td><strong style="color:var(--text)">Checkout flow UX</strong></td><td style="color:var(--text2)">Klarna</td><td style="font-family:var(--mono)">3 / 15</td><td style="font-family:var(--mono);color:var(--green)">300 kr</td><td style="color:var(--coral);font-family:var(--mono)">6h</td><td style="font-family:var(--mono)">847</td><td><span class="badge br">Urgent</span></td><td><button class="btn btn-red" style="padding:5px 12px;font-size:11px" onclick="showToast('🚀 Boost sent — top 50 contributors notified')">Boost</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Sustainability survey</strong></td><td style="color:var(--text2)">IKEA</td><td style="font-family:var(--mono)">12 / 50</td><td style="font-family:var(--mono);color:var(--green)">120 kr</td><td style="color:var(--amber);font-family:var(--mono)">3d</td><td style="font-family:var(--mono)">2,340</td><td><span class="badge ba">Stalled</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📧 Re-engagement emails sent to 500 matched contributors')">Re-engage</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Music discovery UX</strong></td><td style="color:var(--text2)">Spotify</td><td style="font-family:var(--mono)">4 / 6</td><td style="font-family:var(--mono);color:var(--green)">650 kr</td><td style="color:var(--text2);font-family:var(--mono)">5d</td><td style="font-family:var(--mono)">124</td><td><span class="badge bg">On track</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('No action needed')">Monitor</button></td></tr>
-      <tr><td><strong style="color:var(--text)">H&M shopping experience</strong></td><td style="color:var(--text2)">H&M</td><td style="font-family:var(--mono)">12 / 20</td><td style="font-family:var(--mono);color:var(--green)">450 kr</td><td style="color:var(--text2);font-family:var(--mono)">7d</td><td style="font-family:var(--mono)">312</td><td><span class="badge bb">Filling</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('Study is on track')">Monitor</button></td></tr>
-      <tr><td><strong style="color:var(--text)">Mobile banking app</strong></td><td style="color:var(--text2)">Klarna</td><td style="font-family:var(--mono)">8 / 8</td><td style="font-family:var(--mono);color:var(--green)">800 kr</td><td style="color:var(--text2);font-family:var(--mono)">2d</td><td style="font-family:var(--mono)">—</td><td><span class="badge bg">Full</span></td><td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="showToast('📅 Calendar invites sent to all 8 participants')">Send invites</button></td></tr>
+    <tbody id="studies-admin-body">
+      <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">Loading studies…</td></tr>
     </tbody>
   </table>
 </div>
@@ -1003,6 +999,7 @@ async function init() {
   initUI();
   await runAdminRefreshCycle();
   loadContributors();
+  loadAdminStudyQueue();
   loadPayouts();
   startAdminAutoRefresh();
 }
@@ -1732,6 +1729,114 @@ async function loadStudyAttention() {
 }
 
 // ─── CRITICAL ACTIONS ───────────────────────────────────────
+async function loadAdminStudyQueue() {
+  if (!db) return false;
+  const tbody = document.getElementById('studies-admin-body');
+  const subEl = document.getElementById('studies-admin-sub');
+  if (!tbody) return false;
+
+  try {
+    const { data: studies, error } = await db
+      .from('studies')
+      .select('id, title, company_id, spots, filled_spots, pay_per_participant, close_date, status, total_cost, payment_status, created_at')
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    const rows = studies || [];
+    const companyIds = [...new Set(rows.map(study => study.company_id).filter(Boolean))];
+    let companyNameMap = {};
+    if (companyIds.length) {
+      const { data: companies, error: companyErr } = await db
+        .from('companies')
+        .select('id, name')
+        .in('id', companyIds);
+      if (companyErr) throw companyErr;
+      companyNameMap = Object.fromEntries((companies || []).map(company => [company.id, company.name]));
+    }
+
+    if (subEl) {
+      const activeCount = rows.filter(study => study.status === 'active' || study.status === 'paused').length;
+      const unpaidCount = rows.filter(study => study.payment_status !== 'paid').length;
+      subEl.textContent = `${activeCount} active or paused · ${unpaidCount} awaiting payment`;
+    }
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3);font-family:var(--mono)">No studies yet</td></tr>';
+      return true;
+    }
+
+    tbody.innerHTML = rows.map(study => {
+      const spots = study.spots || 0;
+      const filled = study.filled_spots || 0;
+      const totalCost = Number.isFinite(Number(study.total_cost)) && Number(study.total_cost) > 0
+        ? Number(study.total_cost)
+        : (Number(study.pay_per_participant || 0) * Number(study.spots || 0));
+      const paymentStatus = study.payment_status === 'paid' ? 'paid' : 'unpaid';
+      const paymentLabel = paymentStatus === 'paid' ? 'Payment received' : 'Payment required';
+      const deadline = study.close_date
+        ? new Date(study.close_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+        : '—';
+      const statusBadge = study.status === 'active'
+        ? 'bg'
+        : study.status === 'paused'
+          ? 'ba'
+          : study.status === 'completed'
+            ? 'bb'
+            : 'bc';
+      const payLine = formatCurrency(study.pay_per_participant || 0);
+      const totalLine = formatCurrency(totalCost || 0);
+      const paymentColor = paymentStatus === 'paid' ? 'var(--green-mid)' : 'var(--amber)';
+      const actionHtml = paymentStatus !== 'paid'
+        ? `<button class="btn" style="padding:5px 12px;font-size:11px" onclick="markStudyPaid('${study.id}', this)">Mark as paid</button>`
+        : `<span style="font-size:11px;color:var(--text3);font-family:var(--mono)">—</span>`;
+      return `<tr>
+        <td><strong style="color:var(--text)">${esc(study.title || 'Untitled')}</strong></td>
+        <td style="color:var(--text2)">${esc(companyNameMap[study.company_id] || '—')}</td>
+        <td style="font-family:var(--mono)">${filled} / ${spots || '—'}</td>
+        <td style="font-family:var(--mono);color:var(--green)">
+          <div>${esc(payLine)}</div>
+          <div style="font-size:10px;color:var(--text3)">Total ${esc(totalLine)}</div>
+        </td>
+        <td style="color:var(--text2);font-family:var(--mono)">${esc(deadline)}</td>
+        <td style="font-family:var(--mono)">—</td>
+        <td>
+          <span class="badge ${statusBadge}">${esc(study.status || 'draft')}</span>
+          <div style="font-size:10px;color:${paymentColor};font-family:var(--mono);margin-top:5px">${esc(paymentLabel)}</div>
+        </td>
+        <td>${actionHtml}</td>
+      </tr>`;
+    }).join('');
+    return true;
+  } catch (err) {
+    console.warn('loadAdminStudyQueue error:', err);
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--coral);font-family:var(--mono)">Error loading studies</td></tr>';
+    return false;
+  }
+}
+
+async function markStudyPaid(studyId, btn) {
+  if (!db) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const { error } = await db
+      .from('studies')
+      .update({ payment_status: 'paid' })
+      .eq('id', studyId);
+    if (error) throw error;
+    showToast('Study marked as paid');
+    await loadAdminStudyQueue();
+    loadStudyAttention().catch(() => {});
+  } catch (err) {
+    console.error('markStudyPaid error:', err);
+    if (window.Sentry) Sentry.captureException(err);
+    showToast('Could not update payment status');
+    if (btn) { btn.disabled = false; btn.textContent = 'Mark as paid'; }
+  }
+}
+
+// ─── CRITICAL ACTIONS ───────────────────────────────────────
 async function loadCriticalActions() {
   if (!db) return false;
   const container = document.getElementById('critical-actions-list');
@@ -2388,6 +2493,7 @@ async function runAdminRefreshCycle() {
     const results = await Promise.allSettled([
       loadDashboardStats(),
       loadCriticalActions(),
+      loadAdminStudyQueue(),
       loadStudyAttention(),
       loadUnscheduledQueue(),
     ]);

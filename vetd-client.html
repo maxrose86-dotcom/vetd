@@ -1787,6 +1787,54 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : t('cl_audience_customers');
   }
 
+  function getStudyComputedTotalCost(study) {
+    const pay = Number(study?.pay_per_participant || 0);
+    const spots = Number(study?.spots || 0);
+    return Number.isFinite(pay) && Number.isFinite(spots) && pay > 0 && spots > 0
+      ? pay * spots
+      : 0;
+  }
+
+  function getStudyTotalCostValue(study) {
+    const explicit = Number(study?.total_cost);
+    return Number.isFinite(explicit) && explicit > 0
+      ? explicit
+      : getStudyComputedTotalCost(study);
+  }
+
+  function getStudyPaymentStatus(study) {
+    return study?.payment_status === 'paid' ? 'paid' : 'unpaid';
+  }
+
+  function isStudyPaymentReceived(study) {
+    return study?.is_test === true || getStudyPaymentStatus(study) === 'paid';
+  }
+
+  function getStudyPaymentLabel(study) {
+    return isStudyPaymentReceived(study)
+      ? t('cl_study_payment_received')
+      : t('cl_study_payment_required');
+  }
+
+  async function requireStudyPayment(studyOrId) {
+    let study = typeof studyOrId === 'string'
+      ? (_studiesCache?.studies || []).find(s => s.id === studyOrId) || null
+      : studyOrId;
+
+    if (typeof studyOrId === 'string' && db && (!study || !isStudyPaymentReceived(study))) {
+      const { data } = await db
+        .from('studies')
+        .select('id, payment_status, total_cost, pay_per_participant, spots, is_test')
+        .eq('id', studyOrId)
+        .single();
+      if (data) study = data;
+    }
+
+    if (study && isStudyPaymentReceived(study)) return study;
+    showToast(t('cl_payment_required_continue'), true);
+    return null;
+  }
+
   function getStudyIntentLabel(study) {
     if (!study || study.audience_type === 'professionals') return '';
     const intent = typeof study.target_audience_intent === 'string'
@@ -1875,6 +1923,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_behaviors: study.target_behaviors,
         target_audience_intent: study.target_audience_intent,
         is_test: study.is_test,
+        total_cost: getStudyTotalCostValue(study),
+        payment_status: 'unpaid',
         min_rating: study.min_rating,
         screening_questions: study.screening_questions,
         additional_reqs: study.additional_reqs
@@ -2111,6 +2161,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           <div class="study-title-group" style="flex:1;min-width:0">
             <h3 class="study-row-compact">${esc(s.title || t('cl_untitled_study'))}</h3>
             <p class="study-row-summary">${esc(secondaryParts.join(' · '))}</p>
+            <div style="font-size:12px;color:${isStudyPaymentReceived(s) ? 'var(--blue)' : 'var(--amber)'};margin-top:4px">${esc(getStudyPaymentLabel(s))}</div>
             ${intentLabel ? `<div class="study-row-intent">${esc(intentLabel)}</div>` : ''}
             ${interestTags.length ? `<div class="study-row-interest-tags">${interestTags.map(tag => `<span class="study-row-interest-tag">${esc(tag)}</span>`).join('')}</div>` : ''}
           </div>
@@ -3015,6 +3066,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       showToast(t('cl_schedule_future_required'), true);
       return;
     }
+
+    const paidStudy = await requireStudyPayment(_schedStudyId);
+    if (!paidStudy) return;
 
     const btn = document.getElementById('schedule-confirm-btn');
     btn.disabled = true;
@@ -4124,6 +4178,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         currentCompanyIsTest = companyIsTest;
       }
 
+      let existingPaymentStatus = 'unpaid';
+      if (effectiveDraftId) {
+        const cachedStudy = (_studiesCache?.studies || []).find(study => study.id === effectiveDraftId) || null;
+        if (cachedStudy) {
+          existingPaymentStatus = cachedStudy.payment_status === 'paid' ? 'paid' : 'unpaid';
+        } else {
+          const { data: existingStudy } = await db
+            .from('studies')
+            .select('payment_status')
+            .eq('id', effectiveDraftId)
+            .single();
+          existingPaymentStatus = existingStudy?.payment_status === 'paid' ? 'paid' : 'unpaid';
+        }
+      }
+
       const studyFields = {
         title,
         description:          desc || null,
@@ -4143,10 +4212,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_behaviors:     targeting.customerBehaviors.length ? targeting.customerBehaviors : null,
         target_audience_intent: targeting.customerIntent || null,
         is_test:              companyIsTest,
+        total_cost:           pay * spots,
+        payment_status:       'unpaid',
         min_rating:           null,
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      null
       };
+      const blockedByPayment = status === 'active' && existingPaymentStatus !== 'paid';
+      studyFields.status = blockedByPayment ? 'draft' : status;
+      studyFields.payment_status = existingPaymentStatus === 'paid' ? 'paid' : 'unpaid';
       let saveResult = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId).select('id').single()
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields }).select('id').single();
@@ -4160,11 +4234,23 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       }
       if (error) throw error;
 
+      const savedStudyId = saveResult?.data?.id || effectiveDraftId || null;
+      if (blockedByPayment) {
+        _editingDraftId = savedStudyId;
+        setDraftUrl(savedStudyId);
+        loadStudies().catch(err => {
+          console.error('Background loadStudies after payment gate save failed:', err);
+          if (window.Sentry) Sentry.captureException(err);
+        });
+        showToast(t('cl_payment_required_continue'), true);
+        return false;
+      }
+
       _editingDraftId = null;
       setDraftUrl(null);
       if (!isDraft) {
         _justPublished = true;
-        _justPublishedStudyId = saveResult?.data?.id || effectiveDraftId || null;
+        _justPublishedStudyId = savedStudyId;
         loadStudies().catch(err => {
           console.error('Background loadStudies after publish failed:', err);
           if (window.Sentry) Sentry.captureException(err);
@@ -4582,10 +4668,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   // ─── CONTRIBUTOR BROWSER CONTEXT ────────────────────────
-  function openContributorBrowser(studyId, studyTitle) {
+  async function openContributorBrowser(studyId, studyTitle) {
+    const paidStudy = await requireStudyPayment(studyId);
+    if (!paidStudy) return;
     currentInviteStudyId = studyId;
     currentInviteStudyTitle = studyTitle;
-    currentInviteStudy = _studiesCache?.studies?.find(s => s.id === studyId) || null;
+    currentInviteStudy = paidStudy;
     const subEl = document.getElementById('browse-study-subtitle');
     if (subEl) subEl.textContent = studyTitle
       ? t('cl_browse_for_study').replace('{title}', studyTitle)
@@ -5330,6 +5418,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const { poolCount, confidence, confidenceCopy, guidance, fillCopy, previewMatches } = _builderPoolPreviewState;
     const targeting = getBuilderTargetingState();
     const decision = getBuilderDecisionModel(confidence);
+    const currentBuilderStudy = _editingDraftId
+      ? ((_studiesCache?.studies || []).find(study => study.id === _editingDraftId) || null)
+      : null;
+    const publishBlockedByPayment = !isStudyPaymentReceived(currentBuilderStudy || {
+      payment_status: 'unpaid',
+      is_test: currentCompanyIsTest === true
+    });
     const priorityLabel = targeting.audienceType === 'customers'
       ? guidance?.priority === 'high'
         ? t('cl_customer_decision_priority_high')
@@ -5395,9 +5490,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewSummaryEl.innerHTML = '';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = decision.button;
-      publishBtn.disabled = decision.state === 'not_ready';
-      publishBtn.style.opacity = decision.state === 'not_ready' ? '0.55' : '1';
-      publishBtn.style.cursor = decision.state === 'not_ready' ? 'not-allowed' : 'pointer';
+      publishBtn.disabled = decision.state === 'not_ready' || publishBlockedByPayment;
+      publishBtn.style.opacity = (decision.state === 'not_ready' || publishBlockedByPayment) ? '0.55' : '1';
+      publishBtn.style.cursor = (decision.state === 'not_ready' || publishBlockedByPayment) ? 'not-allowed' : 'pointer';
     }
 
     if (confidence === 'too_broad') {
@@ -5485,7 +5580,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { data: study, error } = await db
         .from('studies')
-        .select('id, title, status, description, pay_per_participant, spots, session_type, duration_minutes')
+        .select('id, title, status, description, pay_per_participant, spots, session_type, duration_minutes, total_cost, payment_status, is_test')
         .eq('id', studyId)
         .single();
       if (error || !study) throw error || new Error('Study not found');
@@ -5534,6 +5629,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               <button class="btn-outline" data-action="edit-details">${esc(t('cl_study_primary_edit_draft'))}</button>
             </div>` : ''}
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">${esc(t('cl_study_section_status'))}</div>
+            <div style="font-size:12px;color:${isStudyPaymentReceived(study) ? 'var(--blue)' : 'var(--amber)'};margin-bottom:12px">${esc(getStudyPaymentLabel(study))}</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
               ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>` : ''}
               ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">${esc(t('cl_study_action_pause'))}</button>` : ''}
@@ -5562,6 +5658,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     _studyStatusInFlight = true;
     try {
       const cachedStudy = _studiesCache?.studies?.find(study => study.id === studyId) || null;
+      if (status === 'active') {
+        const paidStudy = await requireStudyPayment(cachedStudy || studyId);
+        if (!paidStudy) return;
+      }
       const previousStatus = cachedStudy?.status || null;
       const canOptimisticallyUpdate = Boolean(
         cachedStudy && (
@@ -6412,6 +6512,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_toast_completed: 'Marked as completed',
       cl_study_toast_archived: 'Study archived',
       cl_study_toast_updated: 'Study updated',
+      cl_payment_required_continue: 'Payment required to go live. Study saved as draft.',
+      cl_study_payment_required: 'Payment required',
+      cl_study_payment_received: 'Payment received',
       cl_study_primary_resolve_sessions: 'Resolve {count} sessions →',
       cl_study_primary_log_outcomes: 'Log {count} outcomes →',
       cl_study_primary_session_today: 'Session today{time} →',
@@ -7046,6 +7149,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_toast_completed: 'Markerad som slutförd',
       cl_study_toast_archived: 'Studie arkiverad',
       cl_study_toast_updated: 'Studie uppdaterad',
+      cl_payment_required_continue: 'Betalning krävs för att publicera. Studien har sparats som utkast.',
+      cl_study_payment_required: 'Betalning krävs',
+      cl_study_payment_received: 'Betalning mottagen',
       cl_study_primary_resolve_sessions: 'Hantera {count} sessioner →',
       cl_study_primary_log_outcomes: 'Logga {count} utfall →',
       cl_study_primary_session_today: 'Session idag{time} →',
