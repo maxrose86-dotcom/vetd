@@ -1442,6 +1442,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   let currentCompanyName = '';
   let currentCompanyIsTest = false;
+  let currentCompanyId = null;
 
   function updateDashboardGreeting() {
     const titleEl = document.getElementById('dash-greeting');
@@ -1495,6 +1496,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const name = company?.name || '';
         currentCompanyIsTest = company?.is_test === true;
         currentCompanyName = name;
+        currentCompanyId = client.company_id;
         const nameEl = document.getElementById('sidebar-company-name');
         const subEl  = document.getElementById('sidebar-company-sub');
         if (nameEl) nameEl.textContent = name;
@@ -1832,6 +1834,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const paymentStatus = draftStudy?.payment_status === 'paid' ? 'paid' : 'unpaid';
     return {
       studyId: draftStudy?.id || draftId || null,
+      companyId: currentCompanyId || draftStudy?.company_id || null,
       title,
       companyName,
       totalCost,
@@ -4142,6 +4145,32 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const saved = await submitStudy('draft', { suppressDraftToast: true, keepDraftReference: true });
       if (!saved) return;
       paymentContext = getBuilderPaymentContext();
+    }
+
+    // Log the invoice request — fire-and-forget, never blocks the email flow.
+    if (db && paymentContext.studyId && paymentContext.companyId) {
+      (async () => {
+        try {
+          // Only insert if no request already exists for this study.
+          const { data: existing } = await db
+            .from('invoice_requests')
+            .select('id')
+            .eq('study_id', paymentContext.studyId)
+            .maybeSingle();
+          if (!existing) {
+            await db.from('invoice_requests').insert({
+              study_id:     paymentContext.studyId,
+              company_id:   paymentContext.companyId,
+              amount:       paymentContext.totalCost || 0,
+              status:       'requested',
+              requested_at: new Date().toISOString()
+            });
+          }
+        } catch (err) {
+          console.warn('invoice_requests log failed (non-blocking):', err);
+          if (window.Sentry) Sentry.captureException(err);
+        }
+      })();
     }
 
     const subject = t('cl_study_payment_gate_subject').replace('{title}', paymentContext.title || t('cl_published_context_default'));

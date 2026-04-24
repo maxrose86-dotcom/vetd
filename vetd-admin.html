@@ -665,6 +665,21 @@ input[type=text]:focus,select:focus,textarea:focus{border-color:var(--blue)}
 <!-- STUDY QUEUE -->
 <div class="tab" id="t-studies-admin">
   <div class="ph"><div><h1>Study Queue</h1><p id="studies-admin-sub">Loading studies…</p></div></div>
+
+  <!-- INVOICE REQUESTS -->
+  <div id="invoice-requests-section" style="margin-bottom:2rem">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:0.75rem">
+      <h2 style="font-size:15px;font-weight:600;margin:0;letter-spacing:0.02em">Invoice requests</h2>
+      <span id="invoice-requests-sub" style="font-size:12px;color:var(--text3);font-family:var(--mono)">Loading…</span>
+    </div>
+    <table class="tbl" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden">
+      <thead><tr><th>Study</th><th>Company</th><th>Amount</th><th>Requested</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="invoice-requests-body">
+        <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3);font-family:var(--mono)">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
   <div class="fbar">
     <button class="fc on" onclick="fc(this)">All</button>
     <button class="fc" onclick="fc(this)">Urgent</button>
@@ -1000,6 +1015,7 @@ async function init() {
   await runAdminRefreshCycle();
   loadContributors();
   loadAdminStudyQueue();
+  loadInvoiceRequests();
   loadPayouts();
   startAdminAutoRefresh();
 }
@@ -1792,7 +1808,7 @@ async function loadAdminStudyQueue() {
       const totalLine = formatCurrency(totalCost || 0);
       const paymentColor = paymentStatus === 'paid' ? 'var(--green-mid)' : 'var(--amber)';
       const actionHtml = paymentStatus !== 'paid'
-        ? `<button class="btn" style="padding:5px 12px;font-size:11px" onclick="markStudyPaid('${study.id}', this)">Mark as paid</button>`
+        ? `<button class="btn" style="padding:5px 12px;font-size:11px" onclick="markStudyPaid('${study.id}', this, null)">Mark as paid</button>`
         : `<span style="font-size:11px;color:var(--text3);font-family:var(--mono)">—</span>`;
       return `<tr>
         <td><strong style="color:var(--text)">${esc(study.title || 'Untitled')}</strong></td>
@@ -1820,20 +1836,98 @@ async function loadAdminStudyQueue() {
   }
 }
 
-async function markStudyPaid(studyId, btn) {
+async function loadInvoiceRequests() {
+  if (!db) return;
+  const tbody = document.getElementById('invoice-requests-body');
+  const subEl  = document.getElementById('invoice-requests-sub');
+  if (!tbody) return;
+
+  try {
+    // Only show requests where payment is still outstanding
+    const { data: rows, error } = await db
+      .from('invoice_requests')
+      .select('id, study_id, company_id, amount, status, requested_at')
+      .eq('status', 'requested')
+      .order('requested_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    const requests = rows || [];
+
+    // Fetch study titles
+    const studyIds = [...new Set(requests.map(r => r.study_id).filter(Boolean))];
+    let studyTitleMap = {};
+    if (studyIds.length) {
+      const { data: studies } = await db.from('studies').select('id, title, payment_status').in('id', studyIds);
+      // Filter out any where the study is already paid (edge case: payment updated before log was)
+      (studies || []).forEach(s => { studyTitleMap[s.id] = { title: s.title || 'Untitled', paid: s.payment_status === 'paid' }; });
+    }
+
+    // Fetch company names
+    const companyIds = [...new Set(requests.map(r => r.company_id).filter(Boolean))];
+    let companyNameMap = {};
+    if (companyIds.length) {
+      const { data: companies } = await db.from('companies').select('id, name').in('id', companyIds);
+      (companies || []).forEach(c => { companyNameMap[c.id] = c.name || '—'; });
+    }
+
+    // Hide rows where study is already paid
+    const visible = requests.filter(r => !studyTitleMap[r.study_id]?.paid);
+
+    if (subEl) subEl.textContent = visible.length ? `${visible.length} pending` : 'None pending';
+
+    if (!visible.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--text3);font-family:var(--mono)">No pending invoice requests</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = visible.map(r => {
+      const title     = esc(studyTitleMap[r.study_id]?.title || '—');
+      const company   = esc(companyNameMap[r.company_id] || '—');
+      const amount    = formatCurrency(r.amount || 0);
+      const requested = r.requested_at
+        ? new Date(r.requested_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : '—';
+      return `<tr>
+        <td><strong style="color:var(--text)">${title}</strong></td>
+        <td style="color:var(--text2)">${company}</td>
+        <td style="font-family:var(--mono);color:var(--green)">${esc(amount)}</td>
+        <td style="font-family:var(--mono);color:var(--text3);font-size:11px">${esc(requested)}</td>
+        <td><span style="font-size:11px;color:var(--amber);font-family:var(--mono)">Requested</span></td>
+        <td><button class="btn" style="padding:5px 12px;font-size:11px" onclick="markStudyPaid('${r.study_id}', this, '${r.id}')">Mark as paid</button></td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    console.warn('loadInvoiceRequests error:', err);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:var(--coral);font-family:var(--mono)">Error loading requests</td></tr>';
+  }
+}
+
+async function markStudyPaid(studyId, btn, invoiceRequestId) {
   if (!db) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const { data: { session } } = await db.auth.getSession();
     const paidBy = session?.user?.email || session?.user?.id || 'admin';
     const paidAt = new Date().toISOString();
+
+    // Update the study
     const { error } = await db
       .from('studies')
       .update({ payment_status: 'paid', paid_at: paidAt, paid_by: paidBy })
       .eq('id', studyId);
     if (error) throw error;
+
+    // Close the invoice request if we have its id
+    if (invoiceRequestId) {
+      await db.from('invoice_requests')
+        .update({ status: 'paid', paid_at: paidAt })
+        .eq('id', invoiceRequestId)
+        .catch(err => console.warn('invoice_requests update failed (non-blocking):', err));
+    }
+
     showToast('Study marked as paid');
-    await loadAdminStudyQueue();
+    await Promise.all([loadAdminStudyQueue(), loadInvoiceRequests()]);
     loadStudyAttention().catch(() => {});
   } catch (err) {
     console.error('markStudyPaid error:', err);
@@ -2501,6 +2595,7 @@ async function runAdminRefreshCycle() {
       loadDashboardStats(),
       loadCriticalActions(),
       loadAdminStudyQueue(),
+      loadInvoiceRequests(),
       loadStudyAttention(),
       loadUnscheduledQueue(),
     ]);
