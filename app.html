@@ -1026,10 +1026,15 @@
         </div>
         <div class="field-row">
           <div class="field">
-            <label data-i18n="edit_label_country">Country</label>
-            <select id="country"><option value="United Kingdom" data-i18n="country_uk">United Kingdom</option><option value="Ireland" data-i18n="country_ie">Ireland</option><option value="Sweden" data-i18n="country_se">Sweden</option><option value="United States" data-i18n="country_us">United States</option><option value="Australia" data-i18n="country_au">Australia</option><option value="Canada" data-i18n="country_ca">Canada</option></select>
+            <label data-i18n="location_label">Location</label>
+            <select id="location-region">
+              <option value="remote" data-i18n="loc_remote">Anywhere (remote)</option>
+              <option value="stockholm" data-i18n="loc_stockholm">Stockholm</option>
+              <option value="gothenburg" data-i18n="loc_gothenburg">Gothenburg</option>
+              <option value="malmo" data-i18n="loc_malmo">Malmö</option>
+              <option value="other" data-i18n="loc_other">Other location</option>
+            </select>
           </div>
-          <div class="field"><label data-i18n="ob_city_label">City / Town</label><input type="text" id="city" data-i18n-ph="ob_city_ph" placeholder="e.g. Manchester" maxlength="100"></div>
         </div>
         <div class="field">
           <label data-i18n="edit_label_employment">Employment status</label>
@@ -1038,14 +1043,6 @@
         <div class="field">
           <label data-i18n="edit_label_income">Household income (annual, approximate)</label>
           <select id="income"><option value="under_20k" data-i18n="income_under_20k">Under 200 000 kr</option><option value="20k_35k" data-i18n="income_20k_35k">200 000–349 999 kr</option><option value="35k_60k" data-i18n="income_35k_60k">350 000–599 999 kr</option><option value="60k_100k" data-i18n="income_60k_100k">600 000–999 999 kr</option><option value="100k_plus" data-i18n="income_100k_plus">1 000 000 kr+</option><option value="prefer_not_to_say" data-i18n="gender_prefer_not">Prefer not to say</option></select>
-        </div>
-        <div class="field">
-          <label data-i18n="edit_label_living">Living situation</label>
-          <div id="ob-chips-living"></div>
-        </div>
-        <div class="field">
-          <label data-i18n="edit_label_children">Do you have children?</label>
-          <div id="ob-chips-children"></div>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(2)" data-i18n="ob_back">← Back</button>
@@ -1056,20 +1053,12 @@
       <!-- Step 3: Interests -->
       <div class="onboarding-step" id="step-3">
         <div class="step-header">
-          <h2 data-i18n="ob_step3_title">What are you into?</h2>
-          <p data-i18n="ob_step3_sub">Select everything that applies — the more you share, the better the matches.</p>
+          <h2 data-i18n="ob_step3_title">Help us match you better</h2>
+          <p data-i18n="ob_step3_sub">Pick what fits you.</p>
         </div>
         <div class="field">
-          <label data-i18n="edit_label_lifestyle">Shopping & lifestyle</label>
-          <div id="ob-chips-lifestyle"></div>
-        </div>
-        <div class="field">
-          <label data-i18n="edit_label_tech">Technology & media</label>
-          <div id="ob-chips-tech"></div>
-        </div>
-        <div class="field">
-          <label data-i18n="edit_label_finance">Finance & banking</label>
-          <div id="ob-chips-finance"></div>
+          <label data-i18n="ob_interests_label">Pick what fits you</label>
+          <div id="ob-chips-interests"></div>
         </div>
         <div class="nav-buttons">
           <button class="btn-back" onclick="prevStep(3)" data-i18n="ob_back">← Back</button>
@@ -1404,10 +1393,15 @@
             </div>
             <div class="field-row">
               <div class="field">
-                <label data-i18n="edit_label_country">Country</label>
-                <select id="edit-country"><option value="United Kingdom" data-i18n="country_uk">United Kingdom</option><option value="Ireland" data-i18n="country_ie">Ireland</option><option value="Sweden" data-i18n="country_se">Sweden</option><option value="United States" data-i18n="country_us">United States</option><option value="Australia" data-i18n="country_au">Australia</option><option value="Canada" data-i18n="country_ca">Canada</option></select>
+                <label data-i18n="location_label">Location</label>
+                <select id="edit-location-region">
+                  <option value="remote" data-i18n="loc_remote">Anywhere (remote)</option>
+                  <option value="stockholm" data-i18n="loc_stockholm">Stockholm</option>
+                  <option value="gothenburg" data-i18n="loc_gothenburg">Gothenburg</option>
+                  <option value="malmo" data-i18n="loc_malmo">Malmö</option>
+                  <option value="other" data-i18n="loc_other">Other location</option>
+                </select>
               </div>
-              <div class="field"><label data-i18n="edit_label_city">City / Town</label><input type="text" id="edit-city" data-i18n-ph="edit_city_ph" placeholder="e.g. Stockholm" maxlength="100"></div>
             </div>
             <div class="field">
               <label data-i18n="edit_label_employment">Employment status</label>
@@ -1430,20 +1424,8 @@
           <div class="profile-section" style="margin-bottom:1.5rem">
             <h3 data-i18n="edit_interests">Interests</h3>
             <div class="field" style="margin-top:0.75rem">
-              <label data-i18n="edit_label_lifestyle">Shopping & lifestyle</label>
-              <div id="edit-chips-lifestyle"></div>
-            </div>
-            <div class="field">
-              <label data-i18n="edit_label_tech">Technology & media</label>
-              <div id="edit-chips-tech"></div>
-            </div>
-            <div class="field">
-              <label data-i18n="edit_label_finance">Finance & banking</label>
-              <div id="edit-chips-finance"></div>
-            </div>
-            <div class="field">
-              <label data-i18n="edit_label_brands">Brands you shop with regularly</label>
-              <div id="edit-chips-brands"></div>
+              <label data-i18n="ob_interests_label">Pick what fits you</label>
+              <div id="edit-chips-interests"></div>
             </div>
           </div>
 
@@ -1783,15 +1765,13 @@
       if (!user) throw new Error('Not logged in');
 
       const { error } = await db.from('contributors').update({
-        date_of_birth:    document.getElementById('dob').value || null,
-        gender:           document.getElementById('gender').value,
-        country:          document.getElementById('country').value,
-        city:             document.getElementById('city').value.trim() || null,
-        employment:       document.getElementById('employment').value,
-        income:           document.getElementById('income').value,
-        living_situation: getChipValues('living_situation'),
-        children:         getChipValues('children'),
-        onboarding_step:  3
+        date_of_birth:   document.getElementById('dob').value || null,
+        gender:          document.getElementById('gender').value,
+        country:         'Sweden',
+        location_region: document.getElementById('location-region').value,
+        employment:      document.getElementById('employment').value,
+        income:          document.getElementById('income').value,
+        onboarding_step: 3
       }).eq('id', user.id);
 
       if (error) throw error;
@@ -1816,14 +1796,12 @@
       const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error('Not logged in');
 
-      const lifestyle = getChipValues('interests_lifestyle');
-      const tech      = getChipValues('interests_tech');
-      const finance   = getChipValues('interests_finance');
+      const interests = getChipValues('interests');
       const { error } = await db.from('contributors').update({
-        interests_lifestyle: lifestyle,
-        interests_tech:      tech,
-        interests_finance:   finance,
-        interests:           [...new Set([...lifestyle, ...tech, ...finance])],
+        interests_lifestyle: [],
+        interests_tech:      [],
+        interests_finance:   [],
+        interests:           interests,
         onboarding_step:     4
       }).eq('id', user.id);
 
@@ -1850,11 +1828,18 @@
       if (!user) throw new Error('Not logged in');
 
       const sessionLengths = getChipValues('max_session_length');
+      const selectedFormats = getChipValues('study_formats');
+      const derivedPrefs = getDefaultMatchPreferences({
+        study_formats: selectedFormats,
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        interests: getChipValues('interests')
+      });
 
       const { error } = await db.from('contributors').update({
-        study_formats:       getChipValues('study_formats'),
+        study_formats:       selectedFormats,
         available_times:     getChipValues('available_times'),
         max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
+        match_preferences:   { format: derivedPrefs.format, length: derivedPrefs.length },
         onboarding_step:     5,
         onboarding_complete: true
       }).eq('id', user.id);
@@ -2654,6 +2639,47 @@
     };
   }
 
+  const CONTRIBUTOR_INTEREST_FOCUS_GROUPS = {
+    lifestyle: ['food', 'fitness', 'beauty', 'fashion', 'home', 'travel', 'sustainability', 'parenting', 'pets'],
+    tech: ['smartphones', 'streaming', 'gaming', 'social_media', 'smart_home', 'early_adopter', 'compares_brands', 'subscription_user'],
+    finance: ['investing', 'online_banking', 'insurance', 'freelance_work']
+  };
+
+  function getLocationRegionLabel(value) {
+    const key = String(value || '').trim().toLowerCase();
+    if (!key) return '';
+    const labels = {
+      remote: t('loc_remote'),
+      stockholm: t('loc_stockholm'),
+      gothenburg: t('loc_gothenburg'),
+      malmo: t('loc_malmo'),
+      other: t('loc_other')
+    };
+    return labels[key] || '';
+  }
+
+  function inferLocationRegion(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    if (!raw) return 'remote';
+    if (['remote', 'stockholm', 'gothenburg', 'malmo', 'other'].includes(raw)) return raw;
+    if (raw.includes('stockholm')) return 'stockholm';
+    if (raw.includes('gothenburg') || raw.includes('göteborg')) return 'gothenburg';
+    if (raw.includes('malmo') || raw.includes('malmö')) return 'malmo';
+    return 'other';
+  }
+
+  function getContributorLocationRegion(profile) {
+    return inferLocationRegion(profile?.location_region || profile?.city || '');
+  }
+
+  function getInterestFocusCounts(contrib) {
+    const interests = getContributorInterestValues(contrib);
+    return Object.fromEntries(Object.entries(CONTRIBUTOR_INTEREST_FOCUS_GROUPS).map(([group, values]) => [
+      group,
+      interests.filter(value => values.includes(value)).length
+    ]));
+  }
+
   function getDefaultMatchPreferences(contrib) {
     const formats = Array.isArray(contrib?.study_formats) ? contrib.study_formats : [];
     const hasOnline = formats.some(v => v !== 'in_person');
@@ -2669,11 +2695,7 @@
           ? 'longer'
           : 'flexible';
 
-    const counts = {
-      lifestyle: Array.isArray(contrib?.interests_lifestyle) ? contrib.interests_lifestyle.length : 0,
-      tech: Array.isArray(contrib?.interests_tech) ? contrib.interests_tech.length : 0,
-      finance: Array.isArray(contrib?.interests_finance) ? contrib.interests_finance.length : 0
-    };
+    const counts = getInterestFocusCounts(contrib);
     const sortedFocus = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const focus = sortedFocus[0] && sortedFocus[0][1] > 0 ? sortedFocus[0][0] : 'all';
 
@@ -2821,9 +2843,9 @@
 
   function getStudyFocusArea(study) {
     const interests = Array.isArray(study?.targetInterests) ? study.targetInterests : [];
-    if (interests.some(v => CHIP_OPTIONS.interests_finance.some(opt => opt.value === v))) return 'finance';
-    if (interests.some(v => CHIP_OPTIONS.interests_tech.some(opt => opt.value === v))) return 'tech';
-    if (interests.some(v => CHIP_OPTIONS.interests_lifestyle.some(opt => opt.value === v))) return 'lifestyle';
+    if (interests.some(v => CONTRIBUTOR_INTEREST_FOCUS_GROUPS.finance.includes(v))) return 'finance';
+    if (interests.some(v => CONTRIBUTOR_INTEREST_FOCUS_GROUPS.tech.includes(v))) return 'tech';
+    if (interests.some(v => CONTRIBUTOR_INTEREST_FOCUS_GROUPS.lifestyle.includes(v))) return 'lifestyle';
     return 'all';
   }
 
@@ -2838,13 +2860,13 @@
   function getContributorInterestValues(profile) {
     // New canonical field wins if populated; legacy fields are the fallback.
     if (Array.isArray(profile?.interests) && profile.interests.length > 0) {
-      return profile.interests;
+      return [...new Set(profile.interests)];
     }
-    return [
+    return [...new Set([
       ...(Array.isArray(profile?.interests_lifestyle) ? profile.interests_lifestyle : []),
       ...(Array.isArray(profile?.interests_tech) ? profile.interests_tech : []),
       ...(Array.isArray(profile?.interests_finance) ? profile.interests_finance : [])
-    ];
+    ])];
   }
 
   function computeStudyFit(study, profile, prefs) {
@@ -3268,44 +3290,28 @@
       { value: 'teenagers',      label: 'Teenagers',         labelSv: 'Tonåringar' },
       { value: 'adult_children', label: 'Adult children',    labelSv: 'Vuxna barn' }
     ],
-    interests_lifestyle: [
-      { value: 'fashion',        label: 'Fashion & clothing',  labelSv: 'Mode & kläder' },
-      { value: 'beauty',         label: 'Beauty & skincare',   labelSv: 'Skönhet & hudvård' },
-      { value: 'home',           label: 'Home & interiors',    labelSv: 'Hem & inredning' },
-      { value: 'food',           label: 'Food & cooking',      labelSv: 'Mat & matlagning' },
-      { value: 'fitness',        label: 'Fitness & wellness',  labelSv: 'Träning & hälsa' },
-      { value: 'sustainability', label: 'Sustainability',      labelSv: 'Hållbarhet' },
-      { value: 'pets',           label: 'Pets',                labelSv: 'Husdjur' },
-      { value: 'travel',         label: 'Travel',              labelSv: 'Resor' },
-      { value: 'gardening',      label: 'Gardening',           labelSv: 'Trädgård' }
-    ],
-    interests_tech: [
-      { value: 'smartphones',  label: 'Smartphones & apps', labelSv: 'Smartphones & appar' },
-      { value: 'gaming',       label: 'Gaming',             labelSv: 'Gaming' },
-      { value: 'streaming',    label: 'Streaming & TV',     labelSv: 'Streaming & TV' },
-      { value: 'social_media', label: 'Social media',       labelSv: 'Sociala medier' },
-      { value: 'podcasts',     label: 'Podcasts',           labelSv: 'Poddar' },
-      { value: 'smart_home',   label: 'Smart home',         labelSv: 'Smart hem' }
-    ],
-    interests_finance: [
-      { value: 'online_banking', label: 'Online banking',        labelSv: 'Internetbank' },
-      { value: 'investing',      label: 'Investing / stocks',    labelSv: 'Investering / aktier' },
-      { value: 'crypto',         label: 'Crypto',                labelSv: 'Krypto' },
-      { value: 'mortgages',      label: 'Mortgages / property',  labelSv: 'Bolån / fastigheter' },
-      { value: 'insurance',      label: 'Insurance',             labelSv: 'Försäkring' },
-      { value: 'budgeting',      label: 'Budgeting apps',        labelSv: 'Budgetappar' }
-    ],
-    brands: [
-      { value: 'hm',              label: 'H&M',              labelSv: 'H&M' },
-      { value: 'asos',            label: 'ASOS',             labelSv: 'ASOS' },
-      { value: 'amazon',          label: 'Amazon',           labelSv: 'Amazon' },
-      { value: 'tesco',           label: 'Tesco',            labelSv: 'Tesco' },
-      { value: 'marks_spencer',   label: 'Marks & Spencer',  labelSv: 'Marks & Spencer' },
-      { value: 'john_lewis',      label: 'John Lewis',       labelSv: 'John Lewis' },
-      { value: 'lloyds_barclays', label: 'Lloyds / Barclays',labelSv: 'Lloyds / Barclays' },
-      { value: 'zara',            label: 'Zara',             labelSv: 'Zara' },
-      { value: 'boots',           label: 'Boots',            labelSv: 'Boots' },
-      { value: 'apple',           label: 'Apple',            labelSv: 'Apple' }
+    interests: [
+      { value: 'food', label: 'Food', labelSv: 'Mat' },
+      { value: 'fitness', label: 'Fitness', labelSv: 'Träning' },
+      { value: 'beauty', label: 'Beauty', labelSv: 'Skönhet' },
+      { value: 'fashion', label: 'Fashion', labelSv: 'Mode' },
+      { value: 'home', label: 'Home', labelSv: 'Hem' },
+      { value: 'travel', label: 'Travel', labelSv: 'Resor' },
+      { value: 'sustainability', label: 'Sustainability', labelSv: 'Hållbarhet' },
+      { value: 'parenting', label: 'Parenting', labelSv: 'Föräldraskap' },
+      { value: 'pets', label: 'Pets', labelSv: 'Husdjur' },
+      { value: 'smartphones', label: 'Smartphones', labelSv: 'Smartphones' },
+      { value: 'streaming', label: 'Streaming', labelSv: 'Streaming' },
+      { value: 'gaming', label: 'Gaming', labelSv: 'Gaming' },
+      { value: 'social_media', label: 'Social media', labelSv: 'Sociala medier' },
+      { value: 'smart_home', label: 'Smart home', labelSv: 'Smart hem' },
+      { value: 'investing', label: 'Investing', labelSv: 'Investering' },
+      { value: 'online_banking', label: 'Online banking', labelSv: 'Internetbank' },
+      { value: 'insurance', label: 'Insurance', labelSv: 'Försäkring' },
+      { value: 'freelance_work', label: 'Freelance work', labelSv: 'Frilansarbete' },
+      { value: 'early_adopter', label: 'Early adopter', labelSv: 'Tidigt ute' },
+      { value: 'compares_brands', label: 'Compares brands', labelSv: 'Jämför varumärken' },
+      { value: 'subscription_user', label: 'Subscription user', labelSv: 'Prenumerationsanvändare' }
     ],
     study_formats: [
       { value: 'online_survey',   label: 'Online survey',             labelSv: 'Onlineundersökning' },
@@ -3330,18 +3336,16 @@
   };
 
   // Lang-aware label lookup for interest chips in profile view.
-  // Searches the new flat 'interests' key first, then legacy keys, then brands.
+  // Searches the flat canonical field first, then legacy grouped fields for older profiles.
   function getInterestLabel(value) {
     const lang = getCurrentLang();
-    const searchKeys = CHIP_OPTIONS.interests
-      ? ['interests', 'interests_lifestyle', 'interests_tech', 'interests_finance', 'brands']
-      : ['interests_lifestyle', 'interests_tech', 'interests_finance', 'brands'];
+    const searchKeys = ['interests', 'interests_lifestyle', 'interests_tech', 'interests_finance'];
     for (const k of searchKeys) {
       if (!CHIP_OPTIONS[k]) continue;
       const opt = CHIP_OPTIONS[k].find(o => o.value === value);
       if (opt) return (lang === 'sv' && opt.labelSv) ? opt.labelSv : opt.label;
     }
-    return value;
+    return String(value || '').replace(/_/g, ' ');
   }
 
   function renderChipGroup(fieldName, opts) {
@@ -3377,13 +3381,8 @@
   }
 
   function initChipGroups() {
-    // Onboarding step 2
-    document.getElementById('ob-chips-living').innerHTML   = renderChipGroup('living_situation', CHIP_OPTIONS.living_situation);
-    document.getElementById('ob-chips-children').innerHTML = renderChipGroup('children',         CHIP_OPTIONS.children);
     // Onboarding step 3
-    document.getElementById('ob-chips-lifestyle').innerHTML = renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle);
-    document.getElementById('ob-chips-tech').innerHTML      = renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech);
-    document.getElementById('ob-chips-finance').innerHTML   = renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
+    document.getElementById('ob-chips-interests').innerHTML = renderChipGroup('interests', CHIP_OPTIONS.interests);
     // Onboarding step 4 with pre-selected defaults
     document.getElementById('ob-chips-formats').innerHTML  = renderChipGroup('study_formats',      CHIP_OPTIONS.study_formats);
     document.getElementById('ob-chips-times').innerHTML    = renderChipGroup('available_times',    CHIP_OPTIONS.available_times);
@@ -3394,10 +3393,7 @@
     // Edit form
     document.getElementById('edit-chips-living').innerHTML    = renderChipGroup('living_situation',    CHIP_OPTIONS.living_situation);
     document.getElementById('edit-chips-children').innerHTML  = renderChipGroup('children',            CHIP_OPTIONS.children);
-    document.getElementById('edit-chips-lifestyle').innerHTML = renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle);
-    document.getElementById('edit-chips-tech').innerHTML      = renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech);
-    document.getElementById('edit-chips-finance').innerHTML   = renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
-    document.getElementById('edit-chips-brands').innerHTML    = renderChipGroup('brands',              CHIP_OPTIONS.brands);
+    document.getElementById('edit-chips-interests').innerHTML = renderChipGroup('interests',           CHIP_OPTIONS.interests);
     document.getElementById('edit-chips-formats').innerHTML   = renderChipGroup('study_formats',       CHIP_OPTIONS.study_formats);
     document.getElementById('edit-chips-times').innerHTML     = renderChipGroup('available_times',     CHIP_OPTIONS.available_times);
     document.getElementById('edit-chips-maxlen').innerHTML    = renderChipGroup('max_session_length',  CHIP_OPTIONS.max_session_length);
@@ -5296,10 +5292,9 @@ async function applyToStudy(studyId, answers = null) {
     const fullName  = [firstName, lastName].filter(Boolean).join(' ') || 'Member';
     const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '?';
 
-    const city     = safeProfile?.city    || null;
-    const country  = safeProfile?.country || null;
-    const location = [city, country].filter(Boolean).join(', ');
-    const createdAt   = safeProfile?.created_at || safe.user?.created_at;
+    const city = safeProfile?.city || null;
+    const country = safeProfile?.country || null;
+    const createdAt = safeProfile?.created_at || safe.user?.created_at;
     const memberSince = createdAt
       ? new Date(createdAt).toLocaleDateString(getUiLocale(), { month: 'long', year: 'numeric' })
       : null;
@@ -5307,8 +5302,10 @@ async function applyToStudy(studyId, answers = null) {
     document.getElementById('profile-avatar-big').textContent = initials;
     document.getElementById('profile-fullname').textContent   = fullName;
 
+    const locationLabel = getLocationRegionLabel(getContributorLocationRegion(safeProfile)) || city || country || '';
+
     const subtitleParts = [];
-    if (location)    subtitleParts.push(location);
+    if (locationLabel) subtitleParts.push(locationLabel);
     if (memberSince) subtitleParts.push(t('member_since').replace('{date}', memberSince));
     document.getElementById('profile-subtitle').textContent = subtitleParts.join(' · ') || t('new_member');
 
@@ -5352,7 +5349,7 @@ async function applyToStudy(studyId, answers = null) {
     const genderMap = { woman: t('gender_woman'), man: t('gender_man'), non_binary: t('gender_non_binary'), self_describe: t('gender_self_describe'), prefer_not_to_say: t('gender_prefer_not') };
     document.getElementById('profile-detail-gender').textContent = genderMap[safeProfile?.gender] || '—';
 
-    document.getElementById('profile-detail-location').textContent = city || '—';
+    document.getElementById('profile-detail-location').textContent = locationLabel || '—';
 
     const employmentMap = { full_time: t('emp_full_time'), part_time: t('emp_part_time'), self_employed: t('emp_self_employed'), student: t('emp_student'), unemployed: t('emp_unemployed'), retired: t('emp_retired') };
     document.getElementById('profile-detail-employment').textContent = employmentMap[safeProfile?.employment] || '—';
@@ -5420,12 +5417,9 @@ async function applyToStudy(studyId, answers = null) {
     // Interests & tags
     const tagsContainer = document.getElementById('profile-interests-tags');
     if (tagsContainer) {
-      const allTags = [
-        ...getContributorInterestValues(safeProfile).map(v => ({ v, cls: 'tag-green' })),
-        ...(Array.isArray(safeProfile?.brands) ? safeProfile.brands : []).map(v => ({ v, cls: 'tag-gray' })),
-      ];
-      tagsContainer.innerHTML = allTags.length
-        ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
+      const interestTags = getContributorInterestValues(safeProfile);
+      tagsContainer.innerHTML = interestTags.length
+        ? interestTags.map(v => `<span class="tag tag-green">${esc(getInterestLabel(v))}</span>`).join('')
         : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
     }
 
@@ -5434,7 +5428,7 @@ async function applyToStudy(studyId, answers = null) {
     if (compEl) {
       const hasInterests = getContributorInterestValues(safeProfile).length > 0;
       const checks = [
-        !!(safeProfile?.date_of_birth && (safeProfile?.city || safeProfile?.country)),
+        !!(safeProfile?.date_of_birth && (safeProfile?.location_region || safeProfile?.city)),
         !!(safeProfile?.job_title && safeProfile?.industry),
         !!hasInterests,
         !!(Array.isArray(safeProfile?.study_formats)   && safeProfile.study_formats.length ||
@@ -5465,7 +5459,7 @@ async function applyToStudy(studyId, answers = null) {
 
       const [{ data: profile }, { data: contrib }] = await Promise.all([
         db.from('profiles').select('first_name, last_name, created_at').eq('id', user.id).single(),
-        db.from('contributors').select('city, country, gender, date_of_birth, employment, income, living_situation, children, interests, interests_lifestyle, interests_tech, interests_finance, brands, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level, is_test').eq('id', user.id).single()
+        db.from('contributors').select('city, country, location_region, gender, date_of_birth, employment, income, living_situation, children, interests, interests_lifestyle, interests_tech, interests_finance, study_formats, available_times, max_session_length, frequency, min_pay_per_hour, additional_notes, rating, total_studies, total_earned, completion_rate, tier, bankid_verified, job_title, industry, experience_level, is_test, match_preferences').eq('id', user.id).single()
       ]);
       state.profileData = profile;
       state.contribData = contrib;
@@ -5503,7 +5497,6 @@ async function applyToStudy(studyId, answers = null) {
     {
       key:      'topics',
       type:     'chips',
-      dbFields: { interests_lifestyle: 'interests_lifestyle', interests_tech: 'interests_tech', interests_finance: 'interests_finance' },
       isComplete: c => getContributorInterestValues(c).length > 0,
     },
     {
@@ -5524,10 +5517,7 @@ async function applyToStudy(studyId, answers = null) {
     const sectionsHtml = incomplete.map(s => {
       let bodyHtml = '';
       if (s.type === 'chips') {
-        bodyHtml =
-          renderChipGroup('interests_lifestyle', CHIP_OPTIONS.interests_lifestyle) +
-          renderChipGroup('interests_tech',      CHIP_OPTIONS.interests_tech) +
-          renderChipGroup('interests_finance',   CHIP_OPTIONS.interests_finance);
+        bodyHtml = renderChipGroup('interests', CHIP_OPTIONS.interests);
       } else {
         const existing = esc(contrib?.additional_notes || '');
         const ph = esc(t('boost_bio_placeholder'));
@@ -5564,11 +5554,9 @@ async function applyToStudy(studyId, answers = null) {
     if (!BOOST_SECTIONS.find(s => s.key === 'topics')?.isComplete(contrib)) {
       const body = document.getElementById('boost-body-topics');
       if (body) {
-        ['interests_lifestyle', 'interests_tech', 'interests_finance'].forEach(field => {
-          const saved = Array.isArray(contrib?.[field]) ? contrib[field] : [];
-          body.querySelectorAll(`[data-field="${field}"] .chip`).forEach(chip => {
-            chip.classList.toggle('selected', saved.includes(chip.dataset.value));
-          });
+        const saved = getContributorInterestValues(contrib);
+        body.querySelectorAll('[data-field="interests"] .chip').forEach(chip => {
+          chip.classList.toggle('selected', saved.includes(chip.dataset.value));
         });
       }
     }
@@ -5595,16 +5583,11 @@ async function applyToStudy(studyId, answers = null) {
       let update = {};
       if (section.type === 'chips') {
         const body = document.getElementById('boost-body-' + key);
-        ['interests_lifestyle', 'interests_tech', 'interests_finance'].forEach(field => {
-          const group = body?.querySelector(`[data-field="${field}"]`);
-          update[field] = group ? [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value) : [];
-        });
-        // Keep flat canonical field in sync
-        update.interests = [...new Set([
-          ...update.interests_lifestyle,
-          ...update.interests_tech,
-          ...update.interests_finance
-        ])];
+        const group = body?.querySelector('[data-field="interests"]');
+        update.interests = group ? [...group.querySelectorAll('.chip.selected')].map(c => c.dataset.value) : [];
+        update.interests_lifestyle = [];
+        update.interests_tech = [];
+        update.interests_finance = [];
       } else {
         update[section.dbField] = document.getElementById('boost-ta-bio')?.value.trim() || null;
       }
@@ -5620,12 +5603,9 @@ async function applyToStudy(studyId, answers = null) {
         const tagsContainer = document.getElementById('profile-interests-tags');
         if (tagsContainer) {
           const c = state.contribData;
-          const allTags = [
-            ...getContributorInterestValues(c).map(v => ({ v, cls: 'tag-green' })),
-            ...(Array.isArray(c?.brands) ? c.brands : []).map(v => ({ v, cls: 'tag-gray' })),
-          ];
+          const allTags = getContributorInterestValues(c);
           tagsContainer.innerHTML = allTags.length
-            ? allTags.map(({ v, cls }) => `<span class="tag ${esc(cls)}">${esc(getInterestLabel(v))}</span>`).join('')
+            ? allTags.map(v => `<span class="tag tag-green">${esc(getInterestLabel(v))}</span>`).join('')
             : `<span style="font-size:13px;color:var(--gray-400);font-weight:300">${t('no_interests')}</span>`;
         }
       }
@@ -5784,17 +5764,13 @@ async function applyToStudy(studyId, answers = null) {
 
     document.getElementById('edit-dob').value        = state.contribData?.date_of_birth || '';
     document.getElementById('edit-gender').value     = state.contribData?.gender        || 'woman';
-    document.getElementById('edit-country').value    = state.contribData?.country       || 'United Kingdom';
-    document.getElementById('edit-city').value       = state.contribData?.city          || '';
+    document.getElementById('edit-location-region').value = getContributorLocationRegion(state.contribData);
     document.getElementById('edit-employment').value = state.contribData?.employment    || 'full_time';
     document.getElementById('edit-income').value     = state.contribData?.income        || '';
 
     setEditChips('living_situation',    state.contribData?.living_situation);
     setEditChips('children',            state.contribData?.children);
-    setEditChips('interests_lifestyle', state.contribData?.interests_lifestyle);
-    setEditChips('interests_tech',      state.contribData?.interests_tech);
-    setEditChips('interests_finance',   state.contribData?.interests_finance);
-    setEditChips('brands',              state.contribData?.brands);
+    setEditChips('interests',           getContributorInterestValues(state.contribData));
     setEditChips('study_formats',       state.contribData?.study_formats);
     setEditChips('available_times',     state.contribData?.available_times);
     setEditChips('max_session_length',  state.contribData?.max_session_length ? [state.contribData.max_session_length] : []);
@@ -5826,30 +5802,33 @@ async function applyToStudy(studyId, answers = null) {
 
     try {
       const sessionLengths = getChipValues('max_session_length', '#profile-edit-form');
+      const selectedFormats = getChipValues('study_formats', '#profile-edit-form');
+      const selectedInterests = getChipValues('interests', '#profile-edit-form');
+      const derivedPrefs = getDefaultMatchPreferences({
+        study_formats: selectedFormats,
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        interests: selectedInterests
+      });
 
       const [{ error: pErr }, { error: cErr }] = await Promise.all([
         db.from('profiles').update({ first_name: fname, last_name: lname }).eq('id', state.currentUser.id),
         db.from('contributors').update({
           date_of_birth:       document.getElementById('edit-dob').value || null,
           gender:              document.getElementById('edit-gender').value,
-          country:             document.getElementById('edit-country').value,
-          city:                document.getElementById('edit-city').value.trim() || null,
+          country:             'Sweden',
+          location_region:     document.getElementById('edit-location-region').value,
           employment:          document.getElementById('edit-employment').value,
           income:              document.getElementById('edit-income').value || null,
           living_situation:    getChipValues('living_situation',    '#profile-edit-form'),
           children:            getChipValues('children',            '#profile-edit-form'),
-          interests_lifestyle: getChipValues('interests_lifestyle', '#profile-edit-form'),
-          interests_tech:      getChipValues('interests_tech',      '#profile-edit-form'),
-          interests_finance:   getChipValues('interests_finance',   '#profile-edit-form'),
-          interests:           [...new Set([
-            ...getChipValues('interests_lifestyle', '#profile-edit-form'),
-            ...getChipValues('interests_tech',      '#profile-edit-form'),
-            ...getChipValues('interests_finance',   '#profile-edit-form')
-          ])],
-          brands:              getChipValues('brands',              '#profile-edit-form'),
-          study_formats:       getChipValues('study_formats',       '#profile-edit-form'),
+          interests_lifestyle: [],
+          interests_tech:      [],
+          interests_finance:   [],
+          interests:           selectedInterests,
+          study_formats:       selectedFormats,
           available_times:     getChipValues('available_times',     '#profile-edit-form'),
           max_session_length:  sessionLengths.length ? sessionLengths[0] : null,
+          match_preferences:   { format: derivedPrefs.format, length: derivedPrefs.length },
           frequency:           document.getElementById('edit-frequency').value,
           min_pay_per_hour:    parseInt(document.getElementById('edit-minpay').value, 10),
           additional_notes:    document.getElementById('edit-additional_notes').value.trim() || null
@@ -6275,8 +6254,8 @@ async function applyToStudy(studyId, answers = null) {
       ob_step1_sub: "Let's get the basics set up. Takes about 2 minutes.",
       ob_step2_title: 'Tell us about yourself',
       ob_step2_sub: 'Companies use this to match you with relevant studies. Your data is never sold.',
-      ob_step3_title: 'What are you into?',
-      ob_step3_sub: 'Select everything that applies — the more you share, the better the matches.',
+      ob_step3_title: 'Help us match you better',
+      ob_step3_sub: 'Pick what fits you.',
       ob_step4_title: 'When are you available?',
       ob_step4_sub: 'This helps us surface studies that work around your life.',
       ob_name_label: 'First name',
@@ -6288,9 +6267,14 @@ async function applyToStudy(studyId, answers = null) {
       ob_pass_label: 'Password',
       ob_pass_ph: 'At least 8 characters',
       ob_dob_label: 'Date of birth',
-      ob_city_label: 'City / Town',
-      ob_city_ph: 'e.g. Manchester',
+      location_label: 'Location',
+      loc_remote: 'Anywhere (remote)',
+      loc_stockholm: 'Stockholm',
+      loc_gothenburg: 'Gothenburg',
+      loc_malmo: 'Malmö',
+      loc_other: 'Other location',
       ob_gender_label: 'Gender',
+      ob_interests_label: 'Pick what fits you',
       ob_referral_label: 'How did you hear about us?',
       ob_referral_select: 'Select an option',
       ob_referral_social: 'Social media',
@@ -6573,12 +6557,6 @@ async function applyToStudy(studyId, answers = null) {
       freq_2_3_per_month: '2–3× / month',
       freq_weekly: 'Weekly',
       freq_as_often: 'As often as possible',
-      country_uk: 'United Kingdom',
-      country_ie: 'Ireland',
-      country_se: 'Sweden',
-      country_us: 'United States',
-      country_au: 'Australia',
-      country_ca: 'Canada',
       income_under_20k: 'Under 200 000 kr',
       income_20k_35k: '200 000–349 999 kr',
       income_35k_60k: '350 000–599 999 kr',
@@ -6614,7 +6592,7 @@ async function applyToStudy(studyId, answers = null) {
       prof_pref_availability: 'Availability',
       prof_pref_frequency: 'Frequency',
       prof_pref_minpay: 'Min. pay',
-      prof_interests: 'My interests & tags',
+      prof_interests: 'My interests',
       prof_payments: 'Payment history',
       prof_payments_loading: 'Loading…',
       prof_danger: 'Danger zone',
@@ -6629,18 +6607,11 @@ async function applyToStudy(studyId, answers = null) {
       edit_details: 'Personal details',
       edit_label_dob: 'Date of birth',
       edit_label_gender: 'Gender',
-      edit_label_country: 'Country',
-      edit_label_city: 'City / Town',
-      edit_city_ph: 'e.g. Stockholm',
       edit_label_employment: 'Employment status',
       edit_label_income: 'Household income (annual, approximate)',
       edit_label_living: 'Living situation',
       edit_label_children: 'Do you have children?',
       edit_interests: 'Interests',
-      edit_label_lifestyle: 'Shopping & lifestyle',
-      edit_label_tech: 'Technology & media',
-      edit_label_finance: 'Finance & banking',
-      edit_label_brands: 'Brands you shop with regularly',
       edit_availability: 'Availability preferences',
       edit_label_formats: 'Preferred study format',
       edit_label_times: 'Available times',
@@ -6894,7 +6865,7 @@ async function applyToStudy(studyId, answers = null) {
       zero_state_hero_cta: 'Complete profile',
       boost_card_title: 'Get better study matches',
       boost_section_topics: 'Topics that match you',
-      boost_section_topics_hint: 'Lifestyle, tech & finance — helps us surface relevant studies',
+      boost_section_topics_hint: 'Pick the topics that fit you best',
       boost_section_bio: 'Your background',
       boost_section_bio_hint: 'Optional — helps with specialist and professional research',
       boost_bio_placeholder: 'e.g. I work in healthcare, so medical research is a great fit…',
@@ -6960,8 +6931,8 @@ async function applyToStudy(studyId, answers = null) {
       ob_step1_sub: 'Låt oss skapa din profil. Det tar mindre än 3 minuter.',
       ob_step2_title: 'Berätta om dig',
       ob_step2_sub: 'Företag använder det här för att matcha dig med relevanta studier. Din data säljs aldrig.',
-      ob_step3_title: 'Dina intressen',
-      ob_step3_sub: 'Välj allt som passar in — ju mer du delar, desto bättre blir matchningarna.',
+      ob_step3_title: 'Hjälp oss matcha dig bättre',
+      ob_step3_sub: 'Välj det som passar dig.',
       ob_step4_title: 'Tillgänglighet',
       ob_step4_sub: 'Det hjälper oss att visa studier som fungerar i din vardag.',
       ob_name_label: 'Förnamn',
@@ -6973,9 +6944,14 @@ async function applyToStudy(studyId, answers = null) {
       ob_pass_label: 'Lösenord',
       ob_pass_ph: 'Minst 8 tecken',
       ob_dob_label: 'Födelsedatum',
-      ob_city_label: 'Stad',
-      ob_city_ph: 't.ex. Stockholm',
+      location_label: 'Plats',
+      loc_remote: 'Var som helst (på distans)',
+      loc_stockholm: 'Stockholm',
+      loc_gothenburg: 'Göteborg',
+      loc_malmo: 'Malmö',
+      loc_other: 'Annan plats',
       ob_gender_label: 'Kön',
+      ob_interests_label: 'Välj det som passar dig',
       ob_referral_label: 'Hur hörde du talas om oss?',
       ob_referral_select: 'Välj ett alternativ',
       ob_referral_social: 'Sociala medier',
@@ -7258,12 +7234,6 @@ async function applyToStudy(studyId, answers = null) {
       freq_2_3_per_month: '2–3 ggr / mån',
       freq_weekly: 'Varje vecka',
       freq_as_often: 'Så ofta som möjligt',
-      country_uk: 'Storbritannien',
-      country_ie: 'Irland',
-      country_se: 'Sverige',
-      country_us: 'USA',
-      country_au: 'Australien',
-      country_ca: 'Kanada',
       income_under_20k: 'Under 200 000 kr',
       income_20k_35k: '200 000–349 999 kr',
       income_35k_60k: '350 000–599 999 kr',
@@ -7314,18 +7284,11 @@ async function applyToStudy(studyId, answers = null) {
       edit_details: 'Personuppgifter',
       edit_label_dob: 'Födelsedatum',
       edit_label_gender: 'Kön',
-      edit_label_country: 'Land',
-      edit_label_city: 'Stad',
-      edit_city_ph: 't.ex. Stockholm',
       edit_label_employment: 'Sysselsättningsstatus',
       edit_label_income: 'Hushållsinkomst (årsvis, ungefärlig)',
       edit_label_living: 'Boendesituation',
       edit_label_children: 'Har du barn?',
       edit_interests: 'Intressen',
-      edit_label_lifestyle: 'Shopping & livsstil',
-      edit_label_tech: 'Teknik & media',
-      edit_label_finance: 'Ekonomi & bank',
-      edit_label_brands: 'Varumärken du handlar av regelbundet',
       edit_availability: 'Tillgänglighet',
       edit_label_formats: 'Föredraget studieformat',
       edit_label_times: 'Tillgängliga tider',
@@ -7579,7 +7542,7 @@ async function applyToStudy(studyId, answers = null) {
       zero_state_hero_cta: 'Slutför profil',
       boost_card_title: 'Få bättre studiematchningar',
       boost_section_topics: 'Ämnen som passar dig',
-      boost_section_topics_hint: 'Livsstil, teknik & ekonomi — hjälper oss hitta relevanta studier',
+      boost_section_topics_hint: 'Välj de ämnen som passar dig bäst',
       boost_section_bio: 'Din bakgrund',
       boost_section_bio_hint: 'Valfritt — hjälper vid specialist- och yrkesinriktad forskning',
       boost_bio_placeholder: 'T.ex. jag jobbar inom vård, så medicinsk forskning passar bra…',
