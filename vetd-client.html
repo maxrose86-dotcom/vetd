@@ -5619,6 +5619,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const isPaused    = study.status === 'paused';
         const isCompleted = study.status === 'completed';
         const isArchived  = study.status === 'archived';
+        const showPaymentInstructions = study.payment_status !== 'paid' && study.is_test !== true;
+        const totalDue = formatCurrency(getStudyTotalCostValue(study) || 0);
+        const invoiceSubject = study.title
+          ? t('cl_study_payment_gate_subject').replace('{title}', study.title)
+          : t('cl_study_payment_gate_subject_default');
+        const invoiceHref = `mailto:hello@vetd.io?subject=${encodeURIComponent(invoiceSubject)}`;
         settingsEl.innerHTML = `
           <div style="padding:1.25rem 1.5rem">
             <div style="margin-bottom:20px">
@@ -5630,6 +5636,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             </div>` : ''}
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">${esc(t('cl_study_section_status'))}</div>
             <div style="font-size:12px;color:${isStudyPaymentReceived(study) ? 'var(--blue)' : 'var(--amber)'};margin-bottom:12px">${esc(getStudyPaymentLabel(study))}</div>
+            ${showPaymentInstructions ? `
+              <div style="margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(25,33,48,0.08);background:rgba(25,33,48,0.03)">
+                <div style="font-size:13px;font-weight:600;color:var(--gray-800);margin-bottom:6px">${esc(t('cl_study_payment_gate_title'))}</div>
+                <div style="font-size:12px;color:var(--gray-700);margin-bottom:6px">${esc(t('cl_study_payment_gate_due'))}: ${esc(totalDue)}</div>
+                <div style="font-size:12px;line-height:1.55;color:var(--gray-500);margin-bottom:10px">${esc(t('cl_study_payment_gate_body'))}</div>
+                <a href="${escAttr(invoiceHref)}" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid rgba(25,33,48,0.10);background:#fff;color:var(--gray-700);font-size:12px;font-weight:500;text-decoration:none">${esc(t('cl_study_payment_gate_action'))}</a>
+              </div>
+            ` : ''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
               ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>` : ''}
               ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">${esc(t('cl_study_action_pause'))}</button>` : ''}
@@ -6515,6 +6529,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_payment_required_continue: 'Payment required to go live. Study saved as draft.',
       cl_study_payment_required: 'Payment required',
       cl_study_payment_received: 'Payment received',
+      cl_study_payment_gate_title: 'Payment required to go live',
+      cl_study_payment_gate_due: 'Total due',
+      cl_study_payment_gate_body: 'Your study is saved and ready. Once payment is received, we’ll activate it for contributors.',
+      cl_study_payment_gate_action: 'Request invoice →',
+      cl_study_payment_gate_subject: 'Invoice request for {title}',
+      cl_study_payment_gate_subject_default: 'Invoice request',
       cl_study_primary_resolve_sessions: 'Resolve {count} sessions →',
       cl_study_primary_log_outcomes: 'Log {count} outcomes →',
       cl_study_primary_session_today: 'Session today{time} →',
@@ -7152,6 +7172,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_payment_required_continue: 'Betalning krävs för att publicera. Studien har sparats som utkast.',
       cl_study_payment_required: 'Betalning krävs',
       cl_study_payment_received: 'Betalning mottagen',
+      cl_study_payment_gate_title: 'Betalning krävs för att publicera',
+      cl_study_payment_gate_due: 'Att betala',
+      cl_study_payment_gate_body: 'Din studie är sparad och klar. När betalningen är mottagen aktiverar vi den för deltagare.',
+      cl_study_payment_gate_action: 'Begär faktura →',
+      cl_study_payment_gate_subject: 'Fakturaförfrågan för {title}',
+      cl_study_payment_gate_subject_default: 'Fakturaförfrågan',
       cl_study_primary_resolve_sessions: 'Hantera {count} sessioner →',
       cl_study_primary_log_outcomes: 'Logga {count} utfall →',
       cl_study_primary_session_today: 'Session idag{time} →',
