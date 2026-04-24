@@ -5580,7 +5580,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { data: study, error } = await db
         .from('studies')
-        .select('id, title, status, description, pay_per_participant, spots, session_type, duration_minutes, total_cost, payment_status, is_test')
+        .select('id, title, status, description, pay_per_participant, spots, session_type, duration_minutes, total_cost, payment_status, paid_at, paid_by, is_test')
         .eq('id', studyId)
         .single();
       if (error || !study) throw error || new Error('Study not found');
@@ -5621,6 +5621,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const isArchived  = study.status === 'archived';
         const showPaymentInstructions = study.payment_status !== 'paid' && study.is_test !== true;
         const totalDue = formatCurrency(getStudyTotalCostValue(study) || 0);
+        const paidOnLabel = study.payment_status === 'paid' && study.paid_at
+          ? t('cl_study_payment_received_on').replace('{date}', new Date(study.paid_at).toLocaleDateString(document.documentElement.lang === 'sv' ? 'sv-SE' : 'en-GB', { day: 'numeric', month: 'short' }))
+          : '';
         const invoiceSubject = study.title
           ? t('cl_study_payment_gate_subject').replace('{title}', study.title)
           : t('cl_study_payment_gate_subject_default');
@@ -5635,7 +5638,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               <button class="btn-outline" data-action="edit-details">${esc(t('cl_study_primary_edit_draft'))}</button>
             </div>` : ''}
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">${esc(t('cl_study_section_status'))}</div>
-            <div style="font-size:12px;color:${isStudyPaymentReceived(study) ? 'var(--blue)' : 'var(--amber)'};margin-bottom:12px">${esc(getStudyPaymentLabel(study))}</div>
+            <div style="font-size:12px;color:${isStudyPaymentReceived(study) ? 'var(--blue)' : 'var(--amber)'};margin-bottom:12px">${esc(paidOnLabel || getStudyPaymentLabel(study))}</div>
             ${showPaymentInstructions ? `
               <div style="margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(25,33,48,0.08);background:rgba(25,33,48,0.03)">
                 <div style="font-size:13px;font-weight:600;color:var(--gray-800);margin-bottom:6px">${esc(t('cl_study_payment_gate_title'))}</div>
@@ -6529,6 +6532,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_payment_required_continue: 'Payment required to go live. Study saved as draft.',
       cl_study_payment_required: 'Payment required',
       cl_study_payment_received: 'Payment received',
+      cl_study_payment_received_on: 'Payment received on {date}',
       cl_study_payment_gate_title: 'Payment required to go live',
       cl_study_payment_gate_due: 'Total due',
       cl_study_payment_gate_body: 'Your study is saved and ready. Once payment is received, we’ll activate it for contributors.',
@@ -7172,6 +7176,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_payment_required_continue: 'Betalning krävs för att publicera. Studien har sparats som utkast.',
       cl_study_payment_required: 'Betalning krävs',
       cl_study_payment_received: 'Betalning mottagen',
+      cl_study_payment_received_on: 'Betalning mottagen {date}',
       cl_study_payment_gate_title: 'Betalning krävs för att publicera',
       cl_study_payment_gate_due: 'Att betala',
       cl_study_payment_gate_body: 'Din studie är sparad och klar. När betalningen är mottagen aktiverar vi den för deltagare.',

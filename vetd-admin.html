@@ -1738,7 +1738,7 @@ async function loadAdminStudyQueue() {
   try {
     const { data: studies, error } = await db
       .from('studies')
-      .select('id, title, company_id, spots, filled_spots, pay_per_participant, close_date, status, total_cost, payment_status, created_at')
+      .select('id, title, company_id, spots, filled_spots, pay_per_participant, close_date, status, total_cost, payment_status, paid_at, paid_by, created_at')
       .neq('status', 'archived')
       .order('created_at', { ascending: false })
       .limit(50);
@@ -1775,6 +1775,9 @@ async function loadAdminStudyQueue() {
         : (Number(study.pay_per_participant || 0) * Number(study.spots || 0));
       const paymentStatus = study.payment_status === 'paid' ? 'paid' : 'unpaid';
       const paymentLabel = paymentStatus === 'paid' ? 'Payment received' : 'Payment required';
+      const paidOnLabel = study.paid_at
+        ? `Paid on ${new Date(study.paid_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+        : '';
       const deadline = study.close_date
         ? new Date(study.close_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
         : '—';
@@ -1804,6 +1807,7 @@ async function loadAdminStudyQueue() {
         <td>
           <span class="badge ${statusBadge}">${esc(study.status || 'draft')}</span>
           <div style="font-size:10px;color:${paymentColor};font-family:var(--mono);margin-top:5px">${esc(paymentLabel)}</div>
+          ${paidOnLabel ? `<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px">${esc(paidOnLabel)}</div>` : ''}
         </td>
         <td>${actionHtml}</td>
       </tr>`;
@@ -1820,9 +1824,12 @@ async function markStudyPaid(studyId, btn) {
   if (!db) return;
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
+    const { data: { session } } = await db.auth.getSession();
+    const paidBy = session?.user?.email || session?.user?.id || 'admin';
+    const paidAt = new Date().toISOString();
     const { error } = await db
       .from('studies')
-      .update({ payment_status: 'paid' })
+      .update({ payment_status: 'paid', paid_at: paidAt, paid_by: paidBy })
       .eq('id', studyId);
     if (error) throw error;
     showToast('Study marked as paid');
