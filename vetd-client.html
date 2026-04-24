@@ -1816,6 +1816,32 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : t('cl_study_payment_required');
   }
 
+  function getBuilderPaymentContext() {
+    const draftId = _editingDraftId || new URLSearchParams(window.location.search).get('draft') || _lastSavedStudyId || null;
+    const draftStudy = draftId
+      ? ((_studiesCache?.studies || []).find(study => study.id === draftId) || null)
+      : null;
+    const payValue = Number(document.getElementById('b-pay')?.value || 0);
+    const spotsValue = Number(document.getElementById('b-spots')?.value || 0);
+    const totalCost = draftStudy
+      ? getStudyTotalCostValue(draftStudy)
+      : getStudyComputedTotalCost({ pay_per_participant: payValue, spots: spotsValue });
+    const title = document.getElementById('b-title')?.value.trim() || draftStudy?.title || t('cl_published_context_default');
+    const companyName = currentCompanyName || document.getElementById('auth-company')?.value.trim() || '';
+    const isTestStudy = draftStudy?.is_test === true || currentCompanyIsTest === true;
+    const paymentStatus = draftStudy?.payment_status === 'paid' ? 'paid' : 'unpaid';
+    return {
+      studyId: draftStudy?.id || draftId || null,
+      title,
+      companyName,
+      totalCost,
+      spots: Number.isFinite(spotsValue) && spotsValue > 0 ? spotsValue : Number(draftStudy?.spots || 0),
+      payPerParticipant: Number.isFinite(payValue) && payValue > 0 ? Math.round(payValue) : Number(draftStudy?.pay_per_participant || 0),
+      isTestStudy,
+      isPaid: isTestStudy || paymentStatus === 'paid',
+    };
+  }
+
   async function requireStudyPayment(studyOrId) {
     let study = typeof studyOrId === 'string'
       ? (_studiesCache?.studies || []).find(s => s.id === studyOrId) || null
@@ -3892,6 +3918,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const formatSelect = document.getElementById('b-format');
     const formatLabel = formatSelect?.options[formatSelect.selectedIndex]?.text || '';
     const duration = document.getElementById('b-length')?.value || '';
+    const paymentContext = getBuilderPaymentContext();
     const interestTags = targeting.selectedInterests.slice(0, 2).map(value => getInterestLabelByValue(value)).filter(Boolean);
     const filterTags = [];
     if (targeting.industry) filterTags.push(targeting.industry);
@@ -3944,7 +3971,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       { label: t('cl_review_row_spots'), type: 'text', value: String(targeting.spots) },
       { label: t('cl_review_row_duration'), type: 'text', value: duration },
       { label: t('cl_review_row_format'), type: 'text', value: formatLabel },
-      { label: t('cl_review_row_screening'), type: 'text', value: t('cl_review_row_screening_value').replace('{count}', targeting.screeningCount) }
+      { label: t('cl_review_row_screening'), type: 'text', value: t('cl_review_row_screening_value').replace('{count}', targeting.screeningCount) },
+      {
+        label: t('cl_review_row_payment'),
+        type: 'text',
+        value: paymentContext.isTestStudy
+          ? t('cl_review_payment_test')
+          : paymentContext.isPaid
+            ? t('cl_review_payment_received')
+            : t('cl_review_payment_due').replace('{amount}', formatCurrency(paymentContext.totalCost || 0))
+      }
     );
 
     return rows;
@@ -4063,7 +4099,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     };
   }
 
-  function handleBuilderPrimaryAction() {
+  async function handleBuilderPrimaryAction() {
+    const paymentContext = getBuilderPaymentContext();
+    if (!paymentContext.isPaid) {
+      await requestInvoiceForCurrentStudy();
+      return;
+    }
     if (_builderPublishState === 'published') {
       const snapshot = _builderPublishedSnapshot || getBuilderPublishSnapshot(getBuilderTargetingState());
       if (_justPublishedStudyId) openApplicants(_justPublishedStudyId, snapshot.title || t('cl_published_context_default'));
@@ -4095,7 +4136,29 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }, 900);
   }
 
-  async function submitStudy(status) {
+  async function requestInvoiceForCurrentStudy() {
+    let paymentContext = getBuilderPaymentContext();
+    if (!paymentContext.studyId) {
+      const saved = await submitStudy('draft', { suppressDraftToast: true, keepDraftReference: true });
+      if (!saved) return;
+      paymentContext = getBuilderPaymentContext();
+    }
+
+    const subject = t('cl_study_payment_gate_subject').replace('{title}', paymentContext.title || t('cl_published_context_default'));
+    const body = [
+      t('cl_invoice_mail_line_title').replace('{title}', paymentContext.title || t('cl_published_context_default')),
+      t('cl_invoice_mail_line_amount').replace('{amount}', formatCurrency(paymentContext.totalCost || 0)),
+      t('cl_invoice_mail_line_company').replace('{company}', paymentContext.companyName || '—'),
+      t('cl_invoice_mail_line_study_id').replace('{studyId}', paymentContext.studyId || '—'),
+      t('cl_invoice_mail_line_spots').replace('{spots}', String(paymentContext.spots || 0)),
+      t('cl_invoice_mail_line_pay').replace('{amount}', formatCurrency(paymentContext.payPerParticipant || 0)),
+    ].join('\n');
+
+    showToast(t('cl_invoice_request_opened'));
+    window.location.href = `mailto:hello@vetd.io?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  async function submitStudy(status, options = {}) {
     const title  = document.getElementById('b-title').value.trim();
     const desc   = document.getElementById('b-desc').value.trim();
     const spotsRaw = document.getElementById('b-spots').value;
@@ -4235,6 +4298,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (error) throw error;
 
       const savedStudyId = saveResult?.data?.id || effectiveDraftId || null;
+      _lastSavedStudyId = savedStudyId || _lastSavedStudyId;
       if (blockedByPayment) {
         _editingDraftId = savedStudyId;
         setDraftUrl(savedStudyId);
@@ -4246,8 +4310,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         return false;
       }
 
-      _editingDraftId = null;
-      setDraftUrl(null);
+      if (isDraft && options.keepDraftReference && savedStudyId) {
+        _editingDraftId = savedStudyId;
+        setDraftUrl(savedStudyId);
+      } else {
+        _editingDraftId = null;
+        setDraftUrl(null);
+      }
       if (!isDraft) {
         _justPublished = true;
         _justPublishedStudyId = savedStudyId;
@@ -4256,7 +4325,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           if (window.Sentry) Sentry.captureException(err);
         });
       }
-      if (isDraft) showToast(t('cl_study_saved_draft'));
+      if (isDraft && !options.suppressDraftToast) showToast(t('cl_study_saved_draft'));
       return true;
     } catch(err) {
       console.error(isDraft ? 'Save draft error:' : 'Publish error:', err);
@@ -4280,6 +4349,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   let _editingDraftId = null; // set when editing an existing draft; cleared on save or leaving builder
+  let _lastSavedStudyId = null;
 
   // ─── DRAFT EDIT ─────────────────────────────────────────
   // Helpers to keep ?draft= URL param in sync with _editingDraftId.
@@ -4351,6 +4421,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   // Explicit entry point for "Post new study" — ensures edit mode is fully cleared.
   function startNewStudy() {
     _editingDraftId = null;
+    _lastSavedStudyId = null;
     setDraftUrl(null);
     resetBuilderForm();
     showTab('new-study', null);
@@ -5418,13 +5489,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const { poolCount, confidence, confidenceCopy, guidance, fillCopy, previewMatches } = _builderPoolPreviewState;
     const targeting = getBuilderTargetingState();
     const decision = getBuilderDecisionModel(confidence);
-    const currentBuilderStudy = _editingDraftId
-      ? ((_studiesCache?.studies || []).find(study => study.id === _editingDraftId) || null)
-      : null;
-    const publishBlockedByPayment = !isStudyPaymentReceived(currentBuilderStudy || {
-      payment_status: 'unpaid',
-      is_test: currentCompanyIsTest === true
-    });
+    const paymentContext = getBuilderPaymentContext();
     const priorityLabel = targeting.audienceType === 'customers'
       ? guidance?.priority === 'high'
         ? t('cl_customer_decision_priority_high')
@@ -5482,17 +5547,35 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       publishBtn.style.cursor = 'pointer';
       publishSecondaryBtn.textContent = t('cl_published_secondary_action');
       publishSecondaryBtn.style.display = 'inline-flex';
+    } else if (!paymentContext.isPaid) {
+      reviewStateEl.textContent = t('cl_invoice_state_title');
+      reviewGuidanceEl.textContent = t('cl_invoice_state_body');
+      reviewSummaryEl.innerHTML = `
+        <div class="review-row">
+          <div class="review-row-label">${esc(t('cl_invoice_state_amount_label'))}</div>
+          <div class="review-row-value">${esc(formatCurrency(paymentContext.totalCost || 0))}</div>
+        </div>
+      `;
+      reviewWarningEl.textContent = '';
+      reviewWarningEl.style.display = 'none';
+      reviewWarningEl.style.color = '';
+      publishSecondaryBtn.style.display = 'none';
+      publishBtn.textContent = t('cl_invoice_state_primary');
+      publishBtn.disabled = false;
+      publishBtn.style.opacity = '1';
+      publishBtn.style.cursor = 'pointer';
     } else {
       reviewStateEl.textContent = decision.label;
       reviewGuidanceEl.textContent = decision.guidance;
       reviewWarningEl.textContent = decision.warning;
       reviewWarningEl.style.display = decision.warning ? 'block' : 'none';
+      reviewWarningEl.style.color = '';
       reviewSummaryEl.innerHTML = '';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = decision.button;
-      publishBtn.disabled = decision.state === 'not_ready' || publishBlockedByPayment;
-      publishBtn.style.opacity = (decision.state === 'not_ready' || publishBlockedByPayment) ? '0.55' : '1';
-      publishBtn.style.cursor = (decision.state === 'not_ready' || publishBlockedByPayment) ? 'not-allowed' : 'pointer';
+      publishBtn.disabled = decision.state === 'not_ready';
+      publishBtn.style.opacity = decision.state === 'not_ready' ? '0.55' : '1';
+      publishBtn.style.cursor = decision.state === 'not_ready' ? 'not-allowed' : 'pointer';
     }
 
     if (confidence === 'too_broad') {
@@ -6669,6 +6752,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_primary_interest_hint_intent_category_buyers: 'Choose interests that match the category you want buyers from.',
       cl_primary_interest_hint_intent_existing_customers: 'Choose interests that reflect your current customers.',
       cl_review_row_intent: 'Recruitment type',
+      cl_review_row_payment: 'Payment',
+      cl_review_payment_due: 'Total due {amount}',
+      cl_review_payment_received: 'Received',
+      cl_review_payment_test: 'Test study',
       cl_section_behaviors: 'Behaviors',
       cl_behaviors_hint: 'Use behaviors to show how these customers decide.',
       cl_chip_behavior_recent_buyer: 'Bought recently in this category',
@@ -6830,6 +6917,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_state_publishing_sub: 'Making your study live now.',
       cl_publish_state_published: 'Study published',
       cl_publish_state_published_sub: 'Visible to contributors now. View the study to track responses.',
+      cl_invoice_state_title: 'Payment required to go live',
+      cl_invoice_state_amount_label: 'Total due',
+      cl_invoice_state_body: 'Your study is ready. Request an invoice and we’ll activate it once payment is received.',
+      cl_invoice_state_primary: 'Request invoice →',
+      cl_invoice_state_note: 'You can save this study as a draft while payment is arranged.',
+      cl_invoice_request_opened: 'Invoice request opened. Study saved as draft.',
+      cl_invoice_mail_line_title: 'Study title: {title}',
+      cl_invoice_mail_line_amount: 'Total due: {amount}',
+      cl_invoice_mail_line_company: 'Company: {company}',
+      cl_invoice_mail_line_study_id: 'Study ID: {studyId}',
+      cl_invoice_mail_line_spots: 'Requested spots: {spots}',
+      cl_invoice_mail_line_pay: 'Pay per participant: {amount}',
       cl_published_primary_action: 'View study →',
       cl_published_secondary_action: 'Start another →',
       cl_published_context_label: 'Live now',
@@ -7305,6 +7404,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_chip_behavior_brand_loyal: 'Återvänder till välkända varumärken',
       cl_chip_behavior_influenced_social: 'Påverkas av innehåll i sociala medier',
       cl_review_row_behaviors: 'Beteenden',
+      cl_review_row_payment: 'Betalning',
+      cl_review_payment_due: 'Att betala {amount}',
+      cl_review_payment_received: 'Mottagen',
+      cl_review_payment_test: 'Teststudie',
       cl_match_guidance_many_behaviors: 'Tre eller fler beteenden kan göra poolen smalare snabbt.',
       cl_section_screening: 'Urvalsfrågor',
       cl_screening_count: '{count} av 2 använda',
@@ -7457,6 +7560,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_state_publishing_sub: 'Gör studien live nu.',
       cl_publish_state_published: 'Studien är publicerad',
       cl_publish_state_published_sub: 'Synlig för deltagare nu. Visa studien för att följa svaren.',
+      cl_invoice_state_title: 'Betalning krävs för att publicera',
+      cl_invoice_state_amount_label: 'Att betala',
+      cl_invoice_state_body: 'Din studie är klar. Begär en faktura så aktiverar vi den när betalningen är mottagen.',
+      cl_invoice_state_primary: 'Begär faktura →',
+      cl_invoice_state_note: 'Du kan spara studien som utkast medan betalningen ordnas.',
+      cl_invoice_request_opened: 'Fakturaförfrågan öppnad. Studien har sparats som utkast.',
+      cl_invoice_mail_line_title: 'Studietitel: {title}',
+      cl_invoice_mail_line_amount: 'Att betala: {amount}',
+      cl_invoice_mail_line_company: 'Företag: {company}',
+      cl_invoice_mail_line_study_id: 'Studie-ID: {studyId}',
+      cl_invoice_mail_line_spots: 'Antal platser: {spots}',
+      cl_invoice_mail_line_pay: 'Ersättning per deltagare: {amount}',
       cl_published_primary_action: 'Visa studie →',
       cl_published_secondary_action: 'Starta en ny →',
       cl_published_context_label: 'Live nu',
