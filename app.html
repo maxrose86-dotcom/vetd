@@ -6180,21 +6180,41 @@ async function applyToStudy(studyId, answers = null) {
   }
 
   function resolveNotification(notif) {
-    if (notif.notif_type) {
-      const titleKey = 'notif_tpl_' + notif.notif_type + '_title';
-      const bodyKey  = 'notif_tpl_' + notif.notif_type + '_body';
-      const params   = notif.params || {};
-      let title = t(titleKey);
-      let body  = t(bodyKey);
-      Object.keys(params).forEach(k => {
-        const re = new RegExp('\\{' + k + '\\}', 'g');
-        title = title.replace(re, params[k]);
-        body  = body.replace(re, params[k]);
+    const params = (notif && notif.params && typeof notif.params === 'object') ? notif.params : {};
+    const fill = (template, replacements, fallback) => {
+      const source = String(template || '');
+      const missingReplacement = [...source.matchAll(/\{(\w+)\}/g)].some(([, key]) => replacements[key] == null || replacements[key] === '');
+      if (missingReplacement && fallback) return fallback;
+      return source.replace(/\{(\w+)\}/g, (_, key) => {
+      const value = replacements[key];
+      return value == null ? '' : String(value);
       });
-      return { title, body };
+    };
+    const resolveText = (key, fallback) => {
+      const translated = t(key);
+      return translated === key ? (fallback || '') : translated;
+    };
+
+    if (!notif?.notif_type) {
+      return { title: notif?.title || '', body: notif?.body || '' };
     }
-    // Backward compatibility: fall back to stored title/body
-    return { title: notif.title || '', body: notif.body || '' };
+
+    if (notif.notif_type === 'study_invited') {
+      const studyTitle = params.study_title || params.study || '';
+      return {
+        title: resolveText('notif_tpl_study_invited_title', notif.title || ''),
+        body: studyTitle
+          ? fill(resolveText('notif_tpl_study_invited_body', notif.body || ''), { study_title: studyTitle }, notif.body || '')
+          : resolveText('notif_tpl_study_invited_body_fallback', notif.body || '')
+      };
+    }
+
+    const titleKey = 'notif_tpl_' + notif.notif_type + '_title';
+    const bodyKey  = 'notif_tpl_' + notif.notif_type + '_body';
+    return {
+      title: fill(resolveText(titleKey, notif.title || ''), params, notif.title || ''),
+      body: fill(resolveText(bodyKey, notif.body || ''), params, notif.body || '')
+    };
   }
 
   function renderNotifications(notifs) {
@@ -6823,6 +6843,9 @@ async function applyToStudy(studyId, answers = null) {
       notif_title: 'Notifications',
       notif_mark_all: 'Mark all as read',
       notif_empty: 'No notifications yet',
+      notif_tpl_study_invited_title: "You've been invited to a study",
+      notif_tpl_study_invited_body: 'Review your invite for "{study_title}" and respond when ready.',
+      notif_tpl_study_invited_body_fallback: 'Open Vetd to review the invite and respond.',
       notif_tpl_application_received_title: 'New application received',
       notif_tpl_application_received_body: '{contributor_name} applied to your study "{study_title}".',
       notif_tpl_application_accepted_title: 'Application accepted!',
@@ -7508,6 +7531,9 @@ async function applyToStudy(studyId, answers = null) {
       notif_title: 'Aviseringar',
       notif_mark_all: 'Markera alla som lästa',
       notif_empty: 'Inga aviseringar ännu',
+      notif_tpl_study_invited_title: 'Du har blivit inbjuden till en studie',
+      notif_tpl_study_invited_body: 'Granska din inbjudan till "{study_title}" och svara när du är redo.',
+      notif_tpl_study_invited_body_fallback: 'Öppna Vetd för att granska inbjudan och svara.',
       notif_tpl_application_received_title: 'Ny ansökan mottagen',
       notif_tpl_application_received_body: '{contributor_name} ansökte till din studie "{study_title}".',
       notif_tpl_application_accepted_title: 'Ansökan accepterad!',
