@@ -3444,7 +3444,9 @@
         return;
       }
 
-      const contributorIsTest = state.contribData?.is_test === true;
+      // Email-based test override: internal accounts with 'test' in email can see test studies.
+      const emailIsTest = state.currentUser?.email?.includes('test') === true;
+      const contributorIsTest = state.contribData?.is_test === true || emailIsTest;
       let studies = null;
       let error = null;
 
