@@ -1943,7 +1943,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         description: study.description,
         format: study.format,
         session_type: study.session_type,
-        audience_type: study.audience_type || 'customers',
+        // audience_type omitted: column not yet in schema (migration pending)
         duration_minutes: study.duration_minutes,
         spots: study.spots,
         pay_per_participant: study.pay_per_participant,
@@ -4322,7 +4322,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         description:          desc || null,
         format:               dbFormat,
         session_type:         sessionType,
-        audience_type:        targeting.audienceType,
+        // audience_type omitted: column not yet in schema (migration pending)
         duration_minutes:     durationMins,
         spots,
         pay_per_participant:  pay,
@@ -4352,12 +4352,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const blockedByPayment = status === 'active' && !isStudyPaymentReceived(paymentGateStudy);
       studyFields.status = blockedByPayment ? 'draft' : status;
       studyFields.payment_status = existingPaymentStatus === 'paid' ? 'paid' : 'unpaid';
+      console.log('studyFields payload:', studyFields);
       let saveResult = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId).select('id').single()
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields }).select('id').single();
       let { error } = saveResult;
-      if (error && /audience_type|target_behaviors|target_audience_intent/i.test(error.message || '')) {
-        const { audience_type, target_behaviors, target_audience_intent, ...legacyStudyFields } = studyFields;
+      if (error && /audience_type|target_behaviors|target_audience_intent|total_cost|payment_status/i.test(error.message || '')) {
+        const { audience_type, target_behaviors, target_audience_intent, total_cost, payment_status, ...legacyStudyFields } = studyFields;
         saveResult = effectiveDraftId
           ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId).select('id').single()
           : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }).select('id').single();
