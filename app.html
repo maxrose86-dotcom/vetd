@@ -4641,13 +4641,12 @@
       const app = (state.myApplications || []).find(a => a.id === appId);
       const study = app?.studies || {};
       const clientUserId = study.created_by;
-      if (clientUserId && study.title) {
-        const titleKey = response === 'accepted' ? 'notif_invite_accepted_title' : 'notif_invite_declined_title';
-        const bodyKey  = response === 'accepted' ? 'notif_invite_accepted_body'  : 'notif_invite_declined_body';
-        await sendNotification(
+      if (clientUserId && study.id) {
+        const notifType = response === 'accepted' ? 'application_accepted' : 'application_declined';
+        await sendStructuredNotification(
           clientUserId,
-          LANG.en[titleKey],
-          LANG.en[bodyKey].replace('{title}', study.title),
+          notifType,
+          { study_id: study.id, application_id: appId, contributor_id: state.currentUser?.id || '', study_title: study.title || '' },
           null
         );
       }
@@ -4696,7 +4695,7 @@
   }
 
   async function cantAttend(appId, createdBy, studyTitle, scheduledAt, studyId) {
-    const storageKey = 'vetd_cant_attend_' + appId;
+    const storageKey = 'vetd_cant_attend_' + appId + '_' + encodeURIComponent(scheduledAt || '');
     if (sessionStorage.getItem(storageKey)) return;
 
     const lang = getCurrentLang();
@@ -4708,10 +4707,10 @@
     const deepLink = studyId ? '#applicants/' + studyId + '/' + encodeURIComponent(studyTitle) : null;
 
     if (createdBy) {
-      await sendNotification(
+      await sendStructuredNotification(
         createdBy,
-        LANG.en.cant_attend_notif_title,
-        LANG.en.cant_attend_notif_body.replace('{name}', firstName).replace('{title}', studyTitle).replace('{date}', formattedDate),
+        'cant_attend',
+        { study_id: studyId || '', application_id: appId, contributor_id: state.currentUser?.id || '', scheduled_at: scheduledAt || '', name: firstName, title: studyTitle, date: formattedDate },
         deepLink
       );
     }
@@ -4918,7 +4917,7 @@
           `<span style="font-size:11px;color:var(--gray-400)">${t('join_early_hint')}</span>`,
           sessionType === 'group' ? `<span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span>` : ''
         ].filter(Boolean).join('');
-        const cantAttendHtml = sessionStorage.getItem('vetd_cant_attend_' + a.id)
+        const cantAttendHtml = sessionStorage.getItem('vetd_cant_attend_' + a.id + '_' + encodeURIComponent(a.scheduled_at || ''))
           ? `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`
           : `<button onclick="showCantAttendConfirm('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
         statusDetail = `<div class="app-schedule-row">
@@ -7058,6 +7057,8 @@ async function applyToStudy(studyId, answers = null) {
       notif_tpl_application_rejected_body: 'Your application to "{study_title}" was not selected this time.',
       notif_tpl_study_completed_title: 'Study completed',
       notif_tpl_study_completed_body: 'You completed "{study_title}". Payment will be processed shortly.',
+      notif_tpl_cant_attend_title: "Contributor can't attend",
+      notif_tpl_cant_attend_body: "{name} can't attend their session for \"{title}\" on {date}.",
       notif_tpl_payment_sent_title: 'Payment sent',
       notif_tpl_payment_sent_body: 'Payment of {amount} kr for "{study_title}" has been sent.',
       notif_tpl_rating_received_title: 'New rating received',
@@ -7753,6 +7754,8 @@ async function applyToStudy(studyId, answers = null) {
       notif_tpl_application_rejected_body: 'Din ansökan till "{study_title}" valdes inte denna gång.',
       notif_tpl_study_completed_title: 'Studie slutförd',
       notif_tpl_study_completed_body: 'Du slutförde "{study_title}". Betalning behandlas inom kort.',
+      notif_tpl_cant_attend_title: 'Deltagaren kan inte delta',
+      notif_tpl_cant_attend_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
       notif_tpl_payment_sent_title: 'Betalning skickad',
       notif_tpl_payment_sent_body: 'Betalning på {amount} kr för "{study_title}" har skickats.',
       notif_tpl_rating_received_title: 'Nytt betyg mottaget',
