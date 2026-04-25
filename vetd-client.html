@@ -1954,8 +1954,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_genders: study.target_genders,
         target_locations: study.target_locations,
         target_interests: study.target_interests,
-        target_behaviors: study.target_behaviors,
-        target_audience_intent: study.target_audience_intent,
+        // target_behaviors omitted: column not yet in schema (migration 20260421000200 pending)
+        // target_audience_intent omitted: column not yet in schema (migration 20260421000300 pending)
         is_test: study.is_test,
         total_cost: getStudyTotalCostValue(study),
         payment_status: 'unpaid',
@@ -1963,11 +1963,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         screening_questions: study.screening_questions,
         additional_reqs: study.additional_reqs
       };
-      let insertRes = await db.from('studies').insert(studyFields).select('id').single();
-      if (insertRes.error && /audience_type|target_behaviors|target_audience_intent/i.test(insertRes.error.message || '')) {
-        const { audience_type, target_behaviors, target_audience_intent, ...legacyStudyFields } = studyFields;
-        insertRes = await db.from('studies').insert(legacyStudyFields).select('id').single();
-      }
+      const insertRes = await db.from('studies').insert(studyFields).select('id').single();
       if (insertRes.error) throw insertRes.error;
       await loadStudies();
       showToast(t('cl_duplicate_success'));
@@ -4333,7 +4329,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         description:          desc || null,
         format:               dbFormat,
         session_type:         sessionType,
-        // audience_type omitted: column not yet in schema (migration pending)
+        // audience_type omitted: column not yet in schema (migration 20260421000100 pending)
         duration_minutes:     durationMins,
         spots,
         pay_per_participant:  pay,
@@ -4344,8 +4340,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         target_genders:       null,
         target_locations:     targetLocations.length ? targetLocations : null,
         target_interests:     targetInterests.length ? targetInterests : null,
-        target_behaviors:     targeting.customerBehaviors.length ? targeting.customerBehaviors : null,
-        target_audience_intent: targeting.customerIntent || null,
+        // target_behaviors omitted: column not yet in schema (migration 20260421000200 pending)
+        // target_audience_intent omitted: column not yet in schema (migration 20260421000300 pending)
         is_test:              companyIsTest,
         total_cost:           pay * spots,
         payment_status:       'unpaid',
@@ -4364,17 +4360,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       studyFields.status = blockedByPayment ? 'draft' : status;
       studyFields.payment_status = existingPaymentStatus === 'paid' ? 'paid' : 'unpaid';
       console.log('studyFields payload:', studyFields);
-      let saveResult = effectiveDraftId
+      const saveResult = effectiveDraftId
         ? await db.from('studies').update(studyFields).eq('id', effectiveDraftId).select('id').single()
         : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...studyFields }).select('id').single();
-      let { data: savedRow, error } = saveResult;
-      if (error && /audience_type|target_behaviors|target_audience_intent|total_cost|payment_status/i.test(error.message || '')) {
-        const { audience_type, target_behaviors, target_audience_intent, total_cost, payment_status, ...legacyStudyFields } = studyFields;
-        saveResult = effectiveDraftId
-          ? await db.from('studies').update(legacyStudyFields).eq('id', effectiveDraftId).select('id').single()
-          : await db.from('studies').insert({ created_by: user.id, company_id: clientRow.company_id, ...legacyStudyFields }).select('id').single();
-        ({ data: savedRow, error } = saveResult);
-      }
+      const { data: savedRow, error } = saveResult;
       if (error) {
         console.error('Study save failed:', error);
         throw error;
