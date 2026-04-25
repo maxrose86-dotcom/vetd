@@ -1444,6 +1444,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let currentCompanyIsTest = false;
   let currentCompanyId = null;
 
+  // Test bypass helpers — email or title prefix grants same bypass as is_test DB flag.
+  // isTestUser() is a function (not const) because currentClientUser is set after auth.
+  function isTestUser() { return currentClientUser?.email?.includes('test') === true; }
+  function isTestStudy(study) { return study?.title?.startsWith('[Test]') === true; }
+
   function updateDashboardGreeting() {
     const titleEl = document.getElementById('dash-greeting');
     const subEl = document.getElementById('dash-subtitle');
@@ -1809,7 +1814,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   function isStudyPaymentReceived(study) {
-    return study?.is_test === true || getStudyPaymentStatus(study) === 'paid';
+    return study?.is_test === true || isTestStudy(study) || isTestUser() || getStudyPaymentStatus(study) === 'paid';
   }
 
   function getStudyPaymentLabel(study) {
@@ -1830,7 +1835,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       : getStudyComputedTotalCost({ pay_per_participant: payValue, spots: spotsValue });
     const title = document.getElementById('b-title')?.value.trim() || draftStudy?.title || t('cl_published_context_default');
     const companyName = currentCompanyName || document.getElementById('auth-company')?.value.trim() || '';
-    const isTestStudy = draftStudy?.is_test === true || currentCompanyIsTest === true;
+    const isTestContext = draftStudy?.is_test === true || currentCompanyIsTest === true || isTestStudy(draftStudy) || isTestUser();
     const paymentStatus = draftStudy?.payment_status === 'paid' ? 'paid' : 'unpaid';
     return {
       studyId: draftStudy?.id || draftId || null,
@@ -1840,8 +1845,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       totalCost,
       spots: Number.isFinite(spotsValue) && spotsValue > 0 ? spotsValue : Number(draftStudy?.spots || 0),
       payPerParticipant: Number.isFinite(payValue) && payValue > 0 ? Math.round(payValue) : Number(draftStudy?.pay_per_participant || 0),
-      isTestStudy,
-      isPaid: isTestStudy || paymentStatus === 'paid',
+      isTestStudy: isTestContext,
+      isPaid: isTestContext || paymentStatus === 'paid',
     };
   }
 
@@ -4337,7 +4342,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      null
       };
-      const blockedByPayment = status === 'active' && existingPaymentStatus !== 'paid';
+      const blockedByPayment = status === 'active' && existingPaymentStatus !== 'paid' && !companyIsTest && !isTestUser() && !isTestStudy({ title });
       studyFields.status = blockedByPayment ? 'draft' : status;
       studyFields.payment_status = existingPaymentStatus === 'paid' ? 'paid' : 'unpaid';
       let saveResult = effectiveDraftId
@@ -5641,7 +5646,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewWarningEl.textContent = decision.warning;
       reviewWarningEl.style.display = decision.warning ? 'block' : 'none';
       reviewWarningEl.style.color = '';
-      reviewSummaryEl.innerHTML = '';
+      reviewSummaryEl.innerHTML = paymentContext.isTestStudy
+        ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">Test mode: payment bypass active</div>`
+        : '';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = decision.button;
       publishBtn.disabled = decision.state === 'not_ready';
