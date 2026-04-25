@@ -2743,10 +2743,19 @@
     renderContributorFitProfile();
   }
 
+  // Terminal application statuses: study was concluded for this contributor —
+  // remove from Browse so they don't see a misleading Apply/Applied state.
+  const BROWSE_TERMINAL_STATUSES = new Set(['completed', 'rejected', 'declined', 'no_show', 'company_cancelled']);
+
   function getStudiesForCurrentBrowseView() {
-    let subset = state.studies;
-    if (_studyFilter === 'online') subset = state.studies.filter(j => j.format === 'online');
-    if (_studyFilter === 'high-pay') subset = state.studies.filter(j => j.pay >= 40);
+    // Start with all eligible studies, excluding those with a terminal application state.
+    let subset = state.studies.filter(s => {
+      const appMeta = getStudyApplicationMeta(s.id);
+      return !appMeta || !BROWSE_TERMINAL_STATUSES.has(appMeta.status);
+    });
+    if (_studyFilter === 'online') subset = subset.filter(j => j.format === 'online');
+    if (_studyFilter === 'high-pay') subset = subset.filter(j => j.pay >= 40);
+    console.log('[Vetd] getStudiesForCurrentBrowseView:', { total: state.studies.length, afterTerminalExclusion: subset.length, filter: _studyFilter });
     return subset;
   }
 
@@ -3438,15 +3447,11 @@
   async function loadStudies() {
     if (!db) return; // keep demo data
     try {
+      // Attempt to load profile if not yet available; proceed even if it fails —
+      // a missing profile must not produce an empty marketplace.
       if (!state.contribData) await loadUserProfile();
-      if (!state.contribData) {
-        state.studies = [];
-        return;
-      }
-
-      // Email-based test override: internal accounts with 'test' in email can see test studies.
-      const emailIsTest = state.currentUser?.email?.includes('test') === true;
-      const contributorIsTest = state.contribData?.is_test === true || emailIsTest;
+      // is_test defaults to false if profile is missing — real contributors see real studies.
+      const contributorIsTest = state.contribData?.is_test === true;
       let studies = null;
       let error = null;
 
@@ -3467,13 +3472,12 @@
 
       if (error) throw error;
 
+      const rawCount = (studies || []).length;
       studies = (studies || []).filter(s => !shouldHideContributorStudy(s, contributorIsTest));
+      console.log('[Vetd] loadStudies:', { rawCount, afterPartitionFilter: studies.length, contributorIsTest });
 
-      if (!studies || studies.length === 0) {
-        state.studies = [];
-        return;
-      }
-
+      // Always update state.studies — even with an empty array — so renderStudies shows
+      // the correct empty state rather than stale data.
       state.studies = studies.map(s => {
         const company    = s.companies?.name || 'Vetd client';
         const payRaw     = s.pay_per_participant || 0;
@@ -3623,7 +3627,11 @@
     }
     if (!displayStudies.length) {
       const isDashboard = containerId === 'dashboard-studies';
+      // hasLiveStudies: true if eligible active studies exist at all
       const hasLiveStudies = state.studies.length > 0;
+      // filterActive: a UI chip filter is narrowing the browse view
+      const filterActive = _studyFilter && _studyFilter !== 'all';
+
       if (isDashboard) {
         container.innerHTML = !hasLiveStudies
           ? renderPreviewStudySection()
@@ -3631,12 +3639,17 @@
         return;
       }
 
-      if (hasLiveStudies) {
-        container.innerHTML = `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_browse')}</p>`;
+      if (filterActive) {
+        // Studies exist but none match the active filter chip — show reset prompt.
+        container.innerHTML = `
+          <div style="padding:1.5rem 0">
+            <p style="color:var(--gray-500);font-size:13px;margin-bottom:8px">${t('no_studies_browse')}</p>
+            <button class="filter-chip active" style="font-size:12px" onclick="filterStudies('all',this)">${t('browse_show_all')}</button>
+          </div>`;
         return;
       }
 
-      if (!isDashboard && model.mode === 'no_studies_long_time') {
+      if (model.mode === 'no_studies_long_time') {
         container.innerHTML = `
           <div class="empty-state" style="padding:4rem 2rem 3rem;max-width:420px">
             <h3>${t('no_studies_long_time_title')}</h3>
@@ -3645,9 +3658,7 @@
         return;
       }
 
-      container.innerHTML = isDashboard
-        ? `<p style="color:var(--gray-400);font-size:13px;font-weight:300">${t('no_studies_dash')}</p>`
-        : renderBrowseZeroSupplyState();
+      container.innerHTML = renderBrowseZeroSupplyState();
       return;
     }
     const lowFitNote = !isDashboard && model.mode === 'low_fit_contributor'
@@ -3690,7 +3701,8 @@
           <div style="display:flex;align-items:center;gap:12px">
             ${(() => {
               const appMeta = getStudyApplicationMeta(job.id);
-              if (appMeta?.status === 'invited') {
+              const appStatus = appMeta?.status || null;
+              if (appStatus === 'invited') {
                 return `
                   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
                     <div style="font-size:12px;color:var(--blue-dark);font-weight:500">${t('invite_context_line')}</div>
@@ -3701,9 +3713,17 @@
                   </div>
                 `;
               }
-              return state.appliedStudies.has(job.id)
-                ? `<div class="applied-badge">${t('applied_badge')}</div>`
-                : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`;
+              if (appStatus === 'accepted') {
+                return `<div class="applied-badge" style="color:var(--green)">${t('status_accepted')} ✓</div>`;
+              }
+              if (appStatus === 'pending') {
+                return `<div class="applied-badge">${t('applied_badge')}</div>`;
+              }
+              // applied (legacy status) or any other applied state
+              if (state.appliedStudies.has(job.id)) {
+                return `<div class="applied-badge">${t('applied_badge')}</div>`;
+              }
+              return `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`;
             })()}
           </div>
         </div>
@@ -6778,6 +6798,7 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse: 'No studies available right now',
       no_studies_browse_sub: 'We\'re currently matching the first companies with contributors. You\'re early — new studies are coming soon.',
       no_studies_browse_priority: 'Early contributors will get priority when we open up.',
+      browse_show_all: 'Show all studies',
       empty_hero_title: 'You\'re early — new studies are launching soon',
       empty_hero_sub: 'We\'re matching contributors with upcoming paid research sessions. Complete your profile to get invited first.',
       empty_hero_cta: 'Complete your profile',
@@ -7462,6 +7483,7 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse: 'Inga studier tillgängliga just nu',
       no_studies_browse_sub: 'Vi matchar just nu de första företagen med bidragsgivare. Du är tidig — nya studier kommer snart.',
       no_studies_browse_priority: 'De första deltagarna får prioritet när vi öppnar upp.',
+      browse_show_all: 'Visa alla studier',
       empty_hero_title: 'Du är tidig — nya studier lanseras snart',
       empty_hero_sub: 'Vi matchar bidragsgivare med kommande betalda studier. Slutför din profil för att bli inbjuden först.',
       empty_hero_cta: 'Slutför din profil',
