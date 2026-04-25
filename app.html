@@ -4114,6 +4114,17 @@
     const targetBtn = btn || getContributorTabButton(tab);
     if (targetBtn) targetBtn.classList.add('active');
     persistContributorTab(tab);
+    // My Studies must always reflect current application state regardless of navigation path.
+    if (tab === 'my-studies') {
+      if (!state.hydration.applications) {
+        // Not yet loaded — kick off load; renderMyApplications will fire when it completes.
+        loadMyApplications();
+      } else {
+        // Already hydrated — re-render from state so language switches and manual nav are correct.
+        const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+        renderMyApplications(activeFilter);
+      }
+    }
   }
 
   function startOnboarding() {
@@ -4470,12 +4481,14 @@
         const firstName   = state.profileData?.first_name || state.currentUser.user_metadata?.first_name || '';
         updateDashboard(firstName, stats, tierDisplay);
       }
+      // Set hydration flag BEFORE rendering so renderMyApplications sees hasApplications=true.
+      state.hydration.applications = true;
       renderMyApplications('all');
       renderContributorActivityTimeline();
     } catch(err) {
       console.warn('Could not load applications:', err);
     } finally {
-      state.hydration.applications = true;
+      state.hydration.applications = true; // idempotent; also covers error path
       syncContributorHydration();
       renderDashboardNextSession();
       renderContributorCommandSurface();
