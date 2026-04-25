@@ -4164,8 +4164,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     renderBuilderPoolPreview();
     _builderPublishTimer = setTimeout(() => {
       (async () => {
-        const saved = await submitStudy('active');
-        _builderPublishState = saved ? 'published' : 'idle';
+        let success = false;
+        try {
+          success = await submitStudy('active');
+        } catch (err) {
+          console.error('publishStudy failed:', err);
+          success = false;
+        }
+        if (!success) {
+          _builderPublishState = 'idle';
+          renderBuilderPoolPreview();
+          return;
+        }
+        _builderPublishState = 'published';
         renderBuilderPoolPreview();
       })();
     }, 900);
