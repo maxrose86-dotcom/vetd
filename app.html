@@ -1566,6 +1566,30 @@
   </div>
 </div>
 
+<div id="study-availability-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:560px;width:calc(100% - 32px);max-height:min(88vh,760px);overflow:auto">
+    <h2 id="study-availability-title" style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px" data-i18n="study_availability_title">Share availability</h2>
+    <p id="study-availability-sub" style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:1.25rem" data-i18n="study_availability_sub">This availability helps the team schedule this study.</p>
+    <div class="field" style="margin-top:0.75rem">
+      <label data-i18n="edit_label_formats">Preferred study format</label>
+      <div id="availability-modal-formats"></div>
+    </div>
+    <div class="field">
+      <label data-i18n="edit_label_times">Available times</label>
+      <div id="availability-modal-times"></div>
+    </div>
+    <div class="field">
+      <label data-i18n="edit_label_maxlen">Maximum session length I'm comfortable with</label>
+      <div id="availability-modal-maxlen"></div>
+    </div>
+    <p style="font-size:12px;color:var(--gray-400);line-height:1.5;margin-top:1rem" data-i18n="study_availability_note">We’ll use this to help the team find a suitable session for you.</p>
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:1.5rem">
+      <button onclick="closeStudyAvailabilityModal()" style="padding:10px 24px;border-radius:8px;border:1.5px solid var(--gray-200);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);color:var(--gray-700)" data-i18n="study_availability_cancel">Not now</button>
+      <button id="study-availability-save-btn" onclick="saveStudyAvailability()" class="apply-btn" style="padding:10px 28px" data-i18n="study_availability_save">Save availability</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1881,6 +1905,7 @@
     currentStep: 1,
     profileData: null,
     contribData: null,
+    availabilityContext: null,
     notifications: null,
     routing: null,
     simulation: { enabled: false, scenario: null }
@@ -4341,6 +4366,85 @@
     });
   }
 
+  function openStudyAvailabilityModal(appId) {
+    const app = (state.myApplications || []).find(a => String(a.id) === String(appId));
+    const studyTitle = app?.studies?.title || t('activity_fallback_study');
+    state.availabilityContext = {
+      appId,
+      studyId: app?.study_id || null,
+      studyTitle
+    };
+
+    document.getElementById('study-availability-title').textContent = t('study_availability_title');
+    document.getElementById('study-availability-sub').textContent = t('study_availability_sub').replace('{title}', studyTitle);
+    document.getElementById('availability-modal-formats').innerHTML = renderChipGroup('study_formats', CHIP_OPTIONS.study_formats);
+    document.getElementById('availability-modal-times').innerHTML = renderChipGroup('available_times', CHIP_OPTIONS.available_times);
+    document.getElementById('availability-modal-maxlen').innerHTML = renderChipGroup('max_session_length', CHIP_OPTIONS.max_session_length);
+
+    selectChips('availability-modal-formats', Array.isArray(state.contribData?.study_formats) ? state.contribData.study_formats : []);
+    selectChips('availability-modal-times', Array.isArray(state.contribData?.available_times) ? state.contribData.available_times : []);
+    selectChips('availability-modal-maxlen', state.contribData?.max_session_length ? [state.contribData.max_session_length] : []);
+
+    document.getElementById('study-availability-modal').style.display = 'flex';
+  }
+
+  function closeStudyAvailabilityModal() {
+    document.getElementById('study-availability-modal').style.display = 'none';
+    state.availabilityContext = null;
+  }
+
+  async function saveStudyAvailability() {
+    if (!db || !state.currentUser) { showToast('Not connected', true); return; }
+
+    const btn = document.getElementById('study-availability-save-btn');
+    setLoading(btn, true, 'study_availability_save');
+
+    try {
+      const selectedFormats = getChipValues('study_formats', '#study-availability-modal');
+      const availableTimes = getChipValues('available_times', '#study-availability-modal');
+      const sessionLengths = getChipValues('max_session_length', '#study-availability-modal');
+      const derivedPrefs = getDefaultMatchPreferences({
+        study_formats: selectedFormats,
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        interests: getContributorInterestValues(state.contribData)
+      });
+
+      const { error } = await db.from('contributors').update({
+        study_formats: selectedFormats,
+        available_times: availableTimes,
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        match_preferences: { format: derivedPrefs.format, length: derivedPrefs.length }
+      }).eq('id', state.currentUser.id);
+
+      if (error) throw error;
+
+      state.contribData = {
+        ...(state.contribData || {}),
+        study_formats: selectedFormats,
+        available_times: availableTimes,
+        max_session_length: sessionLengths.length ? sessionLengths[0] : null,
+        match_preferences: { format: derivedPrefs.format, length: derivedPrefs.length }
+      };
+
+      setLoading(btn, false, 'study_availability_save');
+      closeStudyAvailabilityModal();
+
+      const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+      renderMyApplications(activeFilter);
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
+      renderStudies('dashboard-studies', state.studies.slice(0, 2));
+      renderContributorCommandSurface();
+      renderContributorActivityTimeline();
+
+      showToast(t('study_availability_saved_toast'));
+    } catch (err) {
+      console.error('Save study availability error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      setLoading(btn, false, 'study_availability_save');
+      showToast(err.message || "We couldn't save your changes. Try again.", true);
+    }
+  }
+
   function sessionTimeUntil(isoStr) {
     const diff = new Date(isoStr) - Date.now();
     if (diff <= 0) return t('starting_now');
@@ -4792,7 +4896,7 @@
             ${acceptedWaitText ? `<span style="font-size:11px;color:var(--gray-400)">${esc(acceptedWaitText)}</span>` : ''}
             ${availabilityHint}
             <div>
-              <button class="btn-join" style="padding:7px 16px;font-size:12px" onclick="openAvailabilityEditor()">${t('set_availability_btn')}</button>
+              <button class="btn-join" style="padding:7px 16px;font-size:12px" onclick="openStudyAvailabilityModal('${esc(a.id)}')">${t('set_availability_btn')}</button>
             </div>
           </div>`;
       } else if (ss.phase === 'accepted_ready') {
@@ -5133,6 +5237,10 @@ async function applyToStudy(studyId, answers = null) {
 
   document.getElementById('apply-modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
+  });
+
+  document.getElementById('study-availability-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeStudyAvailabilityModal();
   });
 
   // ─── PROFILE HELPERS ────────────────────────────────────
@@ -7037,6 +7145,12 @@ async function applyToStudy(studyId, answers = null) {
       accepted_day_unscheduled: 'Accepted 1 day ago',
       accepted_days_unscheduled: 'Accepted {count} days ago',
       set_availability_btn: 'Set availability',
+      study_availability_title: 'Share availability',
+      study_availability_sub: 'This availability helps the team schedule "{title}".',
+      study_availability_note: 'We’ll use this to help the team find a suitable session for you.',
+      study_availability_cancel: 'Not now',
+      study_availability_save: 'Save availability',
+      study_availability_saved_toast: 'Availability updated for this study',
       session_type_group: 'Group session',
       join_early_hint: 'You can join 15 minutes before start',
       group_session_context: 'You\'ll join a group discussion with other participants',
@@ -7725,6 +7839,12 @@ async function applyToStudy(studyId, answers = null) {
       accepted_day_unscheduled: 'Accepterad för 1 dag sedan',
       accepted_days_unscheduled: 'Accepterad för {count} dagar sedan',
       set_availability_btn: 'Lägg till tillgänglighet',
+      study_availability_title: 'Dela tillgänglighet',
+      study_availability_sub: 'Den här tillgängligheten hjälper teamet att boka "{title}".',
+      study_availability_note: 'Vi använder det här för att hjälpa teamet hitta en lämplig tid för dig.',
+      study_availability_cancel: 'Inte nu',
+      study_availability_save: 'Spara tillgänglighet',
+      study_availability_saved_toast: 'Tillgänglighet uppdaterad för den här studien',
       session_type_group: 'Gruppsession',
       join_early_hint: 'Du kan gå med 15 minuter innan start',
       group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',
