@@ -4826,6 +4826,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   async function inviteContributor(studyId, contributorId, displayName) {
     const btn = document.getElementById('invite-btn-' + contributorId);
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    let inviteCreated = false;
 
     try {
       // Mandatory duplicate check — distinguish declined from other existing rows
@@ -4853,29 +4854,40 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         applied_at:     new Date().toISOString()
       });
       if (error) throw error;
+      inviteCreated = true;
 
-      // Notify the contributor — deduplicate by checking for an existing unread invite for this study
-      const { data: study } = await db.from('studies').select('title').eq('id', studyId).single();
-      if (study) {
-        const { data: existingInviteNotif } = await db
-          .from('notifications')
-          .select('id')
-          .eq('user_id', contributorId)
-          .eq('notif_type', 'study_invited')
-          .eq('read', false)
-          .eq('link', studyId) // we store studyId as link for dedup
-          .maybeSingle()
-          .catch(() => ({ data: null }));
-        if (!existingInviteNotif) {
-          await sendNotification(
-            contributorId,
-            t('cl_notif_invited_title'),
-            t('cl_notif_invited_body').replace('{title}', study.title),
-            studyId, // stored as link — used for dedup and clear-on-respond
-            'study_invited',
-            { study_id: studyId, contributor_id: contributorId }
-          );
+      try {
+        // Notify the contributor — deduplicate by checking for an existing unread invite for this study.
+        const { data: study, error: studyErr } = await db.from('studies').select('title').eq('id', studyId).single();
+        if (studyErr) throw studyErr;
+        if (study) {
+          let existingInviteNotif = null;
+          const { data: notifData, error: notifErr } = await db
+            .from('notifications')
+            .select('id')
+            .eq('user_id', contributorId)
+            .eq('notif_type', 'study_invited')
+            .eq('read', false)
+            .eq('link', studyId)
+            .maybeSingle();
+          if (notifErr && notifErr.code !== 'PGRST116') {
+            console.warn('[vetd] invite notification dedupe failed (non-blocking):', notifErr.message || notifErr);
+          } else {
+            existingInviteNotif = notifData;
+          }
+          if (!existingInviteNotif) {
+            await sendNotification(
+              contributorId,
+              t('cl_notif_invited_title'),
+              t('cl_notif_invited_body').replace('{title}', study.title),
+              studyId,
+              'study_invited',
+              { study_id: studyId, contributor_id: contributorId }
+            );
+          }
         }
+      } catch (notifErr) {
+        console.warn('[vetd] invite notification failed (non-blocking):', notifErr?.message || notifErr);
       }
 
       showToast(t('cl_contributor_invited'));
@@ -4883,8 +4895,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     } catch(err) {
       console.error('Invite contributor error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast('Could not send invite — try again', true);
-      if (btn) { btn.disabled = false; btn.textContent = t('cl_invite'); }
+      if (inviteCreated) {
+        console.warn('[vetd] invite created before follow-up error:', err?.message || err);
+        showToast(t('cl_contributor_invited'));
+        if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; btn.id = ''; }
+      } else {
+        showToast('Could not send invite — try again', true);
+        if (btn) { btn.disabled = false; btn.textContent = t('cl_invite'); }
+      }
     }
   }
 
@@ -6575,36 +6593,44 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   async function sendNotification(userId, title, body, link, notifType, params) {
     if (!db) return;
-    try {
-      // Self-notifications: direct insert gives us direct column control.
-      // Requires the notifications_insert_own RLS policy (user_id = auth.uid()).
-      // Cross-user (e.g. operator → contributor): SECURITY DEFINER RPC bypasses RLS.
-      if (currentClientUser && userId === currentClientUser.id) {
-        const row = {
-          user_id: userId,
-          title,
-          body,
-          link:    link || null,
-          read:    false,
-        };
-        if (notifType) row.notif_type = notifType;
-        if (params)    row.params     = params;
-        const { error } = await db.from('notifications').insert(row);
-        if (error) throw error;
-      } else {
-        const { error } = await db.rpc('insert_notification', {
-          p_user_id:    userId,
-          p_title:      title,
-          p_body:       body,
-          p_link:       link || null,
-          p_notif_type: notifType || null,
-          p_params:     params    || {},
-        });
-        if (error) throw error;
-      }
-    } catch(err) {
-      console.warn('[vetd] sendNotification error:', err.message || err);
+    const row = {
+      user_id: userId,
+      title,
+      body,
+      link:    link || null,
+      read:    false,
+    };
+    if (notifType) row.notif_type = notifType;
+    if (params)    row.params     = params;
+
+    // Self-notifications: direct insert gives us direct column control.
+    // Requires the notifications_insert_own RLS policy (user_id = auth.uid()).
+    if (currentClientUser && userId === currentClientUser.id) {
+      const { error } = await db.from('notifications').insert(row);
+      if (error) throw error;
+      return;
     }
+
+    // Cross-user (e.g. operator → contributor): try SECURITY DEFINER RPC first.
+    const { error: rpcError } = await db.rpc('insert_notification', {
+      p_user_id:    userId,
+      p_title:      title,
+      p_body:       body,
+      p_link:       link || null,
+      p_notif_type: notifType || null,
+      p_params:     params    || {},
+    });
+    if (!rpcError) return;
+
+    const rpcMsg = `${rpcError.code || ''} ${rpcError.message || ''} ${rpcError.details || ''}`.trim();
+    const signatureMismatch = /p_notif_type|p_params|insert_notification|function .* does not exist|Could not find the function|PGRST202|42883/i.test(rpcMsg);
+    if (!signatureMismatch) {
+      throw rpcError;
+    }
+
+    console.warn('[vetd] sendNotification RPC fallback to direct insert:', rpcMsg);
+    const { error: insertError } = await db.from('notifications').insert(row);
+    if (insertError) throw insertError;
   }
 
   // Notification row clicks — delegated so inline onclick string-escaping is not needed
