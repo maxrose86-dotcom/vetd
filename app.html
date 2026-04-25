@@ -6268,15 +6268,44 @@ async function applyToStudy(studyId, answers = null) {
     panel.classList.toggle('open');
   }
 
+  function looksLikeUuid(value) {
+    return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+  }
+
+  function openNotificationStudy(studyId) {
+    const btn = document.querySelector('.topbar-nav button:nth-child(2)');
+    if (btn) showTab('studies', btn);
+    else showTab('studies');
+    if (studyId) {
+      requestAnimationFrame(function() {
+        if (state.studies && state.studies.some(study => String(study.id) === String(studyId))) {
+          openModal(studyId);
+        }
+      });
+    }
+  }
+
   async function handleNotifClick(notifId, link) {
-    // Mark as read
-    if (db && state.currentUser) {
+    const notif = (state.notifications || []).find(n => String(n.id) === String(notifId)) || null;
+    const studyId = notif?.params?.study_id || link || null;
+    const isInternalStudyLink = looksLikeUuid(link);
+    const isStudyInvite = notif?.notif_type === 'study_invited';
+
+    if (db && state.currentUser && notif && !notif.read) {
       await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', state.currentUser.id);
-      // Refresh to update badge
       loadNotifications();
     }
-    if (link) window.location.href = link;
-    else document.getElementById('notif-panel').classList.remove('open');
+    document.getElementById('notif-panel').classList.remove('open');
+
+    if (isStudyInvite || isInternalStudyLink) {
+      openNotificationStudy(studyId);
+      return;
+    }
+
+    if (typeof link === 'string' && link && (/^https?:\/\//i.test(link) || link.startsWith('/') || link.startsWith('#'))) {
+      window.location.href = link;
+      return;
+    }
   }
 
   async function markAllRead() {
