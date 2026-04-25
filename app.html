@@ -3948,6 +3948,31 @@
   }
 
   // ─── MODAL ──────────────────────────────────────────────
+  function applyStudyModalActions(appMeta, modalPrimaryBtn, modalSecondaryBtn) {
+    if (!modalPrimaryBtn || !modalSecondaryBtn) return;
+
+    if (appMeta?.status === 'invited') {
+      modalPrimaryBtn.textContent = t('invite_accept_btn');
+      modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
+      modalSecondaryBtn.textContent = t('invite_decline_btn');
+      modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
+      return;
+    }
+
+    if (appMeta) {
+      modalPrimaryBtn.textContent = t('modal_confirm_view_studies');
+      modalPrimaryBtn.onclick = () => goToMyStudiesFromModal();
+      modalSecondaryBtn.textContent = t('modal_apply_later');
+      modalSecondaryBtn.onclick = () => closeModal();
+      return;
+    }
+
+    modalPrimaryBtn.textContent = t('modal_apply_cta');
+    modalPrimaryBtn.onclick = () => confirmApply();
+    modalSecondaryBtn.textContent = t('modal_apply_later');
+    modalSecondaryBtn.onclick = () => closeModal();
+  }
+
   async function openModal(id) {
     state.currentStudy = state.studies.find(j => j.id == id);
     const appMeta = getStudyApplicationMeta(state.currentStudy?.id);
@@ -3977,19 +4002,7 @@
     }
     const modalPrimaryBtn = document.querySelector('#apply-modal .modal-apply');
     const modalSecondaryBtn = document.querySelector('#apply-modal .modal-close');
-    if (modalPrimaryBtn && modalSecondaryBtn) {
-      if (appMeta?.status === 'invited') {
-        modalPrimaryBtn.textContent = t('invite_accept_btn');
-        modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
-        modalSecondaryBtn.textContent = t('invite_decline_btn');
-        modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
-      } else {
-        modalPrimaryBtn.textContent = t('modal_apply_cta');
-        modalPrimaryBtn.onclick = () => confirmApply();
-        modalSecondaryBtn.textContent = t('modal_apply_later');
-        modalSecondaryBtn.onclick = () => closeModal();
-      }
-    }
+    applyStudyModalActions(appMeta, modalPrimaryBtn, modalSecondaryBtn);
     document.getElementById('apply-modal').classList.add('open');
     await logEvent('study_page_view', state.currentStudy.id);
   }
@@ -6286,7 +6299,28 @@ async function applyToStudy(studyId, answers = null) {
     return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
   }
 
-  function openNotificationStudy(studyId) {
+  async function openNotificationStudy(studyId) {
+    if (db && state.currentUser) {
+      try {
+        await loadAppliedStudies();
+        await loadMyApplications();
+      } catch (err) {
+        console.warn('Could not refresh application state for notification:', err);
+      }
+    }
+
+    const appMeta = studyId ? getStudyApplicationMeta(studyId) : null;
+    if (appMeta && appMeta.status !== 'invited') {
+      const btn = document.querySelector('.topbar-nav button:nth-child(3)');
+      if (btn) showTab('my-studies', btn);
+      else showTab('my-studies');
+      requestAnimationFrame(function() {
+        const row = document.getElementById('my-study-card-' + appMeta.id);
+        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return;
+    }
+
     const btn = document.querySelector('.topbar-nav button:nth-child(2)');
     if (btn) showTab('studies', btn);
     else showTab('studies');
@@ -6312,7 +6346,7 @@ async function applyToStudy(studyId, answers = null) {
     document.getElementById('notif-panel').classList.remove('open');
 
     if (isStudyInvite || isInternalStudyLink) {
-      openNotificationStudy(studyId);
+      await openNotificationStudy(studyId);
       return;
     }
 
@@ -7877,19 +7911,7 @@ async function applyToStudy(studyId, answers = null) {
       }
       const modalPrimaryBtn = document.querySelector('#apply-modal .modal-apply');
       const modalSecondaryBtn = document.querySelector('#apply-modal .modal-close');
-      if (modalPrimaryBtn && modalSecondaryBtn) {
-        if (appMeta?.status === 'invited') {
-          modalPrimaryBtn.textContent = t('invite_accept_btn');
-          modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
-          modalSecondaryBtn.textContent = t('invite_decline_btn');
-          modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
-        } else {
-          modalPrimaryBtn.textContent = t('modal_apply_cta');
-          modalPrimaryBtn.onclick = () => confirmApply();
-          modalSecondaryBtn.textContent = t('modal_apply_later');
-          modalSecondaryBtn.onclick = () => closeModal();
-        }
-      }
+      applyStudyModalActions(appMeta, modalPrimaryBtn, modalSecondaryBtn);
       return;
     }
 
