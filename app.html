@@ -3421,7 +3421,9 @@
     parent:'Parent', homeowner:'Homeowner', brand_customer:'Brand customer'
   };
   function shouldHideContributorStudy(study, contributorIsTest) {
-    return (study?.is_test === true) !== (contributorIsTest === true);
+    if (!study || typeof study !== 'object') return false;
+    if (typeof study.is_test !== 'boolean') return false;
+    return study.is_test !== (contributorIsTest === true);
   }
 
   async function loadStudies() {
