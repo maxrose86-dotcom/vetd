@@ -3999,7 +3999,11 @@
   }
 
   async function openModal(id) {
-    state.currentStudy = state.studies.find(j => j.id == id);
+    state.currentStudy = state.studies.find(j => j.id == id) || null;
+    if (!state.currentStudy) {
+      showToast(t('study_no_longer_available'), true);
+      return;
+    }
     const appMeta = getStudyApplicationMeta(state.currentStudy?.id);
     const payTypeLabel = state.currentStudy.payType === 'per survey' ? t('per_survey') : t('per_session');
     document.getElementById('modal-pre-apply').style.display = 'block';
@@ -4428,6 +4432,7 @@
 
       setLoading(btn, false, 'study_availability_save');
       closeStudyAvailabilityModal();
+      state.routing = computeOpportunityRouting(state);
 
       const activeFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
       renderMyApplications(activeFilter);
@@ -6466,7 +6471,7 @@ async function applyToStudy(studyId, answers = null) {
     }
     document.getElementById('notif-panel').classList.remove('open');
 
-    if (isStudyInvite || isInternalStudyLink) {
+    if (isStudyInvite || isInternalStudyLink || looksLikeUuid(studyId)) {
       await openNotificationStudy(studyId);
       return;
     }
@@ -7017,6 +7022,7 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse_sub: 'We\'re currently matching the first companies with contributors. You\'re early — new studies are coming soon.',
       no_studies_browse_priority: 'Early contributors will get priority when we open up.',
       browse_show_all: 'Show all studies',
+      study_no_longer_available: 'This study is no longer available.',
       empty_hero_title: 'You\'re early — new studies are launching soon',
       empty_hero_sub: 'We\'re matching contributors with upcoming paid research sessions. Complete your profile to get invited first.',
       empty_hero_cta: 'Complete your profile',
@@ -7711,6 +7717,7 @@ async function applyToStudy(studyId, answers = null) {
       no_studies_browse_sub: 'Vi matchar just nu de första företagen med bidragsgivare. Du är tidig — nya studier kommer snart.',
       no_studies_browse_priority: 'De första deltagarna får prioritet när vi öppnar upp.',
       browse_show_all: 'Visa alla studier',
+      study_no_longer_available: 'Den här studien är inte längre tillgänglig.',
       empty_hero_title: 'Du är tidig — nya studier lanseras snart',
       empty_hero_sub: 'Vi matchar bidragsgivare med kommande betalda studier. Slutför din profil för att bli inbjuden först.',
       empty_hero_cta: 'Slutför din profil',
