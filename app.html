@@ -3560,6 +3560,7 @@
   // ─── RENDER STUDIES ─────────────────────────────────────
   function renderStudies(containerId, subset) {
     const container = document.getElementById(containerId);
+    const isDashboard = containerId === 'dashboard-studies';
     const prefs = getContributorMatchPreferences();
     const source = containerId === 'dashboard-studies' ? state.studies : subset;
     const model = getContributorStateModel();
@@ -3626,7 +3627,6 @@
       displayStudies = displayStudies.map((s, i) => i < 3 ? { ...s, isTopPick: true } : s);
     }
     if (!displayStudies.length) {
-      const isDashboard = containerId === 'dashboard-studies';
       // hasLiveStudies: true if eligible active studies exist at all
       const hasLiveStudies = state.studies.length > 0;
       // filterActive: a UI chip filter is narrowing the browse view
