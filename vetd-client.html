@@ -2876,14 +2876,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             contributorId,
             'Session confirmed 🎉',
             `Your session for "${study.title}" has been confirmed. You'll receive scheduling details shortly.`,
-            null
+            null,
+            'application_accepted',
+            { study_id: studyId, application_id: appId, contributor_id: contributorId }
           );
         } else if (newStatus === 'rejected') {
           await sendNotification(
             contributorId,
             'Study update',
             `We're unable to move forward with your participation in "${study.title}" at this time. Thank you for your interest.`,
-            null
+            null,
+            'application_rejected',
+            { study_id: studyId, application_id: appId, contributor_id: contributorId }
           );
         }
       }
@@ -3159,17 +3163,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ? `Your group session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
           : `Your group session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
         for (const app of acceptedApps) {
-          await sendNotification(app.contributor_id, groupContribTitle, groupContribBody, null);
-        }
-
-        // Operator confirmation
-        if (currentClientUser) {
-          const groupOpTitle = _schedIsReschedule ? 'Group session rescheduled' : 'Group session scheduled';
-          const groupOpBody  = _schedIsReschedule
-            ? `Group session for "${studyTitle}" rescheduled to ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`
-            : `Group session for "${studyTitle}" confirmed for ${formattedDate} — ${acceptedApps.length} contributor${acceptedApps.length === 1 ? '' : 's'} notified.`;
-          await sendNotification(currentClientUser.id, groupOpTitle, groupOpBody, '#applicants/' + _schedStudyId + '/' + encodeURIComponent(studyTitle));
-          loadNotifications();
+          await sendNotification(
+            app.contributor_id,
+            groupContribTitle,
+            groupContribBody,
+            null,
+            _schedIsReschedule ? 'session_rescheduled' : 'session_scheduled',
+            { study_id: _schedStudyId, application_id: app.id, scheduled_at: isoDatetime, session_type: 'group' }
+          );
         }
 
         showToast(t('cl_group_session_scheduled'));
@@ -3206,14 +3207,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           await loadStudies();
         }
 
-        // Notify the operator as confirmation
-        if (currentClientUser) {
-          const opTitle = _schedIsReschedule ? 'Session rescheduled' : 'Session scheduled';
-          const opBody  = _schedIsReschedule
-            ? `Session for "${studyTitle}" rescheduled to ${formattedDate}.`
-            : `Session for "${studyTitle}" confirmed for ${formattedDate}.`;
-          await sendNotification(currentClientUser.id, opTitle, opBody, '#applicants/' + savedStudyId + '/' + encodeURIComponent(studyTitle));
-          loadNotifications();
+        // Notify contributor of scheduled/rescheduled session
+        if (_schedContributorId) {
+          const contribSchedTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
+          const contribSchedBody  = _schedIsReschedule
+            ? `Your session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
+            : `Your session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
+          await sendNotification(
+            _schedContributorId,
+            contribSchedTitle,
+            contribSchedBody,
+            null,
+            _schedIsReschedule ? 'session_rescheduled' : 'session_scheduled',
+            { study_id: savedStudyId, application_id: _schedAppId, scheduled_at: isoDatetime, session_type: 'one_to_one' }
+          );
         }
 
         showToast(t(needsAccept ? 'cl_session_scheduled' : 'cl_session_confirmed'));
@@ -4814,15 +4821,28 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       });
       if (error) throw error;
 
-      // Notify the contributor
+      // Notify the contributor — deduplicate by checking for an existing unread invite for this study
       const { data: study } = await db.from('studies').select('title').eq('id', studyId).single();
       if (study) {
-        await sendNotification(
-          contributorId,
-          t('cl_notif_invited_title'),
-          t('cl_notif_invited_body').replace('{title}', study.title),
-          null
-        );
+        const { data: existingInviteNotif } = await db
+          .from('notifications')
+          .select('id')
+          .eq('user_id', contributorId)
+          .eq('notif_type', 'study_invited')
+          .eq('read', false)
+          .eq('link', studyId) // we store studyId as link for dedup
+          .maybeSingle()
+          .catch(() => ({ data: null }));
+        if (!existingInviteNotif) {
+          await sendNotification(
+            contributorId,
+            t('cl_notif_invited_title'),
+            t('cl_notif_invited_body').replace('{title}', study.title),
+            studyId, // stored as link — used for dedup and clear-on-respond
+            'study_invited',
+            { study_id: studyId, contributor_id: contributorId }
+          );
+        }
       }
 
       showToast(t('cl_contributor_invited'));
@@ -5329,7 +5349,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         currentRatee.contributorId,
         `You received a new rating for "${currentRatee.studyTitle}"`,
         `Your overall score for this study was ${overall}★. Keep up the great work!`,
-        null
+        null,
+        'rating_received',
+        { study_id: currentRatee.studyId || null, application_id: currentRatee.appId, contributor_id: currentRatee.contributorId }
       );
 
       document.getElementById('rate-modal').classList.remove('open');
@@ -6388,7 +6410,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
-      renderNotifications(data || []);
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const filtered = (data || []).filter(n => !n.read || new Date(n.created_at).getTime() > cutoff);
+      renderNotifications(filtered);
     } catch(err) {
       console.warn('Could not load notifications:', err);
     }
@@ -6499,28 +6523,32 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
-  async function sendNotification(userId, title, body, link) {
+  async function sendNotification(userId, title, body, link, notifType, params) {
     if (!db) return;
     try {
       // Self-notifications: direct insert gives us direct column control.
       // Requires the notifications_insert_own RLS policy (user_id = auth.uid()).
       // Cross-user (e.g. operator → contributor): SECURITY DEFINER RPC bypasses RLS.
-      // Use exactly 4 params — the GRANT on insert_notification covers (uuid,text,text,text).
       if (currentClientUser && userId === currentClientUser.id) {
-        const { error } = await db.from('notifications').insert({
+        const row = {
           user_id: userId,
           title,
           body,
           link:    link || null,
           read:    false,
-        });
+        };
+        if (notifType) row.notif_type = notifType;
+        if (params)    row.params     = params;
+        const { error } = await db.from('notifications').insert(row);
         if (error) throw error;
       } else {
         const { error } = await db.rpc('insert_notification', {
-          p_user_id: userId,
-          p_title:   title,
-          p_body:    body,
-          p_link:    link || null,
+          p_user_id:    userId,
+          p_title:      title,
+          p_body:       body,
+          p_link:       link || null,
+          p_notif_type: notifType || null,
+          p_params:     params    || {},
         });
         if (error) throw error;
       }

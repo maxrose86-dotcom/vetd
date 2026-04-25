@@ -4449,6 +4449,21 @@
         );
       }
 
+      // Mark related study_invited notification as read (fire-and-forget)
+      const studyId = (state.myApplications || []).find(a => a.id === appId)?.studies?.id || null;
+      if (studyId && state.currentUser?.id) {
+        (async () => {
+          try {
+            await db.from('notifications')
+              .update({ read: true })
+              .eq('user_id', state.currentUser.id)
+              .eq('notif_type', 'study_invited')
+              .eq('read', false)
+              .eq('link', studyId);
+          } catch(e) { /* non-blocking */ }
+        })();
+      }
+
       showToast(t(response === 'accepted' ? 'invite_accepted_toast' : 'invite_declined_toast'));
       await loadMyApplications();
     } catch(err) {
@@ -6088,7 +6103,9 @@ async function applyToStudy(studyId, answers = null) {
         .order('created_at', { ascending: false })
         .limit(30);
       if (error) throw error;
-      renderNotifications(data || []);
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const filtered = (data || []).filter(n => !n.read || new Date(n.created_at).getTime() > cutoff);
+      renderNotifications(filtered);
     } catch(err) {
       console.warn('Could not load notifications:', err);
     }
