@@ -1708,6 +1708,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
   }
 
+  const CLIENT_STUDY_SELECT = 'id, company_id, created_by, title, description, format, session_type, duration_minutes, spots, filled_spots, pay_per_participant, start_date, close_date, status, target_age_ranges, target_genders, target_locations, target_interests, is_test, total_cost, payment_status, paid_at, paid_by, min_rating, screening_questions, additional_reqs, created_at';
+
   async function loadStudies() {
     const list = document.getElementById('studies-list');
     if (!list) return;
@@ -1718,7 +1720,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (!user) return;
 
       const { data: studies, error } = await db
-        .from('studies').select('*').eq('created_by', user.id)
+        .from('studies').select(CLIENT_STUDY_SELECT).eq('created_by', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
 
@@ -1930,7 +1932,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const cached = _studiesCache?.studies?.find(study => study.id === studyId) || null;
       let study = cached;
       if (!study) {
-        const { data, error } = await db.from('studies').select('*').eq('id', studyId).single();
+        const { data, error } = await db.from('studies').select(CLIENT_STUDY_SELECT).eq('id', studyId).single();
         if (error) throw error;
         study = data;
       }
@@ -4509,7 +4511,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     // Use already-loaded cache first; fall back to a direct fetch if needed.
     let study = _studiesCache?.studies?.find(s => s.id === studyId) || null;
     if (!study && db) {
-      const { data } = await db.from('studies').select('*').eq('id', studyId).single();
+      const { data } = await db.from('studies').select(CLIENT_STUDY_SELECT).eq('id', studyId).single();
       study = data;
     }
     if (!study) { setDraftUrl(null); showToast('Draft not found. Starting a new study.', true); showTab('studies', document.querySelector('.nav-item[data-tab="studies"]')); return; }

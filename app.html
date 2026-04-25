@@ -3433,6 +3433,8 @@
     return study.is_test !== (contributorIsTest === true);
   }
 
+  const CONTRIBUTOR_BROWSE_STUDY_SELECT = 'id, title, description, format, spots, filled_spots, pay_per_participant, duration_minutes, target_age_ranges, target_genders, target_locations, target_interests, min_rating, screening_questions, created_at, is_test, companies(name)';
+
   async function loadStudies() {
     if (!db) return; // keep demo data
     try {
@@ -3448,7 +3450,7 @@
 
       ({ data: studies, error } = await db
         .from('studies')
-        .select('*, companies(name)')
+        .select(CONTRIBUTOR_BROWSE_STUDY_SELECT)
         .eq('status', 'active')
         .eq('is_test', contributorIsTest)
         .order('created_at', { ascending: false }));
@@ -3456,7 +3458,7 @@
       if (error && /is_test/i.test(error.message || '')) {
         ({ data: studies, error } = await db
           .from('studies')
-          .select('*, companies(name)')
+          .select(CONTRIBUTOR_BROWSE_STUDY_SELECT)
           .eq('status', 'active')
           .order('created_at', { ascending: false }));
       }
