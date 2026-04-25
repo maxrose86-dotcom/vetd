@@ -3163,6 +3163,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ? `Your group session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
           : `Your group session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
         for (const app of acceptedApps) {
+          // Clear stale scheduling notifications for this contributor before inserting new one
+          if (app.contributor_id && app.id) {
+            await db.from('notifications')
+              .update({ read: true })
+              .eq('user_id', app.contributor_id)
+              .in('notif_type', ['session_scheduled', 'session_rescheduled'])
+              .eq('read', false)
+              .filter('params->>application_id', 'eq', app.id)
+              .catch(() => {});
+          }
           await sendNotification(
             app.contributor_id,
             groupContribTitle,
@@ -3209,6 +3219,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
         // Notify contributor of scheduled/rescheduled session
         if (_schedContributorId) {
+          // Clear stale scheduling notifications before inserting new one
+          if (_schedAppId) {
+            await db.from('notifications')
+              .update({ read: true })
+              .eq('user_id', _schedContributorId)
+              .in('notif_type', ['session_scheduled', 'session_rescheduled'])
+              .eq('read', false)
+              .filter('params->>application_id', 'eq', _schedAppId)
+              .catch(() => {});
+          }
           const contribSchedTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
           const contribSchedBody  = _schedIsReschedule
             ? `Your session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
@@ -6329,9 +6349,24 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         })
         .eq('id', appId)
         .eq('status', 'accepted')
-        .select('id');
+        .select('id, contributor_id');
       if (error) throw error;
       if (!updatedRows?.length) throw new Error('stale_session_state');
+
+      // Clear stale scheduling notifications for the affected contributor (fire-and-forget)
+      const affectedContributorId = updatedRows[0]?.contributor_id;
+      if (affectedContributorId && appId) {
+        (async () => {
+          try {
+            await db.from('notifications')
+              .update({ read: true })
+              .eq('user_id', affectedContributorId)
+              .in('notif_type', ['session_scheduled', 'session_rescheduled'])
+              .eq('read', false)
+              .filter('params->>application_id', 'eq', appId);
+          } catch(e) { /* non-blocking */ }
+        })();
+      }
 
       showToast(t('cl_session_reset'));
       loadApplicants(studyId).catch(err => {
