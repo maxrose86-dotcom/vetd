@@ -4532,8 +4532,22 @@
         })();
       }
 
-      showToast(t(response === 'accepted' ? 'invite_accepted_toast' : 'invite_declined_toast'));
+      const modal = document.getElementById('apply-modal');
+      const modalWasOpen = !!(modal && modal.classList.contains('open'));
+      if (modalWasOpen) closeModal();
+
+      await loadAppliedStudies();
       await loadMyApplications();
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
+      renderStudies('dashboard-studies', state.studies.slice(0, 2));
+
+      if (response === 'accepted') {
+        const myStudiesBtn = document.querySelector('.topbar-nav button:nth-child(3)');
+        if (myStudiesBtn) showTab('my-studies', myStudiesBtn);
+        else showTab('my-studies');
+      }
+
+      showToast(t(response === 'accepted' ? 'invite_accepted_toast' : 'invite_declined_toast'));
     } catch(err) {
       console.error('respondToInvitation error:', err);
       if (window.Sentry) Sentry.captureException(err);
