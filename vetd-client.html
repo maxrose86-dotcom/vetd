@@ -6628,7 +6628,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       throw rpcError;
     }
 
-    console.warn('[vetd] sendNotification RPC fallback to direct insert:', rpcMsg);
+    console.warn('[vetd] sendNotification RPC fallback to legacy signature:', rpcMsg);
+    const { error: legacyRpcError } = await db.rpc('insert_notification', {
+      p_user_id: userId,
+      p_title: title,
+      p_body: body,
+      p_link: link || null,
+    });
+    if (!legacyRpcError) return;
+
+    console.warn('[vetd] sendNotification legacy RPC fallback to direct insert:', legacyRpcError.message || legacyRpcError);
     const { error: insertError } = await db.from('notifications').insert(row);
     if (insertError) throw insertError;
   }

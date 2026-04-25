@@ -1866,6 +1866,7 @@
   const state = {
     studies: [],
     appliedStudies: new Set(),
+    applicationMetaByStudy: new Map(),
     myApplications: [],
     payments: [],
     isHydrated: false,
@@ -1884,6 +1885,12 @@
     routing: null,
     simulation: { enabled: false, scenario: null }
   };
+
+  function getStudyApplicationMeta(studyId) {
+    return state.applicationMetaByStudy instanceof Map
+      ? (state.applicationMetaByStudy.get(studyId) || null)
+      : null;
+  }
 
   function syncContributorHydration() {
     state.isHydrated = Boolean(
@@ -3677,7 +3684,23 @@
               : `<div class="job-meta">${esc(getStudyDurationLabel(job))}</div>`; })()}
           </div>
           <div style="display:flex;align-items:center;gap:12px">
-            ${state.appliedStudies.has(job.id) ? `<div class="applied-badge">${t('applied_badge')}</div>` : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`}
+            ${(() => {
+              const appMeta = getStudyApplicationMeta(job.id);
+              if (appMeta?.status === 'invited') {
+                return `
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+                    <div style="font-size:12px;color:var(--blue-dark);font-weight:500">${t('invite_context_line')}</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                      <button class="apply-btn" onclick="event.stopPropagation();respondToInvitation('${esc(String(appMeta.id))}','accepted')">${t('invite_accept_btn')}</button>
+                      <button style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="event.stopPropagation();confirmDecline('${esc(String(appMeta.id))}')">${t('invite_decline_btn')}</button>
+                    </div>
+                  </div>
+                `;
+              }
+              return state.appliedStudies.has(job.id)
+                ? `<div class="applied-badge">${t('applied_badge')}</div>`
+                : `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`;
+            })()}
           </div>
         </div>
       </div>
@@ -3903,6 +3926,7 @@
   // ─── MODAL ──────────────────────────────────────────────
   async function openModal(id) {
     state.currentStudy = state.studies.find(j => j.id == id);
+    const appMeta = getStudyApplicationMeta(state.currentStudy?.id);
     const payTypeLabel = state.currentStudy.payType === 'per survey' ? t('per_survey') : t('per_session');
     document.getElementById('modal-pre-apply').style.display = 'block';
     document.getElementById('modal-confirmed').style.display = 'none';
@@ -3925,6 +3949,21 @@
       } else {
         sqArea.innerHTML = '';
         sqArea.style.display = 'none';
+      }
+    }
+    const modalPrimaryBtn = document.querySelector('#apply-modal .modal-apply');
+    const modalSecondaryBtn = document.querySelector('#apply-modal .modal-close');
+    if (modalPrimaryBtn && modalSecondaryBtn) {
+      if (appMeta?.status === 'invited') {
+        modalPrimaryBtn.textContent = t('invite_accept_btn');
+        modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
+        modalSecondaryBtn.textContent = t('invite_decline_btn');
+        modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
+      } else {
+        modalPrimaryBtn.textContent = t('modal_apply_cta');
+        modalPrimaryBtn.onclick = () => confirmApply();
+        modalSecondaryBtn.textContent = t('modal_apply_later');
+        modalSecondaryBtn.onclick = () => closeModal();
       }
     }
     document.getElementById('apply-modal').classList.add('open');
@@ -4202,10 +4241,11 @@
 
       const { data, error } = await db
         .from('applications')
-        .select('study_id')
+        .select('id, study_id, status')
         .eq('contributor_id', user.id);
       if (error) throw error;
       state.appliedStudies = new Set((data || []).map(a => a.study_id));
+      state.applicationMetaByStudy = new Map((data || []).map(a => [a.study_id, { id: a.id, status: a.status }]));
     } catch(err) {
       console.warn('Could not load applied studies:', err);
     }
@@ -4376,6 +4416,8 @@
       }
       if (error) throw error;
       state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies, contributorIsTest));
+      state.applicationMetaByStudy = new Map(state.myApplications.map(a => [a.study_id, { id: a.id, status: a.status }]));
+      state.appliedStudies = new Set(state.myApplications.map(a => a.study_id));
       // Derive upcoming sessions for dashboard
       const upcoming = state.myApplications
         .filter(a => a.status === 'accepted'
@@ -7714,6 +7756,7 @@ async function applyToStudy(studyId, answers = null) {
     const preApply = document.getElementById('modal-pre-apply');
     const confirmed = document.getElementById('modal-confirmed');
     const isConfirmed = confirmed && confirmed.style.display !== 'none';
+    const appMeta = getStudyApplicationMeta(current.id);
 
     if (!isConfirmed && preApply) {
       document.getElementById('modal-company-badge').textContent = current.company;
@@ -7735,6 +7778,21 @@ async function applyToStudy(studyId, answers = null) {
         } else {
           sqArea.innerHTML = '';
           sqArea.style.display = 'none';
+        }
+      }
+      const modalPrimaryBtn = document.querySelector('#apply-modal .modal-apply');
+      const modalSecondaryBtn = document.querySelector('#apply-modal .modal-close');
+      if (modalPrimaryBtn && modalSecondaryBtn) {
+        if (appMeta?.status === 'invited') {
+          modalPrimaryBtn.textContent = t('invite_accept_btn');
+          modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
+          modalSecondaryBtn.textContent = t('invite_decline_btn');
+          modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
+        } else {
+          modalPrimaryBtn.textContent = t('modal_apply_cta');
+          modalPrimaryBtn.onclick = () => confirmApply();
+          modalSecondaryBtn.textContent = t('modal_apply_later');
+          modalSecondaryBtn.onclick = () => closeModal();
         }
       }
       return;
