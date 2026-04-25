@@ -4342,7 +4342,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         screening_questions:  screeningQuestions.length ? screeningQuestions : null,
         additional_reqs:      null
       };
-      const blockedByPayment = status === 'active' && existingPaymentStatus !== 'paid' && !companyIsTest && !isTestUser() && !isTestStudy({ title });
+      const paymentGateStudy = { title, is_test: companyIsTest, payment_status: existingPaymentStatus };
+      console.log('[Vetd publish] payment gate check', {
+        statusBeforeSave: status,
+        payment_status: paymentGateStudy.payment_status,
+        isTestUser: isTestUser(),
+        isTestStudy: isTestStudy(paymentGateStudy)
+      });
+      const blockedByPayment = status === 'active' && !isStudyPaymentReceived(paymentGateStudy);
       studyFields.status = blockedByPayment ? 'draft' : status;
       studyFields.payment_status = existingPaymentStatus === 'paid' ? 'paid' : 'unpaid';
       let saveResult = effectiveDraftId
