@@ -1885,6 +1885,9 @@
   let _studySort = 'best_match';
   let _studyFilter = 'all';
   let _fitProfileEditingInterests = false;
+  const CONTRIBUTOR_RELOAD_TAB_KEY = 'vetd_tab';
+  const CONTRIBUTOR_RELOAD_FILTER_KEY = 'vetd_study_filter';
+  const CONTRIBUTOR_RELOAD_SCROLL_KEY = 'vetd_scroll_y';
 
   // ─── STATE ───────────────────────────────────────────────
   const state = {
@@ -3967,8 +3970,8 @@
 
   function filterStudies(type, btn) {
     _studyFilter = type;
-    document.querySelectorAll('#tab-studies .filter-chip').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
+    applyStudyFilterSelection(type);
+    if (btn) btn.classList.add('active');
     renderStudies('studies-list', getStudiesForCurrentBrowseView());
   }
 
@@ -4135,6 +4138,44 @@
     return index ? document.querySelector(`.topbar-nav button:nth-child(${index})`) : null;
   }
 
+  function applyStudyFilterSelection(type) {
+    document.querySelectorAll('#tab-studies .filter-chip').forEach(c => c.classList.remove('active'));
+    const activeBtn = [...document.querySelectorAll('#tab-studies .filter-chip')]
+      .find(btn => (btn.getAttribute('onclick') || '').includes(`filterStudies('${type}'`));
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  function saveContributorReloadState() {
+    const activeTab = getCurrentContributorTab();
+    if (activeTab) sessionStorage.setItem(CONTRIBUTOR_RELOAD_TAB_KEY, activeTab);
+    sessionStorage.setItem(CONTRIBUTOR_RELOAD_FILTER_KEY, _studyFilter || 'all');
+    sessionStorage.setItem(CONTRIBUTOR_RELOAD_SCROLL_KEY, String(window.scrollY || 0));
+  }
+
+  function restoreContributorReloadState() {
+    const savedTab = sessionStorage.getItem(CONTRIBUTOR_RELOAD_TAB_KEY);
+    const savedFilter = sessionStorage.getItem(CONTRIBUTOR_RELOAD_FILTER_KEY);
+    const savedScrollY = sessionStorage.getItem(CONTRIBUTOR_RELOAD_SCROLL_KEY);
+
+    if (savedTab && CONTRIBUTOR_TABS.includes(savedTab)) {
+      showTab(savedTab, getContributorTabButton(savedTab));
+    }
+
+    if (savedFilter && ['all', 'online', 'high-pay'].includes(savedFilter)) {
+      _studyFilter = savedFilter;
+      applyStudyFilterSelection(savedFilter);
+      renderStudies('studies-list', getStudiesForCurrentBrowseView());
+    }
+
+    if (savedScrollY !== null) {
+      requestAnimationFrame(() => window.scrollTo(0, Number(savedScrollY) || 0));
+    }
+
+    sessionStorage.removeItem(CONTRIBUTOR_RELOAD_TAB_KEY);
+    sessionStorage.removeItem(CONTRIBUTOR_RELOAD_FILTER_KEY);
+    sessionStorage.removeItem(CONTRIBUTOR_RELOAD_SCROLL_KEY);
+  }
+
   function showTab(tab, btn) {
     ['dashboard','studies','my-studies','profile'].forEach(tabName => {
       document.getElementById('tab-' + tabName).style.display = tabName === tab ? 'block' : 'none';
@@ -4289,6 +4330,7 @@
     showTab(savedTab, getContributorTabButton(savedTab));
     renderStudies('dashboard-studies', state.studies.slice(0,2));
     renderStudies('studies-list', getStudiesForCurrentBrowseView());
+    restoreContributorReloadState();
     loadNotifications();
     loadPayments();
     loadMyApplications();
@@ -8077,6 +8119,7 @@ async function applyToStudy(studyId, answers = null) {
     if (shouldReload) {
       const activeTab = getCurrentContributorTab();
       if (activeTab) persistContributorTab(activeTab);
+      saveContributorReloadState();
       document.documentElement.lang = lang;
       window.location.reload();
       return;
