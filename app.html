@@ -1915,8 +1915,9 @@
   };
 
   function getStudyApplicationMeta(studyId) {
+    const key = studyId == null ? null : String(studyId);
     return state.applicationMetaByStudy instanceof Map
-      ? (state.applicationMetaByStudy.get(studyId) || null)
+      ? (state.applicationMetaByStudy.get(key) || null)
       : null;
   }
 
@@ -3540,7 +3541,7 @@
           tags.push({ text: `${s.min_rating}★+ rating`, cls: 'tag-amber' });
 
         return {
-          id:          s.id,
+          id:          String(s.id),
           company,
           title:       s.title || 'Untitled study',
           desc:        s.description || '',
@@ -3692,7 +3693,7 @@
     const lowFitNote = !isDashboard && model.mode === 'low_fit_contributor'
       ? `<div style="font-size:13px;color:var(--gray-500);font-weight:300;line-height:1.6;margin-bottom:1rem">${t('low_fit_browse_note')}</div>`
       : '';
-    container.innerHTML = lowFitNote + displayStudies.map(job => {
+    const studiesHtml = displayStudies.map(job => {
       const payTypeLabel = job.payType === 'per survey' ? t('per_survey') : t('per_session');
       const displayTags = getStudyDisplayTags(job);
       const fit = computeStudyFit(job, state.contribData, prefs);
@@ -3757,6 +3758,10 @@
         </div>
       </div>
     `}).join('');
+    const seeAllAction = isDashboard && state.studies.length > 2
+      ? `<div style="margin-top:12px"><button class="filter-chip" style="font-size:12px" onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)'))">${t('browse_see_all_studies')}</button></div>`
+      : '';
+    container.innerHTML = lowFitNote + studiesHtml + seeAllAction;
   }
 
   function getStudyRelevance(study) {
@@ -4363,8 +4368,8 @@
         .select('id, study_id, status')
         .eq('contributor_id', user.id);
       if (error) throw error;
-      state.appliedStudies = new Set((data || []).map(a => a.study_id));
-      state.applicationMetaByStudy = new Map((data || []).map(a => [a.study_id, { id: a.id, status: a.status }]));
+      state.appliedStudies = new Set((data || []).map(a => String(a.study_id)));
+      state.applicationMetaByStudy = new Map((data || []).map(a => [String(a.study_id), { id: String(a.id), status: a.status }]));
     } catch(err) {
       console.warn('Could not load applied studies:', err);
     }
@@ -4602,21 +4607,28 @@
 
       ({ data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, is_test, companies(name))')
+        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, is_test, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false }));
 
       if (error && /is_test/i.test(error.message || '')) {
         ({ data, error } = await db
           .from('applications')
-          .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
+          .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
           .eq('contributor_id', state.currentUser.id)
           .order('applied_at', { ascending: false }));
       }
       if (error) throw error;
-      state.myApplications = (data || []).filter(a => !shouldHideContributorStudy(a.studies, contributorIsTest));
-      state.applicationMetaByStudy = new Map(state.myApplications.map(a => [a.study_id, { id: a.id, status: a.status }]));
-      state.appliedStudies = new Set(state.myApplications.map(a => a.study_id));
+      state.myApplications = (data || [])
+        .filter(a => !shouldHideContributorStudy(a.studies, contributorIsTest))
+        .map(a => ({
+          ...a,
+          id: String(a.id),
+          study_id: String(a.study_id),
+          studies: a.studies ? { ...a.studies, id: a.studies.id == null ? String(a.study_id) : String(a.studies.id) } : a.studies
+        }));
+      state.applicationMetaByStudy = new Map(state.myApplications.map(a => [String(a.study_id), { id: String(a.id), status: a.status }]));
+      state.appliedStudies = new Set(state.myApplications.map(a => String(a.study_id)));
       // Derive upcoming sessions for dashboard
       const upcoming = state.myApplications
         .filter(a => a.status === 'accepted'
@@ -6467,6 +6479,7 @@ async function applyToStudy(studyId, answers = null) {
   }
 
   async function openNotificationStudy(studyId) {
+    const studyKey = studyId == null ? null : String(studyId);
     if (db && state.currentUser) {
       try {
         await loadAppliedStudies();
@@ -6476,7 +6489,7 @@ async function applyToStudy(studyId, answers = null) {
       }
     }
 
-    const appMeta = studyId ? getStudyApplicationMeta(studyId) : null;
+    const appMeta = studyKey ? getStudyApplicationMeta(studyKey) : null;
     if (appMeta && appMeta.status !== 'invited') {
       const btn = document.querySelector('.topbar-nav button:nth-child(3)');
       if (btn) showTab('my-studies', btn);
@@ -6491,10 +6504,12 @@ async function applyToStudy(studyId, answers = null) {
     const btn = document.querySelector('.topbar-nav button:nth-child(2)');
     if (btn) showTab('studies', btn);
     else showTab('studies');
-    if (studyId) {
+    if (studyKey) {
       requestAnimationFrame(function() {
-        if (state.studies && state.studies.some(study => String(study.id) === String(studyId))) {
-          openModal(studyId);
+        if (state.studies && state.studies.some(study => study.id === studyKey)) {
+          openModal(studyKey);
+        } else {
+          showToast(t('study_no_longer_available'), true);
         }
       });
     }
@@ -6777,6 +6792,7 @@ async function applyToStudy(studyId, answers = null) {
       activity_low_fit_title: 'No close matches right now',
       activity_low_fit_sub: 'Studies are live, but none quite match your profile right now.',
       browse_subtitle: 'Showing studies matched to your profile',
+      browse_see_all_studies: 'See all studies',
       filter_high_pay: 'High pay',
       sort_best_match: 'Sort: Best match',
       sort_highest_pay: 'Sort: Highest pay',
@@ -7474,6 +7490,7 @@ async function applyToStudy(studyId, answers = null) {
       activity_low_fit_title: 'Inga nära matchningar just nu',
       activity_low_fit_sub: 'Det finns studier live, men ingen passar riktigt din profil just nu.',
       browse_subtitle: 'Visar studier som matchar din profil',
+      browse_see_all_studies: 'Se alla studier',
       filter_high_pay: 'Hög ersättning',
       sort_best_match: 'Sortera: Bästa matchning',
       sort_highest_pay: 'Sortera: Högst ersättning',
