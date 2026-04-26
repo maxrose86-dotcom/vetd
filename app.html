@@ -4684,6 +4684,12 @@
     const _optFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
     renderMyApplications(_optFilter);
 
+    // Immediate feedback in Browse card / Modal confirm container (My Studies re-renders above)
+    if (response === 'declined' && _confirmDeclineEl) {
+      _confirmDeclineEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('declining_label')}</span>`;
+      _confirmDeclineEl = null;
+    }
+
     try {
       // .eq('status', 'invited') prevents transitioning already-handled rows
       // .select('id') lets us detect if 0 rows matched (stale UI / race condition)
@@ -7252,6 +7258,7 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_confirm_yes: 'Yes, notify them',
       cant_attend_confirm_cancel: 'Cancel',
       cant_attend_sent: 'Researcher notified',
+      declining_label: 'Declining…',
       cant_attend_notif_title: "Contributor can't attend",
       cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
       waiting_schedule_invited: 'You\'ve been personally selected for this study',
@@ -7953,6 +7960,7 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_confirm_yes: 'Ja, meddela dem',
       cant_attend_confirm_cancel: 'Avbryt',
       cant_attend_sent: 'Forskaren har meddelats',
+      declining_label: 'Avböjer…',
       cant_attend_notif_title: 'Deltagaren kan inte delta',
       cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
       waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
