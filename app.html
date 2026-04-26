@@ -6525,13 +6525,7 @@ async function applyToStudy(studyId, answers = null) {
 
     const appMeta = studyKey ? getStudyApplicationMeta(studyKey) : null;
     if (appMeta && appMeta.status !== 'invited') {
-      const btn = document.querySelector('.topbar-nav button:nth-child(3)');
-      if (btn) showTab('my-studies', btn);
-      else showTab('my-studies');
-      requestAnimationFrame(function() {
-        const row = document.getElementById('my-study-card-' + appMeta.id);
-        if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
+      openMyStudyDetails(appMeta.id);
       return;
     }
 
@@ -6540,11 +6534,7 @@ async function applyToStudy(studyId, answers = null) {
     else showTab('studies');
     if (studyKey) {
       requestAnimationFrame(function() {
-        if (state.studies && state.studies.some(study => study.id === studyKey)) {
-          openModal(studyKey);
-        } else {
-          showToast(t('study_no_longer_available'), true);
-        }
+        openModal(studyKey);
       });
     }
   }
@@ -6556,8 +6546,9 @@ async function applyToStudy(studyId, answers = null) {
     const isStudyInvite = notif?.notif_type === 'study_invited';
 
     if (db && state.currentUser && notif && !notif.read) {
-      await db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', state.currentUser.id);
-      loadNotifications();
+      db.from('notifications').update({ read: true }).eq('id', notifId).eq('user_id', state.currentUser.id)
+        .then(() => loadNotifications())
+        .catch(() => {});
     }
     document.getElementById('notif-panel').classList.remove('open');
 
