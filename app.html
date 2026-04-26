@@ -4672,6 +4672,17 @@
       if (btn) { btn.disabled = true; }
     });
 
+    // Optimistic state — reflect intent in UI before any network call
+    const _optIdx = (state.myApplications || []).findIndex(a => a.id === appId);
+    const _optPrevStatus = _optIdx !== -1 ? state.myApplications[_optIdx].status : null;
+    if (_optIdx !== -1) {
+      state.myApplications[_optIdx] = { ...state.myApplications[_optIdx], status: response };
+      const _optStudyId = state.myApplications[_optIdx].study_id;
+      if (_optStudyId) state.applicationMetaByStudy.set(String(_optStudyId), { id: String(appId), status: response });
+    }
+    const _optFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+    renderMyApplications(_optFilter);
+
     try {
       // .eq('status', 'invited') prevents transitioning already-handled rows
       // .select('id') lets us detect if 0 rows matched (stale UI / race condition)
@@ -4740,6 +4751,13 @@
       console.error('respondToInvitation error:', err);
       if (window.Sentry) Sentry.captureException(err);
       showToast('Could not respond — please try again', true);
+      // Rollback optimistic state on error
+      if (_optIdx !== -1 && _optPrevStatus !== null) {
+        state.myApplications[_optIdx] = { ...state.myApplications[_optIdx], status: _optPrevStatus };
+        const _rollStudyId = state.myApplications[_optIdx].study_id;
+        if (_rollStudyId) state.applicationMetaByStudy.set(String(_rollStudyId), { id: String(appId), status: _optPrevStatus });
+        renderMyApplications(_optFilter);
+      }
       // Re-enable buttons on error
       ['accept','decline'].forEach(action => {
         const btn = document.getElementById('invite-' + action + '-' + appId);
@@ -4760,6 +4778,11 @@
     const firstName = state.profileData?.first_name || 'A contributor';
     const deepLink = studyId ? '#applicants/' + studyId + '/' + encodeURIComponent(studyTitle) : null;
 
+    // Optimistic update — set flag and swap UI before async notification
+    sessionStorage.setItem(storageKey, '1');
+    const el = document.getElementById('cant-attend-' + appId);
+    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
+
     if (createdBy) {
       await sendStructuredNotification(
         createdBy,
@@ -4768,10 +4791,6 @@
         deepLink
       );
     }
-
-    sessionStorage.setItem(storageKey, '1');
-    const el = document.getElementById('cant-attend-' + appId);
-    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
   }
 
   // Two-step inline cant-attend confirmation — no modal
