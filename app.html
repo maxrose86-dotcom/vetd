@@ -3743,14 +3743,16 @@
                 `;
               }
               if (appStatus === 'accepted') {
-                return `<div class="applied-badge" style="color:var(--green)">${t('status_accepted')} ✓</div>`;
+                return `<button class="applied-badge" style="color:var(--green);cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('status_accepted')} ✓</button>`;
               }
               if (appStatus === 'pending') {
-                return `<div class="applied-badge">${t('applied_badge')}</div>`;
+                return `<button class="applied-badge" style="cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('applied_badge')}</button>`;
               }
               // applied (legacy status) or any other applied state
               if (state.appliedStudies.has(job.id)) {
-                return `<div class="applied-badge">${t('applied_badge')}</div>`;
+                return appMeta?.id
+                  ? `<button class="applied-badge" style="cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('applied_badge')}</button>`
+                  : `<div class="applied-badge">${t('applied_badge')}</div>`;
               }
               return `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`;
             })()}
@@ -5455,7 +5457,7 @@ async function applyToStudy(studyId, answers = null) {
       if (app.room_url) {
         openVideoCall(app.room_url, app.studies?.title || t('video_call_title'), app.id);
       } else {
-        showToast(t('session_link_pending'), true);
+        showToast(t('session_link_pending_toast'), true);
       }
       return;
     }
@@ -7211,7 +7213,7 @@ async function applyToStudy(studyId, answers = null) {
       my_studies_section_completed_empty: 'No completed study history yet.',
       filter_active: 'Active',
       filter_past: 'Past',
-      status_pending: 'Pending',
+      status_pending: 'Under review',
       status_accepted: 'Accepted',
       status_rejected: 'Not selected',
       status_completed: 'Completed ✓',
@@ -7220,7 +7222,7 @@ async function applyToStudy(studyId, answers = null) {
       status_declined: 'Declined',
       waiting_schedule: 'You accepted — the study team will send you a session time shortly',
       waiting_schedule_group: 'You accepted — the study team will send a group session time shortly',
-      status_accepted_needs_availability: 'Accepted',
+      status_accepted_needs_availability: 'Accepted — add availability',
       waiting_schedule_needs_availability: 'Add your availability so the study team can book you.',
       status_accepted_ready: 'Accepted',
       waiting_schedule_ready: 'Waiting for the study team to confirm a time.',
@@ -7252,7 +7254,7 @@ async function applyToStudy(studyId, answers = null) {
       browse_studies_btn: 'View opportunities',
       invite_context_line: 'You\'ve been personally selected for this study',
       invite_accept_btn: 'Accept invitation',
-      invite_decline_btn: 'Decline',
+      invite_decline_btn: 'Decline invitation',
       invite_accepted_toast: 'Invitation accepted ✓',
       invite_declined_toast: 'Invitation declined',
       invite_you_declined: 'You declined this invitation',
@@ -7279,7 +7281,7 @@ async function applyToStudy(studyId, answers = null) {
       status_ended_joined: 'Session complete',
       status_ended_missed: 'Missed session',
       status_company_cancelled: 'Company cancelled',
-      status_completed_awaiting: 'Completed — awaiting payment',
+      status_completed_awaiting: 'Completed',
       my_studies_meaning_invited: 'You have been invited to continue. A response is needed.',
       my_studies_meaning_pending: 'Application received. Nothing is needed from you right now — updates will appear here.',
       my_studies_meaning_declined: 'You passed on this one. Your other matches are unaffected.',
@@ -7301,6 +7303,7 @@ async function applyToStudy(studyId, answers = null) {
       payment_processing: 'Payment is being processed',
       rejoin_call: 'Rejoin call',
       session_link_pending: 'Room link will appear here shortly.',
+      session_link_pending_toast: 'Room link is not ready yet — refresh in a moment or contact the study team.',
       session_ended: 'Session ended',
       cookie_text: 'We use localStorage to remember your language preference.',
       cookie_accept: 'Accept',
@@ -7909,7 +7912,7 @@ async function applyToStudy(studyId, answers = null) {
       my_studies_section_completed_empty: 'Ingen avslutad studiehistorik ännu.',
       filter_active: 'Aktiva',
       filter_past: 'Tidigare',
-      status_pending: 'Väntar',
+      status_pending: 'Granskas',
       status_accepted: 'Accepterad',
       status_rejected: 'Ej vald',
       status_completed: 'Slutförd ✓',
@@ -7918,7 +7921,7 @@ async function applyToStudy(studyId, answers = null) {
       status_declined: 'Avböjd',
       waiting_schedule: 'Du accepterade — studieansvariga skickar en sessionstid till dig inom kort',
       waiting_schedule_group: 'Du accepterade — studieansvariga skickar en gruppsessionstid till dig inom kort',
-      status_accepted_needs_availability: 'Accepterad',
+      status_accepted_needs_availability: 'Accepterad — lägg till tillgänglighet',
       waiting_schedule_needs_availability: 'Lägg till din tillgänglighet så att studieteamet kan boka dig.',
       status_accepted_ready: 'Accepterad',
       waiting_schedule_ready: 'Väntar på att studieteamet bekräftar en tid.',
@@ -7950,7 +7953,7 @@ async function applyToStudy(studyId, answers = null) {
       browse_studies_btn: 'Se möjligheter',
       invite_context_line: 'Du har blivit personligen utvald för den här studien',
       invite_accept_btn: 'Acceptera inbjudan',
-      invite_decline_btn: 'Avböj',
+      invite_decline_btn: 'Avböj inbjudan',
       invite_accepted_toast: 'Inbjudan accepterad ✓',
       invite_declined_toast: 'Inbjudan avböjd',
       invite_you_declined: 'Du avböjde den här inbjudan',
@@ -7977,7 +7980,7 @@ async function applyToStudy(studyId, answers = null) {
       status_ended_joined: 'Session slutförd',
       status_ended_missed: 'Missad session',
       status_company_cancelled: 'Inställd av företaget',
-      status_completed_awaiting: 'Slutförd — väntar på betalning',
+      status_completed_awaiting: 'Slutförd',
       my_studies_meaning_invited: 'Du har blivit inbjuden att gå vidare. Ett svar behövs.',
       my_studies_meaning_pending: 'Ansökan mottagen. Inget behöver göras just nu — uppdateringar visas här.',
       my_studies_meaning_declined: 'Du tackade nej till den här studien. Dina övriga matchningar påverkas inte.',
@@ -7999,6 +8002,7 @@ async function applyToStudy(studyId, answers = null) {
       payment_processing: 'Betalning behandlas',
       rejoin_call: 'Gå med igen',
       session_link_pending: 'Länk till sessionen visas här inom kort.',
+      session_link_pending_toast: 'Länken är inte klar än — uppdatera om en stund eller kontakta studieteamet.',
       session_ended: 'Sessionen avslutad',
       cookie_text: 'Vi använder localStorage för att spara ditt språkval.',
       cookie_accept: 'Acceptera',
