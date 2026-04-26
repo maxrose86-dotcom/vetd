@@ -3168,13 +3168,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         for (const app of acceptedApps) {
           // Clear stale scheduling notifications for this contributor before inserting new one
           if (app.contributor_id && app.id) {
-            await db.from('notifications')
+            const { error: clearGroupNotifErr } = await db.from('notifications')
               .update({ read: true })
               .eq('user_id', app.contributor_id)
               .in('notif_type', ['session_scheduled', 'session_rescheduled'])
               .eq('read', false)
-              .filter('params->>application_id', 'eq', app.id)
-              .catch(() => {});
+              .filter('params->>application_id', 'eq', app.id);
+            if (clearGroupNotifErr) {
+              console.warn('Could not clear stale scheduling notifications:', clearGroupNotifErr);
+            }
           }
           await sendNotification(
             app.contributor_id,
@@ -3224,13 +3226,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         if (_schedContributorId) {
           // Clear stale scheduling notifications before inserting new one
           if (_schedAppId) {
-            await db.from('notifications')
+            const { error: clearNotifErr } = await db.from('notifications')
               .update({ read: true })
               .eq('user_id', _schedContributorId)
               .in('notif_type', ['session_scheduled', 'session_rescheduled'])
               .eq('read', false)
-              .filter('params->>application_id', 'eq', _schedAppId)
-              .catch(() => {});
+              .filter('params->>application_id', 'eq', _schedAppId);
+            if (clearNotifErr) {
+              console.warn('Could not clear stale scheduling notifications:', clearNotifErr);
+            }
           }
           const contribSchedTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
           const contribSchedBody  = _schedIsReschedule
@@ -3275,10 +3279,13 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     _callAppId = applicationId || null;
     if (_callAppId && db) {
       try {
-        db.from('applications')
-          .update({ joined_call_at: new Date().toISOString() })
-          .eq('id', _callAppId).is('joined_call_at', null)
-          .then(() => {}).catch(e => console.warn('joined_call_at update failed:', e));
+        (async () => {
+          const { error } = await db.from('applications')
+            .update({ joined_call_at: new Date().toISOString() })
+            .eq('id', _callAppId)
+            .is('joined_call_at', null);
+          if (error) console.warn('joined_call_at update failed:', error);
+        })().catch(e => console.warn('joined_call_at update failed:', e));
       } catch(e) { console.warn('joined_call_at update failed:', e); }
       _callHeartbeatInterval = setInterval(async () => {
         try {
