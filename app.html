@@ -3744,16 +3744,14 @@
                 `;
               }
               if (appStatus === 'accepted') {
-                return `<button class="applied-badge" style="color:var(--green);cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('status_accepted')} ✓</button>`;
+                return `<div class="applied-badge" style="color:var(--green);cursor:pointer" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('status_accepted')} ✓</div>`;
               }
               if (appStatus === 'pending') {
-                return `<button class="applied-badge" style="cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('applied_badge')}</button>`;
+                return `<div class="applied-badge" style="cursor:pointer" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('applied_badge')}</div>`;
               }
               // applied (legacy status) or any other applied state
               if (state.appliedStudies.has(job.id)) {
-                return appMeta?.id
-                  ? `<button class="applied-badge" style="cursor:pointer;border:none;font-family:var(--sans)" onclick="event.stopPropagation();openMyStudyDetails('${esc(String(appMeta.id))}')">${t('applied_badge')}</button>`
-                  : `<div class="applied-badge">${t('applied_badge')}</div>`;
+                return `<div class="applied-badge" style="cursor:pointer" onclick="event.stopPropagation();${appMeta?.id ? `openMyStudyDetails('${esc(String(appMeta.id))}')` : `showTab('my-studies', document.querySelector('.topbar-nav button:nth-child(3)'))`}">${t('applied_badge')}</div>`;
               }
               return `<button class="apply-btn" onclick="event.stopPropagation();openModal('${esc(String(job.id))}')">${t('apply_btn')}</button>`;
             })()}
@@ -5436,6 +5434,12 @@ async function applyToStudy(studyId, answers = null) {
   function openMyStudyDetails(appId) {
     const btn = document.querySelector('.topbar-nav button:nth-child(3)');
     if (btn) showTab('my-studies', btn);
+    // Reset filter to 'all' so the target card is guaranteed to be in the DOM
+    const activeChip = document.querySelector('#tab-my-studies .filter-chip.active');
+    if (activeChip?.dataset.filter && activeChip.dataset.filter !== 'all') {
+      const allChip = document.querySelector('#tab-my-studies .filter-chip[data-filter="all"]');
+      if (allChip) filterMyApps('all', allChip);
+    }
     requestAnimationFrame(function() {
       const row = document.getElementById('my-study-card-' + appId);
       if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
