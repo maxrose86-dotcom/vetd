@@ -1884,6 +1884,7 @@
 
   let _studySort = 'best_match';
   let _studyFilter = 'all';
+  let _confirmDeclineEl = null;
   let _fitProfileEditingInterests = false;
   const CONTRIBUTOR_RELOAD_TAB_KEY = 'vetd_tab';
   const CONTRIBUTOR_RELOAD_FILTER_KEY = 'vetd_study_filter';
@@ -3737,7 +3738,7 @@
                     <div style="font-size:12px;color:var(--blue-dark);font-weight:500">${t('invite_context_line')}</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                       <button class="apply-btn" onclick="event.stopPropagation();respondToInvitation('${esc(String(appMeta.id))}','accepted')">${t('invite_accept_btn')}</button>
-                      <button style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="event.stopPropagation();confirmDecline('${esc(String(appMeta.id))}')">${t('invite_decline_btn')}</button>
+                      <button style="padding:7px 14px;font-size:12px;font-weight:500;background:none;border:1px solid var(--gray-200);border-radius:8px;color:var(--gray-400);cursor:pointer;font-family:var(--sans)" onclick="event.stopPropagation();confirmDecline('${esc(String(appMeta.id))}',this.parentElement)">${t('invite_decline_btn')}</button>
                     </div>
                   </div>
                 `;
@@ -3990,7 +3991,7 @@
       modalPrimaryBtn.textContent = t('invite_accept_btn');
       modalPrimaryBtn.onclick = () => respondToInvitation(appMeta.id, 'accepted');
       modalSecondaryBtn.textContent = t('invite_decline_btn');
-      modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id);
+      modalSecondaryBtn.onclick = () => confirmDecline(appMeta.id, modalSecondaryBtn.parentElement);
       return;
     }
 
@@ -4816,10 +4817,11 @@
   }
 
   // Two-step inline decline confirmation — no modal
-  function confirmDecline(appId) {
-    const actionsEl = document.getElementById('invite-actions-' + appId);
+  function confirmDecline(appId, containerEl) {
+    const actionsEl = document.getElementById('invite-actions-' + appId) || containerEl || null;
     if (!actionsEl) return;
     // Stash original HTML so cancelDecline can restore without a network round-trip
+    _confirmDeclineEl = actionsEl;
     actionsEl.dataset.originalHtml = actionsEl.innerHTML;
     actionsEl.innerHTML = `
       <span style="font-size:12px;color:var(--gray-500,#6B7280);font-weight:500;align-self:center;line-height:1.4">${t('decline_confirm_prompt')}</span>
@@ -4828,10 +4830,11 @@
   }
 
   function cancelDecline(appId) {
-    const actionsEl = document.getElementById('invite-actions-' + appId);
+    const actionsEl = document.getElementById('invite-actions-' + appId) || _confirmDeclineEl;
     if (!actionsEl || !actionsEl.dataset.originalHtml) return;
     actionsEl.innerHTML = actionsEl.dataset.originalHtml;
     delete actionsEl.dataset.originalHtml;
+    _confirmDeclineEl = null;
   }
 
   function filterMyApps(filter, btn) {
