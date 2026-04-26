@@ -4960,11 +4960,11 @@
       } else if (ss.phase === 'declined') {
         statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('invite_you_declined')}</span>`;
       } else if (ss.phase === 'pending') {
-        statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
+        statusDetail = `<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;color:var(--gray-400)">${t('applied_on')} ${esc(appliedDate)}</span><span style="font-size:11px;color:var(--gray-400)">${t('pending_notify_line')}</span></div>`;
       } else if (ss.phase === 'rejected') {
         statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
       } else if (ss.phase === 'company_cancelled') {
-        statusDetail = `${t('applied_on')} ${esc(appliedDate)}`;
+        statusDetail = `<button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)'))" style="font-size:12px;color:var(--green-dark);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-weight:500">${t('browse_new_studies_cta')}</button>`;
       } else if (ss.phase === 'accepted_needs_availability') {
         const availabilitySlots = getContributorAvailabilitySlotCount();
         const availabilityHint = availabilitySlots === 1
@@ -5011,7 +5011,7 @@
       } else if (ss.phase === 'ended_joined') {
         statusDetail = `<span style="color:var(--green-dark);font-size:12px;font-weight:500">${t('you_participated')}${ss.sublabel ? ' · ' + esc(ss.sublabel) : ''}</span>`;
       } else if (ss.phase === 'ended_missed') {
-        statusDetail = '';
+        statusDetail = `<button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)'))" style="font-size:12px;color:var(--green-dark);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-weight:500">${t('browse_new_studies_cta')}</button>`;
       } else if (ss.phase === 'completed') {
         statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('payment_processing')}</span>`;
       }
@@ -7225,7 +7225,7 @@ async function applyToStudy(studyId, answers = null) {
       status_accepted_needs_availability: 'Accepted — add availability',
       waiting_schedule_needs_availability: 'Add your availability so the study team can book you.',
       status_accepted_ready: 'Accepted',
-      waiting_schedule_ready: 'Waiting for the study team to confirm a time.',
+      waiting_schedule_ready: 'We\'ll schedule your session soon.',
       availability_needs_more_hint: 'Add more availability to increase your chances of being scheduled.',
       accepted_today_unscheduled: 'Accepted today',
       accepted_day_unscheduled: 'Accepted 1 day ago',
@@ -7248,10 +7248,12 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_notif_title: "Contributor can't attend",
       cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
       waiting_schedule_invited: 'You\'ve been personally selected for this study',
-      no_applications: 'You have no active invitations yet.',
+      no_applications: 'Browse studies to get started.',
       no_active_applications: 'No active applications right now.',
       no_past_applications: 'No past applications yet.',
-      browse_studies_btn: 'View opportunities',
+      browse_new_studies_cta: 'Browse new studies →',
+      pending_notify_line: 'We\'ll notify you when there\'s an update.',
+      browse_studies_btn: 'Browse studies',
       invite_context_line: 'You\'ve been personally selected for this study',
       invite_accept_btn: 'Accept invitation',
       invite_decline_btn: 'Decline invitation',
@@ -7924,7 +7926,7 @@ async function applyToStudy(studyId, answers = null) {
       status_accepted_needs_availability: 'Accepterad — lägg till tillgänglighet',
       waiting_schedule_needs_availability: 'Lägg till din tillgänglighet så att studieteamet kan boka dig.',
       status_accepted_ready: 'Accepterad',
-      waiting_schedule_ready: 'Väntar på att studieteamet bekräftar en tid.',
+      waiting_schedule_ready: 'Vi bokar din session snart.',
       availability_needs_more_hint: 'Lägg till mer tillgänglighet för att öka chansen att bli schemalagd.',
       accepted_today_unscheduled: 'Accepterad idag',
       accepted_day_unscheduled: 'Accepterad för 1 dag sedan',
@@ -7947,10 +7949,12 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_notif_title: 'Deltagaren kan inte delta',
       cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',
       waiting_schedule_invited: 'Du har blivit personligen utvald för den här studien',
-      no_applications: 'Du har inga aktiva inbjudningar ännu.',
+      no_applications: 'Bläddra bland studier för att komma igång.',
       no_active_applications: 'Inga aktiva ansökningar just nu.',
       no_past_applications: 'Inga tidigare ansökningar ännu.',
-      browse_studies_btn: 'Se möjligheter',
+      browse_new_studies_cta: 'Bläddra bland nya studier →',
+      pending_notify_line: 'Vi meddelar dig när det finns en uppdatering.',
+      browse_studies_btn: 'Bläddra bland studier',
       invite_context_line: 'Du har blivit personligen utvald för den här studien',
       invite_accept_btn: 'Acceptera inbjudan',
       invite_decline_btn: 'Avböj inbjudan',
