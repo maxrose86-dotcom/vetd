@@ -4871,6 +4871,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   async function inviteContributor(studyId, contributorId, displayName) {
     const btn = document.getElementById('invite-btn-' + contributorId);
+    const setInlineError = (message) => {
+      if (!btn) return;
+      const wrap = btn.closest('div');
+      let errEl = wrap?.querySelector('.invite-inline-error');
+      if (!errEl && wrap) {
+        errEl = document.createElement('div');
+        errEl.className = 'invite-inline-error';
+        errEl.style.cssText = 'margin-top:6px;font-size:12px;color:var(--coral);line-height:1.35;max-width:160px';
+        wrap.appendChild(errEl);
+      }
+      if (errEl) errEl.textContent = message || '';
+    };
+    const isUniqueStudyContributorError = (error) =>
+      [error?.message, error?.details, error?.hint].some(v => String(v || '').includes('unique_study_contributor'));
+    setInlineError('');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
     let inviteCreated = false;
 
@@ -4884,10 +4899,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         .maybeSingle();
 
       if (existing) {
-        const msg = existing.status === 'declined'
-          ? t('cl_contributor_declined_toast')
-          : t('cl_already_invited_toast');
-        showToast(msg);
+        setInlineError('Contributor already added');
         if (btn) { btn.textContent = existing.status === 'declined' ? t('cl_declined_by_contributor') : t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
         return;
       }
@@ -4899,7 +4911,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         status:         'invited',
         applied_at:     new Date().toISOString()
       });
-      if (error) throw error;
+      if (error) {
+        console.error('Invite error:', error);
+        if (isUniqueStudyContributorError(error)) {
+          setInlineError('Contributor already added');
+          if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; }
+        } else {
+          setInlineError('Could not send invitation. Please try again.');
+          if (btn) { btn.disabled = false; btn.textContent = t('cl_invite'); }
+        }
+        return;
+      }
+      setInlineError('');
       inviteCreated = true;
 
       try {
@@ -4946,7 +4969,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         showToast(t('cl_contributor_invited'));
         if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; btn.id = ''; }
       } else {
-        showToast('Could not send invite — try again', true);
+        setInlineError('Could not send invitation. Please try again.');
         if (btn) { btn.disabled = false; btn.textContent = t('cl_invite'); }
       }
     }
