@@ -4809,7 +4809,13 @@
     }
 
     // Re-render so the card shows the cannot_attend phase
-    const _optFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+    let _optFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+    if (_optFilter === 'active') {
+      const allChip = document.querySelector('#tab-my-studies .filter-chip[data-filter="all"]');
+      document.querySelectorAll('#tab-my-studies .filter-chip').forEach(c => c.classList.remove('active'));
+      if (allChip) allChip.classList.add('active');
+      _optFilter = 'all';
+    }
     renderMyApplications(_optFilter);
   }
 
@@ -4862,7 +4868,8 @@
 
   function getMyStudiesSectionKey(phase) {
     if (['scheduled','starting_soon'].includes(phase)) return 'upcoming';
-    if (['rejected','declined','ended_joined','ended_missed','completed','company_cancelled','cannot_attend'].includes(phase)) return 'completed';
+    if (phase === 'cannot_attend') return 'cannot_attend';
+    if (['rejected','declined','ended_joined','ended_missed','completed','company_cancelled'].includes(phase)) return 'completed';
     return 'in_progress';
   }
 
@@ -5061,13 +5068,14 @@
     const sectionMeta = {
       in_progress: { title: t('my_studies_section_in_progress'), sub: t('my_studies_section_in_progress_sub') },
       upcoming:    { title: t('my_studies_section_upcoming'),    sub: t('my_studies_section_upcoming_sub') },
+      cannot_attend: { title: t('my_studies_section_cannot_attend'), sub: t('my_studies_section_cannot_attend_sub') },
       completed:   { title: t('my_studies_section_completed'),   sub: t('my_studies_section_completed_sub') },
     };
     const visibleSections = filter === 'past'
-      ? ['completed']
+      ? ['cannot_attend', 'completed']
       : filter === 'active'
-        ? ['in_progress', 'upcoming']
-        : ['in_progress', 'upcoming', 'completed'];
+        ? ['upcoming', 'in_progress']
+        : ['upcoming', 'in_progress', 'cannot_attend', 'completed'];
 
     const sectionHtml = visibleSections.map(sectionKey => {
       const sectionCards = renderedApps.filter(card => card.sectionKey === sectionKey);
@@ -7235,6 +7243,8 @@ async function applyToStudy(studyId, answers = null) {
       my_studies_section_upcoming: 'Upcoming',
       my_studies_section_upcoming_sub: 'Confirmed sessions with a set time.',
       my_studies_section_upcoming_empty: 'No upcoming sessions yet.',
+      my_studies_section_cannot_attend: "Can't attend",
+      my_studies_section_cannot_attend_sub: 'Sessions you have marked as unable to attend.',
       my_studies_section_completed: 'Completed',
       my_studies_section_completed_sub: 'Past studies and closed outcomes.',
       my_studies_section_completed_empty: 'No completed study history yet.',
@@ -7941,6 +7951,8 @@ async function applyToStudy(studyId, answers = null) {
       my_studies_section_upcoming: 'Kommande',
       my_studies_section_upcoming_sub: 'Bekräftade sessioner med en bestämd tid.',
       my_studies_section_upcoming_empty: 'Inga kommande sessioner ännu.',
+      my_studies_section_cannot_attend: 'Kan inte delta',
+      my_studies_section_cannot_attend_sub: 'Sessioner du har markerat att du inte kan delta i.',
       my_studies_section_completed: 'Avslutade',
       my_studies_section_completed_sub: 'Tidigare studier och avslutade utfall.',
       my_studies_section_completed_empty: 'Ingen avslutad studiehistorik ännu.',

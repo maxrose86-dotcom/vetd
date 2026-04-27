@@ -85,12 +85,14 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT v_updated.id,
-         v_updated.status,
-         v_updated.cannot_attend_at,
-         v_updated.scheduled_at,
-         v_updated.study_id,
-         v_updated.contributor_id;
+  SELECT a.id,
+         a.status::text AS status,
+         a.cannot_attend_at,
+         a.scheduled_at,
+         a.study_id,
+         a.contributor_id
+    FROM public.applications a
+   WHERE a.id = p_application_id;
 END;
 $$;
 
