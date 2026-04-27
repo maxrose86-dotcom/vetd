@@ -2387,18 +2387,24 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // (migration 20260411_add_screening_questions.sql not yet applied).
       let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type, screening_questions, title, description, target_interests, min_rating, format, availability_requested_at')
+        .select('session_type, screening_questions, title, description, target_interests, min_rating, format')
         .eq('id', studyId)
         .single();
       if (studyMetaErr) {
         console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
         ({ data: studyMeta, error: studyMetaErr } = await db
           .from('studies')
-          .select('session_type, title, description, target_interests, min_rating, format, availability_requested_at')
+          .select('session_type, title, description, target_interests, min_rating, format')
           .eq('id', studyId)
           .single());
       }
       if (studyMetaErr || !studyMeta) throw studyMetaErr || new Error('Could not load study metadata');
+      const { data: availabilityMeta, error: availabilityMetaErr } = await db
+        .from('studies')
+        .select('availability_requested_at')
+        .eq('id', studyId)
+        .single();
+      studyMeta.availability_requested_at = availabilityMetaErr ? null : (availabilityMeta?.availability_requested_at || null);
       const sessionType = studyMeta.session_type;
       _studyScreeningQuestions = studyMeta.screening_questions || null;
 
