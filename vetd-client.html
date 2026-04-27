@@ -2505,7 +2505,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         } else if (appRow.status === 'invited') {
           nextAction = t('cl_decision_next_wait');
         } else if (appRow.status === 'accepted' && !appRow.scheduled_at) {
-          nextAction = hasSchedulableAvailability(appRow.contributors)
+          nextAction = hasSchedulingAvailability(appRow.contributors)
             ? t('cl_decision_next_schedule')
             : t('cl_decision_next_wait_availability');
         } else if (appRow.status === 'accepted' && appRow.scheduled_at) {
@@ -2527,6 +2527,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const isScheduledStage = stageKey === 'outcome' || stageKey === 'today' || stageKey === 'upcoming' || stageKey === 'schedule';
         let schedulingState = null; // set in the 1:1 accepted path; used below for inline form
         const c       = a.contributors || {};
+        const effectiveAvailability = getEffectiveAvailabilityValues(c);
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
         const studyTitle = currentApplicantsStudyTitle || '';
@@ -2558,7 +2559,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           const sessionStalePast = isScheduled &&
             new Date(a.scheduled_at) < new Date(_rowNow - 2 * 60 * 60 * 1000);
           const sessionPast = sessionRecentlyPast || sessionStalePast;
-          const canBookNow = hasSchedulableAvailability(c);
+          const canBookNow = effectiveAvailability.length > 0;
           const availabilityRequested = !!studyMeta.availability_requested_at;
           const availabilityRequestAction = availabilityRequested
             ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" disabled>Request sent</button>`
@@ -2713,10 +2714,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : `${esc(city)} · ${esc(rating)}★ · ${esc(tier)} · ${studies} studies · ${['invited','declined'].includes(a.status) ? t('cl_meta_invited') : t('cl_meta_applied')} ${esc(appliedDate)}`;
 
         const _inlineFormId = `sched-inline-${esc(a.id)}`;
-        const availabilitySlots = getAvailabilitySlotCount(c);
-        const _avStrings = Array.isArray(c?.available_times)
-          ? c.available_times.filter(v => v && String(v).trim()).slice(0, 2).map(v => esc(String(v).trim()))
-          : [];
+        const availabilitySlots = effectiveAvailability.length;
+        const _avStrings = effectiveAvailability.slice(0, 2).map(v => esc(String(v).trim()));
         const _inlineCopy = _avStrings.length > 0
           ? _avStrings.join(' · ')
           : t('cl_times_shared_count').replace('{count}', availabilitySlots);
@@ -3045,10 +3044,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return t('cl_accepted_days_ago').replace('{count}', days);
   }
 
+  function getEffectiveAvailabilityValues(contributor) {
+    const profileAvailability = contributor?.available_times;
+    const effectiveAvailability = Array.isArray(profileAvailability) ? profileAvailability : [];
+    return effectiveAvailability.filter(v => typeof v === 'string' ? v.trim() : Boolean(v));
+  }
+
   function getAvailabilitySlotCount(contributor) {
-    const availableTimes = contributor?.available_times;
-    if (!Array.isArray(availableTimes)) return 0;
-    return availableTimes.filter(v => typeof v === 'string' ? v.trim() : Boolean(v)).length;
+    return getEffectiveAvailabilityValues(contributor).length;
+  }
+
+  function hasSchedulingAvailability(contributor) {
+    return getAvailabilitySlotCount(contributor) > 0;
   }
 
   function hasSchedulableAvailability(contributor) {
@@ -6251,6 +6258,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       countEl.textContent = `(${data.length})`;
       list.innerHTML = data.map(a => {
         const contributor = a.contributors || {};
+        const effectiveAvailability = getEffectiveAvailabilityValues(contributor);
         const p     = contributor.profiles || {};
         const name  = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
         const title = studyTitleMap[a.study_id] || '—';
@@ -6258,7 +6266,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ? new Date(a.applied_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
           : '—';
         const acceptedElapsedText = formatAcceptedElapsedText(a.updated_at);
-        const canBookNow = hasSchedulableAvailability(contributor);
+        const canBookNow = effectiveAvailability.length > 0;
         const availabilityRequested = !!studyAvailabilityRequestMap[a.study_id];
         const availabilityBadge = canBookNow
           ? `<span class="badge badge-green" style="font-size:10px;padding:2px 8px">${t('cl_ready_to_book')}</span>`
