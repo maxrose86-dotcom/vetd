@@ -22,7 +22,7 @@ serve(async (req) => {
     if (userError || !user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    const { scheduled_at, study_id, application_id, is_reschedule } = body;
+    const { scheduled_at, study_id, application_id, is_reschedule, defer_db_writes } = body;
     if (!scheduled_at) throw new Error("Missing scheduled_at");
 
     const scheduledDate = new Date(scheduled_at);
@@ -94,6 +94,13 @@ serve(async (req) => {
       });
       if (!dailyRes.ok) { const errBody = await dailyRes.text(); throw new Error(`Daily API error: ${errBody}`); }
       const room = await dailyRes.json();
+
+      if (defer_db_writes === true) {
+        return new Response(
+          JSON.stringify({ success: true, room_url: room.url, room_name: room.name }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
 
       const { error: updateError } = await supabase
         .from("applications")

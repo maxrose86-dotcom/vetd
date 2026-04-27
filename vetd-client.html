@@ -1137,6 +1137,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         <input type="time" id="schedule-time">
       </div>
     </div>
+    <div id="schedule-error" style="display:none;margin:-0.5rem 0 1rem;color:var(--coral);font-size:12px;line-height:1.45"></div>
     <div style="display:flex;gap:12px">
       <button class="btn-outline" style="flex:1" onclick="closeScheduleModal()" data-i18n="cl_cancel">Cancel</button>
       <button class="btn-primary" style="flex:2" onclick="scheduleAndAccept()" id="schedule-confirm-btn" data-i18n="cl_schedule_accept">Schedule &amp; Accept</button>
@@ -2254,6 +2255,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   // ─── STUDY WORKSPACE ────────────────────────────────────
   let currentApplicantsStudyId = null;
   let currentApplicantsStudyTitle = null;
+  let _cancelInvitationConfirmAppId = null;
   let _studyScreeningQuestions = null;
   let _currentTab = 'studies';
   let _studyBackTab = 'studies';
@@ -2327,6 +2329,52 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return true;
   }
 
+  async function bookNoShowSession(appId, studyId, contributorId, contributorName, studyTitle) {
+    try {
+      const { data: updatedRows, error } = await db.from('applications')
+        .update({
+          status: 'accepted',
+          scheduled_at: null,
+          room_url: null,
+          room_name: null,
+          joined_call_at: null,
+          last_call_activity: null,
+          reminder_sent_at: null,
+          day_before_reminder_sent_at: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', appId)
+        .eq('study_id', studyId)
+        .eq('status', 'no_show')
+        .select('id');
+      if (error) throw error;
+      if (!updatedRows?.length) throw new Error('stale_no_show_state');
+      openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, 'accepted');
+    } catch (err) {
+      console.error('bookNoShowSession error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(t('cl_update_application_failed'), true);
+      loadApplicants(studyId).catch(reloadErr => {
+        console.error('Rollback loadApplicants after bookNoShowSession failed:', reloadErr);
+      });
+    }
+  }
+
+  function showCancelInvitationConfirm(appId, studyId) {
+    _cancelInvitationConfirmAppId = String(appId);
+    loadApplicants(studyId);
+  }
+
+  function keepInvitation(studyId) {
+    _cancelInvitationConfirmAppId = null;
+    loadApplicants(studyId);
+  }
+
+  function confirmCancelInvitation(appId, studyId, contributorId, currentStatus) {
+    _cancelInvitationConfirmAppId = null;
+    return updateApplication(appId, 'rejected', studyId, contributorId, true, true, currentStatus || 'invited');
+  }
+
   async function loadApplicants(studyId) {
     const list = document.getElementById('people-list');
     const countEl = document.getElementById('applicants-count');
@@ -2339,14 +2387,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // (migration 20260411_add_screening_questions.sql not yet applied).
       let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type, screening_questions, title, description, target_interests, min_rating, format')
+        .select('session_type, screening_questions, title, description, target_interests, min_rating, format, availability_requested_at')
         .eq('id', studyId)
         .single();
       if (studyMetaErr) {
         console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
         ({ data: studyMeta, error: studyMetaErr } = await db
           .from('studies')
-          .select('session_type, title, description, target_interests, min_rating, format')
+          .select('session_type, title, description, target_interests, min_rating, format, availability_requested_at')
           .eq('id', studyId)
           .single());
       }
@@ -2475,6 +2523,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const c       = a.contributors || {};
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const studyTitle = currentApplicantsStudyTitle || '';
         const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
         const rating  = c.rating != null ? parseFloat(c.rating).toFixed(1) : '—';
         const tier    = c.tier ? (c.tier.charAt(0).toUpperCase() + c.tier.slice(1)) : '—';
@@ -2504,6 +2553,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             new Date(a.scheduled_at) < new Date(_rowNow - 2 * 60 * 60 * 1000);
           const sessionPast = sessionRecentlyPast || sessionStalePast;
           const canBookNow = hasSchedulableAvailability(c);
+          const availabilityRequested = !!studyMeta.availability_requested_at;
+          const availabilityRequestAction = availabilityRequested
+            ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" disabled>Request sent</button>`
+            : `<button class="btn-accept" style="font-size:11px;padding:4px 10px" data-action="request-availability" data-study-id="${esc(studyId)}">Request availability →</button>`;
           const completeBtn = sessionPast
             ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_mark_completed')}</button>`
             : '';
@@ -2553,15 +2606,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             const statusPill = isScheduled
               ? `<span class="status-pill" style="${pillStyle}">${pillLabel}</span>`
               : `<span class="status-pill status-accepted">${pillLabel}</span>`;
-            const availabilityPill = !isScheduled
-              ? `<span class="badge ${canBookNow ? 'badge-green' : 'badge-amber'}">${t(canBookNow ? 'cl_ready_to_book' : 'cl_waiting_on_availability')}</span>`
+            const availabilityPill = !isScheduled && canBookNow
+              ? `<span class="badge badge-green">${t('cl_ready_to_book')}</span>`
               : '';
             const schedDisplay = isScheduled ? `<span class="scheduled-time">${esc(formatScheduledTime(a.scheduled_at))}</span>` : '';
             // Group outcome ordering: joined → Complete leads; no signal → show both without strong bias (group attendance is harder to confirm per-row)
             const groupOutcome = sessionPast
               ? (a.joined_call_at ? completeBtn + noShowBtn : completeBtn + noShowBtn)
               : '';
-            actions = `${statusPill}${availabilityPill}${schedDisplay}${joinBtn}${attendanceBadge}${groupOutcome}`;
+            actions = `${statusPill}${availabilityPill}${!isScheduled && !canBookNow ? availabilityRequestAction : ''}${schedDisplay}${joinBtn}${attendanceBadge}${groupOutcome}`;
           } else {
             // One-to-one: derive one mutually exclusive scheduling state, then drive all
             // UI from that single value. No element can appear outside its correct state.
@@ -2575,7 +2628,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
             if (schedulingState === 'waiting') {
               statusPill = '';
-              avPill     = `<span class="badge badge-amber">${t('cl_waiting_on_availability')}</span>`;
+              avPill     = '';
+              scheduleBtn = availabilityRequestAction;
             } else if (schedulingState === 'ready') {
               statusPill  = '';
               avPill      = `<span class="badge badge-green">${t('cl_ready_to_book')}</span>`;
@@ -2615,17 +2669,21 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               + scheduleBtn;
           }
         } else if (a.status === 'invited') {
-          if (sessionType === 'group') {
+          if (_cancelInvitationConfirmAppId === String(a.id)) {
+            actions = `
+              <button class="btn-reject" data-action="confirm-cancel-invitation" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">Sure? Cancel invitation</button>
+              <button class="btn-outline" data-action="keep-invitation" data-study-id="${esc(studyId)}">Keep invitation</button>`;
+          } else if (sessionType === 'group') {
             // Group: don't offer per-row Schedule & confirm — wait for acceptance,
             // then use the header-level group scheduling action.
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
-              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-reject" data-action="show-cancel-invitation" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_cancel_invitation')}</button>`;
           } else {
             actions = `
               <span class="status-pill" style="background:var(--blue-light);color:var(--blue-dark)">${t('cl_invited_status')}</span>
               <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="invited">${t('cl_schedule_and_confirm')}</button>
-              <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_cancel_invitation')}</button>`;
+              <button class="btn-reject" data-action="show-cancel-invitation" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_cancel_invitation')}</button>`;
           }
         } else if (a.status === 'declined') {
           actions = `
@@ -2634,7 +2692,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
         } else if (a.status === 'no_show') {
-          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_no_show')}</span>`;
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_no_show')}</span>
+            <button class="btn-accept" data-action="book-no-show" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(studyTitle)}">Book new session</button>`;
         } else {
           const cls = `status-${a.status}`;
           const lbl = a.status.charAt(0).toUpperCase() + a.status.slice(1);
@@ -2776,9 +2835,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         'inline-schedule-launch': d => { cancelInlineSchedule(d.formId); openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode); },
         'inline-schedule-cancel': d => cancelInlineSchedule(d.formId),
         'update-status':          d => updateApplication(d.appId, d.newStatus, d.studyId, d.contributorId, true, false, d.currentStatus || null),
+        'show-cancel-invitation': d => showCancelInvitationConfirm(d.appId, d.studyId),
+        'keep-invitation':        d => keepInvitation(d.studyId),
+        'confirm-cancel-invitation': d => confirmCancelInvitation(d.appId, d.studyId, d.contributorId, d.currentStatus),
         'video-call':             d => openVideoCall(d.roomUrl, d.studyTitle, d.appId),
         'complete':               d => markCompleted(d.appId, d.studyId),
         'did-not-happen':         d => markSessionDidNotHappen(d.appId, d.studyId),
+        'book-no-show':           d => bookNoShowSession(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle),
+        'request-availability':   d => requestAvailabilityForStudy(d.studyId),
         'browse':                 d => openContributorBrowser(d.studyId, d.studyTitle),
       };
       wireActions(list, rowActionMap);
@@ -2985,6 +3049,24 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return getAvailabilitySlotCount(contributor) >= 2;
   }
 
+  async function requestAvailabilityForStudy(studyId) {
+    if (!db) return;
+    const { error } = await db
+      .from('studies')
+      .update({ availability_requested_at: new Date().toISOString() })
+      .eq('id', studyId)
+      .is('availability_requested_at', null);
+    if (error) {
+      console.error('requestAvailabilityForStudy error:', error);
+      if (window.Sentry) Sentry.captureException(error);
+      return;
+    }
+    await loadApplicants(studyId);
+    loadUnscheduledApplications().catch(err => {
+      console.error('Background loadUnscheduledApplications after availability request failed:', err);
+    });
+  }
+
   function callTimeRemaining(isoStr) {
     const diff = new Date(isoStr) - Date.now();
     if (diff <= 15 * 60 * 1000) return null; // ready to join
@@ -3012,6 +3094,18 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     });
   }
 
+  function setScheduleError(message) {
+    const el = document.getElementById('schedule-error');
+    if (!el) return;
+    if (!message) {
+      el.textContent = '';
+      el.style.display = 'none';
+      return;
+    }
+    el.textContent = message;
+    el.style.display = 'block';
+  }
+
   function openScheduleModal(appId, studyId, contributorId, contributorName, studyTitle, currentStatus) {
     _schedSessionType = 'one_to_one'; // always 1-on-1 when called per-row
     _schedIsReschedule = currentStatus === 'reschedule';
@@ -3035,6 +3129,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('schedule-date').value = tomorrow.toISOString().slice(0, 10);
     document.getElementById('schedule-time').value = '10:00';
+    setScheduleError('');
     document.getElementById('schedule-modal').classList.add('open');
   }
 
@@ -3095,10 +3190,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   async function scheduleAndAccept() {
     const dateVal = document.getElementById('schedule-date').value;
     const timeVal = document.getElementById('schedule-time').value;
-    if (!dateVal || !timeVal) { showToast(t('cl_schedule_pick_datetime'), true); return; }
+    setScheduleError('');
+    if (!dateVal || !timeVal) {
+      setScheduleError(t('cl_schedule_pick_datetime'));
+      showToast(t('cl_schedule_pick_datetime'), true);
+      return;
+    }
 
     const isoDatetime = new Date(dateVal + 'T' + timeVal).toISOString();
     if (new Date(isoDatetime) <= Date.now()) {
+      setScheduleError(t('cl_schedule_future_required'));
       showToast(t('cl_schedule_future_required'), true);
       return;
     }
@@ -3119,147 +3220,55 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         weekday: 'short', day: 'numeric', month: 'short',
         hour: '2-digit', minute: '2-digit', hour12: false
       });
-
-      if (_schedSessionType === 'group') {
-        // ── GROUP PATH ──────────────────────────────────────────────────────
-        // Fetch accepted apps FIRST — guard for zero before creating any Daily room
-        const { data: acceptedApps, error: fetchErr } = await db
-          .from('applications')
-          .select('id, contributor_id')
-          .eq('study_id', _schedStudyId)
-          .eq('status', 'accepted');
-        if (fetchErr) throw fetchErr;
-
-        if (!acceptedApps || acceptedApps.length === 0) {
-          showToast(t('cl_no_accepted_to_schedule'), true);
-          closeScheduleModal();
-          return;
-        }
-
-        // Create one shared Daily room — spots and session_type verified server-side from DB
-        const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON },
-          body: JSON.stringify({ study_id: _schedStudyId, scheduled_at: isoDatetime })
-        });
-        if (!res.ok) { const text = await res.text(); throw new Error('create-daily-room failed: ' + text); }
-        const result = await res.json();
-        if (result.error) throw new Error(result.error);
-
-        const { room_url, room_name } = result;
-
-        // Bulk update: same time and room for every accepted contributor
-        const appIds = acceptedApps.map(a => a.id);
-        const { error: bulkErr } = await db
-          .from('applications')
-          .update({ scheduled_at: isoDatetime, room_url, room_name, updated_at: new Date().toISOString(), reminder_sent_at: null, day_before_reminder_sent_at: null, joined_call_at: null })
-          .in('id', appIds)
-          .eq('status', 'accepted'); // guard against race where a row changed state since fetch
-
-        // No rollback on failure — a second clearing update could wipe a valid existing schedule.
-        // Surface the error and let the operator retry; the Daily room expires naturally via its exp.
-        if (bulkErr) throw bulkErr;
-
-        // Notify each contributor
-        const groupContribTitle = _schedIsReschedule ? 'Group session rescheduled 📅' : 'Group session scheduled 📅';
-        const groupContribBody  = _schedIsReschedule
+      const isGroupSession = _schedSessionType === 'group';
+      const notificationTitle = isGroupSession
+        ? (_schedIsReschedule ? 'Group session rescheduled 📅' : 'Group session scheduled 📅')
+        : t(_schedIsReschedule ? 'notif_session_rescheduled_title' : 'notif_session_scheduled_title');
+      const notificationBody = isGroupSession
+        ? (_schedIsReschedule
           ? `Your group session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
-          : `Your group session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
-        for (const app of acceptedApps) {
-          // Clear stale scheduling notifications for this contributor before inserting new one
-          if (app.contributor_id && app.id) {
-            const { error: clearGroupNotifErr } = await db.from('notifications')
-              .update({ read: true })
-              .eq('user_id', app.contributor_id)
-              .in('notif_type', ['session_scheduled', 'session_rescheduled'])
-              .eq('read', false)
-              .filter('params->>application_id', 'eq', app.id);
-            if (clearGroupNotifErr) {
-              console.warn('Could not clear stale scheduling notifications:', clearGroupNotifErr);
-            }
-          }
-          await sendNotification(
-            app.contributor_id,
-            groupContribTitle,
-            groupContribBody,
-            null,
-            _schedIsReschedule ? 'session_rescheduled' : 'session_scheduled',
-            { study_id: _schedStudyId, application_id: app.id, scheduled_at: isoDatetime, session_type: 'group' }
-          );
-        }
+          : `Your group session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`)
+        : t(_schedIsReschedule ? 'notif_session_rescheduled_body' : 'notif_session_scheduled_body')
+          .replace('{study}', studyTitle)
+          .replace('{time}', formattedDate);
 
-        showToast(t('cl_group_session_scheduled'));
-        const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
-        closeScheduleModal();
-        await loadApplicants(savedStudyId);
-        await loadUnscheduledApplications();
-        await loadReadyToCompleteSessions();
-        loadUpcomingSessions();
+      const roomRes = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON },
+        body: JSON.stringify(isGroupSession
+          ? { study_id: _schedStudyId, scheduled_at: isoDatetime }
+          : { application_id: _schedAppId, scheduled_at: isoDatetime, is_reschedule: _schedIsReschedule, defer_db_writes: true })
+      });
+      if (!roomRes.ok) { const text = await roomRes.text(); throw new Error('create-daily-room failed: ' + text); }
+      const room = await roomRes.json();
+      if (room.error) throw new Error(room.error);
 
-      } else {
-        // ── ONE-TO-ONE PATH ─────────────────────────────────────────────────
-        const res = await fetch(SUPABASE_URL + '/functions/v1/create-daily-room', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': SUPABASE_ANON },
-          body: JSON.stringify({ application_id: _schedAppId, scheduled_at: isoDatetime, is_reschedule: _schedIsReschedule })
-        });
-        if (!res.ok) { const text = await res.text(); throw new Error('create-daily-room failed: ' + text); }
-        const result = await res.json();
-        if (result.error) throw new Error(result.error);
+      const savedStudyId = _schedStudyId;
+      const needsAccept = !isGroupSession && (_schedCurrentStatus === 'pending' || _schedCurrentStatus === 'invited');
+      const { error: scheduleErr } = await db.rpc('schedule_study_session', {
+        p_study_id: savedStudyId,
+        p_application_id: isGroupSession ? null : _schedAppId,
+        p_scheduled_at: isoDatetime,
+        p_room_url: room.room_url,
+        p_room_name: room.room_name,
+        p_session_type: isGroupSession ? 'group' : 'one_to_one',
+        p_is_reschedule: _schedIsReschedule,
+        p_notification_title: notificationTitle,
+        p_notification_body: notificationBody
+      });
+      if (scheduleErr) throw scheduleErr;
 
-        const savedStudyId = _schedStudyId; // save before closeScheduleModal clears it
-
-        // If the application was pending/invited, promote it to accepted now.
-        // If it was already accepted (scheduled from queue or from applicants panel),
-        // skip updateApplication entirely — the status hasn't changed, and calling it
-        // would double-increment filled_spots.
-        const needsAccept = _schedCurrentStatus === 'pending' || _schedCurrentStatus === 'invited';
-        if (needsAccept) {
-          await updateApplication(_schedAppId, 'accepted', savedStudyId, _schedContributorId, true, true);
-        } else {
-          // Application already accepted — just refresh the views that updateApplication would have refreshed
-          await loadApplicants(savedStudyId);
-          await loadStudies();
-        }
-
-        // Notify contributor of scheduled/rescheduled session
-        if (_schedContributorId) {
-          // Clear stale scheduling notifications before inserting new one
-          if (_schedAppId) {
-            const { error: clearNotifErr } = await db.from('notifications')
-              .update({ read: true })
-              .eq('user_id', _schedContributorId)
-              .in('notif_type', ['session_scheduled', 'session_rescheduled'])
-              .eq('read', false)
-              .filter('params->>application_id', 'eq', _schedAppId);
-            if (clearNotifErr) {
-              console.warn('Could not clear stale scheduling notifications:', clearNotifErr);
-            }
-          }
-          const contribSchedTitle = _schedIsReschedule ? 'Session rescheduled 📅' : 'Session scheduled 📅';
-          const contribSchedBody  = _schedIsReschedule
-            ? `Your session for "${studyTitle}" has been rescheduled to ${formattedDate}. You can join 15 minutes before start.`
-            : `Your session for "${studyTitle}" is confirmed for ${formattedDate}. You can join 15 minutes before start.`;
-          await sendNotification(
-            _schedContributorId,
-            contribSchedTitle,
-            contribSchedBody,
-            null,
-            _schedIsReschedule ? 'session_rescheduled' : 'session_scheduled',
-            { study_id: savedStudyId, application_id: _schedAppId, scheduled_at: isoDatetime, session_type: 'one_to_one' }
-          );
-        }
-
-        showToast(t(needsAccept ? 'cl_session_scheduled' : 'cl_session_confirmed'));
-        document.querySelector(`[data-app-id="${_schedAppId}"]`)?.remove();
-        closeScheduleModal();
-        await loadUnscheduledApplications();
-        await loadReadyToCompleteSessions();
-        loadUpcomingSessions();
-      }
+      showToast(t(isGroupSession ? 'cl_group_session_scheduled' : (needsAccept ? 'cl_session_scheduled' : 'cl_session_confirmed')));
+      closeScheduleModal();
+      await loadApplicants(savedStudyId);
+      await loadStudies();
+      await loadUnscheduledApplications();
+      await loadReadyToCompleteSessions();
+      loadUpcomingSessions();
     } catch(err) {
       console.error('Schedule session error:', err);
       if (window.Sentry) Sentry.captureException(err);
+      setScheduleError('Could not schedule session. No changes were saved. Please try again.');
       showToast(t('cl_schedule_failed'), true);
     } finally {
       btn.disabled = false;
@@ -4195,30 +4204,37 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       paymentContext = getBuilderPaymentContext();
     }
 
-    // Log the invoice request — fire-and-forget, never blocks the email flow.
+    let invoiceRequestRecorded = !db || !paymentContext.studyId || !paymentContext.companyId;
+
+    // Log the invoice request.
     if (db && paymentContext.studyId && paymentContext.companyId) {
-      (async () => {
-        try {
-          // Only insert if no request already exists for this study.
-          const { data: existing } = await db
-            .from('invoice_requests')
-            .select('id')
-            .eq('study_id', paymentContext.studyId)
-            .maybeSingle();
-          if (!existing) {
-            await db.from('invoice_requests').insert({
-              study_id:     paymentContext.studyId,
-              company_id:   paymentContext.companyId,
-              amount:       paymentContext.totalCost || 0,
-              status:       'requested',
-              requested_at: new Date().toISOString()
-            });
-          }
-        } catch (err) {
-          console.warn('invoice_requests log failed (non-blocking):', err);
-          if (window.Sentry) Sentry.captureException(err);
+      try {
+        // Only insert if no request already exists for this study.
+        const { data: existing } = await db
+          .from('invoice_requests')
+          .select('id')
+          .eq('study_id', paymentContext.studyId)
+          .maybeSingle();
+        if (!existing) {
+          const { error: insertErr } = await db.from('invoice_requests').insert({
+            study_id:     paymentContext.studyId,
+            company_id:   paymentContext.companyId,
+            amount:       paymentContext.totalCost || 0,
+            status:       'requested',
+            requested_at: new Date().toISOString()
+          });
+          if (insertErr) throw insertErr;
         }
-      })();
+        invoiceRequestRecorded = true;
+      } catch (err) {
+        console.warn('invoice_requests log failed (non-blocking):', err);
+        if (window.Sentry) Sentry.captureException(err);
+      }
+    }
+
+    if (invoiceRequestRecorded) {
+      _builderPublishState = 'invoice_requested';
+      renderBuilderPoolPreview();
     }
 
     const subject = t('cl_study_payment_gate_subject').replace('{title}', paymentContext.title || t('cl_published_context_default'));
@@ -5639,6 +5655,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     confidenceStep3El.textContent = getBuilderConfidenceCopy(confidence).label;
     confidenceCopyStep3El.textContent = confidenceCopy;
     fillStep3El.textContent = fillCopy;
+    publishBtn.style.display = 'inline-flex';
     if (_builderPublishState === 'publishing') {
       reviewStateEl.textContent = t('cl_publish_state_publishing');
       reviewGuidanceEl.textContent = t('cl_publish_state_publishing_sub');
@@ -5666,6 +5683,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       publishBtn.style.cursor = 'pointer';
       publishSecondaryBtn.textContent = t('cl_published_secondary_action');
       publishSecondaryBtn.style.display = 'inline-flex';
+    } else if (_builderPublishState === 'invoice_requested') {
+      reviewStateEl.textContent = 'Invoice request sent';
+      reviewGuidanceEl.textContent = 'We’ve received your request. Your study will go live once payment is completed.';
+      reviewSummaryEl.innerHTML = `
+        <div style="font-size:12px;color:var(--gray-400);line-height:1.5">You can safely leave this page — we’ll activate your study after payment.</div>
+      `;
+      reviewWarningEl.style.display = 'none';
+      reviewWarningEl.style.color = '';
+      publishSecondaryBtn.style.display = 'none';
+      publishBtn.style.display = 'none';
     } else if (!paymentContext.isPaid) {
       reviewStateEl.textContent = t('cl_invoice_state_title');
       reviewGuidanceEl.textContent = t('cl_invoice_state_body');
@@ -5824,6 +5851,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const isCompleted = study.status === 'completed';
         const isArchived  = study.status === 'archived';
         const showPaymentInstructions = study.payment_status !== 'paid' && study.is_test !== true;
+        const draftRequiresPayment = isDraft && !isStudyPaymentReceived(study);
         const totalDue = formatCurrency(getStudyTotalCostValue(study) || 0);
         const paidOnLabel = study.payment_status === 'paid' && study.paid_at
           ? t('cl_study_payment_received_on').replace('{date}', new Date(study.paid_at).toLocaleDateString(document.documentElement.lang === 'sv' ? 'sv-SE' : 'en-GB', { day: 'numeric', month: 'short' }))
@@ -5844,7 +5872,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <div style="font-size:13px;font-weight:500;margin-bottom:12px">${esc(t('cl_study_section_status'))}</div>
             <div style="font-size:12px;color:${isStudyPaymentReceived(study) ? 'var(--blue)' : 'var(--amber)'};margin-bottom:12px">${esc(paidOnLabel || getStudyPaymentLabel(study))}</div>
             ${showPaymentInstructions ? `
-              <div style="margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(25,33,48,0.08);background:rgba(25,33,48,0.03)">
+              <div id="study-payment-block" style="margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(25,33,48,0.08);background:rgba(25,33,48,0.03)">
                 <div style="font-size:13px;font-weight:600;color:var(--gray-800);margin-bottom:6px">${esc(t('cl_study_payment_gate_title'))}</div>
                 <div style="font-size:12px;color:var(--gray-700);margin-bottom:6px">${esc(t('cl_study_payment_gate_due'))}: ${esc(totalDue)}</div>
                 <div style="font-size:12px;line-height:1.55;color:var(--gray-500);margin-bottom:10px">${esc(t('cl_study_payment_gate_body'))}</div>
@@ -5852,7 +5880,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
               </div>
             ` : ''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${study.description ? '1rem' : '0'}">
-              ${isDraft      ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>` : ''}
+              ${isDraft      ? (draftRequiresPayment
+                ? `<button class="btn-primary btn-green" onclick="const settingsTab = document.querySelector('#study-settings-tab'); const paymentBlock = settingsTab?.querySelector('#study-payment-block'); const paymentAction = paymentBlock?.querySelector('a[href^=&quot;mailto:&quot;]'); paymentBlock?.scrollIntoView({ behavior: 'smooth', block: 'center' }); paymentAction?.focus(); paymentAction?.click();">Payment required — Request invoice →</button>`
+                : `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>`) : ''}
               ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">${esc(t('cl_study_action_pause'))}</button>` : ''}
               ${isPaused     ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_resume'))}</button>` : ''}
               ${(isActive || isPaused) ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','completed')">${esc(t('cl_study_action_mark_completed'))}</button>` : ''}
@@ -5881,7 +5911,11 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const cachedStudy = _studiesCache?.studies?.find(study => study.id === studyId) || null;
       if (status === 'active') {
         const paidStudy = await requireStudyPayment(cachedStudy || studyId);
-        if (!paidStudy) return;
+        if (!paidStudy) {
+          const settingsTab = document.querySelector('#study-settings-tab');
+          settingsTab?.querySelector('[href^="mailto:"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
       }
       const previousStatus = cachedStudy?.status || null;
       const canOptimisticallyUpdate = Boolean(
@@ -6186,13 +6220,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     try {
       const { data: studies, error: sErr } = await db
         .from('studies')
-        .select('id, title')
+        .select('id, title, availability_requested_at')
         .eq('created_by', currentClientUser.id);
       if (sErr) throw sErr;
       const studyIds = (studies || []).map(s => s.id);
       if (!studyIds.length) { card.style.display = 'none'; return; }
 
       const studyTitleMap = Object.fromEntries((studies || []).map(s => [s.id, s.title || 'Untitled']));
+      const studyAvailabilityRequestMap = Object.fromEntries((studies || []).map(s => [s.id, !!s.availability_requested_at]));
 
       const { data: rows, error: rErr } = await db
         .from('applications')
@@ -6218,12 +6253,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : '—';
         const acceptedElapsedText = formatAcceptedElapsedText(a.updated_at);
         const canBookNow = hasSchedulableAvailability(contributor);
-        const availabilityLabel = t(canBookNow ? 'cl_ready_to_book' : 'cl_waiting_on_availability');
-        const availabilityBadge = `<span class="badge ${canBookNow ? 'badge-green' : 'badge-amber'}" style="font-size:10px;padding:2px 8px">${availabilityLabel}</span>`;
+        const availabilityRequested = !!studyAvailabilityRequestMap[a.study_id];
+        const availabilityBadge = canBookNow
+          ? `<span class="badge badge-green" style="font-size:10px;padding:2px 8px">${t('cl_ready_to_book')}</span>`
+          : '';
         const scheduleBtn = canBookNow
           ? `<button class="btn-accept" style="font-size:12px;padding:5px 12px;flex-shrink:0"
             data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(a.study_id)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(title)}" data-mode="accepted">${t('cl_book_session')}</button>`
-          : '';
+          : availabilityRequested
+          ? `<button class="btn-outline" style="font-size:12px;padding:5px 12px;flex-shrink:0" disabled>Request sent</button>`
+          : `<button class="btn-accept" style="font-size:12px;padding:5px 12px;flex-shrink:0" data-action="request-availability" data-study-id="${esc(a.study_id)}">Request availability →</button>`;
         return `<div data-app-id="${esc(a.id)}" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--gray-100)">
           <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:500">${esc(name)}</div>
@@ -6236,6 +6275,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       }).join('');
       wireActions(list, {
         schedule: d => openScheduleModal(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle, d.mode),
+        'request-availability': d => requestAvailabilityForStudy(d.studyId),
       });
     } catch(err) {
       console.error('loadUnscheduledApplications error:', err);
@@ -7266,6 +7306,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_join_call: 'Join call',
       cl_leave_call: 'Leave call',
       cl_session_scheduled: 'Session scheduled & applicant accepted ✓',
+      notif_session_scheduled_title: 'Session scheduled 📅',
+      notif_session_rescheduled_title: 'Session rescheduled 📅',
+      notif_session_scheduled_body: 'Your session for "{study}" is confirmed for {time}. You can join 15 minutes before start.',
+      notif_session_rescheduled_body: 'Your session for "{study}" has been rescheduled to {time}. You can join 15 minutes before start.',
       cl_group_session_scheduled: 'Group session scheduled ✓',
       cl_schedule_group_session: 'Schedule group session',
       cl_reschedule_group_session: 'Reschedule group session',
@@ -7909,6 +7953,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_join_call: 'Gå med i samtal',
       cl_leave_call: 'Lämna samtal',
       cl_session_scheduled: 'Session schemalagd & sökande accepterad ✓',
+      notif_session_scheduled_title: 'Session bokad 📅',
+      notif_session_rescheduled_title: 'Session ombokad 📅',
+      notif_session_scheduled_body: 'Din session för "{study}" är bekräftad till {time}. Du kan ansluta 15 minuter innan start.',
+      notif_session_rescheduled_body: 'Din session för "{study}" har bokats om till {time}. Du kan ansluta 15 minuter innan start.',
       cl_group_session_scheduled: 'Gruppsession schemalagd ✓',
       cl_schedule_group_session: 'Schemalägg gruppsession',
       cl_reschedule_group_session: 'Omschemalägg gruppsession',
