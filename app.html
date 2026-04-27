@@ -4548,6 +4548,7 @@
     if (status === 'pending')  return { phase: 'pending',    label: t('status_pending'),             sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'invited')  return { phase: 'invited',    label: t('status_invited'),             sublabel: t('waiting_schedule_invited'), canJoin: false, showCountdown: false, countdownText: null };
     if (status === 'completed') return { phase: 'completed', label: t('status_completed_awaiting'),  sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
+    if (status === 'cannot_attend') return { phase: 'cannot_attend', label: t('status_cannot_attend'), sublabel: null, canJoin: false, showCountdown: false, countdownText: null };
 
     // accepted
     if (!app.scheduled_at) {
@@ -4778,8 +4779,9 @@
   }
 
   async function cantAttend(appId, createdBy, studyTitle, scheduledAt, studyId) {
-    const storageKey = 'vetd_cant_attend_' + appId + '_' + encodeURIComponent(scheduledAt || '');
-    if (sessionStorage.getItem(storageKey)) return;
+    // Dedupe: if DB already reflects cannot_attend, do nothing
+    const existing = (state.myApplications || []).find(a => String(a.id) === String(appId));
+    if (existing?.status === 'cannot_attend') return;
 
     const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
@@ -4789,11 +4791,33 @@
     const firstName = state.profileData?.first_name || 'A contributor';
     const deepLink = studyId ? '#applicants/' + studyId + '/' + encodeURIComponent(studyTitle) : null;
 
-    // Optimistic update — set flag and swap UI before async notification
-    sessionStorage.setItem(storageKey, '1');
+    // Optimistic UI — show sent state immediately
     const el = document.getElementById('cant-attend-' + appId);
     if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
 
+    // DB update first — only transitions from 'accepted' to prevent double-fire
+    const { data: updatedRows, error: updateError } = await supabase
+      .from('applications')
+      .update({ status: 'cannot_attend', cannot_attend_at: new Date().toISOString() })
+      .eq('id', appId)
+      .eq('status', 'accepted')
+      .not('scheduled_at', 'is', null)
+      .select('id');
+
+    if (updateError || !updatedRows?.length) {
+      // Rollback optimistic UI
+      if (el && el.dataset.originalHtml) {
+        el.innerHTML = el.dataset.originalHtml;
+        delete el.dataset.originalHtml;
+      }
+      return;
+    }
+
+    // Persist to in-memory state so re-renders reflect the new status
+    if (existing) existing.status = 'cannot_attend';
+    sessionStorage.setItem('vetd_cant_attend_' + appId + '_' + encodeURIComponent(scheduledAt || ''), '1');
+
+    // Notification only after DB success
     if (createdBy) {
       await sendStructuredNotification(
         createdBy,
@@ -4802,6 +4826,10 @@
         deepLink
       );
     }
+
+    // Re-render so the card shows the cannot_attend phase
+    const _optFilter = document.querySelector('#tab-my-studies .filter-chip.active')?.dataset.filter || 'all';
+    renderMyApplications(_optFilter);
   }
 
   // Two-step inline cant-attend confirmation — no modal
@@ -4853,7 +4881,7 @@
 
   function getMyStudiesSectionKey(phase) {
     if (['scheduled','starting_soon'].includes(phase)) return 'upcoming';
-    if (['rejected','declined','ended_joined','ended_missed','completed','company_cancelled'].includes(phase)) return 'completed';
+    if (['rejected','declined','ended_joined','ended_missed','completed','company_cancelled','cannot_attend'].includes(phase)) return 'completed';
     return 'in_progress';
   }
 
@@ -4873,6 +4901,7 @@
       case 'ended_joined': return isDelayedPayment(payment) ? t('my_studies_meaning_completed_delayed') : t('my_studies_meaning_ended_joined');
       case 'ended_missed': return t('my_studies_meaning_ended_missed');
       case 'completed': return isDelayedPayment(payment) ? t('my_studies_meaning_completed_delayed') : t('my_studies_meaning_completed');
+      case 'cannot_attend': return t('my_studies_meaning_cannot_attend');
       default: return '';
     }
   }
@@ -4894,7 +4923,7 @@
     } else if (filter === 'past') {
       apps = apps.filter(a => {
         const phase = getSessionStatus(a, (a.studies || {}).duration_minutes).phase;
-        return ['rejected','declined','ended_joined','ended_missed','completed','company_cancelled'].includes(phase);
+        return ['rejected','declined','ended_joined','ended_missed','completed','company_cancelled','cannot_attend'].includes(phase);
       });
     }
 
@@ -4953,6 +4982,7 @@
         completed:     'app-status-completed',
         company_cancelled: 'app-status-rejected',
         rejected:      'app-status-rejected',
+        cannot_attend: 'app-status-missed',
       }[ss.phase] || 'app-status-pending';
 
       const statusBadge = `<span class="app-status ${badgeCls}">${esc(ss.label)}</span>`;
@@ -5025,6 +5055,8 @@
         statusDetail = `<button onclick="showTab('studies', document.querySelector('.topbar-nav button:nth-child(2)'))" style="font-size:12px;color:var(--green-dark);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);font-weight:500">${t('browse_new_studies_cta')}</button>`;
       } else if (ss.phase === 'completed') {
         statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('payment_processing')}</span>`;
+      } else if (ss.phase === 'cannot_attend') {
+        statusDetail = `<span style="font-size:12px;color:var(--gray-400)">${t('cannot_attend_confirmed')}</span>`;
       }
 
       const sectionKey = getMyStudiesSectionKey(ss.phase);
@@ -7261,6 +7293,9 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_confirm_yes: 'Yes, notify them',
       cant_attend_confirm_cancel: 'Cancel',
       cant_attend_sent: 'Researcher notified',
+      status_cannot_attend: "Can't attend",
+      cannot_attend_confirmed: "You've let the researcher know. You're no longer scheduled for this session.",
+      my_studies_meaning_cannot_attend: "You won't be attending this session",
       declining_label: 'Declining…',
       cant_attend_notif_title: "Contributor can't attend",
       cant_attend_notif_body: "{name} can't attend their session for \"{title}\" on {date}.",
@@ -7964,6 +7999,9 @@ async function applyToStudy(studyId, answers = null) {
       cant_attend_confirm_yes: 'Ja, meddela dem',
       cant_attend_confirm_cancel: 'Avbryt',
       cant_attend_sent: 'Forskaren har meddelats',
+      status_cannot_attend: 'Kan inte delta',
+      cannot_attend_confirmed: 'Du har meddelat forskaren. Du är inte längre inbokad för den här sessionen.',
+      my_studies_meaning_cannot_attend: 'Du deltar inte i den här sessionen',
       declining_label: 'Avböjer…',
       cant_attend_notif_title: 'Deltagaren kan inte delta',
       cant_attend_notif_body: '{name} kan inte delta i sin session för "{title}" den {date}.',

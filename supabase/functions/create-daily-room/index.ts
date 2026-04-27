@@ -119,8 +119,13 @@ serve(async (req) => {
         p_title:      notifTitle,
         p_body:       notifBody,
         p_link:       null,
-        p_notif_type: null,
-        p_params:     {},
+        p_notif_type: is_reschedule ? "session_rescheduled" : "session_scheduled",
+        p_params:     {
+          study_id: app.study_id,
+          application_id,
+          scheduled_at,
+          session_type: "one_to_one",
+        },
       });
 
       return new Response(

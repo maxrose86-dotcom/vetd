@@ -956,7 +956,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 <div class="review-guidance" id="review-guidance-copy">Add at least one interest to define your audience.</div>
                 <div class="review-summary" id="review-summary"></div>
                 <div class="review-warning" id="review-warning-copy" style="display:none"></div>
-                <button class="btn-primary btn-green review-primary-btn" id="publish-study-btn" onclick="handleBuilderPrimaryAction()" data-i18n="cl_publish_btn">Publish study →</button>
+                <button class="btn-primary btn-green review-primary-btn" id="publish-study-btn" onclick="handleBuilderPrimaryAction()" data-i18n="cl_publish_btn">Publish study</button>
+                <div class="review-warning" id="publish-action-help" style="display:none;margin-top:8px"></div>
                 <button class="btn-outline review-secondary-btn" id="publish-secondary-btn" onclick="handleBuilderSecondaryAction()" style="display:none">Start another →</button>
               </div>
             </div>
@@ -2703,6 +2704,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_invite_someone_else')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
+        } else if (a.status === 'cannot_attend') {
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_cannot_attend')}</span>
+            <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_find_replacement')}</button>`;
         } else if (a.status === 'no_show') {
           actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_no_show')}</span>
             <button class="btn-accept" data-action="book-no-show" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(studyTitle)}">Book new session</button>`;
@@ -2798,7 +2802,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         },
         {
           key: 'done', label: t('cl_stage_done'), color: 'var(--gray-300,#D1D5DB)',
-          rows: data.filter(a => ['completed', 'no_show', 'declined', 'rejected'].includes(a.status)),
+          rows: data.filter(a => ['completed', 'no_show', 'cannot_attend', 'declined', 'rejected'].includes(a.status)),
         },
       ];
 
@@ -2945,29 +2949,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (newStatus === 'accepted' && study) {
         const newFilled = Math.min((study.filled_spots || 0) + 1, study.spots);
         await db.from('studies').update({ filled_spots: newFilled }).eq('id', studyId);
-      }
-
-      // Notify the contributor (suppressed when caller sends its own notification)
-      if (contributorId && study && !suppressNotification) {
-        if (newStatus === 'accepted') {
-          await sendNotification(
-            contributorId,
-            'Session confirmed 🎉',
-            `Your session for "${study.title}" has been confirmed. You'll receive scheduling details shortly.`,
-            null,
-            'application_accepted',
-            { study_id: studyId, application_id: appId, contributor_id: contributorId }
-          );
-        } else if (newStatus === 'rejected') {
-          await sendNotification(
-            contributorId,
-            'Study update',
-            `We're unable to move forward with your participation in "${study.title}" at this time. Thank you for your interest.`,
-            null,
-            'application_rejected',
-            { study_id: studyId, application_id: appId, contributor_id: contributorId }
-          );
-        }
       }
 
       if (!suppressToast) showToast(newStatus === 'accepted' ? t('cl_applicant_accepted') : t('cl_applicant_rejected'));
@@ -4200,13 +4181,15 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   }
 
   async function handleBuilderPrimaryAction() {
+    if (_builderPublishState === 'published') {
+      navigateToStudy(lastPublishedStudyId);
+      return;
+    }
+    const decision = getBuilderDecisionModel(_builderPoolPreviewState.confidence);
+    if (decision.state === 'not_ready') return;
     const paymentContext = getBuilderPaymentContext();
     if (!paymentContext.isPaid) {
       await requestInvoiceForCurrentStudy();
-      return;
-    }
-    if (_builderPublishState === 'published') {
-      navigateToStudy(lastPublishedStudyId);
       return;
     }
     publishStudy();
@@ -4467,7 +4450,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           console.error('Background loadStudies after payment gate save failed:', err);
           if (window.Sentry) Sentry.captureException(err);
         });
-        showToast(t('cl_payment_required_continue'), true);
+        showToast(t('cl_payment_required_continue'));
         return false;
       }
 
@@ -4973,40 +4956,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       setInlineError('');
       inviteCreated = true;
 
-      try {
-        // Notify the contributor — deduplicate by checking for an existing unread invite for this study.
-        const { data: study, error: studyErr } = await db.from('studies').select('title').eq('id', studyId).single();
-        if (studyErr) throw studyErr;
-        if (study) {
-          let existingInviteNotif = null;
-          const { data: notifData, error: notifErr } = await db
-            .from('notifications')
-            .select('id')
-            .eq('user_id', contributorId)
-            .eq('notif_type', 'study_invited')
-            .eq('read', false)
-            .eq('link', studyId)
-            .maybeSingle();
-          if (notifErr && notifErr.code !== 'PGRST116') {
-            console.warn('[vetd] invite notification dedupe failed (non-blocking):', notifErr.message || notifErr);
-          } else {
-            existingInviteNotif = notifData;
-          }
-          if (!existingInviteNotif) {
-            await sendNotification(
-              contributorId,
-              t('cl_notif_invited_title'),
-              t('cl_notif_invited_body').replace('{title}', study.title),
-              studyId,
-              'study_invited',
-              { study_id: studyId, contributor_id: contributorId }
-            );
-          }
-        }
-      } catch (notifErr) {
-        console.warn('[vetd] invite notification failed (non-blocking):', notifErr?.message || notifErr);
-      }
-
       showToast(t('cl_contributor_invited'));
       if (btn) { btn.textContent = t('cl_already_invited'); btn.disabled = true; btn.className = 'btn-outline'; btn.style.opacity = '0.6'; btn.style.cursor = 'default'; btn.id = ''; }
     } catch(err) {
@@ -5487,7 +5436,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         honesty:      dimScores.honesty,
         profile_fit:  dimScores.profile_fit,
       };
-      const overall = +(Object.values(scores).reduce((a,b)=>a+b,0) / 5).toFixed(2);
       const comment = document.getElementById('rate-comment').value.trim() || null;
 
       const { error: insertErr } = await db.from('ratings').upsert({
@@ -5511,16 +5459,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       } else {
         console.log('[submitRating] recalc_contributor_rating succeeded');
       }
-
-      // Notify the contributor
-      await sendNotification(
-        currentRatee.contributorId,
-        `You received a new rating for "${currentRatee.studyTitle}"`,
-        `Your overall score for this study was ${overall}★. Keep up the great work!`,
-        null,
-        'rating_received',
-        { study_id: currentRatee.studyId || null, application_id: currentRatee.appId, contributor_id: currentRatee.contributorId }
-      );
 
       document.getElementById('rate-modal').classList.remove('open');
       showToast(t('cl_rating_submitted').replace('{name}', currentRatee.name));
@@ -5701,9 +5639,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const reviewGuidanceEl = document.getElementById('review-guidance-copy');
     const reviewSummaryEl = document.getElementById('review-summary');
     const reviewWarningEl = document.getElementById('review-warning-copy');
+    const publishActionHelpEl = document.getElementById('publish-action-help');
     const publishBtn = document.getElementById('publish-study-btn');
     const publishSecondaryBtn = document.getElementById('publish-secondary-btn');
-    if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishBtn || !publishSecondaryBtn) return;
+    if (!confidenceEl || !confidenceStep3El || !confidenceCopyEl || !confidenceCopyStep3El || !guidanceEl || !fillEl || !fillStep3El || !previewListEl || !reviewStateEl || !reviewGuidanceEl || !reviewSummaryEl || !reviewWarningEl || !publishActionHelpEl || !publishBtn || !publishSecondaryBtn) return;
 
     const { poolCount, confidence, confidenceCopy, guidance, fillCopy, previewMatches } = _builderPoolPreviewState;
     const targeting = getBuilderTargetingState();
@@ -5745,6 +5684,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewGuidanceEl.textContent = t('cl_publish_state_publishing_sub');
       reviewSummaryEl.innerHTML = '';
       reviewWarningEl.style.display = 'none';
+      publishActionHelpEl.style.display = 'none';
+      publishActionHelpEl.textContent = '';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = t('cl_publishing');
       publishBtn.disabled = true;
@@ -5761,6 +5702,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         </div>
       `;
       reviewWarningEl.style.display = 'none';
+      publishActionHelpEl.textContent = lastPublishedStudyId ? '' : t('cl_publish_missing_id_help');
+      publishActionHelpEl.style.display = lastPublishedStudyId ? 'none' : 'block';
       publishBtn.textContent = t('cl_published_primary_action');
       publishBtn.disabled = !lastPublishedStudyId;
       publishBtn.style.opacity = '1';
@@ -5775,8 +5718,26 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       `;
       reviewWarningEl.style.display = 'none';
       reviewWarningEl.style.color = '';
+      publishActionHelpEl.style.display = 'none';
+      publishActionHelpEl.textContent = '';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.style.display = 'none';
+    } else if (decision.state === 'not_ready') {
+      reviewStateEl.textContent = decision.label;
+      reviewGuidanceEl.textContent = decision.guidance;
+      reviewWarningEl.textContent = '';
+      reviewWarningEl.style.display = 'none';
+      reviewWarningEl.style.color = '';
+      publishActionHelpEl.textContent = decision.guidance;
+      publishActionHelpEl.style.display = 'block';
+      reviewSummaryEl.innerHTML = paymentContext.isTestStudy
+        ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">Test mode: payment bypass active</div>`
+        : '';
+      publishSecondaryBtn.style.display = 'none';
+      publishBtn.textContent = t('cl_publish_btn');
+      publishBtn.disabled = true;
+      publishBtn.style.opacity = '0.55';
+      publishBtn.style.cursor = 'not-allowed';
     } else if (!paymentContext.isPaid) {
       reviewStateEl.textContent = t('cl_invoice_state_title');
       reviewGuidanceEl.textContent = t('cl_invoice_state_body');
@@ -5789,6 +5750,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewWarningEl.textContent = '';
       reviewWarningEl.style.display = 'none';
       reviewWarningEl.style.color = '';
+      publishActionHelpEl.textContent = t('cl_invoice_state_help');
+      publishActionHelpEl.style.display = 'block';
       publishSecondaryBtn.style.display = 'none';
       publishBtn.textContent = t('cl_invoice_state_primary');
       publishBtn.disabled = false;
@@ -5800,14 +5763,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       reviewWarningEl.textContent = decision.warning;
       reviewWarningEl.style.display = decision.warning ? 'block' : 'none';
       reviewWarningEl.style.color = '';
+      publishActionHelpEl.textContent = '';
+      publishActionHelpEl.style.display = 'none';
       reviewSummaryEl.innerHTML = paymentContext.isTestStudy
         ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">Test mode: payment bypass active</div>`
         : '';
       publishSecondaryBtn.style.display = 'none';
-      publishBtn.textContent = decision.button;
-      publishBtn.disabled = decision.state === 'not_ready';
-      publishBtn.style.opacity = decision.state === 'not_ready' ? '0.55' : '1';
-      publishBtn.style.cursor = decision.state === 'not_ready' ? 'not-allowed' : 'pointer';
+      publishBtn.textContent = t('cl_publish_btn');
+      publishBtn.disabled = false;
+      publishBtn.style.opacity = '1';
+      publishBtn.style.cursor = 'pointer';
     }
 
     if (confidence === 'too_broad') {
@@ -6733,57 +6698,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
   }
 
-  async function sendNotification(userId, title, body, link, notifType, params) {
-    if (!db) return;
-    const row = {
-      user_id: userId,
-      title,
-      body,
-      link:    link || null,
-      read:    false,
-    };
-    if (notifType) row.notif_type = notifType;
-    if (params)    row.params     = params;
-
-    // Self-notifications: direct insert gives us direct column control.
-    // Requires the notifications_insert_own RLS policy (user_id = auth.uid()).
-    if (currentClientUser && userId === currentClientUser.id) {
-      const { error } = await db.from('notifications').insert(row);
-      if (error) throw error;
-      return;
-    }
-
-    // Cross-user (e.g. operator → contributor): try SECURITY DEFINER RPC first.
-    const { error: rpcError } = await db.rpc('insert_notification', {
-      p_user_id:    userId,
-      p_title:      title,
-      p_body:       body,
-      p_link:       link || null,
-      p_notif_type: notifType || null,
-      p_params:     params    || {},
-    });
-    if (!rpcError) return;
-
-    const rpcMsg = `${rpcError.code || ''} ${rpcError.message || ''} ${rpcError.details || ''}`.trim();
-    const signatureMismatch = /p_notif_type|p_params|insert_notification|function .* does not exist|Could not find the function|PGRST202|42883/i.test(rpcMsg);
-    if (!signatureMismatch) {
-      throw rpcError;
-    }
-
-    console.warn('[vetd] sendNotification RPC fallback to legacy signature:', rpcMsg);
-    const { error: legacyRpcError } = await db.rpc('insert_notification', {
-      p_user_id: userId,
-      p_title: title,
-      p_body: body,
-      p_link: link || null,
-    });
-    if (!legacyRpcError) return;
-
-    console.warn('[vetd] sendNotification legacy RPC fallback to direct insert:', legacyRpcError.message || legacyRpcError);
-    const { error: insertError } = await db.from('notifications').insert(row);
-    if (insertError) throw insertError;
-  }
-
   // Notification row clicks — delegated so inline onclick string-escaping is not needed
   document.getElementById('notif-panel-body').addEventListener('click', function(e) {
     const row = e.target.closest('.notif-row[data-id]');
@@ -6858,6 +6772,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_badge_in_progress: 'In progress',
       cl_badge_attended: 'Attended',
       cl_badge_no_show: 'No-show',
+      cl_badge_cannot_attend: "Can't attend",
+      cl_find_replacement: 'Find replacement',
       cl_stage_outcome_needed: 'Outcome needed',
       cl_stage_today: 'Today',
       cl_stage_needs_scheduling: 'Needs scheduling',
@@ -7062,7 +6978,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_failed: 'Could not publish — try again',
       cl_draft_save_failed: 'Could not save draft — try again',
       cl_publishing: 'Publishing…',
-      cl_publish_btn: 'Publish study →',
+      cl_publish_btn: 'Publish study',
       // Chips
       cl_chip_any_age: 'Any age',
       cl_chip_junior: 'Junior',
@@ -7204,7 +7120,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_invoice_state_title: 'Payment required to go live',
       cl_invoice_state_amount_label: 'Total due',
       cl_invoice_state_body: 'Your study is ready. Request an invoice and we’ll activate it once payment is received.',
-      cl_invoice_state_primary: 'Request invoice →',
+      cl_invoice_state_primary: 'Payment required — Request invoice →',
+      cl_invoice_state_help: 'This study requires payment before publishing.',
+      cl_publish_missing_id_help: 'The study was published, but its ID is missing. Refresh before opening it.',
       cl_invoice_state_note: 'You can save this study as a draft while payment is arranged.',
       cl_invoice_request_opened: 'Invoice request opened. Study saved as draft.',
       cl_invoice_mail_line_title: 'Study title: {title}',
@@ -7522,6 +7440,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_badge_in_progress: 'Pågående',
       cl_badge_attended: 'Deltog',
       cl_badge_no_show: 'Uteblev',
+      cl_badge_cannot_attend: 'Kan inte delta',
+      cl_find_replacement: 'Hitta ersättare',
       cl_stage_outcome_needed: 'Utfall behövs',
       cl_stage_today: 'Idag',
       cl_stage_needs_scheduling: 'Behöver schemaläggas',
@@ -7709,7 +7629,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_publish_failed: 'Kunde inte publicera — försök igen',
       cl_draft_save_failed: 'Kunde inte spara utkast — försök igen',
       cl_publishing: 'Publicerar…',
-      cl_publish_btn: 'Publicera studie →',
+      cl_publish_btn: 'Publicera studie',
       // Chips
       cl_chip_any_age: 'Alla åldrar',
       cl_chip_junior: 'Junior',
@@ -7851,7 +7771,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_invoice_state_title: 'Betalning krävs för att publicera',
       cl_invoice_state_amount_label: 'Att betala',
       cl_invoice_state_body: 'Din studie är klar. Begär en faktura så aktiverar vi den när betalningen är mottagen.',
-      cl_invoice_state_primary: 'Begär faktura →',
+      cl_invoice_state_primary: 'Betalning krävs — begär faktura →',
+      cl_invoice_state_help: 'Studien kräver betalning innan publicering.',
+      cl_publish_missing_id_help: 'Studien är publicerad, men studie-ID saknas. Uppdatera sidan innan du öppnar den.',
       cl_invoice_state_note: 'Du kan spara studien som utkast medan betalningen ordnas.',
       cl_invoice_request_opened: 'Fakturaförfrågan öppnad. Studien har sparats som utkast.',
       cl_invoice_mail_line_title: 'Studietitel: {title}',
