@@ -1539,6 +1539,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   let _currentBuilderStep = 1;
   let _justPublished = false; // set on publish, cleared after first renderStudiesList()
   let _justPublishedStudyId = null;
+  let lastPublishedStudyId = null;
   let _completedStudiesExpanded = false;
   let _studyStatusInFlight = false;
   const BUILDER_INTEREST_OPTIONS = [
@@ -2387,14 +2388,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // (migration 20260411_add_screening_questions.sql not yet applied).
       let { data: studyMeta, error: studyMetaErr } = await db
         .from('studies')
-        .select('session_type, screening_questions, title, description, target_interests, min_rating, format')
+        .select('session_type, screening_questions, title, description, target_interests, min_rating, format, status')
         .eq('id', studyId)
         .single();
       if (studyMetaErr) {
         console.warn('[Vetd] study meta full select failed — falling back. Run 20260411_add_screening_questions.sql to restore screening.', studyMetaErr.message);
         ({ data: studyMeta, error: studyMetaErr } = await db
           .from('studies')
-          .select('session_type, title, description, target_interests, min_rating, format')
+          .select('session_type, title, description, target_interests, min_rating, format, status')
           .eq('id', studyId)
           .single());
       }
@@ -2560,6 +2561,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             new Date(a.scheduled_at) < new Date(_rowNow - 2 * 60 * 60 * 1000);
           const sessionPast = sessionRecentlyPast || sessionStalePast;
           const canBookNow = effectiveAvailability.length > 0;
+          const canAddToSession = sessionType === 'group' && !isScheduled && (studyMeta.status === 'scheduled' || anyGroupScheduled);
           const availabilityRequested = !!studyMeta.availability_requested_at;
           const availabilityRequestAction = availabilityRequested
             ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" disabled>Request sent</button>`
@@ -2621,7 +2623,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             const groupOutcome = sessionPast
               ? (a.joined_call_at ? completeBtn + noShowBtn : completeBtn + noShowBtn)
               : '';
-            actions = `${statusPill}${availabilityPill}${!isScheduled && !canBookNow ? availabilityRequestAction : ''}${schedDisplay}${joinBtn}${attendanceBadge}${groupOutcome}`;
+            const addToSessionBtn = canAddToSession
+              ? `<button class="btn-accept" data-action="add-to-scheduled-session" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}">Add to scheduled session →</button>`
+              : '';
+            actions = `${statusPill}${canAddToSession ? '' : availabilityPill}${addToSessionBtn}${!isScheduled && !canBookNow && !canAddToSession ? availabilityRequestAction : ''}${schedDisplay}${joinBtn}${attendanceBadge}${groupOutcome}`;
           } else {
             // One-to-one: derive one mutually exclusive scheduling state, then drive all
             // UI from that single value. No element can appear outside its correct state.
@@ -2847,6 +2852,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         'complete':               d => markCompleted(d.appId, d.studyId),
         'did-not-happen':         d => markSessionDidNotHappen(d.appId, d.studyId),
         'book-no-show':           d => bookNoShowSession(d.appId, d.studyId, d.contributorId, d.name, d.studyTitle),
+        'add-to-scheduled-session': d => addToScheduledSession(d.appId, d.studyId, d.contributorId),
         'request-availability':   d => requestAvailabilityForStudy(d.studyId),
         'browse':                 d => openContributorBrowser(d.studyId, d.studyTitle),
       };
@@ -3078,6 +3084,38 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     loadUnscheduledApplications().catch(err => {
       console.error('Background loadUnscheduledApplications after availability request failed:', err);
     });
+  }
+
+  async function addToScheduledSession(appId, studyId, contributorId) {
+    if (!db) return;
+    const row = document.getElementById('approw-' + appId);
+    const actionsEl = row?.querySelector('.applicant-actions');
+    const btn = actionsEl?.querySelector('[data-action="add-to-scheduled-session"]');
+    let errorEl = actionsEl?.querySelector('.applicant-inline-error');
+    if (!errorEl && actionsEl) {
+      errorEl = document.createElement('div');
+      errorEl.className = 'applicant-inline-error';
+      errorEl.style.cssText = 'font-size:11px;color:var(--coral);line-height:1.35;max-width:180px';
+      actionsEl.appendChild(errorEl);
+    }
+    if (errorEl) errorEl.textContent = '';
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    const { error } = await db.rpc('add_participant_to_session', {
+      p_study_id: studyId,
+      p_contributor_id: contributorId
+    });
+
+    if (error) {
+      console.error('Add to session error:', error);
+      if (errorEl) errorEl.textContent = 'Could not add to session. Please try again.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Add to scheduled session →'; }
+      return;
+    }
+
+    await loadApplicants(studyId);
+    await loadUnscheduledApplications();
+    await loadUpcomingSessions();
   }
 
   function callTimeRemaining(isoStr) {
@@ -4168,11 +4206,19 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       return;
     }
     if (_builderPublishState === 'published') {
-      const snapshot = _builderPublishedSnapshot || getBuilderPublishSnapshot(getBuilderTargetingState());
-      if (_justPublishedStudyId) openApplicants(_justPublishedStudyId, snapshot.title || t('cl_published_context_default'));
+      navigateToStudy(lastPublishedStudyId);
       return;
     }
     publishStudy();
+  }
+
+  function navigateToStudy(studyId) {
+    if (!studyId) {
+      console.error('Missing studyId for navigation');
+      return;
+    }
+    const url = `vetd-client.html?tab=study&study_id=${encodeURIComponent(studyId)}&section=people&back=studies`;
+    window.location.href = url;
   }
 
   function handleBuilderSecondaryAction() {
@@ -4435,6 +4481,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       if (!isDraft) {
         _justPublished = true;
         _justPublishedStudyId = savedStudyId;
+        lastPublishedStudyId = savedStudyId;
         loadStudies().catch(err => {
           console.error('Background loadStudies after publish failed:', err);
           if (window.Sentry) Sentry.captureException(err);
@@ -4513,6 +4560,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     clearTimeout(_builderPublishTimer);
     _builderPublishState = 'idle';
     _builderPublishedSnapshot = null;
+    lastPublishedStudyId = null;
     _builderPoolPreviewState = {
       poolCount: 0,
       confidence: 'too_broad',
@@ -5714,9 +5762,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       `;
       reviewWarningEl.style.display = 'none';
       publishBtn.textContent = t('cl_published_primary_action');
-      publishBtn.disabled = false;
+      publishBtn.disabled = !lastPublishedStudyId;
       publishBtn.style.opacity = '1';
-      publishBtn.style.cursor = 'pointer';
+      publishBtn.style.cursor = lastPublishedStudyId ? 'pointer' : 'not-allowed';
       publishSecondaryBtn.textContent = t('cl_published_secondary_action');
       publishSecondaryBtn.style.display = 'inline-flex';
     } else if (_builderPublishState === 'invoice_requested') {
