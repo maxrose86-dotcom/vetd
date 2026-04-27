@@ -4788,7 +4788,7 @@
     const el = document.getElementById('cant-attend-' + appId);
     if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('saving_generic')}</span>`;
 
-    const { data, error } = await supabase.rpc('mark_cannot_attend', {
+    const { data, error } = await db.rpc('mark_cannot_attend', {
       p_application_id: appId
     });
     const updatedRow = Array.isArray(data) ? data[0] : data;
