@@ -4615,14 +4615,14 @@
 
       ({ data, error } = await db
         .from('applications')
-        .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, is_test, companies(name))')
+        .select('id, study_id, status, applied_at, updated_at, scheduled_at, cannot_attend_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, is_test, companies(name))')
         .eq('contributor_id', state.currentUser.id)
         .order('applied_at', { ascending: false }));
 
       if (error && /is_test/i.test(error.message || '')) {
         ({ data, error } = await db
           .from('applications')
-          .select('id, study_id, status, applied_at, updated_at, scheduled_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
+          .select('id, study_id, status, applied_at, updated_at, scheduled_at, cannot_attend_at, room_url, room_name, joined_call_at, last_call_activity, studies(id, title, description, format, session_type, duration_minutes, pay_per_participant, created_by, companies(name))')
           .eq('contributor_id', state.currentUser.id)
           .order('applied_at', { ascending: false }));
       }
@@ -4780,8 +4780,8 @@
 
   async function cantAttend(appId, createdBy, studyTitle, scheduledAt, studyId) {
     // Dedupe: if DB already reflects cannot_attend, do nothing
-    const existing = (state.myApplications || []).find(a => String(a.id) === String(appId));
-    if (existing?.status === 'cannot_attend') return;
+    const localApp = (state.myApplications || []).find(a => String(a.id) === String(appId));
+    if (localApp?.status === 'cannot_attend') return;
 
     const lang = getCurrentLang();
     const locale = lang === 'sv' ? 'sv-SE' : 'en-GB';
@@ -4790,41 +4790,75 @@
       : '';
     const firstName = state.profileData?.first_name || 'A contributor';
     const deepLink = studyId ? '#applicants/' + studyId + '/' + encodeURIComponent(studyTitle) : null;
+    const failCopy = 'Could not update attendance. Please try again.';
+    const nowIso = new Date().toISOString();
 
-    // Optimistic UI — show sent state immediately
     const el = document.getElementById('cant-attend-' + appId);
-    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sent')}</span>`;
+    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('saving_generic')}</span>`;
 
-    // DB update first — only transitions from 'accepted' to prevent double-fire
+    const { data: existingRow, error: fetchError } = await supabase
+      .from('applications')
+      .select('id, status, scheduled_at')
+      .eq('id', appId)
+      .eq('contributor_id', state.currentUser.id)
+      .maybeSingle();
+
+    console.log('cantAttend existing row:', {
+      appId,
+      fetchError,
+      status: existingRow?.status,
+      scheduled_at: existingRow?.scheduled_at
+    });
+
+    if (fetchError || !existingRow || existingRow.status !== 'accepted' || !existingRow.scheduled_at) {
+      if (el) el.innerHTML = `<span style="font-size:11px;color:var(--coral)">${failCopy}</span>`;
+      showToast(failCopy, true);
+      return;
+    }
+
     const { data: updatedRows, error: updateError } = await supabase
       .from('applications')
-      .update({ status: 'cannot_attend', cannot_attend_at: new Date().toISOString() })
+      .update({ status: 'cannot_attend', cannot_attend_at: nowIso, updated_at: nowIso })
       .eq('id', appId)
+      .eq('contributor_id', state.currentUser.id)
       .eq('status', 'accepted')
-      .not('scheduled_at', 'is', null)
-      .select('id');
+      .select('id, status, scheduled_at, cannot_attend_at');
+
+    console.log('cantAttend update result:', {
+      appId,
+      updateError,
+      updatedRows,
+      status: existingRow.status,
+      scheduled_at: existingRow.scheduled_at
+    });
 
     if (updateError || !updatedRows?.length) {
-      // Rollback optimistic UI
-      if (el && el.dataset.originalHtml) {
-        el.innerHTML = el.dataset.originalHtml;
-        delete el.dataset.originalHtml;
-      }
+      console.error('cantAttend update failed:', { appId, updateError, updatedRows });
+      if (el) el.innerHTML = `<span style="font-size:11px;color:var(--coral)">${failCopy}</span>`;
+      showToast(failCopy, true);
       return;
     }
 
     // Persist to in-memory state so re-renders reflect the new status
-    if (existing) existing.status = 'cannot_attend';
+    if (localApp) {
+      localApp.status = 'cannot_attend';
+      localApp.cannot_attend_at = nowIso;
+    }
     sessionStorage.setItem('vetd_cant_attend_' + appId + '_' + encodeURIComponent(scheduledAt || ''), '1');
 
     // Notification only after DB success
     if (createdBy) {
-      await sendStructuredNotification(
-        createdBy,
-        'cant_attend',
-        { study_id: studyId || '', application_id: appId, contributor_id: state.currentUser?.id || '', scheduled_at: scheduledAt || '', name: firstName, title: studyTitle, date: formattedDate },
-        deepLink
-      );
+      try {
+        await sendStructuredNotification(
+          createdBy,
+          'cant_attend',
+          { study_id: studyId || '', application_id: appId, contributor_id: state.currentUser?.id || '', scheduled_at: scheduledAt || '', name: firstName, title: studyTitle, date: formattedDate },
+          deepLink
+        );
+      } catch (notifyErr) {
+        console.warn('cantAttend notification failed after DB update:', notifyErr);
+        if (window.Sentry) Sentry.captureException(notifyErr);
+      }
     }
 
     // Re-render so the card shows the cannot_attend phase
