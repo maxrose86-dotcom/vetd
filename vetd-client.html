@@ -2618,6 +2618,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const effectiveAvailability = getEffectiveAvailabilityValues(c);
         const p       = c.profiles || {};
         const name    = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unknown contributor';
+        const participantFirstName = p.first_name || (name && name !== 'Unknown contributor' ? name.split(' ')[0] : '') || t('cl_group_contributor');
         const studyTitle = currentApplicantsStudyTitle || '';
         const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
         const rating  = c.rating != null ? parseFloat(c.rating).toFixed(1) : '—';
@@ -2639,7 +2640,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="pending">${t('cl_schedule_and_confirm')}</button>
             <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_reject')}</button>`;
         } else if (a.status === 'cannot_attend') {
-          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_cannot_attend')}</span>
+          const cannotAttendLabel = a.scheduled_at
+            ? `${t('cl_badge_cannot_attend')} · ${formatScheduledTime(a.scheduled_at)}`
+            : t('cl_badge_cannot_attend');
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${esc(cannotAttendLabel)}</span>
             <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_find_replacement')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
@@ -2656,11 +2660,16 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           const availabilityRequestAction = availabilityRequested
             ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" disabled>Request sent</button>`
             : `<button class="btn-accept" style="font-size:11px;padding:4px 10px" data-action="request-availability" data-study-id="${esc(studyId)}">Request availability →</button>`;
+          const groupOutcomeTitle = sessionType === 'group' ? ` title="${escAttr(t('cl_participant_outcome_tooltip'))}"` : '';
+          const completeLabel = sessionType === 'group'
+            ? t('cl_mark_participant_attended').replace('{name}', participantFirstName)
+            : t('cl_mark_completed');
+          const noShowLabel = sessionType === 'group' ? t('cl_badge_no_show') : t('cl_did_not_happen');
           const completeBtn = sessionPast
-            ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_mark_completed')}</button>`
+            ? `<button class="btn-complete" data-action="complete" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}"${groupOutcomeTitle}>${esc(completeLabel)}</button>`
             : '';
           const noShowBtn = sessionPast
-            ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}">${t('cl_did_not_happen')}</button>`
+            ? `<button class="btn-outline" style="font-size:11px;padding:4px 10px" data-action="did-not-happen" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}"${groupOutcomeTitle}>${esc(noShowLabel)}</button>`
             : '';
           let attendanceBadge = '';
           if (sessionPast) {
@@ -6918,7 +6927,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_archive: 'Archive',
       cl_study_action_delete: 'Delete',
       cl_study_complete_cta: 'Complete study →',
-      cl_study_complete_waiting: 'Waiting for all participant outcomes',
+      cl_study_complete_waiting: 'Mark all participants as attended or no-show to unlock completion.',
       cl_study_complete_confirm: 'Mark this study as complete?',
       cl_study_complete_confirm_yes: 'Complete study',
       cl_study_section_status: 'Status',
@@ -7353,6 +7362,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_accept: 'Accept',
       cl_reject: 'Reject',
       cl_mark_completed: 'Mark completed',
+      cl_mark_participant_attended: 'Mark {name} attended',
+      cl_participant_outcome_tooltip: 'This applies to this participant only',
       cl_loading: 'Loading…',
       cl_loading_applicants: 'Loading applicants…',
       // Auth
@@ -7590,7 +7601,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_archive: 'Arkivera',
       cl_study_action_delete: 'Ta bort',
       cl_study_complete_cta: 'Slutför studie →',
-      cl_study_complete_waiting: 'Väntar på alla deltagarutfall',
+      cl_study_complete_waiting: 'Markera alla deltagare som deltog eller uteblev för att slutföra studien.',
       cl_study_complete_confirm: 'Markera den här studien som slutförd?',
       cl_study_complete_confirm_yes: 'Slutför studie',
       cl_study_section_status: 'Status',
@@ -8008,6 +8019,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_accept: 'Acceptera',
       cl_reject: 'Avvisa',
       cl_mark_completed: 'Markera som slutförd',
+      cl_mark_participant_attended: 'Markera att {name} deltog',
+      cl_participant_outcome_tooltip: 'Gäller endast den här deltagaren',
       cl_loading: 'Laddar…',
       cl_loading_applicants: 'Laddar sökande…',
       // Auth

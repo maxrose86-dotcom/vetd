@@ -4786,7 +4786,7 @@
     const failCopy = 'Could not update attendance. Please try again.';
 
     const el = document.getElementById('cant-attend-' + appId);
-    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('saving_generic')}</span>`;
+    if (el) el.innerHTML = `<span style="font-size:11px;color:var(--gray-400)">${t('cant_attend_sending')}</span>`;
 
     const { data, error } = await db.rpc('mark_cannot_attend', {
       p_application_id: appId
@@ -5021,7 +5021,7 @@
           `<span style="font-size:11px;color:var(--gray-400)">${t('join_early_hint')}</span>`,
           sessionType === 'group' ? `<span style="font-size:11px;color:var(--gray-400)">${t('group_session_context')}</span>` : ''
         ].filter(Boolean).join('');
-        const cantAttendHtml = `<button onclick="showCantAttendConfirm('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_btn')}</button>`;
+        const cantAttendHtml = `<button onclick="showCantAttendConfirm('${escAttr(a.id)}','${escAttr(study.created_by||'')}','${escAttr(title)}','${escAttr(a.scheduled_at||'')}','${escAttr(a.study_id||'')}')" style="font-size:11px;color:var(--gray-400);background:none;border:none;padding:0;cursor:pointer;font-family:var(--sans);text-decoration:underline">${t('cant_attend_trigger')}</button>`;
         statusDetail = `<div class="app-schedule-row">
           <strong>${esc(ss.sublabel)}</strong>
           <span class="session-card-time">${esc(ss.countdownText)}</span>
@@ -7277,10 +7277,11 @@ async function applyToStudy(studyId, answers = null) {
       session_type_group: 'Group session',
       join_early_hint: 'You can join 15 minutes before start',
       group_session_context: 'You\'ll join a group discussion with other participants',
-      cant_attend_btn: "Can't make it?",
+      cant_attend_trigger: "I can’t attend",
       cant_attend_confirm: "This will notify the researcher that you can't attend. Continue?",
       cant_attend_confirm_yes: 'Yes, notify them',
       cant_attend_confirm_cancel: 'Cancel',
+      cant_attend_sending: 'Sending notice…',
       cant_attend_sent: 'Researcher notified',
       status_cannot_attend: "Can't attend",
       cannot_attend_confirmed: "You've let the researcher know. You're no longer scheduled for this session.",
@@ -7985,10 +7986,11 @@ async function applyToStudy(studyId, answers = null) {
       session_type_group: 'Gruppsession',
       join_early_hint: 'Du kan gå med 15 minuter innan start',
       group_session_context: 'Du deltar i en gruppdiskussion med andra deltagare',
-      cant_attend_btn: 'Kan inte delta?',
+      cant_attend_trigger: 'Jag kan inte delta',
       cant_attend_confirm: 'Detta meddelar forskaren att du inte kan delta. Fortsätta?',
       cant_attend_confirm_yes: 'Ja, meddela dem',
       cant_attend_confirm_cancel: 'Avbryt',
+      cant_attend_sending: 'Skickar meddelande…',
       cant_attend_sent: 'Forskaren har meddelats',
       status_cannot_attend: 'Kan inte delta',
       cannot_attend_confirmed: 'Du har meddelat forskaren. Du är inte längre inbokad för den här sessionen.',
