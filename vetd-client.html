@@ -1717,7 +1717,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     window.history.replaceState({}, '', window.location.pathname + (q ? '?' + q : ''));
   }
 
-  const CLIENT_STUDY_SELECT = 'id, company_id, created_by, title, description, format, session_type, duration_minutes, spots, filled_spots, pay_per_participant, start_date, close_date, status, target_age_ranges, target_genders, target_locations, target_interests, is_test, total_cost, payment_status, paid_at, paid_by, min_rating, screening_questions, additional_reqs, created_at';
+  const CLIENT_STUDY_SELECT = 'id, company_id, created_by, title, description, format, session_type, duration_minutes, spots, filled_spots, pay_per_participant, start_date, close_date, status, audience_type, target_age_ranges, target_genders, target_locations, target_interests, target_behaviors, target_audience_intent, is_test, total_cost, payment_status, paid_at, paid_by, min_rating, screening_questions, additional_reqs, created_at';
 
   async function loadStudies() {
     const list = document.getElementById('studies-list');
@@ -2062,6 +2062,55 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     }
   }
 
+  async function runStudyAgain(studyId) {
+    try {
+      if (!db) throw new Error('Database unavailable');
+      const cached = _studiesCache?.studies?.find(study => study.id === studyId) || null;
+      let study = cached;
+      if (!study) {
+        const { data, error } = await db.from('studies').select(CLIENT_STUDY_SELECT).eq('id', studyId).single();
+        if (error) throw error;
+        study = data;
+      }
+      if (!study) throw new Error('Study not found');
+
+      const draftFields = {
+        created_by: study.created_by,
+        company_id: study.company_id,
+        title: study.title,
+        description: study.description,
+        format: study.format,
+        session_type: study.session_type,
+        audience_type: study.audience_type || 'customers',
+        duration_minutes: study.duration_minutes,
+        spots: study.spots,
+        pay_per_participant: study.pay_per_participant,
+        start_date: study.start_date,
+        close_date: study.close_date,
+        status: 'draft',
+        target_age_ranges: study.target_age_ranges,
+        target_genders: study.target_genders,
+        target_locations: study.target_locations,
+        target_interests: study.target_interests,
+        target_behaviors: study.target_behaviors,
+        target_audience_intent: study.target_audience_intent,
+        is_test: study.is_test,
+        total_cost: getStudyTotalCostValue(study),
+        payment_status: 'unpaid',
+        min_rating: study.min_rating,
+        screening_questions: study.screening_questions,
+        additional_reqs: study.additional_reqs
+      };
+      const { data, error } = await db.from('studies').insert(draftFields).select('id').single();
+      if (error) throw error;
+      window.location.href = `vetd-client.html?draft=${encodeURIComponent(data.id)}`;
+    } catch (err) {
+      console.error('runStudyAgain error:', err);
+      if (window.Sentry) Sentry.captureException(err);
+      showToast(t('cl_run_again_failed'), true);
+    }
+  }
+
   async function deleteDraftStudy(studyId) {
     const btn = document.querySelector(`[data-action="delete-draft"][data-study-id="${studyId}"]`);
     if (btn && btn.dataset.confirming !== 'true') {
@@ -2255,6 +2304,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
       const secondaryActions = [
         `<button class="btn-outline" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(t(isCompleted ? 'cl_study_action_view' : 'cl_study_action_edit'))}</button>`,
+        isCompleted
+          ? `<button class="btn-outline" data-action="run-study-again" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_run_again'))}</button>`
+          : '',
         `<button class="btn-outline" data-action="duplicate-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_duplicate'))}</button>`,
         (status === 'active' || status === 'paused')
           ? renderStudyCompletionAction(s.id, completionState.allParticipantsResolved)
@@ -2330,6 +2382,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         else openApplicants(d.studyId, d.studyTitle || 'Study', 'settings', 'studies');
       },
       'duplicate-study': d => duplicateStudy(d.studyId),
+      'run-study-again': d => runStudyAgain(d.studyId),
       'show-complete-study-confirm': d => showCompleteStudyConfirm(d.studyId),
       'confirm-complete-study': d => confirmCompleteStudy(d.studyId),
       'cancel-complete-study': d => cancelCompleteStudyConfirm(d.studyId),
@@ -6918,6 +6971,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_edit: 'Edit',
       cl_study_action_view: 'View',
       cl_study_action_duplicate: 'Duplicate',
+      cl_study_action_run_again: 'Run again →',
       cl_study_action_mark_completed: 'Mark as completed',
       cl_study_action_pause: 'Pause',
       cl_study_action_resume: 'Resume',
@@ -6949,6 +7003,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_duplicate_default_title: 'Study copy',
       cl_duplicate_success: 'Draft duplicated',
       cl_duplicate_failed: 'Could not duplicate the study.',
+      cl_run_again_failed: 'Could not create the new draft.',
       cl_delete_draft_confirm: 'Delete this draft from the Studies list?',
       cl_delete_draft_confirm_inline: 'Confirm delete?',
       cl_delete_draft_success: 'Draft removed.',
@@ -7408,7 +7463,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_reschedule_group_session: 'Reschedule group session',
       cl_group_schedule_title: 'Schedule group session',
       cl_group_reschedule_title: 'Reschedule group session',
-      cl_added_after_group: 'Accepted after group was scheduled',
+      cl_added_after_group: 'Needs adding to session',
       cl_group_accepted_pending: 'Accepted — waiting for group scheduling',
       cl_no_accepted_to_schedule: 'No accepted participants to schedule yet',
       cl_group_contributor: 'participant',
@@ -7592,6 +7647,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_edit: 'Redigera',
       cl_study_action_view: 'Visa',
       cl_study_action_duplicate: 'Duplicera',
+      cl_study_action_run_again: 'Kör igen →',
       cl_study_action_mark_completed: 'Markera som slutförd',
       cl_study_action_pause: 'Pausa',
       cl_study_action_resume: 'Återuppta',
@@ -7623,6 +7679,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_duplicate_default_title: 'Studiekopia',
       cl_duplicate_success: 'Utkast duplicerat',
       cl_duplicate_failed: 'Kunde inte duplicera studien.',
+      cl_run_again_failed: 'Kunde inte skapa det nya utkastet.',
       cl_delete_draft_confirm: 'Ta bort det här utkastet från Studier?',
       cl_delete_draft_confirm_inline: 'Bekräfta borttagning?',
       cl_delete_draft_success: 'Utkast borttaget.',
@@ -8065,7 +8122,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_reschedule_group_session: 'Omschemalägg gruppsession',
       cl_group_schedule_title: 'Schemalägg gruppsession',
       cl_group_reschedule_title: 'Omschemalägg gruppsession',
-      cl_added_after_group: 'Accepterad efter att gruppsessionen schemalades',
+      cl_added_after_group: 'Behöver läggas till i sessionen',
       cl_group_accepted_pending: 'Accepterad — väntar på gruppsessionsschema',
       cl_no_accepted_to_schedule: 'Inga accepterade deltagare att schemalägga ännu',
       cl_group_contributor: 'deltagare',
