@@ -34,7 +34,6 @@ BEGIN
     INTO v_session
     FROM public.applications
    WHERE study_id = p_study_id
-     AND status = 'accepted'
      AND scheduled_at IS NOT NULL
    ORDER BY scheduled_at DESC
    LIMIT 1;

@@ -2555,7 +2555,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // True when the group has at least one already-scheduled accepted row.
       // Used inside the map to distinguish "waiting" from "accepted late" pill states.
       const anyGroupScheduled = sessionType === 'group' &&
-        data.some(a => a.status === 'accepted' && !!a.scheduled_at);
+        data.some(a => !!a.scheduled_at);
 
       const avColors = ['#DCFFF0','#EFF6FF','#FEF3C7','#F5F3FF','#FEE2E2'];
       const avText   = ['#009960','#1D4ED8','#B45309','#7C3AED','#DC2626'];
