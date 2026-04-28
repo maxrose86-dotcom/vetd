@@ -1518,6 +1518,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
   // ─── LOAD STUDIES ───────────────────────────────────────
   let _studiesCache = null;
+  const TERMINAL_STATES = [
+    'completed',
+    'no_show',
+    'cannot_attend'
+  ];
+  let _completeStudyConfirmId = null;
   let _builderPoolPreviewTimer = null;
   let _builderPoolPreviewState = {
     poolCount: 0,
@@ -1730,6 +1736,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       // Fetch application counts for all studies in one query
       let appCountMap = {};
       let allAppRows  = [];
+      let appRowsByStudy = {};
       if (studies && studies.length > 0) {
         const { data: apps } = await db
           .from('applications')
@@ -1743,6 +1750,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         const _todayEnd   = new Date(); _todayEnd.setHours(23, 59, 59, 999);
         allAppRows.forEach(a => {
           if (!appCountMap[a.study_id]) appCountMap[a.study_id] = { total: 0, pending: 0, accepted: 0, invited: 0, active_count: 0, scheduled: 0, ready_to_complete: 0, stale_sessions: 0, today_count: 0, first_today_at: null };
+          if (!appRowsByStudy[a.study_id]) appRowsByStudy[a.study_id] = [];
+          appRowsByStudy[a.study_id].push(a);
           appCountMap[a.study_id].total++;
           if (a.status === 'pending')  appCountMap[a.study_id].pending++;
           if (a.status === 'accepted') appCountMap[a.study_id].accepted++;
@@ -1782,7 +1791,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         });
       }
 
-      _studiesCache = { studies: studies || [], appCountMap, paymentSpendMap };
+      _studiesCache = { studies: studies || [], appCountMap, appRowsByStudy, paymentSpendMap };
       updateDashboardGreeting();
       renderStudiesList();
     } catch(err) {
@@ -1791,6 +1800,80 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const list = document.getElementById('studies-list');
       if (list) list.innerHTML = '<p style="color:var(--gray-400);padding:1rem">Could not load studies.</p>';
     }
+  }
+
+  function getStudyCompletionState(applicants) {
+    const rows = Array.isArray(applicants) ? applicants : [];
+    return {
+      applicants: rows,
+      allParticipantsResolved: rows.length > 0 && rows.every(a => TERMINAL_STATES.includes(a.status))
+    };
+  }
+
+  async function getFreshStudyCompletionState(studyId) {
+    const { data, error } = await db
+      .from('applications')
+      .select('id, study_id, status')
+      .eq('study_id', studyId);
+    if (error) throw error;
+    const applicants = data || [];
+    if (_studiesCache) {
+      _studiesCache = {
+        ..._studiesCache,
+        appRowsByStudy: {
+          ...(_studiesCache.appRowsByStudy || {}),
+          [studyId]: applicants
+        }
+      };
+    }
+    return getStudyCompletionState(applicants);
+  }
+
+  function renderStudyCompletionAction(studyId, allParticipantsResolved) {
+    const id = String(studyId);
+    if (_completeStudyConfirmId === id && allParticipantsResolved) {
+      return `
+        <span style="font-size:12px;color:var(--gray-700);font-weight:500">${esc(t('cl_study_complete_confirm'))}</span>
+        <button class="btn-primary" data-action="confirm-complete-study" data-study-id="${esc(studyId)}">${esc(t('cl_study_complete_confirm_yes'))}</button>
+        <button class="btn-outline" data-action="cancel-complete-study" data-study-id="${esc(studyId)}">${esc(t('cl_cancel'))}</button>`;
+    }
+    if (allParticipantsResolved) {
+      return `<button class="btn-primary" data-action="show-complete-study-confirm" data-study-id="${esc(studyId)}">${esc(t('cl_study_complete_cta'))}</button>`;
+    }
+    return `
+      <button class="btn-outline" disabled>${esc(t('cl_study_complete_cta'))}</button>
+      <span style="font-size:12px;color:var(--gray-400)">${esc(t('cl_study_complete_waiting'))}</span>`;
+  }
+
+  function refreshStudyCompletionUi(studyId) {
+    renderStudiesList();
+    if (_currentTab === 'study' && currentApplicantsStudyId === studyId) {
+      loadStudyOverview(studyId).catch(err => {
+        console.error('Background loadStudyOverview after completion confirmation change failed:', err);
+        if (window.Sentry) Sentry.captureException(err);
+      });
+    }
+  }
+
+  function showCompleteStudyConfirm(studyId) {
+    _completeStudyConfirmId = String(studyId);
+    refreshStudyCompletionUi(studyId);
+  }
+
+  function cancelCompleteStudyConfirm(studyId) {
+    if (_completeStudyConfirmId === String(studyId)) _completeStudyConfirmId = null;
+    refreshStudyCompletionUi(studyId);
+  }
+
+  async function confirmCompleteStudy(studyId) {
+    const completionState = await getFreshStudyCompletionState(studyId);
+    if (!completionState.allParticipantsResolved) {
+      if (_completeStudyConfirmId === String(studyId)) _completeStudyConfirmId = null;
+      refreshStudyCompletionUi(studyId);
+      return;
+    }
+    if (_completeStudyConfirmId === String(studyId)) _completeStudyConfirmId = null;
+    await setStudyStatus(studyId, 'completed');
   }
 
   function getStudyAudienceLabel(study) {
@@ -2017,7 +2100,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   function renderStudiesList() {
     const list = document.getElementById('studies-list');
     if (!list || !_studiesCache) return;
-    const { studies, appCountMap } = _studiesCache;
+    const { studies, appCountMap, appRowsByStudy = {} } = _studiesCache;
 
     // Update subtitle with live counts
     const subEl = document.getElementById('studies-subtitle');
@@ -2135,6 +2218,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const formatLabel = DASH_FORMAT_LABEL[displayFormat] || displayFormat || '';
       const filled = appCountMap[s.id]?.active_count || 0;
       const spots  = s.spots || 0;
+      const completionState = getStudyCompletionState(appRowsByStudy[s.id] || []);
       const audienceLabel = getStudyAudienceLabel(s);
       const intentLabel = getStudyIntentLabel(s);
       const interestTags = getStudyInterestTags(s);
@@ -2173,7 +2257,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         `<button class="btn-outline" data-action="edit-study" data-study-id="${esc(s.id)}" data-study-title="${escAttr(s.title || '')}" data-status="${escAttr(status)}">${esc(t(isCompleted ? 'cl_study_action_view' : 'cl_study_action_edit'))}</button>`,
         `<button class="btn-outline" data-action="duplicate-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_duplicate'))}</button>`,
         (status === 'active' || status === 'paused')
-          ? `<button class="btn-outline" data-action="complete-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_mark_completed'))}</button>`
+          ? renderStudyCompletionAction(s.id, completionState.allParticipantsResolved)
           : '',
         status === 'active'
           ? `<button class="btn-outline" data-action="pause-study" data-study-id="${esc(s.id)}">${esc(t('cl_study_action_pause'))}</button>`
@@ -2246,7 +2330,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         else openApplicants(d.studyId, d.studyTitle || 'Study', 'settings', 'studies');
       },
       'duplicate-study': d => duplicateStudy(d.studyId),
-      'complete-study': d => setStudyStatus(d.studyId, 'completed'),
+      'show-complete-study-confirm': d => showCompleteStudyConfirm(d.studyId),
+      'confirm-complete-study': d => confirmCompleteStudy(d.studyId),
+      'cancel-complete-study': d => cancelCompleteStudyConfirm(d.studyId),
       'pause-study': d => setStudyStatus(d.studyId, 'paused'),
       'resume-study': d => setStudyStatus(d.studyId, 'active'),
       'delete-draft': d => deleteDraftStudy(d.studyId),
@@ -5868,6 +5954,12 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         .eq('id', studyId)
         .single();
       if (error || !study) throw error || new Error('Study not found');
+      let completionState = getStudyCompletionState(_studiesCache?.appRowsByStudy?.[studyId] || []);
+      try {
+        completionState = await getFreshStudyCompletionState(studyId);
+      } catch (completionErr) {
+        console.error('Could not load completion state:', completionErr);
+      }
 
       if (badgeEl) {
         const status = study.status || 'draft';
@@ -5938,7 +6030,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 : `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_publish'))}</button>`) : ''}
               ${isActive     ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','paused')">${esc(t('cl_study_action_pause'))}</button>` : ''}
               ${isPaused     ? `<button class="btn-primary btn-green" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_resume'))}</button>` : ''}
-              ${(isActive || isPaused) ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','completed')">${esc(t('cl_study_action_mark_completed'))}</button>` : ''}
+              ${(isActive || isPaused) ? renderStudyCompletionAction(studyId, completionState.allParticipantsResolved) : ''}
               ${isCompleted  ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_reopen'))}</button>` : ''}
               ${isArchived   ? `<button class="btn-outline" onclick="setStudyStatus('${esc(studyId)}','active')">${esc(t('cl_study_action_restore'))}</button>` : ''}
               ${!isArchived  ? `<button class="btn-outline" style="color:var(--gray-500)" onclick="setStudyStatus('${esc(studyId)}','archived')">${esc(t('cl_study_action_archive'))}</button>` : ''}
@@ -5947,6 +6039,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           </div>`;
         wireActions(settingsEl, {
           'edit-details': () => openDraftInBuilder(studyId),
+          'show-complete-study-confirm': d => showCompleteStudyConfirm(d.studyId),
+          'confirm-complete-study': d => confirmCompleteStudy(d.studyId),
+          'cancel-complete-study': d => cancelCompleteStudyConfirm(d.studyId),
         });
       }
     } catch(err) {
@@ -5962,6 +6057,23 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     _studyStatusInFlight = true;
     try {
       const cachedStudy = _studiesCache?.studies?.find(study => study.id === studyId) || null;
+      const shouldRefreshOpenStudy = _currentTab === 'study'
+        && currentApplicantsStudyId === studyId
+        && document.getElementById('tab-study')?.classList.contains('active');
+      if (status === 'completed') {
+        const completionState = await getFreshStudyCompletionState(studyId);
+        if (!completionState.allParticipantsResolved) {
+          if (_completeStudyConfirmId === String(studyId)) _completeStudyConfirmId = null;
+          renderStudiesList();
+          if (shouldRefreshOpenStudy) {
+            loadStudyOverview(studyId).catch(err => {
+              console.error('Background loadStudyOverview after blocked completion failed:', err);
+              if (window.Sentry) Sentry.captureException(err);
+            });
+          }
+          return;
+        }
+      }
       if (status === 'active') {
         const paidStudy = await requireStudyPayment(cachedStudy || studyId);
         if (!paidStudy) {
@@ -5978,9 +6090,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ((previousStatus === 'active' || previousStatus === 'paused') && status === 'completed')
         )
       );
-      const shouldRefreshOpenStudy = _currentTab === 'study'
-        && currentApplicantsStudyId === studyId
-        && document.getElementById('tab-study')?.classList.contains('active');
 
       if (canOptimisticallyUpdate) {
         if (status === 'completed') _completedStudiesExpanded = true;
@@ -6846,6 +6955,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_restore: 'Restore',
       cl_study_action_archive: 'Archive',
       cl_study_action_delete: 'Delete',
+      cl_study_complete_cta: 'Complete study →',
+      cl_study_complete_waiting: 'Waiting for all participant outcomes',
+      cl_study_complete_confirm: 'Mark this study as complete?',
+      cl_study_complete_confirm_yes: 'Complete study',
       cl_study_section_status: 'Status',
       cl_study_details_heading: 'Study details',
       cl_study_details_sub: 'Review the setup and manage the study status.',
@@ -7514,6 +7627,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_study_action_restore: 'Återställ',
       cl_study_action_archive: 'Arkivera',
       cl_study_action_delete: 'Ta bort',
+      cl_study_complete_cta: 'Slutför studie →',
+      cl_study_complete_waiting: 'Väntar på alla deltagarutfall',
+      cl_study_complete_confirm: 'Markera den här studien som slutförd?',
+      cl_study_complete_confirm_yes: 'Slutför studie',
       cl_study_section_status: 'Status',
       cl_study_details_heading: 'Studiedetaljer',
       cl_study_details_sub: 'Granska upplägget och hantera studiens status.',
