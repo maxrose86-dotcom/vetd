@@ -5608,38 +5608,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
       }
 
-      // Create payout record in the background. This should never block completion UI.
-      (async function queuePayoutReview() {
-        try {
-          const [{ data: study }, { data: app }] = await Promise.all([
-            db.from('studies').select('pay_per_participant').eq('id', studyId).single(),
-            db.from('applications').select('contributor_id').eq('id', appId).single()
-          ]);
-          if (!study?.pay_per_participant || !app?.contributor_id) return;
-
-          const { data: existingPayout, error: existingErr } = await db
-            .from('payouts')
-            .select('id')
-            .eq('application_id', appId)
-            .maybeSingle();
-          if (existingErr) throw existingErr;
-          if (existingPayout) return;
-
-          const { error: payoutErr } = await db.from('payouts').insert({
-            study_id: studyId,
-            application_id: appId,
-            contributor_id: app.contributor_id,
-            amount: study.pay_per_participant,
-            status: 'pending_review',
-            created_at: new Date().toISOString()
-          });
-          if (payoutErr) throw payoutErr;
-        } catch (payoutErr) {
-          console.warn('Payout insert error:', payoutErr);
-          if (window.Sentry) Sentry.captureException(payoutErr);
-        }
-      })();
-
       showToast(t('cl_marked_completed'));
       loadApplicants(studyId).catch(err => {
         console.error('Background loadApplicants after markCompleted failed:', err);

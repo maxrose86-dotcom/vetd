@@ -46,6 +46,29 @@ BEGIN
      AND a.status = 'accepted'
      AND a.scheduled_at IS NOT NULL;
 
+  INSERT INTO public.payouts (
+    application_id,
+    contributor_id,
+    study_id,
+    amount,
+    status,
+    created_at
+  )
+  SELECT
+    a.id,
+    a.contributor_id,
+    a.study_id,
+    s.pay_per_participant,
+    'pending_review',
+    now()
+  FROM public.applications a
+  JOIN public.studies s ON s.id = a.study_id
+  WHERE a.id = p_application_id
+    AND NOT EXISTS (
+      SELECT 1 FROM public.payouts p
+      WHERE p.application_id = a.id
+    );
+
   RETURN QUERY
   SELECT a.id,
          a.status::text AS status,
