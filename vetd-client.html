@@ -4870,7 +4870,41 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
 
       if (error) throw error;
 
-      const ids = (contribs || []).map(c => c.id);
+      let previousContribs = [];
+      if (currentInviteStudyId && currentClientUser) {
+        let clientStudyIds = (_studiesCache?.studies || []).map(study => study.id).filter(Boolean);
+        if (!clientStudyIds.length) {
+          const { data: clientStudies } = await db
+            .from('studies')
+            .select('id')
+            .eq('created_by', currentClientUser.id);
+          clientStudyIds = (clientStudies || []).map(study => study.id).filter(Boolean);
+        }
+        if (clientStudyIds.length) {
+          const { data: completedRows } = await db
+            .from('applications')
+            .select('contributor_id, updated_at, scheduled_at')
+            .eq('status', 'completed')
+            .in('study_id', clientStudyIds)
+            .order('updated_at', { ascending: false, nullsFirst: false })
+            .limit(100);
+          const previousIds = [];
+          (completedRows || []).forEach(row => {
+            if (row.contributor_id && !previousIds.includes(row.contributor_id)) previousIds.push(row.contributor_id);
+          });
+          if (previousIds.length) {
+            let previousResult = await db.from('contributors').select(FULL_SELECT).in('id', previousIds.slice(0, 5));
+            if (previousResult.error) {
+              previousResult = await db.from('contributors').select(BASE_SELECT).in('id', previousIds.slice(0, 5));
+            }
+            if (previousResult.error) throw previousResult.error;
+            const byId = new Map((previousResult.data || []).map(c => [c.id, c]));
+            previousContribs = previousIds.slice(0, 5).map(id => byId.get(id)).filter(Boolean);
+          }
+        }
+      }
+
+      const ids = [...new Set([...(contribs || []).map(c => c.id), ...previousContribs.map(c => c.id)])];
       let profiles = [];
       if (ids.length) {
         const { data } = await db.from('profiles').select('id, first_name, last_name').in('id', ids);
@@ -4889,7 +4923,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         (existingRows || []).forEach(r => alreadyInvited.add(r.contributor_id));
       }
 
-      if (!contribs || contribs.length === 0) {
+      if ((!contribs || contribs.length === 0) && previousContribs.length === 0) {
         list.innerHTML = `<p style="color:var(--gray-400);padding:1rem;text-align:center">${t('cl_no_contributors')}</p>`;
         return;
       }
@@ -4900,8 +4934,14 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           : { score: 0, reasons: [] };
         return { c, i, score, reasons };
       });
+      const previousScored = previousContribs.map((c, i) => {
+        const { score, reasons } = currentInviteStudy
+          ? matchScore(c, currentInviteStudy)
+          : { score: 0, reasons: [] };
+        return { c, i, score, reasons };
+      });
 
-      _contributorsCache = { scored, alreadyInvited, profileMap };
+      _contributorsCache = { scored, previousScored, alreadyInvited, profileMap };
       renderContributorsList();
     } catch(err) {
       console.error('Failed to load contributors:', err);
@@ -4914,21 +4954,22 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const list = document.getElementById('contrib-list');
     if (!list || !_contributorsCache) return;
 
-    const { scored, alreadyInvited, profileMap } = _contributorsCache;
+    const { scored, previousScored = [], alreadyInvited, profileMap } = _contributorsCache;
     const SUGGESTED_MIN_SCORE = 45;
 
-    // Apply active filter
-    let visible = scored;
-    if (_contributorsFilter === 'elite') {
-      visible = scored.filter(x => x.c.tier === 'elite');
-    } else if (_contributorsFilter === 'not-invited') {
-      // Only meaningful in study invite context; otherwise show all
-      visible = currentInviteStudyId ? scored.filter(x => !alreadyInvited.has(x.c.id)) : scored;
-    } else if (_contributorsFilter === 'invited') {
-      visible = currentInviteStudyId ? scored.filter(x => alreadyInvited.has(x.c.id)) : [];
-    }
+    const applyContributorFilter = (rows) => {
+      if (_contributorsFilter === 'elite') return rows.filter(x => x.c.tier === 'elite');
+      if (_contributorsFilter === 'not-invited') return currentInviteStudyId ? rows.filter(x => !alreadyInvited.has(x.c.id)) : rows;
+      if (_contributorsFilter === 'invited') return currentInviteStudyId ? rows.filter(x => alreadyInvited.has(x.c.id)) : [];
+      return rows;
+    };
 
-    if (visible.length === 0) {
+    // Apply active filter
+    const previousVisible = currentInviteStudyId ? applyContributorFilter(previousScored).slice(0, 5) : [];
+    const previousIds = new Set(previousVisible.map(x => x.c.id));
+    let visible = applyContributorFilter(scored).filter(x => !previousIds.has(x.c.id));
+
+    if (visible.length === 0 && previousVisible.length === 0) {
       const msg = (_contributorsFilter === 'invited' && !currentInviteStudyId)
         ? 'Open from a study to use this filter.'
         : t('cl_no_contributors');
@@ -4959,7 +5000,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       return reasons.find(r => !/^available for /i.test(r)) || reasons[0] || '';
     }
 
-    function buildCard({ c, i, score, reasons }) {
+    function buildCard({ c, i, score, reasons }, options = {}) {
       const p         = profileMap[c.id] || {};
       const fname     = p.first_name || '';
       const lname     = p.last_name  || '';
@@ -4987,6 +5028,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       const matchBadge = fit
         ? `<span class="badge ${esc(fit.cls)}" style="font-size:10px;padding:2px 8px;cursor:default" title="${escAttr(reasons.join(' · '))}">${esc(fit.label)}</span>`
         : '';
+      const contextLabel = options.contextLabel || '';
 
       return `
         <div class="contrib-card">
@@ -4997,6 +5039,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
                 <div class="contrib-name">${esc(dispName)}${bankidBadge}</div>
                 <div class="contrib-meta">${esc([age ? `${age}y` : null, loc, `${studies} studies`].filter(Boolean).join(' · '))}</div>
                 <div class="star-row">★ ${esc(rating)} · <span class="badge ${esc(badgeCls)}">${esc(tierLabel)}</span>${matchBadge ? ' · ' + matchBadge : ''}</div>
+                ${contextLabel ? `<div style="margin-top:4px;font-size:11px;color:var(--green-dark);font-weight:600">${esc(contextLabel)}</div>` : ''}
                 ${reason ? `<div style="margin-top:4px;font-size:12px;color:var(--gray-700)">${esc(reason)}</div>` : ''}
               </div>
             </div>
@@ -5016,14 +5059,20 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
     const sectionHeader = (label) =>
       `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--gray-400);font-weight:600;padding:4px 2px 8px">${label}</div>`;
 
+    const previousHtml = previousVisible.length
+      ? sectionHeader(t('cl_previously_worked_with')) +
+        previousVisible.map(item => buildCard(item, { contextLabel: t('cl_worked_with_before') })).join('')
+      : '';
+
     if (suggested.length > 0) {
       const rest = sorted.filter(x => !suggestedIds.has(x.c.id));
       list.innerHTML =
+        previousHtml +
         sectionHeader('Suggested') +
         suggested.map(buildCard).join('') +
         (rest.length ? sectionHeader('All participants') + rest.map(buildCard).join('') : '');
     } else {
-      list.innerHTML = sorted.map(buildCard).join('');
+      list.innerHTML = previousHtml + sorted.map(buildCard).join('');
     }
     wireActions(list, {
       invite: d => inviteContributor(d.studyId, d.contributorId, d.name),
@@ -7516,6 +7565,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_awaiting_rating_plural: '{count} participants awaiting your rating',
       cl_rate_now: 'Rate now →',
       cl_no_contributors: 'No contributors found for these filters.',
+      cl_previously_worked_with: 'Previously worked with',
+      cl_worked_with_before: 'Worked with before',
       cl_go_to_applicants: 'Go to Applicants →',
       cl_sessions_empty: 'No sessions scheduled yet — accept applicants and schedule them to see them here.',
       cl_sessions_waiting_to_schedule: '{count} accepted participant is waiting to be scheduled.',
@@ -8175,6 +8226,8 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
       cl_awaiting_rating_plural: '{count} deltagare väntar på ditt betyg',
       cl_rate_now: 'Betygsätt nu →',
       cl_no_contributors: 'Inga deltagare hittades ännu.',
+      cl_previously_worked_with: 'Tidigare arbetat med',
+      cl_worked_with_before: 'Har arbetat med tidigare',
       cl_go_to_applicants: 'Gå till sökande →',
       cl_sessions_empty: 'Inga sessioner är schemalagda ännu — acceptera sökande och schemalägg dem för att se dem här.',
       cl_sessions_waiting_to_schedule: '{count} accepterad deltagare väntar på att schemaläggas.',
