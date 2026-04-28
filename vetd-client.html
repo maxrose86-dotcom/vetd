@@ -2552,6 +2552,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           actions = `
             <button class="btn-accept" data-action="schedule" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}" data-mode="pending">${t('cl_schedule_and_confirm')}</button>
             <button class="btn-reject" data-action="update-status" data-app-id="${esc(a.id)}" data-new-status="rejected" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-current-status="${escAttr(a.status)}">${t('cl_reject')}</button>`;
+        } else if (a.status === 'cannot_attend') {
+          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_cannot_attend')}</span>
+            <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_find_replacement')}</button>`;
         } else if (a.status === 'accepted') {
           const isScheduled = !!a.scheduled_at;
           const _rowNow     = Date.now();
@@ -2704,9 +2707,6 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
             <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_invite_someone_else')}</button>`;
         } else if (a.status === 'completed') {
           actions = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
-        } else if (a.status === 'cannot_attend') {
-          actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_cannot_attend')}</span>
-            <button class="btn-outline" style="font-size:12px;padding:6px 12px" data-action="browse" data-study-id="${esc(studyId)}" data-study-title="${escAttr(currentApplicantsStudyTitle||'')}">${t('cl_find_replacement')}</button>`;
         } else if (a.status === 'no_show') {
           actions = `<span class="status-pill" style="background:#FEF3C7;color:#92400E">${t('cl_badge_no_show')}</span>
             <button class="btn-accept" data-action="book-no-show" data-app-id="${esc(a.id)}" data-study-id="${esc(studyId)}" data-contributor-id="${esc(a.contributor_id)}" data-name="${escAttr(name)}" data-study-title="${escAttr(studyTitle)}">Book new session</button>`;
@@ -2785,6 +2785,10 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
           ).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
         },
         {
+          key: 'cannot_attend', label: t('cl_badge_cannot_attend'), color: 'var(--amber)',
+          rows: data.filter(a => a.status === 'cannot_attend'),
+        },
+        {
           key: 'schedule', label: t('cl_stage_needs_scheduling'), color: 'var(--amber)',
           rows: data.filter(a => a.status === 'accepted' && !a.scheduled_at),
         },
@@ -2802,7 +2806,7 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         },
         {
           key: 'done', label: t('cl_stage_done'), color: 'var(--gray-300,#D1D5DB)',
-          rows: data.filter(a => ['completed', 'no_show', 'cannot_attend', 'declined', 'rejected'].includes(a.status)),
+          rows: data.filter(a => ['completed', 'no_show', 'declined', 'rejected'].includes(a.status)),
         },
       ];
 
