@@ -2781,7 +2781,7 @@
 
   // Terminal application statuses: study was concluded for this contributor —
   // remove from Browse so they don't see a misleading Apply/Applied state.
-  const BROWSE_TERMINAL_STATUSES = new Set(['completed', 'rejected', 'declined', 'no_show', 'company_cancelled']);
+  const BROWSE_TERMINAL_STATUSES = new Set(['completed', 'rejected', 'declined', 'no_show', 'cannot_attend', 'company_cancelled']);
 
   function getStudiesForCurrentBrowseView() {
     // Start with all eligible studies, excluding those with a terminal application state.

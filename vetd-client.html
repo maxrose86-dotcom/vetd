@@ -5570,38 +5570,43 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
   async function markCompleted(appId, studyId) {
     const row = document.getElementById('approw-' + appId);
     const actionsEl = row?.querySelector('.applicant-actions');
-    const previousCounts = _studiesCache?.appCountMap?.[studyId]
-      ? { ..._studiesCache.appCountMap[studyId] }
-      : null;
-
-    if (_studiesCache?.appCountMap?.[studyId]) {
-      const nextCounts = { ..._studiesCache.appCountMap[studyId] };
-      nextCounts.accepted = Math.max(0, (nextCounts.accepted || 0) - 1);
-      nextCounts.scheduled = Math.max(0, (nextCounts.scheduled || 0) - 1);
-      nextCounts.ready_to_complete = Math.max(0, (nextCounts.ready_to_complete || 0) - 1);
-      if (nextCounts.stale_sessions > 0) nextCounts.stale_sessions -= 1;
-      _studiesCache = {
-        ..._studiesCache,
-        appCountMap: {
-          ..._studiesCache.appCountMap,
-          [studyId]: nextCounts
-        }
-      };
-      renderStudiesList();
-    }
-
-    if (row) {
-      row.style.pointerEvents = 'none';
-      row.style.opacity = '0.78';
-      if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
-    }
+    if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--gray-400)">${t('cl_saving')}</span>`;
 
     try {
-      // Mark application as completed
-      const { error } = await db.from('applications')
-        .update({ status: 'completed', updated_at: new Date().toISOString() })
-        .eq('id', appId);
+      const { data, error } = await db.rpc('mark_completed', { p_application_id: appId });
       if (error) throw error;
+      const updatedRow = Array.isArray(data) ? data[0] : data;
+      if (!updatedRow) throw new Error('mark_completed_returned_no_rows');
+
+      if (_studiesCache?.appCountMap?.[studyId]) {
+        const nextCounts = { ..._studiesCache.appCountMap[studyId] };
+        nextCounts.accepted = Math.max(0, (nextCounts.accepted || 0) - 1);
+        nextCounts.scheduled = Math.max(0, (nextCounts.scheduled || 0) - 1);
+        nextCounts.ready_to_complete = Math.max(0, (nextCounts.ready_to_complete || 0) - 1);
+        if (nextCounts.stale_sessions > 0) nextCounts.stale_sessions -= 1;
+        _studiesCache = {
+          ..._studiesCache,
+          appCountMap: {
+            ..._studiesCache.appCountMap,
+            [studyId]: nextCounts
+          },
+          appRowsByStudy: {
+            ...(_studiesCache.appRowsByStudy || {}),
+            [studyId]: (_studiesCache.appRowsByStudy?.[studyId] || []).some(app => app.id === updatedRow.id)
+              ? (_studiesCache.appRowsByStudy?.[studyId] || []).map(app =>
+                app.id === updatedRow.id ? { ...app, ...updatedRow } : app
+              )
+              : [...(_studiesCache.appRowsByStudy?.[studyId] || []), updatedRow]
+          }
+        };
+        renderStudiesList();
+      }
+
+      if (row) {
+        row.style.pointerEvents = 'none';
+        row.style.opacity = '0.78';
+        if (actionsEl) actionsEl.innerHTML = `<span class="status-pill status-completed">${t('cl_completed')}</span>`;
+      }
 
       // Create payout record in the background. This should never block completion UI.
       (async function queuePayoutReview() {
@@ -5665,20 +5670,9 @@ details.pipeline-done-details summary::-webkit-details-marker{display:none}
         if (window.Sentry) Sentry.captureException(err);
       });
     } catch(err) {
-      if (previousCounts && _studiesCache?.appCountMap) {
-        _studiesCache = {
-          ..._studiesCache,
-          appCountMap: {
-            ..._studiesCache.appCountMap,
-            [studyId]: previousCounts
-          }
-        };
-        renderStudiesList();
-      }
       console.error('markCompleted error:', err);
       if (window.Sentry) Sentry.captureException(err);
-      showToast(t('cl_update_application_failed'), true);
-      await loadApplicants(studyId);
+      if (actionsEl) actionsEl.innerHTML = `<span style="font-size:12px;color:var(--coral)">Could not mark as completed</span>`;
     }
   }
 
